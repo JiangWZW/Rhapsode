@@ -4,7 +4,7 @@ Clean-room **AI text RPG engine** — C++ core, Python LLM layer, FastAPI server
 
 ## Documentation
 
-Design documentation lives in `wiki/` as an **Obsidian vault** (git-ignored, local-only).
+Design documentation lives in `wiki/` as an **Obsidian vault** (tracked in git).
 
 ### Opening the wiki
 
@@ -24,7 +24,7 @@ Design documentation lives in `wiki/` as an **Obsidian vault** (git-ignored, loc
 Rhapsode/
 ├── AGENTS.md          # Wiki + agent schema (tracked)
 ├── raw/               # Reference sources (tracked)
-├── wiki/              # Obsidian vault — curated docs (git-ignored, local-only)
+├── wiki/              # Obsidian vault — curated docs (tracked)
 ├── core/              # C++ (future)
 ├── server/            # FastAPI (future)
 └── frontend/          # Vue 3 (future)
@@ -32,4 +32,8 @@ Rhapsode/
 
 ## Note on `wiki/`
 
-The `wiki/` folder is in `.gitignore` — it is a local Obsidian vault and not tracked by git. Each contributor maintains their own copy. Shared decisions and references that must be tracked go in `AGENTS.md` and `raw/`.
+The `wiki/` folder is version-controlled so architecture and philosophy stay shared across clones. Obsidian settings under `wiki/.obsidian/` may include machine-specific preferences; commit those you want everyone to share, or ignore subpaths locally if needed.
+
+### Obsidian vs Git
+
+Obsidian stores vault metadata in `wiki/.obsidian/`. If your team prefers not to commit workspace UI state, add selective ignores (e.g. `wiki/.obsidian/workspace`) in `.gitignore` later.

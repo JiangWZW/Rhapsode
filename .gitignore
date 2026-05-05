@@ -1,1 +1,6 @@
-wiki/
+.env
+build/
+__pycache__/
+*.pyd
+*.egg-info/
+node_modules/

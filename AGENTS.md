@@ -5,14 +5,14 @@ This file is the **schema** in the [LLM Wiki](https://gist.github.com/karpathy/4
 ## Purpose
 
 - **Compounding documentation** for the Rhapsode project (clean-room C++ text-RPG engine + FastAPI + Vue).
-- The wiki **lives locally** in `wiki/` (git-ignored). The plan in Cursor is a **source of truth for decisions** until it is **reflected in the wiki**; after that, prefer updating the wiki and linking the plan for history.
+- The wiki lives in `wiki/` and is **tracked in git**. Cursor plans are a source of truth until reflected in the wiki; after that, prefer updating the wiki and linking the plan for history.
 
 ## Three layers (per Karpathy)
 
 | Layer | Path | Role |
 |-------|------|------|
 | **Raw sources** | [`raw/`](raw/) | Immutable or slow-changing inputs: links, pasted specs, exports. Do not "fix" narrative here—summarize in `wiki/`. |
-| **Wiki** | `wiki/` (git-ignored) | Curated pages: concepts, architecture, decisions, how-to. Cross-link with `[[wikilinks]]` where helpful. Open `wiki/` in Obsidian as the vault root. |
+| **Wiki** | `wiki/` | Curated pages: concepts, architecture, decisions, how-to. Cross-link with `[[wikilinks]]` where helpful. Open `wiki/` in Obsidian as the vault root. |
 | **Schema** | **This file** | Rules for maintaining the wiki and optional tooling hooks. |
 
 ## Conventions
