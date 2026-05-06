@@ -14,7 +14,7 @@ See [[narrative-philosophy]] for the full treatment. Summary:
 
 1. **The Director is a rhapsode.** An arranger of narrative fragments, not a puppeteer. The LLM composes raw material; the Director structures it into the plot graph; the LLM performs it as prose.
 2. **Long-term memory is the emotional backbone.** Weighted memories, not equal-weight text chunks. What happened, what it meant, what changed.
-3. **Ambiguity is depth.** There is no fortune tracker. The arc emerges from accumulated memory + active tensions, never computed.
+3. **Ambiguity is depth.** There is no fortune tracker. The arc emerges from accumulated memory + active plot nodes, never computed.
 4. **The LLM simulates, it doesn't decide.** It has two roles: composer (generates dramatic potential) and performer (renders the current moment). It never manages structure.
 5. **The player breaks everything.** Elastic arc: steer consequences, not actions.
 
@@ -29,7 +29,7 @@ See [[narrative-philosophy]] for the full treatment. Summary:
 
 - **MVP v0** (done): C++ core, pybind11, FastAPI server, Vue frontend, Gemini integration.
 - **Next**: Long-term memory (weighted event log, vector retrieval).
-- **Then**: Director + plot graph (DAG of latent tensions, deterministic traversal, two loops). See [[plot-graph]].
+- **Then**: Director + plot graph (DAG of latent plot nodes, deterministic traversal, two loops). See [[plot-graph]].
 - **Later**: Visual plot graph editor, scenario authoring tools, save/load sessions.
 
 ## Naming

@@ -2,7 +2,7 @@
 title Rhapsode
 
 cd /d "%~dp0server"
-start "Rhapsode Backend" /min python -m uvicorn rhapsode.app:app --host 127.0.0.1 --port 8080
+start "Rhapsode Backend" /min .venv\Scripts\python.exe -m uvicorn rhapsode.app:app --host 127.0.0.1 --port 8080
 
 cd /d "%~dp0frontend"
 start "Rhapsode Frontend" /min npx vite --host 127.0.0.1 --port 5173

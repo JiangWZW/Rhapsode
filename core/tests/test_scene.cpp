@@ -4,6 +4,7 @@
 #include "rhapsode/history.h"
 #include "rhapsode/character.h"
 #include "rhapsode/scene.h"
+#include "rhapsode/director.h"
 #include "rhapsode/scene_loop.h"
 
 using namespace rhapsode;
@@ -193,7 +194,10 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     std::string captured_prompt;
     SceneMessage captured_result;
 
-    loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s) {
+    loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s, const DirectorOutput& d) {
+        (void)hist;
+        (void)s;
+        (void)d;
         captured_prompt = "prompt_built";
         return "assembled prompt";
     });

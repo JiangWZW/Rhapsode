@@ -6,6 +6,9 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "google-genai",
+    "python-dotenv",
+    "chromadb",
+    "sentence-transformers",
 ]
 
 [tool.setuptools.packages.find]

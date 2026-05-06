@@ -16,6 +16,17 @@ Master catalog of wiki pages. Update when adding or removing pages.
 - [[architecture/python-server|Python server]] — FastAPI, WebSocket protocol, LLM clients, prompt builder
 - [[architecture/vue-frontend|Vue frontend]] — component tree, WebSocket store, styling
 
+- [[architecture/system-overview|System overview]] — four subsystems, control flow, engineering constraints
+- [[architecture/plot-graph|Plot graph]] — plot node DAG, F-T-P triples, knowledge state, generation pipeline
+
+## Concepts
+
+- [[concepts/narrative-philosophy|Narrative philosophy]] — six design principles, lessons from Talemate
+
+## Research
+
+- [[research/literature-review|Literature review]] — 8 papers from awesome-llm-story-generation, adopted ideas, confirmed gaps
+
 ## Decisions
 
 - [[decisions/ownership-split|Ownership split (C++ vs Python)]]

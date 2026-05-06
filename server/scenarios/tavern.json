@@ -18,5 +18,25 @@
       "role": "assistant",
       "content": "You push open the heavy oak door of The Dusty Flagon. The warmth hits you first, then the smell of roasting meat and spilled ale. A dwarf behind the bar eyes you with cautious interest."
     }
+  ],
+  "nodes": [
+    {
+      "fact": "The barkeep owes money to the thieves guild.",
+      "type": "plot",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "The barkeep keeps glancing nervously at the door whenever it opens.",
+      "active_ctx": "The barkeep is frightened; debt collectors are expected soon.",
+      "entities": ["barkeep", "guild"],
+      "known_by": ["barkeep"]
+    },
+    {
+      "fact": "A knight drinks alone at the far end of the tavern.",
+      "type": "scene",
+      "state": "Active",
+      "foreshadow_ctx": "",
+      "active_ctx": "A solitary knight watches the room with guarded attention.",
+      "entities": ["knight", "tavern"],
+      "known_by": ["player", "barkeep"]
+    }
   ]
 }
