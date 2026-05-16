@@ -9,6 +9,10 @@ dependencies = [
     "python-dotenv",
     "chromadb",
     "sentence-transformers",
+    "spacy",
+    "httpx",
+    "json-repair",
+    "jinja2",
 ]
 
 [tool.setuptools.packages.find]

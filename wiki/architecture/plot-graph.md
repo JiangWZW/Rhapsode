@@ -1,333 +1,229 @@
+---
+sources:
+  - core/include/rhapsode/node.h
+  - core/include/rhapsode/node_pool.h
+  - core/src/node.cpp
+  - core/src/node_pool.cpp
+  - core/include/rhapsode/director.h
+  - core/src/director.cpp
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[architecture/system-overview]]"
+  - "[[architecture/memory-system]]"
+  - "[[concepts/narrative-philosophy]]"
+  - "[[research/literature-review]]"
+tags:
+  - cpp-core
+  - design
+---
+
 # Plot graph
 
-The plot graph is the core narrative data structure in Rhapsode. It is a **directed acyclic graph of latent plot nodes** that the Director traverses deterministically, while the LLM renders the results into prose.
+The plot graph is Rhapsode's core narrative data structure. It tracks **latent facts about the world** — secrets, conflicts, ticking clocks — that the Director manages across turns.
 
-The `PlotGraph` is owned by `Session` — not by any individual `Scene`. Multiple concurrent `SceneLoop`s (interactive and background) share the same graph. Transitions committed by any loop are recorded by `GitStore` with the originating `scene_id` so the history is readable across all scenes.
+This page covers both the **implemented** system (Node/NodePool) and the **planned** full DAG architecture.
 
-## What is a plot node?
+## Current implementation: Node and NodePool
 
-A plot node is a fact about the world that *could* become dramatically relevant. It sits dormant until a trigger fires.
+### What is a node?
 
-Examples:
+A node is a fact about the world that could become dramatically relevant. It sits in a state and the Director transitions it based on LLM analysis.
 
-- "The barkeep owes money to the thieves' guild"
-- "The knight is secretly the missing prince"
-- "The village well has been poisoned"
+Examples of node facts:
 
-A plot node is not a plot beat. It is a **loaded spring**. The player's actions (or the world clock) release it.
+- "barkeep owes thieves guild 200g"
+- "knight drinks alone at tavern every night"
+- "village well has been poisoned"
 
-## The graph
+### Node structure
 
-Plot nodes are nodes. Edges are triggers. The Director walks the graph each turn.
-
-```mermaid
-graph TD
-    T1["barkeep_debt"] -->|"player befriends barkeep"| T1a["barkeep confides"]
-    T1 -->|"10 turns pass"| T1b["collector arrives"]
-    T1b -->|"player present"| T1c["confrontation scene"]
-    T1b -->|"player absent"| T1d["barkeep beaten"]
-    T1a -->|"player offers help"| T1e["player vs guild"]
-    T1a -->|"player ignores"| T1b
-
-    T2["knight_secret"] -->|"player investigates"| T2a["finds royal signet"]
-    T2 -->|"20 turns pass"| T2b["assassin arrives"]
-    T2a --> T2c["player confronts knight"]
-    T2b -->|"knight alive"| T2d["knight revealed publicly"]
-    T2b -->|"knight dead"| T2e["secret dies"]
+```cpp
+struct Node {
+    uint64_t id;
+    std::string fact;              // atomic assertion
+    std::string type;              // "plot", "scene", "world", "relationship"
+    NodeState state;               // Dormant, Foreshadowed, Active, Resolved
+    std::string foreshadow_ctx;    // hint for prompt when foreshadowed
+    std::string active_ctx;        // directive for prompt when active
+    std::vector<std::string> entities;   // named entities
+    std::vector<std::string> known_by;   // who knows about this
+    int created_at;                // turn of creation
+    int resolved_at;               // turn of resolution (-1 if unresolved)
+};
 ```
 
-Each node has:
+### Node states
 
-- **State**: `dormant`, `foreshadowed`, `active`, `resolved`
-- **Trigger conditions**: player action, turn count, world condition, another plot node resolving
-- **Prompt context**: what to inject into the LLM prompt when this plot node is foreshadowed or active (directional hints, not prose — see [[literature-review#IBSEN]])
-- **Consequences**: world state mutations when the plot node activates or resolves
-- **Knowledge state**: who knows what — `player_known`, `npc_known`, `hidden` (see [[#Knowledge state and revelation timing]])
-- **Stall budget**: maximum turns a plot node can remain `active` before the Director force-advances or escalates (see [[literature-review#IBSEN]])
-- **Type**: `secret`, `conflict`, `clock`, `consequence`, `object`, `event`, `rule` (extended from CFPG's taxonomy — see [[literature-review#CFPG]])
+States form a one-way progression:
 
-Edges fire when their trigger condition is met. The Director checks all edges each turn. No LLM call is needed to traverse the graph -- it is pure deterministic logic.
+| State | Meaning | Prompt effect |
+|-------|---------|---------------|
+| **Dormant** | Known to the system, not yet surfaced | None — invisible to narrative |
+| **Foreshadowed** | Hints being seeded | `foreshadow_ctx` injected as subtle context |
+| **Active** | Directly relevant to current scene | `active_ctx` injected as explicit directive |
+| **Resolved** | Completed, consequences applied | Removed from pool after processing |
 
-## Auto-merging
+The Director transitions nodes each turn by calling the LLM with a JSON prompt listing all non-resolved nodes and the current scene context. The LLM returns requested transitions and new nodes.
 
-When the Director activates a plot node, it checks whether any other `active` node shares characters or locations. If so, the plot node lines have **collided** -- and the Director automatically spawns a **merge node**.
+### NodePool
 
-Example: `barkeep_debt` leads to "collector arrives at tavern." `knight_mystery` leads to "assassin arrives at tavern." If both activate around the same time, the Director detects the collision (same location) and creates a merge node: "collector and assassin both at the tavern."
+The pool is a flat `unordered_map<uint64_t, Node>` with indexed access:
 
-The merge node:
+- `by_state(s)` — all nodes in a given state
+- `by_entity(e)` — all nodes mentioning an entity
+- `by_known_by(who)` — all nodes known by a character
+- `wavefront()` — all Active nodes
 
-- Has both colliding nodes as parents
-- Combines their prompt context (the LLM gets a richer, more chaotic scene)
-- May have its own consequences (the collision itself changes the world)
+Resolved nodes are removed from the pool after the Director processes them. Their facts are stored in the memory system for long-term retrieval.
 
-The LLM doesn't need to know about the merge operation. It just receives a denser context and renders the collision naturally in prose.
+### Scenario seed nodes
 
-## Revert
-
-The player can **revert to the last node** -- undo the most recent plot node transition and replay from an earlier state.
-
-This requires a **transition log**: an ordered list of state changes.
-
-```
-TransitionEntry {
-    turn:       int
-    node_id:    string
-    old_state:  enum
-    new_state:  enum
-}
-```
-
-Reverting walks the log backwards to the target turn, undoing each transition (restoring `old_state`). History and memory are also rolled back to that turn -- messages after the revert point are discarded.
-
-This is the VCS "revert" operation: `HEAD` moves back, and the future becomes open again. Reverted nodes return to their prior state (typically `dormant` or `foreshadowed`), and the player gets a second chance to make different choices.
-
-## The version control analogy
-
-The plot graph behaves like a version control system:
-
-| VCS concept | Plot graph equivalent |
-|---|---|
-| Branch | Possible future that hasn't happened yet (dormant plot node) |
-| Commit | Plot node state that has been activated (irreversible under normal play) |
-| Merge | Separate plot node lines collide (auto-detected by shared characters/locations) |
-| Revert | Player undoes recent transitions, replays from earlier state |
-| HEAD | Current world state -- the set of all active and resolved plot nodes |
-| Log | Transition log -- ordered list of all state changes, enables revert |
-
-Scenarios define the initial graph. Player actions and the world clock advance HEAD. Resolved plot nodes are immutable history (unless reverted). Dormant plot nodes are the space of possible futures.
-
-## The Prophet is the graph
-
-The "Prophet" concept from [[narrative-philosophy]] is not a separate agent. It is the graph itself.
-
-- **Sealed predictions** = dormant nodes with trigger conditions. The system knows they exist; the player doesn't.
-- **Foreshadowing** = when a plot node transitions from `dormant` to `foreshadowed`, the Director injects subtle hints into the prompt context. Not "tell the player X" but "the atmosphere should carry unease" or "this character's generosity feels performative."
-- **Payoff** = when a foreshadowed plot node activates, the player experiences the dramatic moment. The signs were there all along -- because the system was seeding them.
-- **Ambiguity** = some plot nodes have edges labeled with conditions that are genuinely uncertain. The system doesn't know which branch will fire until the player acts. This is the Hamlet quality.
-
-## Two loops
-
-The Director runs two loops against the plot graph:
-
-### Player-facing loop
-
-What we have now: player acts, the Director checks which edges fire, world responds. This is synchronous with the SceneLoop.
-
-### World-background loop
-
-Between player turns (or on a turn counter), the Director advances off-screen plot nodes. Things happen when the player isn't watching:
-
-- The thieves' guild sends a collector. The barkeep can't pay. He's desperate.
-- The assassin reaches the city gates. She asks about the knight.
-- The well water starts making people sick.
-
-The player discovers these changes through interaction, not exposition. They walk into the tavern and the barkeep has a black eye. They hear rumors in the market. The world reveals itself through detail, not narration.
-
-## Plot nodes as Foreshadow-Trigger-Payoff triples
-
-Informed by CFPG ([[literature-review#CFPG]]), each plot node is formalized as an **(F, T, P) triple**:
-
-- **F (Foreshadow)**: the setup or anomaly that creates a "causal debt" — something the player notices but cannot yet explain. Injected via `foreshadow_ctx`.
-- **T (Trigger)**: the prerequisite condition that must hold before the payoff becomes actionable. This is the edge trigger predicate — the gating mechanism that prevents premature payoffs.
-- **P (Payoff)**: the resolution event. Injected via `active_ctx` when the plot node transitions to `active`.
-
-The trigger gate is what separates **premature payoff** (spoiling suspense) from **missing payoff** (logical inconsistency). A plot node stays `dormant` or `foreshadowed` until T is satisfied — only then does P enter the Director's prompt context.
-
-This maps cleanly to our state machine:
-
-| State | F-T-P status |
-|-------|-------------|
-| `dormant` | F registered, T not checked, P suppressed |
-| `foreshadowed` | F injected as hint, T monitored each turn, P suppressed |
-| `active` | T satisfied, P injected into prompt as explicit constraint |
-| `resolved` | P realized in generated text, triple removed from active set |
-
-## Knowledge state and revelation timing
-
-Each plot node carries a **knowledge state** — who knows what — inspired by Branigan's disparities of knowledge ([[literature-review#Suspenseful Stories]]):
-
-| Field | Meaning |
-|-------|---------|
-| `player_known` | The player has encountered evidence of this plot node |
-| `npc_known` | Specific NPCs aware of this plot node (list of character IDs) |
-| `hidden` | The plot node exists in the graph but no one in-world knows yet |
-
-The Director uses knowledge state as a **revelation timing lever**:
-
-- **Dramatic irony** (player knows, character doesn't): the player sees the trap before the NPC walks into it. Creates dread and suspense.
-- **Surprise** (character knows, player doesn't): revelation upon discovery. Creates shock.
-- **Default policy**: prefer dramatic irony over surprise — empirically, clue insertion (foreshadowing before payoff) is statistically significant for suspense (p<0.05 in Xie & Riedl 2024).
-
-The knowledge state is updated when:
-- The Director injects `foreshadow_ctx` → `player_known` becomes true
-- An NPC witnesses or is told about the plot node → added to `npc_known`
-- A `hidden` plot node's trigger fires → transitions based on who is present
-
-## The generation pipeline
-
-The plot graph is **not hand-authored**. It is LLM-generated and Director-maintained.
-
-The LLM composes the raw dramatic material. The Director (the rhapsode -- see [[narrative-philosophy#1. The Director is a rhapsode -- an arranger, not a puppeteer]]) extracts and arranges it into structured graph nodes.
-
-```
-World state + memory + current graph
-        |
-        v
-   LLM (free text -- unconstrained creative output)
-   "The barkeep has been losing sleep. He borrowed
-    heavily from Vex, the guild fence, to keep the
-    tavern running after the drought. Vex is patient
-    but her lieutenant Korr is not -- he's been
-    pressing for repayment. Meanwhile, the knight
-    Sir Aldric drinks alone every night, speaking to
-    no one. The locals whisper he arrived the same
-    week the royal courier went missing..."
-        |
-        v
-   Director / extraction pass
-   Parse the free text into structured nodes:
-   - barkeep_debt (characters: barkeep, Vex, Korr)
-   - knight_mystery (characters: Aldric, courier)
-   - triggers, foreshadowing, connections
-        |
-        v
-   Plot graph (updated with new nodes)
-```
-
-### Three moments when generation happens
-
-**Scenario initialization.** When a scenario starts, the LLM reads the world setup (characters, locations, setting) and generates an initial set of plot nodes. This happens once, before the player starts.
-
-**Periodic world-building.** Every N turns, the Director asks the LLM to look at the current world state + memory and generate new plot nodes. New dormant nodes enter the graph. The world deepens over time rather than exhausting its initial content.
-
-**Reactive spawning.** When a major plot node resolves (a secret is revealed, a character dies, a faction is defeated), the Director asks the LLM to generate consequences. One resolution spawns new plot nodes, keeping the world alive.
-
-### Why free text, not structured output
-
-The LLM's creative output is **unconstrained prose**, not JSON. This is deliberate:
-
-- Free text produces richer, more surprising dramatic material than filling in a schema
-- The extraction step is a separate concern -- a second LLM call with a tight prompt, or even a smaller/cheaper model
-- The extractor validates against existing world state (no duplicate plot nodes, no phantom characters)
-- If extraction fails, the raw text is discarded -- no corrupt graph state
-
-### The LLM's two roles
-
-The LLM is used twice, for fundamentally different purposes:
-
-1. **Composer** -- generates raw dramatic material (free text, creative, unconstrained)
-2. **Performer** -- renders the current world state into prose for the player (constrained by prompt context from the Director)
-
-The Director sits between these two uses. It never calls the LLM itself at runtime to make structural decisions. It only structures what the LLM has already imagined.
-
-## Player traversal: edges and nodes
-
-The player's relationship to the plot graph is spatial: they are always **on an edge**, traveling toward a plot node. This determines the input mode.
-
-### On an edge (freeform)
-
-While traveling an edge, the player has full freeform input. They talk, explore, investigate, fight — all "read actions" that don't mutate the graph. The LLM simulates the world freely. The plot graph doesn't care about these actions because they don't change the destination.
-
-### At a node (constrained choice)
-
-When the player arrives at a plot node, the Director presents **constrained choices** — an adaptive number of options (typically 2-4), each mapping to an outgoing edge. This is the "write action": the player's selection transitions the graph to the next state.
-
-The choices are generated by the LLM (composer role) but grounded in the graph's available edges. The graph says "these are the possible transitions"; the LLM says "here's how to phrase them so the player agonizes."
-
-```mermaid
-flowchart LR
-    A["PlotNode A\n(resolved)"] -->|"edge: freeform zone"| B["PlotNode B\n(arrived → choices)"]
-    B -->|"Choice 1"| C["PlotNode C"]
-    B -->|"Choice 2"| D["PlotNode D"]
-    B -->|"Choice 3"| E["PlotNode E"]
-```
-
-### Adaptive choice count
-
-The number of choices at a node is not fixed globally. It depends on the plot node's outgoing edge count, which is determined by the generation pipeline (authored or LLM-generated). Some nodes may have 2 stark binary options; others may have 4-5 nuanced alternatives.
-
-## The multi-dimensional problem
-
-The plot graph is not a single linear chain. At any moment, the player may have multiple concurrent plot node threads:
-
-- **PlotNode A**: The Baron's secret (active, approaching a decision point)
-- **PlotNode B**: The missing shipment (active, still developing)
-- **PlotNode C**: Romance with the innkeeper (latent, simmering)
-- **PlotNode D**: The war in the north (background, ticking clock)
-
-The player is simultaneously on edges in multiple plot node lines. A single action might be a "read" in one dimension but a "write" in another.
-
-This is fundamentally harder than a visual novel (one active storyline at a time) or a traditional branching narrative (a single tree).
-
-### Open question: how to handle multi-dimensional arrival
-
-When the player reaches a node in one plot node dimension while other plot nodes are still mid-edge, several strategies are possible:
-
-**Per-plot-node serialization.** The Director manages pacing so that plot nodes reach decision points one at a time, giving the player breathing room. If two plot nodes are converging, the Director slows one (delays surfacing) or accelerates the other (forces an early choice). This is the arranger role — managing *when* things surface to avoid collisions.
-
-**Composite choice points.** When multiple plot nodes converge on the same moment (same characters, same location, same stakes), the Director merges them into a single composite decision. The choices span multiple plot node dimensions simultaneously. Example: "The Baron demands your answer about the secret, but the messenger just arrived with news about the missing shipment. Do you: (1) Confront the Baron now, (2) Excuse yourself to read the message, (3) Use the messenger's arrival as leverage."
-
-**Independent queuing.** Each plot node independently tracks its own decision point. When plot node A reaches its node, the player gets choices for A while B, C, D continue in freeform. The UI shows "PlotNode A demands a decision" while everything else proceeds.
-
-The right answer is likely a combination. The Director serializes when possible, merges when plot nodes genuinely collide, and queues as a fallback. This is a design area that needs prototyping to resolve.
-
-## Why the Director doesn't use the LLM for structure
-
-The LLM is bad at:
-
-- **Consistency** -- it forgets what it predicted 20 turns ago
-- **Timing** -- it can't reliably count turns or track parallel events
-- **Secrecy** -- it tends to either blurt secrets or be uselessly vague
-- **Determinism** -- same prompt can yield different structural decisions
-
-The LLM is good at:
-
-- **Imagination** -- generating rich dramatic landscapes from a world setup
-- **Prose** -- rendering a world state into vivid, contextual narrative
-- **Improvisation** -- filling in details that the graph doesn't specify
-- **Dialogue** -- making characters feel alive within their constraints
-
-So: the LLM imagines and performs. The graph holds structure. The Director arranges. This is the [[narrative-philosophy#1. The Director is a rhapsode -- an arranger, not a puppeteer|rhapsode principle]] in practice.
-
-## Scenario authoring
-
-A scenario provides the initial world state. The plot graph is then generated from it:
+Scenarios can include seed nodes in the JSON file:
 
 ```json
 {
-  "title": "The Dusty Flagon",
-  "system_prompt": "You are the narrator of a fantasy RPG...",
-  "characters": [...],
-  "locations": [...],
-  "seed_messages": [...]
+  "nodes": [
+    {
+      "fact": "The barkeep owes money to the thieves guild.",
+      "type": "plot",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "The barkeep keeps glancing nervously at the door.",
+      "active_ctx": "The barkeep is frightened; debt collectors are expected soon.",
+      "entities": ["barkeep", "guild"],
+      "known_by": ["barkeep"]
+    }
+  ]
 }
 ```
 
-At initialization, the LLM reads this setup and generates the initial plot nodes as free text. The Director extracts them into graph nodes. The scenario author designs the *world* -- the characters, their relationships, the setting. The LLM discovers the *dramatic potential*. The Director structures it.
+These provide initial dramatic content before the Director generates new nodes during play.
 
-## Debuggability
+### Director's node management
 
-The plot graph is fully inspectable at any time. You can visualize:
+Each turn, the Director:
 
-- Which plot nodes are dormant, foreshadowed, active, resolved
-- Which edges are close to firing
-- What the world clock shows
-- What prompt context the Director is currently injecting
+1. Serializes all non-resolved nodes to JSON
+2. Includes scene context (system prompt, characters)
+3. Retrieves established facts from memory to prevent contradictions
+4. Calls the LLM with a strict system prompt enforcing atomic fact format
+5. Parses the response for `transitions` (state changes) and `new_nodes`
+6. Applies transitions and adds new nodes to the pool
+7. Removes resolved nodes
+8. Collects context blocks from surviving foreshadowed/active nodes
 
-This is a radical improvement over Talemate's Director, where narrative decisions are opaque LLM outputs that cannot be inspected, reproduced, or debugged.
+The LLM response format:
 
-## Resolved questions
+```json
+{
+  "transitions": [{"id": 3, "state": "active"}],
+  "new_nodes": [{"fact": "guild sends collector to tavern", "type": "plot", "state": "dormant", ...}]
+}
+```
 
-1. **Dynamic plot nodes** -- Yes. New plot nodes are spawned at runtime via the generation pipeline (periodic world-building + reactive spawning). The graph grows over the course of a session.
-2. **Authoring** -- Scenarios are not hand-authored plot node graphs. The author designs the world (characters, locations, relationships). The LLM generates the dramatic potential. The Director structures it.
-3. **Fortune tracker** -- Rejected. There is no numeric arc tracker. The arc emerges from accumulated memory + active plot nodes. See [[narrative-philosophy#Why there is no fortune tracker]].
+## What is not built (the planned DAG)
+
+The current NodePool is a **flat collection** — nodes exist independently without edges connecting them. The full vision adds edges with trigger predicates, forming a directed acyclic graph.
+
+### Planned edge structure
+
+```
+Edge {
+    source:    node_id
+    target:    node_id
+    trigger:   Trigger
+}
+
+Trigger = one of:
+    PlayerAction { tags: list[string] }
+    TurnCount    { threshold: int }
+    WorldCondition { predicate: string }
+    NodeState { node_id: string, state: enum }
+```
+
+With edges, the Director traverses the graph deterministically each turn — checking which edge triggers are satisfied and firing transitions without an LLM call. The LLM would only be involved in the generation pipeline (creating new subgraphs) and the narrative rendering.
+
+### Planned features requiring the DAG
+
+**Trigger-based transitions.** Instead of asking the LLM whether a node should transition, edges carry predicate conditions that the Director evaluates mechanically.
+
+**Auto-merging.** When two active nodes share characters or locations, the Director spawns a merge node combining their contexts.
+
+**Revert.** A transition log enables undoing recent transitions and replaying from an earlier state.
+
+**Player traversal model.** Players are "on an edge" (freeform input) until they arrive "at a node" (constrained choices). The graph position determines the input mode.
+
+**World-background loop.** Off-screen plot nodes advance between player turns on a timer or turn counter. NPCs act on their goals independently.
+
+**Multi-dimensional problem.** Multiple concurrent threads mean the player may have several plot lines active simultaneously. The Director serializes, merges, or queues decision points.
+
+### Foreshadow-Trigger-Payoff triples
+
+Informed by CFPG; see [[research/literature-review]]. Each plot node maps to an (F, T, P) triple:
+
+- **F (Foreshadow)** — the setup or anomaly creating a "causal debt." Injected via `foreshadow_ctx`.
+- **T (Trigger)** — the prerequisite condition before payoff becomes actionable. The edge trigger predicate.
+- **P (Payoff)** — the resolution event. Injected via `active_ctx` when the node transitions to Active.
+
+This maps to the implemented state machine:
+
+| State | F-T-P status |
+|-------|-------------|
+| Dormant | F registered, T not checked, P suppressed |
+| Foreshadowed | F injected as hint, T monitored, P suppressed |
+| Active | T satisfied, P injected as constraint |
+| Resolved | P realized, triple removed from active set |
+
+### Knowledge state
+
+Each node carries `known_by` — which characters know about this fact. The Director can use this for revelation timing:
+
+- **Dramatic irony**, where the player knows but the character does not — creates dread
+- **Surprise**, where the character knows but the player does not — creates shock
+- **Default policy:** prefer dramatic irony — Xie & Riedl (2024) validated this empirically for suspense
+
+### The generation pipeline (planned)
+
+The LLM composes raw dramatic material. The Director extracts it into graph nodes.
+
+```
+World state + memory + current graph
+        ↓
+    LLM (free text, unconstrained)
+        ↓
+    Director / extraction pass → structured nodes
+        ↓
+    Plot graph (updated with new dormant nodes)
+```
+
+Three triggers for generation:
+
+| Trigger | When |
+|---------|------|
+| Scenario initialization | Once, before the player starts |
+| Periodic world-building | Every N turns |
+| Reactive spawning | After a major node resolves |
+
+### Five rules for interesting worlds (planned)
+
+1. **Minimum node floor.** Maintain a minimum count of active + foreshadowed nodes. When it drops, fire the generation pipeline.
+2. **Timescale balance.** Active nodes should span immediate (this turn), short-term (5-10 turns), and long-term (30+ turns) horizons.
+3. **NPC autonomy.** NPCs have goals and act on them off-screen. The player encounters them mid-action.
+4. **Disproportionate consequences.** Small player actions cascade into unexpected outcomes.
+5. **Reputation propagation.** Player actions spread through NPC awareness via memory.
 
 ## Open questions
 
-1. **Trigger language**: how do we express "player befriends barkeep"? Keyword matching? LLM classification of player intent? A small dedicated model?
-2. **Extraction robustness**: how does the extraction step handle ambiguous or inconsistent LLM output? Retry? Partial extraction? Human review queue?
-3. **Plot node templates**: reusable patterns ("character has a secret," "faction conflict," "ticking clock") that the extraction step could match against?
-4. **Visual editor**: the plot graph is the natural candidate for a visual inspection/editing tool. A node editor where each node is a plot node and edges are triggers.
-5. **Serialization**: the graph must be saveable (for session save/load). Format? Separate from world state or embedded?
-6. **Multi-dimensional arrival**: when the player reaches decision points in multiple plot node lines simultaneously, how should the Director prioritize, serialize, or merge them? See [[#The multi-dimensional problem]].
-7. **Freeform edge-breaking**: what happens when a freeform action on an edge invalidates the destination node? (e.g., the player murders the Baron while on the edge leading to "Confront the Baron"). Does the Director prevent it, adapt the graph, or force an early arrival at the node?
+1. **Trigger language.** How to express "player befriends barkeep"? Keyword matching? LLM classification? A dedicated model?
+2. **Extraction robustness.** How to handle ambiguous or inconsistent LLM output during generation? Retry? Partial extraction?
+3. **Multi-dimensional arrival.** When the player reaches decision points in multiple threads simultaneously, how should the Director prioritize?
+4. **Freeform edge-breaking.** What happens when a freeform action invalidates the destination node?
+5. **Visual editor.** The plot graph is the natural candidate for a node inspection/editing tool.
+
+## References
+
+- [system overview](system-overview.md) — how the Director uses the node pool
+- [memory system](memory-system.md) — where resolved node facts are stored
+- [[concepts/narrative-philosophy]] — the design principles behind the graph
+- [[research/literature-review]] — CFPG, IBSEN, StoryVerse, and others

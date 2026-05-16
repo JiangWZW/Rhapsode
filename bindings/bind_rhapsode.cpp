@@ -7,8 +7,9 @@
 #include "rhapsode/scene.h"
 #include "rhapsode/scene_loop.h"
 #include "rhapsode/node.h"
-#include "rhapsode/node_pool.h"
+#include "rhapsode/world_graph.h"
 #include "rhapsode/director.h"
+#include "rhapsode/memory_system.h"
 
 namespace py = pybind11;
 using namespace rhapsode;
@@ -68,6 +69,18 @@ PYBIND11_MODULE(_core, m) {
         .def_readwrite("system_prompt", &Scene::system_prompt)
         .def_readwrite("characters",    &Scene::characters)
         .def_readwrite("history",       &Scene::history)
+        .def_readwrite("scene_id",      &Scene::scene_id)
+        .def_readwrite("turn_index",    &Scene::turn_index)
+        .def_property("world_graph",
+            [](Scene& s) -> WorldGraph& { return s.world_graph; },
+            [](Scene& s, const WorldGraph& g) { s.world_graph = g; },
+            py::return_value_policy::reference_internal)
+        .def("set_memory",  &Scene::set_memory, py::arg("mem"),
+             py::keep_alive<1, 2>())
+        .def("has_save",    &Scene::has_save, py::arg("saves_dir"))
+        .def("load_save",   &Scene::load_save, py::arg("saves_dir"))
+        .def("save",        &Scene::save, py::arg("saves_dir"))
+        .def("delete_save", &Scene::delete_save, py::arg("saves_dir"))
         .def_static("load_json",  &Scene::load_json)
         .def("save_json",         &Scene::save_json)
         .def("to_json_str",   [](const Scene& self) { return self.to_json().dump(2); })
@@ -93,6 +106,7 @@ PYBIND11_MODULE(_core, m) {
         .def_readwrite("active_ctx",     &Node::active_ctx)
         .def_readwrite("entities",       &Node::entities)
         .def_readwrite("known_by",       &Node::known_by)
+        .def_readwrite("related_to",     &Node::related_to)
         .def_readwrite("created_at",     &Node::created_at)
         .def_readwrite("resolved_at",    &Node::resolved_at)
         .def("__repr__", [](const Node& n) {
@@ -101,35 +115,60 @@ PYBIND11_MODULE(_core, m) {
                    + n.fact.substr(0, 40) + "\")";
         });
 
-    py::class_<NodePool>(m, "NodePool")
+    py::enum_<RelationKind>(m, "RelationKind")
+        .value("Related", RelationKind::Related)
+        .value("Supersedes", RelationKind::Supersedes)
+        .value("Contradicts", RelationKind::Contradicts)
+        .value("CausedBy", RelationKind::CausedBy);
+
+    py::class_<WorldGraph>(m, "WorldGraph")
         .def(py::init<>())
-        .def("add",        &NodePool::add,        py::return_value_policy::reference_internal)
-        .def("get",        [](NodePool& self, std::uint64_t id) -> Node* { return self.get(id); },
+        .def("add_node",   &WorldGraph::add_node, py::return_value_policy::reference_internal)
+        .def("get_node",   [](WorldGraph& self, std::uint64_t id) -> Node* { return self.get_node(id); },
                            py::return_value_policy::reference_internal)
-        .def("remove",     &NodePool::remove)
-        .def("size",       &NodePool::size)
-        .def("by_state",   &NodePool::by_state,   py::return_value_policy::reference_internal)
-        .def("by_entity",  &NodePool::by_entity,  py::return_value_policy::reference_internal)
-        .def("by_known_by",&NodePool::by_known_by, py::return_value_policy::reference_internal)
-        .def("wavefront",  &NodePool::wavefront,  py::return_value_policy::reference_internal)
-        .def("all_nodes",  &NodePool::all_nodes)
-        .def("to_json_str",   [](const NodePool& self) { return self.to_json().dump(2); })
+        .def("has_node",   &WorldGraph::has_node)
+        .def("mark_resolved", &WorldGraph::mark_resolved)
+        .def("add_relation", &WorldGraph::add_relation,
+             py::arg("from_id"), py::arg("to_id"),
+             py::arg("kind") = RelationKind::Related,
+             py::arg("confidence") = 1.0f,
+             py::arg("created_at") = 0)
+        .def("neighbors", [](const WorldGraph& self, std::uint64_t node_id) {
+            return self.neighbors(node_id, std::nullopt);
+        }, py::arg("node_id"))
+        .def("neighbors_by_kind", [](const WorldGraph& self, std::uint64_t node_id, RelationKind kind) {
+            return self.neighbors(node_id, kind);
+        }, py::arg("node_id"), py::arg("kind"))
+        .def("neighbors_within", [](const WorldGraph& self, std::uint64_t source_id, int max_hops) {
+            return self.neighbors_within(source_id, max_hops, std::nullopt, true);
+        }, py::arg("source_id"), py::arg("max_hops"))
+        .def("neighbors_within_by_kind", [](const WorldGraph& self,
+                                             std::uint64_t source_id,
+                                             int max_hops,
+                                             RelationKind kind,
+                                             bool active_only) {
+            return self.neighbors_within(source_id, max_hops, kind, active_only);
+        }, py::arg("source_id"), py::arg("max_hops"), py::arg("kind"), py::arg("active_only") = true)
+        .def("size", &WorldGraph::size)
+        .def("all_nodes", [](const WorldGraph& self) { return self.all_nodes(false); })
+        .def("all_nodes_including_resolved", [](const WorldGraph& self) { return self.all_nodes(true); })
+        .def("to_json_str", [](const WorldGraph& self) { return self.to_json().dump(2); })
         .def_static("from_json_str", [](const std::string& s) {
-            return NodePool::from_json(nlohmann::json::parse(s));
+            return WorldGraph::from_json(nlohmann::json::parse(s));
         })
-        .def("__len__", &NodePool::size);
+        .def("__len__", &WorldGraph::size);
 
     // ── Director ──
 
     py::class_<DirectorOutput>(m, "DirectorOutput")
         .def(py::init<>())
         .def_readwrite("context_blocks",  &DirectorOutput::context_blocks)
-        .def_readwrite("newly_resolved",  &DirectorOutput::newly_resolved);
+        .def_readwrite("newly_resolved",  &DirectorOutput::newly_resolved)
+        .def_readwrite("new_nodes",       &DirectorOutput::new_nodes);
 
     py::class_<Director>(m, "Director")
-        .def(py::init<NodePool&>(), py::arg("pool"))
+        .def(py::init<WorldGraph&>(), py::arg("graph"))
         .def("set_llm_callback",        &Director::set_llm_callback)
-        .def("set_retrieval_callback",   &Director::set_retrieval_callback)
         .def("tick",                     &Director::tick, py::arg("turn_index"), py::arg("scene_context"));
 
     // ── Scene Loop ──
@@ -151,5 +190,48 @@ PYBIND11_MODULE(_core, m) {
         .def("set_llm_callback",            &SceneLoop::set_llm_callback)
         .def("set_turn_complete_callback",  &SceneLoop::set_turn_complete_callback)
         .def("set_director",                &SceneLoop::set_director, py::arg("director"))
-        .def("last_director_output",        &SceneLoop::last_director_output);
+        .def("last_director_output",        &SceneLoop::last_director_output)
+        .def("set_history_window",          &SceneLoop::set_history_window,
+             py::arg("normal") = 3, py::arg("resume") = 10)
+        .def("set_resuming",                &SceneLoop::set_resuming, py::arg("v"));
+
+    // ── Memory System ──
+
+    py::class_<MemorySystem>(m, "MemorySystem")
+        .def(py::init<const std::string&>(), py::arg("scene_id"))
+        .def("set_embed_callback",       &MemorySystem::set_embed_callback)
+        .def("set_lemmatize_callback",   &MemorySystem::set_lemmatize_callback)
+        .def("set_store_callback",       &MemorySystem::set_store_callback)
+        .def("set_query_callback",       &MemorySystem::set_query_callback)
+        .def("set_update_meta_callback", &MemorySystem::set_update_meta_callback)
+        .def("set_get_by_meta_callback", &MemorySystem::set_get_by_meta_callback)
+        .def("set_local_llm_callback",   &MemorySystem::set_local_llm_callback)
+        .def("store_fact",
+             [](MemorySystem& self,
+                const std::string& fact,
+                const std::string& state,
+                const std::string& type,
+                const std::vector<std::string>& known_by,
+                const std::vector<std::string>& entities,
+                int turn) {
+                    return self.store_fact(fact, state, type, known_by, entities, {}, turn);
+             },
+             py::arg("fact"), py::arg("state"), py::arg("type"),
+             py::arg("known_by"), py::arg("entities"), py::arg("turn"))
+        .def("store_fact_with_links",
+             py::overload_cast<const std::string&, const std::string&, const std::string&,
+                               const std::vector<std::string>&, const std::vector<std::string>&,
+                               const std::vector<std::uint64_t>&, int>(&MemorySystem::store_fact),
+             py::arg("fact"), py::arg("state"), py::arg("type"),
+             py::arg("known_by"), py::arg("entities"), py::arg("related_to"), py::arg("turn"))
+        .def("retrieve",               &MemorySystem::retrieve,
+             py::arg("query"), py::arg("top_k") = 8)
+        .def("retrieve_for_injection", &MemorySystem::retrieve_for_injection,
+             py::arg("scene_context"), py::arg("max_results") = 8)
+        .def("process_new_nodes",      &MemorySystem::process_new_nodes,
+             py::arg("nodes"), py::arg("turn"))
+        .def("sync_resolved",          &MemorySystem::sync_resolved,
+             py::arg("resolved_nodes"), py::arg("turn"))
+        .def("get_next_id",            &MemorySystem::get_next_id)
+        .def("set_next_id",            &MemorySystem::set_next_id, py::arg("id"));
 }

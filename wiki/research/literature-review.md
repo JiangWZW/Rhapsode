@@ -1,6 +1,30 @@
+---
+sources:
+  - "arxiv:2407.01093 (IBSEN)"
+  - "arxiv:2405.13042 (StoryVerse)"
+  - "arxiv:2601.07033 (CFPG)"
+  - "arxiv:2305.13304 (RecurrentGPT)"
+  - "arxiv:2304.03442 (Generative Agents)"
+  - "arxiv:2407.16347 (FACTTRACK)"
+  - "arxiv:2402.17119 (Suspenseful Stories)"
+  - "arxiv:2604.12776 (EvoSpark)"
+  - "https://ianbicking.org/blog/2025/07/intra-llm-text-adventure (Intra)"
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[concepts/narrative-philosophy]]"
+  - "[[architecture/plot-graph]]"
+  - "[[architecture/memory-system]]"
+  - "[[research/memory-systems-survey]]"
+tags:
+  - research
+  - design
+---
+
 # Literature review — LLM story generation
 
-A survey of recent research (2022-2026) relevant to Rhapsode's architecture. Papers selected from [awesome-llm-story-generation](https://github.com/Picrew/awesome-llm-story-generation) for relevance to our core subsystems: the Director, the plot graph, the memory system, and interactive narrative control.
+A survey of recent research (2022-2026) relevant to Rhapsode's architecture. Papers selected from [awesome-llm-story-generation][ref-awesome] for relevance to our core subsystems: the Director, the plot graph, the memory system, and interactive narrative control.
 
 ## Summary of adopted ideas
 
@@ -9,7 +33,7 @@ A survey of recent research (2022-2026) relevant to Rhapsode's architecture. Pap
 | CFPG (2026) | Foreshadow-Trigger-Payoff triples as first-class objects | Tension node states: dormant → foreshadowed → active → resolved |
 | CFPG | Inject structured (F,T,P) into prompts, not vague summaries | `foreshadow_ctx` / `active_ctx` fields on tension nodes |
 | CFPG | New-thread extraction after each beat | Generation pipeline: reactive spawning |
-| CFPG | Tension typing taxonomy (object / event / rule / speech-act / symbol) | Tension node `type` field |
+| CFPG | Tension typing taxonomy — object / event / rule / speech-act / symbol | Tension node `type` field |
 | RecurrentGPT (2023) | Plan-as-retrieval-query | Director context = memory retrieval query |
 | RecurrentGPT | Bounded STM rewrite with token budget | Raw recent → summarized archive transition |
 | RecurrentGPT | Multiple candidate plans for player choice | Constrained choices at graph nodes |
@@ -34,7 +58,7 @@ A survey of recent research (2022-2026) relevant to Rhapsode's architecture. Pap
 
 No reviewed paper implements the combination of:
 
-1. **Explicit multi-dimensional tension DAG** — IBSEN uses linear objectives; StoryVerse uses implicit prerequisites; CFPG tracks triples in a flat pool; Generative Agents has no plot structure.
+1. **Explicit multi-dimensional tension DAG** — IBSEN uses linear objectives; StoryVerse uses implicit prerequisites; CFPG tracks triples in a flat pool.
 2. **Constrained choices at graph nodes + freeform simulation on edges** — no paper combines visual-novel-style mandatory branching with open-world freeform input.
 3. **Read/write action distinction** as an input mode controller — no paper uses graph position to determine whether the player gets freeform text or curated options.
 4. **Multi-dimensional arrival** — no paper addresses concurrent tension threads reaching decision points simultaneously.
@@ -45,11 +69,11 @@ No reviewed paper implements the combination of:
 
 ### IBSEN — Director-Actor Agent Collaboration for Controllable and Interactive Drama Script Generation
 
-**Han et al., ACL 2024** — [arXiv:2407.01093](https://arxiv.org/abs/2407.01093) — [Code](https://github.com/OpenDFM/ibsen)
+**Han et al., ACL 2024** — [arXiv:2407.01093][ibsen-arxiv] — [Code][ibsen-code]
 
-**Architecture.** Separates a centralized Director from distributed Actor agents. The Director receives a predefined plot objective list `⟨G₁, G₂, …⟩`, writes a continuation outline for the current objective, translates it into a dialogue script `⟨T̂₁, T̂₂, …⟩`, then builds instructions for actors. Actors produce actual dialogue from profile, memory, and director instruction — they never see the raw planned lines, only a synopsis + keywords + objective. This prevents copy-paste while preserving intent.
+**Architecture.** Separates a centralized Director from distributed Actor agents. The Director receives a plot objective list `⟨G₁, G₂, …⟩` and writes a continuation outline. It translates the outline into a dialogue script `⟨T̂₁, T̂₂, …⟩`, then builds instructions for actors. Actors produce dialogue from profile, memory, and director instruction. They never see the raw planned lines — only a synopsis + keywords + objective.
 
-**Plot coherence.** Anchored by: sequential objectives, outline → script hierarchy, objective completion checking after each turn (LLM → JSON `{completed, reason}`), and prompts that forbid jumping ahead. Anti-stall: force-complete if objective not met after 9 turns.
+**Plot coherence.** Coherence anchors are sequential objectives and an outline → script hierarchy. Each turn checks objective completion — the LLM outputs JSON `{completed, reason}`. Prompts forbid jumping ahead. Anti-stall: force-complete if objective not met after 9 turns.
 
 **Player agency.** Player is an actor not bound by instructions. Player involvement triggers regeneration of the current storyline and script so NPCs can react. Consecutive player actions are rate-limited to avoid constant rebuilds.
 
@@ -66,18 +90,18 @@ No reviewed paper implements the combination of:
 
 ### StoryVerse — Co-authoring Dynamic Plot with LLM-based Character Simulation via Narrative Planning
 
-**Wang, Zhou, Ledo (Autodesk Research), FDG 2024** — [arXiv:2405.13042](https://arxiv.org/abs/2405.13042)
+**Wang, Zhou, Ledo (Autodesk Research), FDG 2024** — [arXiv:2405.13042][storyverse-arxiv]
 
-**Architecture.** Three components: Act Director (LLM-based narrative planner), Character Simulator (autonomous agent behavior between beats), and Game Environment (structured world state with action schemas). Per-timestep: check if any pending abstract act has all prerequisites satisfied → if yes, Director instantiates the act via iterative generate → review → revise; if no, Character Simulator produces autonomous actions.
+**Architecture.** Three components: Act Director (narrative planner), Character Simulator — autonomous behavior between beats — and Game Environment (structured world state). Per-timestep: check if any pending act has all prerequisites met. If yes, Director instantiates via generate → review → revise. If no, Character Simulator produces autonomous actions.
 
-**Plot structure.** Abstract acts carry: (1) narrative goal, (2) prerequisites (AND/OR formula over world-state assertions, player actions, or other act outcomes), (3) placeholders (named slots bound at runtime and carried forward). Execution order is determined by when prerequisites become true, not by authorial sequence. This creates an implicit dependency graph.
+**Plot structure.** Abstract acts carry: (1) narrative goal, (2) prerequisites as AND/OR formulas, (3) placeholders bound at runtime and carried forward. Execution order depends on when prerequisites become true, not authorial sequence. This creates an implicit dependency graph.
 
 **Authorial control vs. emergence.** Writers author abstract acts (beat-level intent), not micro-actions. Between beats, the Character Simulator drives all behavior autonomously. Character Simulation Evaluation during plan review: an LLM-as-character checks whether motivation is established, pushing plans toward psychologically plausible paths.
 
 **Relevance to Rhapsode.**
 - "Eligible act → Director plan; no act → simulation" maps exactly to "at a node → constrained choices; on an edge → freeform."
-- Placeholder resolution (named slots filled at runtime, carried forward) is a mechanism for propagating narrative state across graph nodes — our tension nodes could have unresolved slots.
-- Three-pronged review loop (coherency + environment + character motivation) is a quality-control template for Director fragment assembly.
+- Placeholder resolution propagates narrative state across graph nodes. Our tension nodes could have unresolved slots.
+- Three-pronged review loop — coherency + environment + character motivation — serves as quality-control template for Director fragment assembly.
 - Validates separation of narrative structure from world/simulator layer — same abstract-act outline instantiates in completely different story domains.
 
 **Limitations.** No evaluation (proof of concept only). Shallow player modeling (world-state edits only). No explicit global graph object. Latency from many LLM calls per act.
@@ -86,18 +110,18 @@ No reviewed paper implements the combination of:
 
 ### Codified Foreshadowing-Payoff Text Generation (CFPG)
 
-**Yun et al. (UCSD), ArXiv 2026** — [arXiv:2601.07033](https://arxiv.org/abs/2601.07033) — [Code](https://github.com/LongfeiYun17/CFPG)
+**Yun et al. (UCSD), ArXiv 2026** — [arXiv:2601.07033][cfpg-arxiv] — [Code][cfpg-code]
 
-**Formalization.** Narrative commitments as causal debts. Each commitment is a Foreshadow-Trigger-Payoff (F-T-P) triple: F creates the debt (setup/anomaly), T is the prerequisite condition that must hold before P becomes actionable, P is the resolution. The trigger is what separates premature payoff (spoiling) from missing payoff (inconsistency).
+**Formalization.** Narrative commitments as causal debts. Each commitment is a Foreshadow-Trigger-Payoff triple: F creates the debt, T is the prerequisite for P to become actionable, P is the resolution. The trigger separates premature payoff from missing payoff.
 
 **Data structures.** Foreshadow pool `C_t` = set of all unfulfilled triples at step t. Eligible subset `S_t` = triples whose triggers are satisfied given current text. A `codify` function checks trigger satisfaction — this is the gating mechanism.
 
-**Pipeline.** Select → Generate → Update loop: (1) evaluate which triples are eligible, (2) condition generation on active debts and their payoffs as explicit constraints, (3) verify which commitments were realized, remove them, extract new F-T-P triples from generated text.
+**Pipeline.** Select → Generate → Update loop. Evaluate eligible triples, condition generation on active debts as explicit constraints, verify realized commitments, remove them, and extract new F-T-P triples from generated text.
 
 **Relevance to Rhapsode.**
-- Maps directly to our tension states: dormant (F in pool, T not satisfied), foreshadowed (F visible but P deferred), active (T satisfied, P injected into prompt), resolved (removed from pool).
+- Maps directly to our tension states: dormant, foreshadowed, active, resolved — matching the F-T-P lifecycle.
 - Key finding: injecting structured (F,T,P) into prompts is dramatically better than vague "remember the thread" — our `foreshadow_ctx` / `active_ctx` fields are the right approach.
-- New-thread extraction after each beat (parse generated text into new F-T-P triples) maps to our reactive spawning in the generation pipeline.
+- New-thread extraction after each beat — parse generated text into new F-T-P triples — maps to our reactive spawning in the generation pipeline.
 - Tension typing taxonomy: object (48.2%), event (35.3%), speech-act (9.7%), rule (5.1%), symbol (1.7%) — adoptable for our tension node `type` field.
 
 **Limitations.** Tested on BookSum summaries, not full novels. Linear stories only, no interactive/branching. Subtlety of foreshadowing is not algorithmically enforced — it depends on model writing quality. Small corpus (629 pairs from 148 books).
@@ -106,11 +130,11 @@ No reviewed paper implements the combination of:
 
 ### RecurrentGPT — Interactive Generation of (Arbitrarily) Long Text
 
-**Zhou, Jiang et al. (ETH Zürich), ArXiv 2023** — [arXiv:2305.13304](https://arxiv.org/abs/2305.13304) — [Code](https://github.com/aiwaves-cn/RecurrentGPT)
+**Zhou, Jiang et al. (ETH Zürich), ArXiv 2023** — [arXiv:2305.13304][recurrent-arxiv] — [Code][recurrent-code]
 
-**Architecture.** Replaces LSTM vector states with natural-language equivalents. Each timestep: receive previous paragraph + plan → retrieve from LTM using plan as query → read STM → prompt LLM → produce new paragraph + new candidate plans + rewritten STM + LTM summary entry.
+**Architecture.** Replaces LSTM vector states with natural-language equivalents. Each timestep: receive previous paragraph + plan → retrieve from LTM → read STM → prompt LLM. Produces new paragraph, candidate plans, rewritten STM, and LTM summary entry.
 
-**Memory.** Two layers: Short-term memory (10-20 sentences, rewritten every step — LLM drops stale facts, adds new) and Long-term memory (Sentence-BERT embeddings in vector DB, append-only, queried by semantic similarity using the plan as query). Ablation confirms removing either layer degrades coherence significantly.
+**Memory.** Two layers. Short-term memory: 10-20 sentences, rewritten every step — LLM drops stale facts, adds new. Long-term memory: Sentence-BERT embeddings in a vector DB, append-only, queried by semantic similarity. Ablation confirms removing either layer degrades coherence.
 
 **Plans.** Rolling, local (next step only), not a fixed global outline. System generates 3 candidate plans for diversity. In interactive fiction mode, plans are framed as meaningful character choices. The plan doubles as the retrieval query — narrative intent drives what history is recalled.
 
@@ -118,18 +142,20 @@ No reviewed paper implements the combination of:
 - Plan-as-retrieval-query: Director's assembled context (active tensions + world state) doubles as memory retrieval query. Elegant and directly adoptable.
 - Bounded STM rewrite: mirrors our "raw recent → summarized archive" transition. Enforce a token budget on working summary; LLM rewrites each turn with explicit instructions to drop stale info.
 - Multiple candidate plans: directly supports constrained-choice mechanism at nodes.
-- Per-turn artifact triad (narration + plan + memory update): clean contract for our turn pipeline.
+- Per-turn artifact triad — narration + plan + memory update — is a clean contract for our turn pipeline.
 - Human-editable NL state: expose memory and plans to GM tools for canon fixes.
 
-**Limitations.** Quantitative eval only up to ~5,000 words. Consistency gaps in IF mode. Backbone dependence (requires ChatGPT minimum; GPT-4 dramatically better). No architectural guarantee — information flow depends entirely on prompt quality.
+**Limitations.** Quantitative eval only up to ~5,000 words. Consistency gaps in IF mode. Backbone dependence — requires ChatGPT minimum; GPT-4 dramatically better. No architectural guarantee — information flow depends entirely on prompt quality.
 
 ---
 
 ### Generative Agents — Interactive Simulacra of Human Behavior
 
-**Park et al., UIST 2023** — [arXiv:2304.03442](https://arxiv.org/abs/2304.03442) — [Code](https://github.com/joonspk-research/generative_agents)
+**Park et al., UIST 2023** — [arXiv:2304.03442][gagents-arxiv] — [Code][gagents-code]
 
-**Memory stream.** Append-only natural-language log of observations, reflections, and plans. Each record has description, creation timestamp, last-access timestamp. Retrieval selects subset via scored combination of recency (exponential decay, factor 0.995), importance (1-10 integer, LLM-assigned at creation), and relevance (embedding cosine similarity). All three scores min-max normalized, equally weighted.
+**Memory stream.** Append-only natural-language log of observations, reflections, and plans. Each record has description, creation timestamp, last-access timestamp.
+
+Retrieval combines recency, importance, and relevance. Recency uses exponential decay — factor 0.995. Importance is a 1-10 integer, LLM-assigned at creation. Relevance uses embedding cosine similarity.
 
 **Reflection.** Triggered when cumulative importance of recent memories exceeds 150. LLM generates salient questions, retrieves supporting memories, synthesizes cited insights into a reflection tree. Reflections are themselves memories that can be retrieved and reflected upon — creating a hierarchy of abstraction.
 
@@ -138,7 +164,7 @@ No reviewed paper implements the combination of:
 **NPC autonomy.** All 25 agents tick continuously. Locale-based perception triggers dialogue or pass-by decisions. Multi-turn conversations generated with per-agent memory retrieval. Both sides record the exchange as new observations — information propagates through social interaction.
 
 **Relevance to Rhapsode.**
-- Importance-weighted retrieval maps directly to our memory importance scoring. Our three sources (graph events, structural signals, LLM assessment) refine their single LLM score.
+- Importance-weighted retrieval maps directly to our memory importance scoring. Our three sources — graph events, structural signals, LLM assessment — refine their single LLM score.
 - Per-agent subjective memory enables secrets and unreliable narrators — NPCs remember different versions of events.
 - Reflection threshold (cumulative importance > 150) is a tunable knob for NPC depth — adoptable for off-screen NPC processing.
 - Social diffusion through dialogue supports emergent rumors and quests — player actions propagate through NPC conversations naturally.
@@ -149,17 +175,17 @@ No reviewed paper implements the combination of:
 
 ### FACTTRACK — Time-Aware World State Tracking in Story Outlines
 
-**NAACL 2025** — [arXiv:2407.16347](https://arxiv.org/abs/2407.16347)
+**NAACL 2025** — [arXiv:2407.16347][facttrack-arxiv]
 
 **World state representation.** Maximal set of mutually non-contradictory atomic facts at a given narrative time. Each event decomposes into pre-facts (preconditions) and post-facts (postconditions) via LLM prompting.
 
 **Temporal model.** Global timeline [0, 1] with hierarchical nesting — parent event intervals split into k equal sub-intervals for children. Facts carry validity intervals: pre-facts default to (-∞, l], post-facts to [r, ∞). When same-direction facts contradict, the newer one wins and the older is trimmed.
 
-**Contradiction detection.** Finetuned NLI model scores fact pairs. Two thresholds: >0.8 for interval updates (strict, low-harm if missed), >0.24 for contradiction flagging (sensitive, high-harm if missed). Cross-direction contradictions require strict interval overlap (Allen's Interval Algebra) to separate legitimate state evolution from true inconsistency.
+**Contradiction detection.** Finetuned NLI model scores fact pairs. Two thresholds: >0.8 for interval updates — strict, low-harm if missed — and >0.24 for contradiction flagging — sensitive, high-harm if missed. Cross-direction contradictions require strict interval overlap — Allen's Interval Algebra — to separate legitimate state evolution from true inconsistency.
 
 **Relevance to Rhapsode.**
 - Pre/post facts per event: each plot graph edge could carry explicit preconditions and postconditions as atomic NL facts.
-- Supersession vs. contradiction: distinguish "the world changed" (trim interval, replace fact) from "this is inconsistent" (block Director, surface to narrator). Critical for handling freeform player actions that might invalidate graph state.
+- Supersession vs. contradiction: distinguish "the world changed" — trim interval, replace fact — from "this is inconsistent" — block Director, surface to narrator. Critical for handling freeform player actions that might invalidate graph state.
 - Dual thresholds: high bar for mutating stored world state; lower bar for raising Director warnings.
 - Hierarchical depth = interval nesting: matches multi-scale plot graphs (act → scene → beat).
 
@@ -169,19 +195,19 @@ No reviewed paper implements the combination of:
 
 ### Creating Suspenseful Stories — Iterative Planning with Large Language Models
 
-**Xie & Riedl, EACL 2024** — [arXiv:2402.17119](https://arxiv.org/abs/2402.17119)
+**Xie & Riedl, EACL 2024** — [arXiv:2402.17119][suspense-arxiv]
 
 **Suspense model.** Based on Gerrig & Bernardo (1994): suspense = hope + fear + uncertainty, driven by shrinking escape space. The reader mentally enumerates how the protagonist might escape; as options are eliminated, suspense increases. Formalized as an iterative generation pipeline.
 
-**Pipeline.** Background setup (genre, protagonist, goal, dire consequence) → outline planning loop (what action would protagonist take? → why does it fail? → repeat) → final iteration succeeds. Constraints: later actions must acknowledge prior failures; rational protagonist tries best options first, so perceived likelihood decreases across iterations.
+**Pipeline.** Background setup → outline planning loop — what action? → why does it fail? → repeat — then the final iteration succeeds. Later actions must acknowledge prior failures. Rational protagonist tries best options first, so perceived likelihood decreases.
 
-**Information asymmetry.** Two revelation modes: early reveal (tell reader why plan will fail before protagonist acts — dramatic irony) and late reveal (explain after the fact). Empirical finding: clue insertion (foreshadowing hints) is statistically significant for suspense (57.9% vs 10.9%, p<0.05). Early vs. late reveal difference was not statistically significant.
+**Information asymmetry.** Two modes: early reveal dramatizes irony — readers learn why the plan fails before the protagonist acts. Late reveal comes after the fact. Empirical finding: clue insertion via foreshadowing hints is statistically significant for suspense: 57.9% vs 10.9%, p<0.05. Early vs. late reveal difference was not statistically significant.
 
 **Relevance to Rhapsode.**
 - Rational ordering heuristic: close easiest escape routes first to build pressure. Director should close high-value tension paths early.
 - Knowledge-state tagging: per-beat `{player_known, npc_known, hidden}` — Director decides revelation timing as a pacing lever. Default policy: prefer dramatic irony over surprise reveals.
 - Clue insertion is empirically validated — our foreshadowing mechanism is justified by evidence.
-- Cumulative failure state: plot graph tracks closed edges as permanent world state. Director's tension score = f(open paths remaining, time pressure).
+- Cumulative failure state: plot graph tracks closed edges as permanent world state. Director's tension score weighs open-path count against time pressure.
 - Empathy ↔ suspense correlation: invest in character setup beats before ramping tension.
 
 **Limitations.** English-only, Western storytelling tradition. No automated suspense metric. "Decreasing likelihood" ordering perceived by only ~55% of annotators. Linear, non-interactive, single protagonist. Genre-thriller-heavy.
@@ -190,7 +216,7 @@ No reviewed paper implements the combination of:
 
 ### EvoSpark — Endogenous Interactive Agent Societies for Unified Long-Horizon Narrative Evolution
 
-**ACL 2026** — [arXiv:2604.12776](https://arxiv.org/abs/2604.12776)
+**ACL 2026** — [arXiv:2604.12776][evospark-arxiv]
 
 **Architecture.** Four-agent hierarchy: Genesis (world seed), Architect (narrative design), Director (scene orchestration), Role (character agents). Endogenous narrative = stories emerge from agent interactions and internal state changes, not from external scripting.
 
@@ -210,17 +236,19 @@ No reviewed paper implements the combination of:
 
 ### Intra — Design Notes on an LLM-Driven Text Adventure
 
-**Ian Bicking, blog post, July 2025** — [playintra.win](https://playintra.win) — [Blog post](https://ianbicking.org/blog/2025/07/intra-llm-text-adventure) — [GitHub](https://github.com/ianb/intra)
+**Ian Bicking, blog post, July 2025** — [playintra.win][intra-play] — [Blog post][intra-blog] — [GitHub][intra-github]
 
 Not a paper but a practitioner's design log from building a working LLM text adventure. Valuable as ground-truth evidence of problems Rhapsode is designing to solve.
 
 **Central thesis: ground truth vs. narrative demand.** Bicking draws a sharp line between collaborative storytelling (AI Dungeon, Character.ai) and a game with formal state. He defines "narrative demand" as a setup that forces a conclusion to satisfy it — e.g., "I gloat after disarming my opponent" implies disarmament happened. Without ground truth, the player's meta-game becomes nudging the narrative to make success a demand. Bicking's solution: rooms, NPCs, exits, and plot elements with formal states exist outside the LLM's narrative.
 
-**Architecture.** TypeScript, entirely client-side (no backend). Game loop sends each event/task to an LLM, processes results with inline XML markup (not tool calls). State: player, NPCs, rooms/exits, plot elements with formal states. No tools — uses inline XML tags in text responses (`<dialog>`, `<action>`, `<removeRestriction>`).
+**Architecture.** TypeScript, entirely client-side (no backend). Game loop sends each event/task to an LLM, processes results with inline XML markup (not tool calls). State: player, NPCs, rooms/exits, plot elements with formal states. No tools — uses inline XML tags in text responses: `<dialog>`, `<action>`, `<removeRestriction>`.
 
 **Input rewriting.** All player input passes through an intent parser (separate LLM call) before action resolution. "say hello" → `<dialog>Hello!</dialog>`, "open the door" → `<action>Player attempts to open the door</action>`. Critically, "Marta and Ama get into a disagreement" → `<action>Player attempts to provoke a disagreement</action>` — the rewrite prevents players from asserting outcomes.
 
-**Action resolution.** Separate LLM prompt with guided thinking (structured series of questions): is this possible? Is it trivial? What happens on success/failure? Rate difficulty. Use a d20 roll at discretion. This separates "what the player does" from "what the player attempts to do."
+**Action resolution.** Separate LLM prompt with guided thinking: is this possible? Is it trivial? What happens on success/failure? Rate difficulty. Use a d20 roll at discretion.
+
+This separates "what the player does" from "what the player attempts to do."
 
 **Guided thinking.** Instead of letting the LLM invent its own reasoning process, the prompt provides a fixed series of questions the LLM must answer in order. This forces consideration of specific factors and commits the LLM to conclusions before they're needed downstream. Equivalent to our Director's structured per-turn operations, implemented as prompt engineering.
 
@@ -247,7 +275,9 @@ Not a paper but a practitioner's design log from building a working LLM text adv
 | Context-window management, summarization | Three-layer memory with bounded STM rewrite |
 | Integrate changes into core descriptions | `consequences: list[Mutation]` on tension nodes |
 
-**Limitations.** Incomplete game (self-described). No persistent memory beyond event history. No plot structure beyond hard-coded mysteries. No NPC autonomy. No off-screen simulation. Single-player only. All the things Bicking lists as "further directions" — essentially the problem space Rhapsode is designed to solve.
+**Limitations.** Incomplete game (self-described). No persistent memory beyond event history. No plot structure beyond hard-coded mysteries. No NPC autonomy. No off-screen simulation.
+
+Bicking's "further directions" are essentially the problem space Rhapsode is designed to solve.
 
 ---
 
@@ -256,20 +286,37 @@ Not a paper but a practitioner's design log from building a working LLM text adv
 1. **Pure simulation is boring.** Generative Agents confirms that emergent behavior without dramatic structure produces realistic but dramatically flat output. The Director is essential.
 2. **LLM-based objective checking is unreliable.** IBSEN's F1 ≈ 0.77 for objective completion verification. Graph-topology-derived predicates are more reliable at critical transitions.
 3. **Structural suspense cues are noisy.** Only ~55% of annotators perceived the "decreasing likelihood" ordering in Suspenseful Stories. Don't over-rely on structural heuristics for pacing.
-4. **Foreshadowing subtlety is a prompt engineering problem, not a structural one.** CFPG's trigger gating controls *when* payoffs appear, but how subtle the foreshadowing *itself* is depends entirely on model writing quality.
+4. **Foreshadowing subtlety is a prompt engineering problem.** CFPG's trigger gating controls *when* payoffs appear. How subtle the foreshadowing *itself* is depends on model writing quality.
 5. **Long-form coherence remains unsolved at scale.** RecurrentGPT evaluates only to ~5,000 words quantitatively. FACTTRACK tests on ~3,000 word outlines. Real RPG sessions may run 50,000+ words.
 
 ## References
 
 | Short name | Full citation |
 |------------|--------------|
-| IBSEN | Han et al. "IBSEN: Director-Actor Agent Collaboration for Controllable and Interactive Drama Script Generation." ACL 2024. [arXiv:2407.01093](https://arxiv.org/abs/2407.01093) |
-| StoryVerse | Wang, Zhou, Ledo. "StoryVerse: Towards Co-authoring Dynamic Plot with LLM-based Character Simulation via Narrative Planning." FDG 2024. [arXiv:2405.13042](https://arxiv.org/abs/2405.13042) |
-| CFPG | Yun et al. "Codified Foreshadowing-Payoff Text Generation." ArXiv 2026. [arXiv:2601.07033](https://arxiv.org/abs/2601.07033) |
-| RecurrentGPT | Zhou, Jiang et al. "RecurrentGPT: Interactive Generation of (Arbitrarily) Long Text." ArXiv 2023. [arXiv:2305.13304](https://arxiv.org/abs/2305.13304) |
-| Generative Agents | Park et al. "Generative Agents: Interactive Simulacra of Human Behavior." UIST 2023. [arXiv:2304.03442](https://arxiv.org/abs/2304.03442) |
-| FACTTRACK | "FACTTRACK: Time-Aware World State Tracking in Story Outlines." NAACL 2025. [arXiv:2407.16347](https://arxiv.org/abs/2407.16347) |
-| Suspenseful Stories | Xie & Riedl. "Creating Suspenseful Stories: Iterative Planning with Large Language Models." EACL 2024. [arXiv:2402.17119](https://arxiv.org/abs/2402.17119) |
-| EvoSpark | "EvoSpark: Endogenous Interactive Agent Societies for Unified Long-Horizon Narrative Evolution." ACL 2026. [arXiv:2604.12776](https://arxiv.org/abs/2604.12776) |
-| Intra | Bicking, Ian. "Intra: design notes on an LLM-driven text adventure." Blog post, July 2025. [Blog](https://ianbicking.org/blog/2025/07/intra-llm-text-adventure) / [GitHub](https://github.com/ianb/intra) |
-| awesome-llm-story-generation | Picrew. "A curated list of LLM papers for story generation." [GitHub](https://github.com/Picrew/awesome-llm-story-generation) |
+| IBSEN | Han et al. "IBSEN: Director-Actor Agent Collaboration for Controllable and Interactive Drama Script Generation." ACL 2024. [arXiv:2407.01093][ibsen-arxiv] |
+| StoryVerse | Wang, Zhou, Ledo. "StoryVerse: Towards Co-authoring Dynamic Plot with LLM-based Character Simulation via Narrative Planning." FDG 2024. [arXiv:2405.13042][storyverse-arxiv] |
+| CFPG | Yun et al. "Codified Foreshadowing-Payoff Text Generation." ArXiv 2026. [arXiv:2601.07033][cfpg-arxiv] |
+| RecurrentGPT | Zhou, Jiang et al. "RecurrentGPT: Interactive Generation of (Arbitrarily) Long Text." ArXiv 2023. [arXiv:2305.13304][recurrent-arxiv] |
+| Generative Agents | Park et al. "Generative Agents: Interactive Simulacra of Human Behavior." UIST 2023. [arXiv:2304.03442][gagents-arxiv] |
+| FACTTRACK | "FACTTRACK: Time-Aware World State Tracking in Story Outlines." NAACL 2025. [arXiv:2407.16347][facttrack-arxiv] |
+| Suspenseful Stories | Xie & Riedl. "Creating Suspenseful Stories: Iterative Planning with Large Language Models." EACL 2024. [arXiv:2402.17119][suspense-arxiv] |
+| EvoSpark | "EvoSpark: Endogenous Interactive Agent Societies for Unified Long-Horizon Narrative Evolution." ACL 2026. [arXiv:2604.12776][evospark-arxiv] |
+| Intra | Bicking, Ian. "Intra: design notes on an LLM-driven text adventure." Blog post, July 2025. [Blog][intra-blog] / [GitHub][intra-github] |
+| awesome-llm-story-generation | Picrew. "A curated list of LLM papers for story generation." [GitHub][ref-awesome] |
+
+[ref-awesome]: https://github.com/Picrew/awesome-llm-story-generation
+[ibsen-arxiv]: https://arxiv.org/abs/2407.01093
+[ibsen-code]: https://github.com/OpenDFM/ibsen
+[storyverse-arxiv]: https://arxiv.org/abs/2405.13042
+[cfpg-arxiv]: https://arxiv.org/abs/2601.07033
+[cfpg-code]: https://github.com/LongfeiYun17/CFPG
+[recurrent-arxiv]: https://arxiv.org/abs/2305.13304
+[recurrent-code]: https://github.com/aiwaves-cn/RecurrentGPT
+[gagents-arxiv]: https://arxiv.org/abs/2304.03442
+[gagents-code]: https://github.com/joonspk-research/generative_agents
+[facttrack-arxiv]: https://arxiv.org/abs/2407.16347
+[suspense-arxiv]: https://arxiv.org/abs/2402.17119
+[evospark-arxiv]: https://arxiv.org/abs/2604.12776
+[intra-play]: https://playintra.win
+[intra-blog]: https://ianbicking.org/blog/2025/07/intra-llm-text-adventure
+[intra-github]: https://github.com/ianb/intra

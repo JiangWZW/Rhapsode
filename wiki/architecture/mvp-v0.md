@@ -1,134 +1,101 @@
-# MVP v0 — minimal playable prototype
+---
+sources:
+  - server/rhapsode/app.py
+  - core/CMakeLists.txt
+last_updated: 2026-05-12
+confidence: verified
+tier: procedural
+related:
+  - "[[architecture/system-overview]]"
+  - "[[architecture/stack]]"
+tags:
+  - cross-layer
+---
 
-## Acceptance criteria
+# MVP v0 — status and retrospective
 
-1. **C++** holds `Scene`, `History` (`SceneMessage` structs), characters; JSON serialize/deserialize.
-2. **`SceneLoop` (C++)** drives turns: player input -> stage asks Python for **prompt** -> Python runs **LLM** -> C++ appends messages.
-3. **FastAPI + WebSocket** — send player line; push assistant reply (+ optional status).
-4. **Vue 3** — proper chat view (list + input + connection state).
-5. **Scenario JSON** — load title, system stub, characters, optional seed messages.
+MVP v0 defined the minimum playable prototype. It has been **completed and exceeded** — the working system includes the Director, node pool, and memory system, all of which were post-MVP targets.
 
-## Explicitly out of scope for v0
+## Original acceptance criteria (all met)
 
-- Vector DB / RAG / hnswlib / embeddings pipeline
-- Node editor
-- General-purpose graph runtime
+1. C++ holds Scene, History (SceneMessage structs), characters; JSON serialize/deserialize.
+2. SceneLoop (C++) drives turns: player input → prompt callback → LLM callback → append messages.
+3. FastAPI + WebSocket — send player line, push assistant reply + status.
+4. Vue 3 — chat view with message list, input bar, connection status.
+5. Scenario JSON — load title, system prompt, characters, seed messages.
 
-## End-to-end turn flow
+## What was built beyond MVP
 
-```mermaid
-sequenceDiagram
-    participant Vue as Vue3_SPA
-    participant WS as WebSocket
-    participant API as FastAPI
-    participant Bind as pybind11
-    participant Loop as SceneLoop_C++
-    participant Prompt as PromptBuilder_Py
-    participant LLM as LLM_Client_Py
+| Addition | Description |
+|----------|-------------|
+| **Node / NodePool** | Plot nodes with states (Dormant → Foreshadowed → Active → Resolved) |
+| **Director** | LLM-driven node management each turn (transitions + new nodes) |
+| **MemorySystem** | Hybrid retrieval (semantic + BM25 + entity), quality pipeline via local LLM |
+| **Save/load** | Scene persistence to `saves/` directory with full state round-trip |
+| **Resume support** | SceneLoop detects saved state and adjusts history windowing |
+| **Seed nodes** | Scenarios can include pre-authored plot nodes |
+| **Local LLM integration** | llama.cpp on port 8012 for memory quality pipeline |
+| **Established facts injection** | Director LLM prompt includes memory-retrieved facts to prevent contradictions |
 
-    Vue->>WS: send player message
-    WS->>API: on_message(text)
-    API->>Bind: scene_loop.submit_input(text)
-    Bind->>Loop: submit_input(text)
-    Loop->>Loop: append user SceneMessage
-    Loop->>Loop: advance to BuildPrompt stage
-    Loop->>Bind: invoke prompt_callback
-    Bind->>Prompt: build_prompt(history_snapshot, scenario)
-    Prompt-->>Bind: messages list
-    Loop->>Loop: advance to RunLLM stage
-    Loop->>Bind: invoke llm_callback(messages)
-    Bind->>LLM: complete(messages)
-    LLM-->>Bind: assistant text
-    Bind-->>Loop: assistant text
-    Loop->>Loop: append assistant SceneMessage
-    Loop->>Loop: advance to Idle
-    API-->>WS: push assistant message
-    WS-->>Vue: display assistant message
-```
+## Deviations from the original plan
 
-## Per-layer task breakdown
+| Planned | Actual |
+|---------|--------|
+| `llm/` subpackage with BaseLLMClient ABC, Gemini + OpenAI clients | Single `gemini.py` module, no abstraction layer |
+| `ws.py` WebSocket endpoint + `session.py` session manager | Everything in `app.py` — single-file server |
+| OpenAI as secondary LLM client | Not implemented; Gemini only |
+| hnswlib in C++ for memory | ChromaDB in Python (more practical for prototype) |
+| `types/index.ts` in frontend | Types inline in `websocket.ts` |
+| `ConnectionStatus.vue` component | Inline in `ChatView.vue` header |
+| Reconnect logic in WebSocket store | Not implemented |
 
-### C++ core (`core/`)
-
-| File | Contents | Key API |
-|------|----------|---------|
-| `include/rhapsode/scene_message.h` | `Role` enum, `SceneMessage` struct | `Role::User`, `Role::Assistant`, `Role::System` |
-| `include/rhapsode/history.h` | `History` class | `append()`, `snapshot(n)`, `size()`, `clear()` |
-| `include/rhapsode/character.h` | `Character` struct | `name`, `description`, `is_player` |
-| `include/rhapsode/scene.h` | `Scene` coordinator | `title`, `system_prompt`, `characters`, `history`, `load_json()`, `save_json()` |
-| `include/rhapsode/scene_loop.h` | `SceneLoop` FSM | `submit_input()`, `advance()`, `state()`, callback setters |
-| `src/*.cpp` | Implementations | JSON via nlohmann `to_json`/`from_json` |
-| `tests/test_scene.cpp` | Unit tests | Catch2: create scene, serialize round-trip, loop state transitions |
-
-### pybind11 bindings (`bindings/`)
-
-| File | Exposed types |
-|------|---------------|
-| `bind_rhapsode.cpp` | `SceneMessage`, `History`, `Character`, `Scene`, `SceneLoop`; callback registration for prompt builder + LLM caller |
-
-### Python server (`server/rhapsode/`)
-
-| File | Responsibility |
-|------|----------------|
-| `app.py` | FastAPI app factory, lifespan (load scenario, create Scene) |
-| `ws.py` | WebSocket endpoint: receive player text, call `scene_loop.submit_input()`, push reply |
-| `session.py` | Per-session state: Scene instance, SceneLoop, connected client tracking |
-| `prompt.py` | `build_prompt(history_snapshot, scenario_meta) -> list[dict]` |
-| `llm/base.py` | `BaseLLMClient` ABC: `async complete(messages) -> str` |
-| `llm/gemini.py` | Google Gemini implementation |
-| `llm/openai.py` | OpenAI implementation |
-
-### Vue frontend (`frontend/src/`)
-
-| File | Responsibility |
-|------|----------------|
-| `App.vue` | Root layout, mounts ChatView |
-| `components/ChatView.vue` | Container: MessageList + InputBar + ConnectionStatus |
-| `components/MessageList.vue` | Renders list of messages (role-based styling) |
-| `components/InputBar.vue` | Text input + send button, emits on submit |
-| `components/ConnectionStatus.vue` | WebSocket state indicator |
-| `stores/websocket.ts` | Pinia store: connect/disconnect/send/onMessage/reconnect |
-| `types/index.ts` | `Message`, `ConnectionState` TypeScript interfaces |
-
-## Scenario JSON schema
-
-Example file: `server/scenarios/tavern.json`
+## Scenario JSON schema (current)
 
 ```json
 {
   "title": "The Dusty Flagon",
-  "system_prompt": "You are the narrator of a fantasy RPG. Describe the scene vividly and respond to the player's actions in character.",
+  "system_prompt": "You are the narrator of a fantasy RPG...",
   "characters": [
-    {
-      "name": "Player",
-      "description": "A wandering adventurer",
-      "is_player": true
-    },
-    {
-      "name": "Barkeep",
-      "description": "A gruff dwarf who runs the tavern",
-      "is_player": false
-    }
+    { "name": "Player", "description": "A wandering adventurer", "is_player": true },
+    { "name": "Barkeep", "description": "A gruff dwarf who runs the tavern", "is_player": false }
   ],
   "seed_messages": [
+    { "role": "assistant", "content": "You push open the heavy oak door..." }
+  ],
+  "nodes": [
     {
-      "role": "assistant",
-      "content": "You push open the heavy oak door of The Dusty Flagon. The warmth hits you first, then the smell of roasting meat and spilled ale. A dwarf behind the bar eyes you with cautious interest."
+      "fact": "The barkeep owes money to the thieves guild.",
+      "type": "plot",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "The barkeep keeps glancing nervously at the door.",
+      "active_ctx": "The barkeep is frightened; debt collectors are expected soon.",
+      "entities": ["barkeep", "guild"],
+      "known_by": ["barkeep"]
     }
   ]
 }
 ```
 
-## Definition of done
+The `nodes` array was added post-MVP. Each node seeds the NodePool at scenario load.
 
-- [ ] `cmake --build build` succeeds; C++ tests pass (scene create, serialize round-trip, loop state transitions)
-- [ ] `pip install -e ./server` imports `rhapsode._core` without error
-- [ ] `uvicorn rhapsode.app:app` starts; WebSocket at `ws://localhost:8000/ws` accepts connections
-- [ ] Send a player message via WebSocket; receive an LLM-generated assistant reply
-- [ ] `frontend/` dev server shows chat UI; messages appear in real time
-- [ ] Load `tavern.json` scenario at startup; title and seed messages display in chat
-- [ ] Save/load a session (Scene JSON round-trip) works from the server
+## End-to-end turn flow (current)
 
-## Next slice (MVP+)
+```
+Vue → WebSocket → FastAPI → run_in_executor →
+  SceneLoop.submit_input(text)
+    ├── Director.tick() → Gemini (node management JSON)
+    ├── prompt_callback → build_prompt(system + NPCs + director ctx + history)
+    ├── llm_callback → Gemini (narrative prose)
+    └── turn_complete → capture response
+  Post-turn: memory.process_new_nodes() → local LLM + Chroma
+  Post-turn: scene.save()
+← WebSocket ← assistant_message
+```
 
-- Long-term memory: **hnswlib** in C++, embeddings from Python, retrieval merged into prompt-building stage.
+## Next targets
+
+See [system overview — implementation status](system-overview.md) for the full roadmap. The immediate next targets are:
+
+1. **Plot graph edges + trigger predicates** — transform the flat NodePool into a DAG
+2. **Session layer** — shared graph across multiple concurrent SceneLoops
+3. **World-background loop** — off-screen NPC events

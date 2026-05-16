@@ -22,6 +22,7 @@ struct Node {
     std::string active_ctx;
     std::vector<std::string> entities;
     std::vector<std::string> known_by;
+    std::vector<std::uint64_t> related_to;
     int created_at = 0;
     int resolved_at = -1;
 };

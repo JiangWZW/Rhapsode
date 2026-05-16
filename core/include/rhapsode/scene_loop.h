@@ -35,6 +35,9 @@ public:
     void set_director(Director* director);
     const DirectorOutput& last_director_output() const;
 
+    void set_history_window(size_t normal, size_t resume);
+    void set_resuming(bool v) { resuming_ = v; }
+
 private:
     void advance();
     std::string build_scene_context() const;
@@ -46,7 +49,10 @@ private:
     TurnCompleteCallback turn_complete_cb_;
     Director* director_ = nullptr;
     DirectorOutput last_director_out_;
-    int turn_index_ = 0;
+
+    size_t window_size_ = 8;
+    size_t resume_window_size_ = 12;
+    bool resuming_ = false;
 };
 
 } // namespace rhapsode

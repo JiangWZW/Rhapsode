@@ -1,6 +1,24 @@
+---
+sources:
+  - frontend/src/App.vue
+  - frontend/src/components/ChatView.vue
+  - frontend/src/components/MessageList.vue
+  - frontend/src/components/InputBar.vue
+  - frontend/src/stores/websocket.ts
+  - frontend/package.json
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[architecture/stack]]"
+  - "[[architecture/python-server]]"
+tags:
+  - vue-frontend
+---
+
 # Vue frontend
 
-The frontend is a Vue 3 single-page application in `frontend/`. MVP scope: a single chat view with WebSocket connectivity.
+The frontend is a Vue 3 single-page application in `frontend/`. It is a thin WebSocket client — all game logic lives in the C++ core and Python server.
 
 ## Tech stack
 
@@ -10,182 +28,96 @@ The frontend is a Vue 3 single-page application in `frontend/`. MVP scope: a sin
 | TypeScript | Type safety |
 | Pinia | State management (WebSocket store) |
 | Vite | Dev server + production bundler |
-| CSS (scoped) | Styling — no framework for MVP; can add Tailwind later |
+| Scoped CSS | Component styling (no framework) |
 
 ## Component tree
 
-```mermaid
-graph TD
-    App[App.vue] --> ChatView[ChatView.vue]
-    ChatView --> MessageList[MessageList.vue]
-    ChatView --> InputBar[InputBar.vue]
-    ChatView --> ConnStatus[ConnectionStatus.vue]
+```
+App.vue
+  └── ChatView.vue
+        ├── MessageList.vue
+        └── InputBar.vue
 ```
 
-### `App.vue`
+### App.vue
 
-Root component. Mounts `ChatView`. May later add a sidebar or scenario picker.
+Root component. Imports global styles and mounts ChatView.
 
-### `ChatView.vue`
+### ChatView.vue
 
-Layout container. Wires the WebSocket store to child components.
+Layout container. Manages the WebSocket lifecycle:
 
-- Reads `messages` from the WebSocket store and passes to `MessageList`.
-- Handles the `send` event from `InputBar` by calling `wsStore.send()`.
-- Displays `ConnectionStatus` based on `wsStore.state`.
+- Connects on mount, disconnects on unmount
+- Reads messages and processing state from the WebSocket store
+- Passes messages to MessageList, disabled state to InputBar
+- Displays connection status in the header — inline, not a separate component
 
-### `MessageList.vue`
+The chat view is centered at max-width 800px with a flex column layout filling the viewport height.
 
-Props: `messages: Message[]`
+### MessageList.vue
 
-Renders a scrollable list of messages. Each message is styled by role:
+Receives `messages` array and `processing` boolean as props. Renders a scrollable list of messages styled by role:
 
-- `user` — right-aligned, distinct background
-- `assistant` — left-aligned
-- `system` — centered, muted
+- `user` messages — right-aligned, distinct background
+- `assistant` messages — left-aligned
 
-Auto-scrolls to bottom on new messages.
+Shows a processing indicator when the server is generating a response.
 
-### `InputBar.vue`
+### InputBar.vue
 
-Emits: `send(text: string)`
-
-Text input with a send button. Disabled when not connected. Clears on submit. Enter key submits (Shift+Enter for newline).
-
-### `ConnectionStatus.vue`
-
-Props: `state: ConnectionState`
-
-Small indicator showing WebSocket status: connecting, connected, disconnected, error. Optionally shows a reconnect button.
-
-## TypeScript types (`types/index.ts`)
-
-```typescript
-export interface Message {
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp?: string;
-}
-
-export type ConnectionState =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "error";
-
-export interface ServerMessage {
-  type: "assistant_message" | "status" | "error";
-  content?: string;
-  state?: string;
-  detail?: string;
-}
-```
+Text input with send functionality. Emits `send(text)` on submit. Disabled when not connected or while processing. Enter key submits; the input clears after sending.
 
 ## WebSocket store (`stores/websocket.ts`)
 
-Pinia store managing the WebSocket connection lifecycle and message state.
+Pinia store managing connection state and message history:
 
 ```typescript
-import { defineStore } from "pinia";
-import { ref } from "vue";
-import type { Message, ConnectionState, ServerMessage } from "@/types";
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+}
 
-export const useWebSocketStore = defineStore("websocket", () => {
-  const messages = ref<Message[]>([]);
-  const state = ref<ConnectionState>("disconnected");
-  let socket: WebSocket | null = null;
-  let reconnectTimer: number | null = null;
-
-  function connect(url = "ws://localhost:8000/ws") {
-    state.value = "connecting";
-    socket = new WebSocket(url);
-
-    socket.onopen = () => {
-      state.value = "connected";
-    };
-
-    socket.onmessage = (event) => {
-      const data: ServerMessage = JSON.parse(event.data);
-      if (data.type === "assistant_message" && data.content) {
-        messages.value.push({
-          role: "assistant",
-          content: data.content,
-        });
-      }
-    };
-
-    socket.onclose = () => {
-      state.value = "disconnected";
-      scheduleReconnect(url);
-    };
-
-    socket.onerror = () => {
-      state.value = "error";
-    };
-  }
-
-  function send(text: string) {
-    if (!socket || state.value !== "connected") return;
-    messages.value.push({ role: "user", content: text });
-    socket.send(JSON.stringify({
-      type: "player_message",
-      content: text,
-    }));
-  }
-
-  function disconnect() {
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-    socket?.close();
-    socket = null;
-    state.value = "disconnected";
-  }
-
-  function scheduleReconnect(url: string) {
-    reconnectTimer = window.setTimeout(() => connect(url), 3000);
-  }
-
-  return { messages, state, connect, send, disconnect };
-});
+export const useWebSocket = defineStore('websocket', () => {
+  const messages = ref<Message[]>([])
+  const connected = ref(false)
+  const processing = ref(false)
+  // connect(), send(), disconnect()
+})
 ```
+
+**Connection:** Auto-detects protocol (`ws` or `wss`) and uses the current host. No hardcoded URL — works behind any proxy.
+
+**Message handling:** Processes three server message types:
+
+| Server message type | Store action |
+|---------------------|-------------|
+| `assistant_message` | Push to messages array, clear processing |
+| `error` | Push as assistant message with `[Error]` prefix |
+| `status` | Set `processing = (state !== 'idle')` |
+
+**Sending:** Pushes a user message to the local array immediately (optimistic), then sends `{ type: "player_message", content }` over the socket.
 
 ## Dev server
 
 ```bash
 cd frontend
 npm install
-npm run dev     # Vite dev server, default port 5173
+npm run dev     # Vite on port 5173
 ```
 
-Vite proxies `/ws` to the FastAPI backend during development (configured in `vite.config.ts`):
+Vite proxies `/ws` to the FastAPI backend during development. In production, the same-origin WebSocket connection works without proxy configuration.
 
-```typescript
-// vite.config.ts
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+## Styling
 
-export default defineConfig({
-  plugins: [vue()],
-  server: {
-    proxy: {
-      "/ws": {
-        target: "ws://localhost:8000",
-        ws: true,
-      },
-    },
-  },
-  resolve: {
-    alias: { "@": "/src" },
-  },
-});
-```
+Scoped CSS per component. Dark background, light text, terminal aesthetic. User messages visually distinct from assistant messages. No CSS framework — the UI is minimal by design.
 
-## Styling approach
+The connection status is a small colored indicator in the header: green when connected, gray when disconnected.
 
-MVP uses **scoped CSS** in each `.vue` file. No CSS framework initially.
+## What is not built
 
-Design goals:
-- Dark background, light text (terminal aesthetic)
-- Clear visual distinction between user and assistant messages
-- Responsive: works on desktop widths, no mobile optimization in v0
-
-If a CSS framework is added later, **Tailwind CSS** is the preferred candidate.
+- **Scenario picker** — loads the default scenario on connection
+- **ConnectionStatus as a separate component** — inline in ChatView
+- **TypeScript interfaces file** — types are defined inline in the store
+- **Reconnect logic** — disconnection requires a page refresh
+- **Input mode switching** — freeform-only; constrained choices require the full DAG, see [[plot-graph]]
+- **Mobile optimization** — desktop-focused

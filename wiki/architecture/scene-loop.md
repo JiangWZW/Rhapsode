@@ -1,116 +1,136 @@
+---
+sources:
+  - core/include/rhapsode/scene_loop.h
+  - core/src/scene_loop.cpp
+  - server/rhapsode/app.py
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[architecture/system-overview]]"
+  - "[[architecture/cpp-data-model]]"
+  - "[[decisions/callback-vs-pull]]"
+tags:
+  - cpp-core
+---
+
 # SceneLoop
 
-## MVP stance
-
-- **SceneLoop** is implemented in **C++** as an explicit **finite state machine**.
-- It is **not** the Talemate-style visual graph (composite modules, triggers, async error boundaries).
-- A general DAG runtime is deferred — see [[decisions/ownership-split]] and [[architecture/stack]].
+The SceneLoop is a C++ finite state machine that drives the turn cycle. It orchestrates the sequence: player input → Director tick → prompt building → LLM call → response append.
 
 ## State diagram
 
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> WaitingForInput: scene loaded
-    WaitingForInput --> ProcessingInput: submit_input(text)
-    ProcessingInput --> BuildingPrompt: user message appended
-    BuildingPrompt --> RunningLLM: prompt_callback returns
-    RunningLLM --> AppendingResult: llm_callback returns
-    AppendingResult --> WaitingForInput: assistant message appended
+```
+        load_scene()
+[Idle] ──────────────→ [WaitingForInput]
+                              │
+                        submit_input(text)
+                              │
+                              ▼
+                       [ProcessingInput]
+                       (append user msg,
+                        Director.tick())
+                              │
+                              ▼
+                       [BuildingPrompt]
+                       (prompt_callback)
+                              │
+                              ▼
+                        [RunningLLM]
+                        (llm_callback)
+                              │
+                              ▼
+                       [AppendingResult]
+                       (append assistant msg,
+                        turn_complete_callback)
+                              │
+                              └──→ [WaitingForInput]
 ```
 
 ## States
 
 | State | Description | Trigger to next |
 |-------|-------------|-----------------|
-| `Idle` | No scene loaded. Loop does nothing. | `load_scene(scene)` -> `WaitingForInput` |
-| `WaitingForInput` | Scene active, waiting for player text. | `submit_input(text)` -> `ProcessingInput` |
-| `ProcessingInput` | Appends user `SceneMessage` to history. | Automatic -> `BuildingPrompt` |
-| `BuildingPrompt` | Invokes the registered **prompt callback** (Python). Passes history snapshot + scenario metadata. Receives back a messages list. | Callback returns -> `RunningLLM` |
-| `RunningLLM` | Invokes the registered **LLM callback** (Python) with the prompt messages. Receives assistant text. | Callback returns -> `AppendingResult` |
-| `AppendingResult` | Appends assistant `SceneMessage` to history. Fires a "turn complete" notification. | Automatic -> `WaitingForInput` |
+| `Idle` | No scene loaded. | `load_scene(scene)` |
+| `WaitingForInput` | Scene active, waiting for player text. | `submit_input(text)` |
+| `ProcessingInput` | Appends user message to history. If a Director is set, calls `Director::tick()`. | Automatic |
+| `BuildingPrompt` | Invokes the prompt callback. Passes a history window and the DirectorOutput. | Callback returns |
+| `RunningLLM` | Invokes the LLM callback with the assembled prompt. | Callback returns |
+| `AppendingResult` | Appends assistant message to history. Fires turn-complete notification. | Automatic → `WaitingForInput` |
 
-## C++ class sketch
+## Director integration
+
+When a `Director*` is set via `set_director()`, the `advance()` method calls `director->tick(turn_index, scene_context)` during the `ProcessingInput` stage. The resulting `DirectorOutput` is stored in `last_director_out_` and passed to the prompt callback.
+
+The scene context is built from the system prompt and character descriptions. The Director uses this plus the current node pool to determine transitions, create new nodes, and collect context blocks for the narrative prompt.
+
+## History windowing
+
+The SceneLoop controls how many history messages reach the prompt callback:
+
+| Mode | Window size | When |
+|------|-------------|------|
+| Normal | `window_size_` (default 3) | Regular turns |
+| Resume | `resume_window_size_` (default 10) | First turn after loading a save |
+
+After the first turn with resume, the flag resets to normal windowing. This gives the LLM more context to reorient after a session break without overloading every turn's prompt.
+
+Configurable via `set_history_window(normal, resume)`.
+
+## Callbacks
+
+Three callbacks must be registered before the loop is usable:
+
+### PromptCallback
 
 ```cpp
-namespace rhapsode {
-
-enum class LoopState {
-    Idle,
-    WaitingForInput,
-    ProcessingInput,
-    BuildingPrompt,
-    RunningLLM,
-    AppendingResult
-};
-
-using PromptCallback = std::function<std::string(const std::vector<SceneMessage>&, const Scene&)>;
-using LLMCallback = std::function<std::string(const std::string& prompt)>;
-using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
-
-class SceneLoop {
-public:
-    void load_scene(Scene& scene);
-    void submit_input(const std::string& text);
-
-    LoopState state() const;
-
-    void set_prompt_callback(PromptCallback cb);
-    void set_llm_callback(LLMCallback cb);
-    void set_turn_complete_callback(TurnCompleteCallback cb);
-
-private:
-    void advance();
-
-    LoopState state_ = LoopState::Idle;
-    Scene* scene_ = nullptr;
-    PromptCallback prompt_cb_;
-    LLMCallback llm_cb_;
-    TurnCompleteCallback turn_complete_cb_;
-};
-
-} // namespace rhapsode
+std::function<std::string(const std::vector<SceneMessage>&, const Scene&, const DirectorOutput&)>
 ```
 
-### Key design points
+Receives the history window, the scene object, and the Director's output. Returns the assembled prompt string. In practice, this calls `prompt.py:build_prompt()` which concatenates:
 
-- `submit_input()` transitions from `WaitingForInput` through all stages back to `WaitingForInput` synchronously (for MVP). The Python callbacks block until they return.
-- `advance()` is private — the loop drives itself once `submit_input()` kicks it off.
-- `TurnCompleteCallback` is how the Python/FastAPI layer knows to push the response to the WebSocket client.
+1. Scene system prompt
+2. NPC character names
+3. Director context blocks — `foreshadow_ctx` + `active_ctx` from active nodes
+4. Recent history messages
 
-## pybind11 callback registration
+### LLMCallback
 
-On the Python side, the server registers callbacks before accepting player input:
+```cpp
+std::function<std::string(const std::string& prompt)>
+```
+
+Sends the prompt to the LLM and returns the assistant text. Calls `gemini.py:complete()` via the Gemini API.
+
+### TurnCompleteCallback
+
+```cpp
+std::function<void(const SceneMessage& assistant_msg)>
+```
+
+Fires after the assistant message is appended. In the server, this captures the response text for the WebSocket push.
+
+## Wiring in Python
+
+The server wires the loop in `app.py:_wire_loop()`:
 
 ```python
-from rhapsode._core import Scene, SceneLoop
-
 loop = SceneLoop()
 loop.load_scene(scene)
-
-def build_prompt(history: list, scene_obj) -> str:
-    # Assemble messages from history + scenario metadata
-    return prompt_text
-
-def run_llm(prompt: str) -> str:
-    # Call Gemini/OpenAI, return assistant text
-    return response_text
-
-def on_turn_complete(msg):
-    # Push to WebSocket
-    ...
-
-loop.set_prompt_callback(build_prompt)
-loop.set_llm_callback(run_llm)
+loop.set_director(director)
+loop.set_prompt_callback(lambda history, scene_obj, director_out: build_prompt(history, scene_obj, director_out))
+loop.set_llm_callback(lambda prompt: complete([{"role": "user", "parts": [{"text": prompt}]}]))
 loop.set_turn_complete_callback(on_turn_complete)
-
-# When player sends text:
-loop.submit_input(player_text)
 ```
 
-## Why defer the graph
+`submit_input()` is synchronous C++, so the FastAPI server wraps it in `asyncio.run_in_executor()`. See [[callback-vs-pull]] for the rationale.
 
-A production-grade node graph engine includes async execution, nested graphs, event triggers, and editor round-trips — **months** of work. Topological sort is the easy part.
+## Error recovery
 
-- Optional **visual node editor** only after the loop and memory path are stable.
-- If FSM/stages remain sufficient, a general DAG may never be required.
+If a turn fails — exception from LLM callback, JSON parse error — the server catches the exception and sends an error message to the client. It then reconstructs the SceneLoop from the scene state. The scene and Director remain valid; only the loop needs rewiring.
+
+## Design notes
+
+- `submit_input()` drives the entire turn synchronously through all stages. The loop is self-contained — no polling, no coroutine splitting.
+- The loop does not own the Scene or Director. It holds pointers set by the caller. Ownership stays with the server session.
+- The FSM design is intentionally simple. A general DAG runtime — async nodes, parallel execution, visual editor — was considered and deferred. See [[ownership-split]].

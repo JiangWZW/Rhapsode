@@ -1,8 +1,28 @@
+# Secrets
 .env
+
+# Build artifacts
 build/
 __pycache__/
 *.pyd
 *.egg-info/
+
+# Frontend
 node_modules/
+
+# Python venv
 .venv/
+
+# Runtime data
 chroma/
+saves/
+models/
+
+# Third-party downloads (bootstrapped locally)
+third_party/llama.cpp/build/
+third_party/boost/
+third_party/_cache/
+
+# IDE / editor
+.cursor/
+wiki/.obsidian/

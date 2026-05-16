@@ -1,0 +1,145 @@
+# Rhapsode Knowledge Graph
+# Entities and typed relationships between wiki-documented components.
+# See SCHEMA.md section 4 for format and maintenance rules.
+
+entities:
+  - name: Session
+    type: class
+    layer: cpp-core
+    page: architecture/system-overview
+
+  - name: SceneLoop
+    type: class
+    layer: cpp-core
+    page: architecture/scene-loop
+
+  - name: Scene
+    type: class
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: History
+    type: class
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: Director
+    type: class
+    layer: cpp-core
+    page: architecture/system-overview
+
+  - name: NodePool
+    type: class
+    layer: cpp-core
+    page: architecture/plot-graph
+
+  - name: PlotGraph
+    type: concept
+    layer: cpp-core
+    page: architecture/plot-graph
+
+  - name: SceneMessage
+    type: struct
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: Character
+    type: class
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: ResolvedMemory
+    type: class
+    layer: python-server
+    page: architecture/python-server
+
+  - name: FastAPI-App
+    type: module
+    layer: python-server
+    page: architecture/python-server
+
+  - name: PromptBuilder
+    type: module
+    layer: python-server
+    page: architecture/python-server
+
+  - name: GeminiClient
+    type: module
+    layer: python-server
+    page: architecture/python-server
+
+  - name: VueFrontend
+    type: module
+    layer: vue-frontend
+    page: architecture/vue-frontend
+
+  - name: WebSocketStore
+    type: module
+    layer: vue-frontend
+    page: architecture/vue-frontend
+
+relationships:
+  - from: Session
+    to: PlotGraph
+    type: owns
+    page: architecture/system-overview
+
+  - from: Session
+    to: Director
+    type: owns
+    page: architecture/system-overview
+
+  - from: SceneLoop
+    to: Scene
+    type: owns
+    page: architecture/scene-loop
+
+  - from: SceneLoop
+    to: Director
+    type: calls
+    page: architecture/scene-loop
+
+  - name: Scene
+    to: History
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: Director
+    to: NodePool
+    type: calls
+    page: architecture/system-overview
+
+  - from: Director
+    to: ResolvedMemory
+    type: calls
+    page: architecture/system-overview
+
+  - from: FastAPI-App
+    to: SceneLoop
+    type: calls
+    page: architecture/python-server
+
+  - from: FastAPI-App
+    to: GeminiClient
+    type: depends-on
+    page: architecture/python-server
+
+  - from: PromptBuilder
+    to: History
+    type: feeds
+    page: architecture/python-server
+
+  - from: ResolvedMemory
+    to: PromptBuilder
+    type: feeds
+    page: architecture/python-server
+
+  - from: VueFrontend
+    to: FastAPI-App
+    type: depends-on
+    page: architecture/vue-frontend
+
+  - from: WebSocketStore
+    to: FastAPI-App
+    type: calls
+    page: architecture/vue-frontend

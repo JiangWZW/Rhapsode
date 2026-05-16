@@ -1,0 +1,73 @@
+# Rhapsode Concept Index
+# Maps concepts to wiki pages for query routing.
+# See SCHEMA.md section 5 for format and maintenance rules.
+
+- name: memory-retrieval
+  aliases: [ChromaDB, vector search, embedding, ResolvedMemory, RAG, semantic search]
+  desc: How resolved plot nodes are stored and retrieved via semantic similarity
+  pages: [python-server, system-overview]
+
+- name: scene-loop
+  aliases: [SceneLoop, turn loop, FSM, game loop, turn cycle]
+  desc: The C++ state machine driving each turn of play
+  pages: [scene-loop, system-overview]
+
+- name: plot-graph
+  aliases: [PlotGraph, NodePool, plot node, DAG, tension node, narrative graph]
+  desc: Directed acyclic graph of latent world facts that drive narrative
+  pages: [plot-graph, system-overview]
+
+- name: director
+  aliases: [Director, narrative director, orchestrator, rhapsode]
+  desc: Rules engine that traverses plot graph and decides context injection
+  pages: [system-overview, plot-graph]
+
+- name: prompt-construction
+  aliases: [prompt builder, build_prompt, context assembly, LLM prompt]
+  desc: How history, director output, and memory are assembled into LLM prompts
+  pages: [python-server]
+
+- name: llm-integration
+  aliases: [Gemini, google-genai, AthenAI, LLM client, complete()]
+  desc: How the server calls LLM APIs for generation
+  pages: [python-server, stack]
+
+- name: websocket-protocol
+  aliases: [WebSocket, /ws, ws_endpoint, real-time, frontend protocol]
+  desc: The WebSocket API between Vue frontend and FastAPI backend
+  pages: [python-server, vue-frontend]
+
+- name: pybind11-bridge
+  aliases: [pybind11, _core.pyd, bindings, C++ Python bridge]
+  desc: How C++ core is exposed to Python via pybind11
+  pages: [stack, scene-loop, cpp-data-model]
+
+- name: narrative-philosophy
+  aliases: [design principles, rhapsode philosophy, elastic arc, director as compass]
+  desc: Foundational design beliefs constraining all technical decisions
+  pages: [narrative-philosophy, rhapsode-overview]
+
+- name: talemate-memory
+  aliases: [Talemate, talemate memory, multi-query, round-robin, reinforcements]
+  desc: External analysis of Talemate's memory and context management systems
+  pages: [talemate/_index, talemate/memory-architecture, talemate/retrieval-pipeline]
+
+- name: talemate-retrieval
+  aliases: [multi_query, iterate, round-robin interleave, rag_build, MemoryRAGMixin]
+  desc: Talemate's multi-query retrieval with per-query caps and token-budgeted assembly
+  pages: [talemate/retrieval-pipeline, talemate/comparison]
+
+- name: talemate-summarization
+  aliases: [build_archive, layered_history, context_history, archive cascade]
+  desc: Talemate's three-tier history compression (live, archived, layered)
+  pages: [talemate/summarization, talemate/context-assembly]
+
+- name: talemate-reinforcements
+  aliases: [Reinforcement, context pin, decay, update_reinforcement, world state refresh]
+  desc: Periodic LLM Q&A to maintain canonical world facts outside vector memory
+  pages: [talemate/reinforcements, talemate/comparison]
+
+- name: token-budgeting
+  aliases: [count_tokens, tiktoken, limit_tokens, budget calculation, max_tokens]
+  desc: Token-aware allocation of context window space across prompt sections
+  pages: [talemate/context-assembly, talemate/comparison]

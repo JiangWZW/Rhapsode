@@ -1,0 +1,88 @@
+{
+  "title": "The Siege of Ashenmoor",
+  "system_prompt": "You are the narrator of a dark medieval fantasy RPG. The tone is grim and grounded — magic is rare, death is permanent, and trust is earned. Political tension simmers beneath every interaction.",
+  "characters": [
+    {
+      "name": "Player",
+      "description": "A disgraced captain of the Ashenmoor garrison, stripped of rank after refusing an order to burn a village. Still commands loyalty among a handful of soldiers.",
+      "is_player": true
+    },
+    {
+      "name": "Warden Elara Voss",
+      "description": "The newly appointed warden of Ashenmoor. Cold, politically shrewd, and deeply suspicious of the Player. She answers to the Duke and sees the Player as a liability.",
+      "is_player": false
+    },
+    {
+      "name": "Sergeant Maren",
+      "description": "A veteran soldier and the Player's oldest friend. Loyal to a fault, but hiding a wound that won't heal. She commands the night watch.",
+      "is_player": false
+    },
+    {
+      "name": "Father Aldric",
+      "description": "The keep's cleric. Tends to the wounded and hears confessions. Knows more than he lets on about the approaching army's true purpose.",
+      "is_player": false
+    }
+  ],
+  "seed_messages": [
+    {
+      "role": "assistant",
+      "content": "Dawn breaks grey over Ashenmoor. The keep's walls are old stone, cracked in places, patched with timber that hasn't been replaced in a decade. From the eastern battlement you can see the smoke — three columns, maybe four, rising where the Thornfield villages used to be. The army of Lord Harren is two days out, perhaps less.\n\nBehind you, the courtyard stirs. Soldiers sharpen weapons on whetstones. A child carries a bucket of water too heavy for her arms. Somewhere below, Warden Voss is holding a war council you were not invited to.\n\nSergeant Maren finds you at the wall. She leans against the merlon beside you, says nothing for a moment. Then: \"They've sealed the eastern gate. Voss's order. No one in or out.\" She pauses. \"The refugees from Thornfield are still on the road.\""
+    }
+  ],
+  "nodes": [
+    {
+      "fact": "Lord Harren's army approaches Ashenmoor from the east.",
+      "type": "world",
+      "state": "Active",
+      "foreshadow_ctx": "",
+      "active_ctx": "Smoke rises from burned villages on the eastern horizon. The army is two days away.",
+      "entities": ["Lord Harren", "Ashenmoor"],
+      "known_by": ["player", "Warden Elara Voss", "Sergeant Maren"]
+    },
+    {
+      "fact": "Warden Voss sealed the eastern gate.",
+      "type": "plot",
+      "state": "Active",
+      "foreshadow_ctx": "",
+      "active_ctx": "The eastern gate is barred and chained. Thornfield refugees cannot enter.",
+      "entities": ["Warden Elara Voss", "Ashenmoor"],
+      "known_by": ["player", "Sergeant Maren", "Warden Elara Voss"]
+    },
+    {
+      "fact": "Thornfield refugees are stranded on the eastern road.",
+      "type": "plot",
+      "state": "Active",
+      "foreshadow_ctx": "",
+      "active_ctx": "Hundreds of displaced villagers are trapped between the sealed gate and the advancing army.",
+      "entities": ["Thornfield"],
+      "known_by": ["player", "Sergeant Maren"]
+    },
+    {
+      "fact": "Father Aldric knows Lord Harren seeks a relic hidden beneath Ashenmoor.",
+      "type": "plot",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "Father Aldric has been spending nights in the crypt, alone, and refuses to say why.",
+      "active_ctx": "The siege is not about territory. Lord Harren believes a holy relic of immense power lies in the catacombs beneath the keep.",
+      "entities": ["Father Aldric", "Lord Harren", "Ashenmoor"],
+      "known_by": ["Father Aldric"]
+    },
+    {
+      "fact": "Sergeant Maren conceals a festering wound.",
+      "type": "relationship",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "Maren favors her left side and winces when she thinks no one is looking.",
+      "active_ctx": "Maren took an arrow at Thornfield. The wound is infected and worsening. She refuses treatment.",
+      "entities": ["Sergeant Maren"],
+      "known_by": ["Sergeant Maren"]
+    },
+    {
+      "fact": "Warden Voss has secret orders from the Duke.",
+      "type": "plot",
+      "state": "Foreshadowed",
+      "foreshadow_ctx": "A sealed letter bearing the Duke's sigil sits in Voss's quarters, opened but never discussed.",
+      "active_ctx": "The Duke's orders instruct Voss to surrender Ashenmoor if the walls are breached, preserving the garrison for his own war. The refugees and townsfolk are expendable.",
+      "entities": ["Warden Elara Voss", "Duke"],
+      "known_by": ["Warden Elara Voss"]
+    }
+  ]
+}

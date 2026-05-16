@@ -1,39 +1,80 @@
-# Rhapsode -- overview
+---
+sources:
+  - AGENTS.md
+  - README.md
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[concepts/narrative-philosophy]]"
+  - "[[architecture/system-overview]]"
+  - "[[architecture/stack]]"
+  - "[[decisions/coding-guidelines]]"
+tags:
+  - design
+---
 
-**Rhapsode** is an AI-powered text RPG engine built on a specific belief: **the LLM is a world simulator, not a storyteller.**
+# Rhapsode — overview
 
-## Architecture
+**Rhapsode** is an AI text RPG engine built on a specific belief: the LLM is a world simulator, not a storyteller.
 
-- **C++** -- scene data, history, characters, and a code-defined **SceneLoop** (FSM). The engine owns state and structure.
-- **Python** -- FastAPI, WebSocket, prompt assembly, LLM API calls. Python is the bridge between the engine and the model.
-- **Vue 3** -- minimal playable chat UI.
+The name comes from the ancient Greek *rhapsōidos* — a performer who arranged existing oral traditions into great stories. Homer did not invent Achilles or Troy; he arranged the fragments into the Iliad. Rhapsode's architecture mirrors this: the LLM generates raw dramatic material, the Director structures and arranges it, and the LLM performs it as prose. The name is the architectural thesis.
+
+## What Rhapsode does
+
+A player connects through a web UI, types actions in natural language, and receives narrative responses from an LLM-powered world. A C++ engine manages game state. A Director tracks plot nodes and injects context into the LLM prompt. A memory system ensures the world remembers what happened and what it meant.
+
+A typical turn:
+
+1. Player types: *"I ask the barkeep about the knight in the corner."*
+2. The C++ SceneLoop appends the message to history.
+3. The Director evaluates the active node pool and injects context hints into the prompt — *"The barkeep is nervous about his debt."*
+4. The memory system retrieves relevant established facts.
+5. The prompt builder assembles system prompt + character list + director context + recent history.
+6. Gemini generates the narrative response.
+7. The response is appended to history, pushed to the frontend, and the Director processes any new plot nodes from this turn.
+8. New facts are distilled, scored, and stored in the memory system.
+
+## Architecture at a glance
+
+| Layer | Technology | Role |
+|-------|------------|------|
+| **Core** | C++17 | Scene state, history, node pool, Director logic, SceneLoop FSM, memory scoring/retrieval |
+| **Bindings** | pybind11 | Exposes the entire C++ API to Python |
+| **Server** | FastAPI + Python | WebSocket endpoint, Gemini LLM client, Chroma vector store, embedding model, local LLM for memory pipeline |
+| **Frontend** | Vue 3 + TypeScript | Chat UI with WebSocket connectivity |
+
+See [stack](../architecture/stack.md) for the full layer diagram and dependency tables.
 
 ## Core beliefs
 
-See [[narrative-philosophy]] for the full treatment. Summary:
+These principles constrain every design decision. See [narrative philosophy](narrative-philosophy.md) for the full treatment.
 
-1. **The Director is a rhapsode.** An arranger of narrative fragments, not a puppeteer. The LLM composes raw material; the Director structures it into the plot graph; the LLM performs it as prose.
-2. **Long-term memory is the emotional backbone.** Weighted memories, not equal-weight text chunks. What happened, what it meant, what changed.
-3. **Ambiguity is depth.** There is no fortune tracker. The arc emerges from accumulated memory + active plot nodes, never computed.
-4. **The LLM simulates, it doesn't decide.** It has two roles: composer (generates dramatic potential) and performer (renders the current moment). It never manages structure.
+1. **The Director is a rhapsode.** It arranges LLM-generated fragments, never puppeteers the story. The LLM composes raw material; the Director structures it; the LLM performs it as prose.
+2. **Long-term memory is the emotional backbone.** Weighted facts with quality scores and entity links — not equal-weight text chunks.
+3. **Ambiguity is depth.** No fortune tracker. The arc emerges from accumulated memory and active plot nodes.
+4. **The LLM simulates, it does not decide.** Two roles: composer (dramatic potential) and performer (rendering the moment). It never manages structure.
 5. **The player breaks everything.** Elastic arc: steer consequences, not actions.
 
-## Design constraints
+## Current state
 
-- [[coding-guidelines|Karpathy coding guidelines]]: simplicity first, no speculative abstractions.
-- Thin **Scene coordinator** -- avoid Talemate-style god objects.
-- **Native C++ structs** for messages and serialization (JSON).
-- **SceneLoop in C++**, prompts and completions from Python.
+**Built and working:**
 
-## Roadmap
+- C++ core: SceneMessage, History, Character, Scene, Node, NodePool, Director, SceneLoop, MemorySystem — all with save/load, Director integration, and hybrid retrieval
+- Python server: FastAPI WebSocket, Gemini client, Chroma vector store with BAAI/bge-base-en-v1.5 embeddings, spaCy lemmatization for BM25, local llama.cpp for memory quality pipeline
+- Vue 3 frontend: chat view with message list, input bar, connection status
+- Scenario system with seed nodes and save/load
 
-- **MVP v0** (done): C++ core, pybind11, FastAPI server, Vue frontend, Gemini integration.
-- **Next**: Long-term memory (weighted event log, vector retrieval).
-- **Then**: Director + plot graph (DAG of latent plot nodes, deterministic traversal, two loops). See [[plot-graph]].
-- **Later**: Visual plot graph editor, scenario authoring tools, save/load sessions.
+**Not yet built (planned):**
 
-## Naming
+- Plot graph as a full DAG with edges and trigger predicates — the Node/NodePool is a flat pool without edges
+- Session layer for multi-scene concurrency
+- GitStore for graph history
+- World-background loop (off-screen NPC events)
+- Input mode spectrum: constrained choices at graph nodes
+- Per-NPC memory and information asymmetry
+- Visual plot graph editor
 
-From the ancient Greek *rhapsōidos* -- a performer who arranged existing oral traditions and fused them into great stories. Homer didn't invent Achilles or Troy. He arranged the fragments into the Iliad.
+## History
 
-The name is the architectural thesis: the system takes raw dramatic material (LLM-generated) and arranges it into coherent narrative experience. The Director is the rhapsode. The LLM is both the oral tradition (composer) and the voice (performer). The player is the audience who changes the story by participating in it.
+Renamed from DigitalDream to Rhapsode.

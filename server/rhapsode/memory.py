@@ -1,114 +1,90 @@
-"""ChromaDB-backed long-term memory for resolved plot nodes."""
+"""Python callback implementations for C++ MemorySystem."""
 
 from __future__ import annotations
 
 import json
-import re
 import logging
 
 import chromadb
 from sentence_transformers import SentenceTransformer
 
+from rhapsode.lemmatization import lemmatize_for_bm25
+
 log = logging.getLogger(__name__)
 
-EMBEDDING_MODEL      = "Alibaba-NLP/gte-base-en-v1.5"
-DISTANCE_THRESHOLD   = 1.0
-MAX_RESULTS_PER_QUERY = 5
-MAX_TOTAL_CHARS       = 4096  # ~1024 tokens
+EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+_shared_model: SentenceTransformer | None = None
 
 
-def _split_sentences(text: str) -> list[str]:
-    """Split text on sentence boundaries, keeping non-empty fragments."""
-    parts = re.split(r'(?<=[.!?])\s+', text.strip())
-    return [s for s in parts if len(s) > 5]
+def warmup_model() -> None:
+    global _shared_model
+    if _shared_model is None:
+        log.info("Loading embedding model %s ...", EMBEDDING_MODEL)
+        _shared_model = SentenceTransformer(EMBEDDING_MODEL)
+        log.info("Embedding model ready.")
 
 
-class ResolvedMemory:
-    """Stores resolved node facts as vector embeddings in ChromaDB.
+def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chroma"):
+    """Register all Python callbacks on a C++ MemorySystem instance."""
+    global _shared_model
+    if _shared_model is None:
+        warmup_model()
+    model = _shared_model
 
-    Provides retrieval of semantically relevant facts given recent dialogue.
-    Designed to be called synchronously from the Director tick cycle.
-    """
+    client = chromadb.PersistentClient(path=chroma_path)
+    collections = {
+        f"{scene_id}_facts": client.get_or_create_collection(
+            name=f"{scene_id}_facts", metadata={"hnsw:space": "cosine"}),
+        f"{scene_id}_entities": client.get_or_create_collection(
+            name=f"{scene_id}_entities", metadata={"hnsw:space": "cosine"}),
+    }
 
-    def __init__(self, scene_id: str, chroma_path: str = "./chroma"):
-        self.model = SentenceTransformer(EMBEDDING_MODEL, trust_remote_code=True)
-        self.client = chromadb.PersistentClient(path=chroma_path)
-        self.collection = self.client.get_or_create_collection(
-            name=f"resolved-{scene_id}",
-            metadata={"hnsw:space": "cosine"},
+    def _col(name: str):
+        return collections[name]
+
+    def embed(text: str) -> str:
+        return json.dumps(model.encode(text).tolist())
+
+    def lemmatize(text: str) -> str:
+        return lemmatize_for_bm25(text)
+
+    def store(collection: str, id: str, doc: str, embedding_json: str, metadata_json: str):
+        col = _col(collection)
+        col.add(ids=[id], documents=[doc],
+                embeddings=[json.loads(embedding_json)],
+                metadatas=[json.loads(metadata_json)])
+
+    def query(collection: str, embedding_json: str, n: int, where_json: str) -> str:
+        col = _col(collection)
+        count = col.count()
+        n = min(n, count) if count > 0 else 0
+        if n == 0:
+            return json.dumps({"ids": [[]], "distances": [[]], "documents": [[]], "metadatas": [[]]})
+        where = json.loads(where_json)
+        results = col.query(
+            query_embeddings=[json.loads(embedding_json)],
+            n_results=n,
+            where=where if where else None,
+            include=["documents", "metadatas", "distances"],
         )
-        log.info("ResolvedMemory ready (collection=%s, docs=%d)",
-                 self.collection.name, self.collection.count())
+        return json.dumps(results)
 
-    def store_batch(self, nodes: list[dict]) -> None:
-        """Embed and upsert resolved nodes into ChromaDB."""
-        if not nodes:
-            return
+    def update_meta(collection: str, id: str, metadata_json: str):
+        _col(collection).update(ids=[id], metadatas=[json.loads(metadata_json)])
 
-        ids        = [str(n["id"]) for n in nodes]
-        documents  = [n["fact"] for n in nodes]
-        metadatas  = [
-            {
-                "type":        n.get("type", ""),
-                "entities":    ",".join(n.get("entities", [])),
-                "known_by":    ",".join(n.get("known_by", [])),
-                "resolved_at": n.get("resolved_at", -1),
-            }
-            for n in nodes
-        ]
+    def get_by_meta(collection: str, where_json: str) -> str:
+        col = _col(collection)
+        where = json.loads(where_json)
+        results = col.get(where=where if where else None)
+        return json.dumps(results)
 
-        embeddings = self.model.encode(documents).tolist()
-        self.collection.upsert(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas,
-            embeddings=embeddings,
-        )
-        log.info("Stored %d resolved node(s) in ChromaDB", len(nodes))
+    memory_system.set_embed_callback(embed)
+    memory_system.set_lemmatize_callback(lemmatize)
+    memory_system.set_store_callback(store)
+    memory_system.set_query_callback(query)
+    memory_system.set_update_meta_callback(update_meta)
+    memory_system.set_get_by_meta_callback(get_by_meta)
 
-    def retrieve(self, context_json: str) -> str:
-        """Query ChromaDB with recent dialogue sentences.
-
-        Args:
-            context_json: JSON string with at minimum a text body;
-                          the scene_context passed from C++ Director.
-
-        Returns:
-            JSON array of relevant resolved fact strings.
-        """
-        if self.collection.count() == 0:
-            return "[]"
-
-        sentences = _split_sentences(context_json)
-        if not sentences:
-            return "[]"
-
-        query_embeddings = self.model.encode(sentences).tolist()
-        n_results = min(MAX_RESULTS_PER_QUERY, self.collection.count())
-        results = self.collection.query(
-            query_embeddings=query_embeddings,
-            n_results=n_results,
-        )
-
-        seen: set[str] = set()
-        output: list[str] = []
-        total_chars = 0
-
-        max_idx = max(len(docs) for docs in results["documents"])
-        for i in range(max_idx):
-            for q_idx in range(len(sentences)):
-                docs = results["documents"][q_idx]
-                dists = results["distances"][q_idx]
-                if i >= len(docs):
-                    continue
-                doc  = docs[i]
-                dist = dists[i]
-                if dist > DISTANCE_THRESHOLD or doc in seen:
-                    continue
-                seen.add(doc)
-                total_chars += len(doc)
-                if total_chars > MAX_TOTAL_CHARS:
-                    return json.dumps(output)
-                output.append(doc)
-
-        return json.dumps(output)
+    log.info("Memory callbacks registered (facts=%d, entities=%d)",
+             collections[f"{scene_id}_facts"].count(),
+             collections[f"{scene_id}_entities"].count())

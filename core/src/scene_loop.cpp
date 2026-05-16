@@ -1,5 +1,6 @@
 #include "rhapsode/scene_loop.h"
 #include "rhapsode/scene.h"
+#include <iostream>
 
 namespace rhapsode {
 
@@ -33,7 +34,7 @@ const DirectorOutput& SceneLoop::last_director_output() const { return last_dire
 std::string SceneLoop::build_scene_context() const {
     std::string ctx = scene_->title;
 
-    auto recent = scene_->history.snapshot(3);
+    auto recent = scene_->history.snapshot(6);
     for (const auto& msg : recent) {
         ctx += "\n";
         ctx += (msg.role == Role::User ? "user: " : "assistant: ");
@@ -49,31 +50,62 @@ void SceneLoop::advance() {
     if (!llm_cb_)
         throw std::runtime_error("No LLM callback registered");
 
+    std::cerr << "\n====== Turn " << scene_->turn_index << " ======\n";
+
     state_ = LoopState::BuildingPrompt;
 
+    std::cerr << "[1/5] Director tick...\n" << std::flush;
     last_director_out_ = {};
     if (director_)
-        last_director_out_ = director_->tick(turn_index_, build_scene_context());
+        last_director_out_ = director_->tick(scene_->turn_index, build_scene_context());
+    else
+        std::cerr << "  (no director attached)\n";
 
-    auto history_snap = scene_->history.snapshot();
+    std::cerr << "[2/5] Building prompt...\n" << std::flush;
+    size_t win = resuming_ ? resume_window_size_ : window_size_;
+    auto history_snap = scene_->history.snapshot(win);
+    resuming_ = false;
     std::string prompt = prompt_cb_(history_snap, *scene_, last_director_out_);
-    ++turn_index_;
+    ++scene_->turn_index;
+
+    {
+        std::string sep(60, '-');
+        std::cerr << "\n  " << sep << "\n  --- Narrator prompt ---\n";
+        std::string::size_type start = 0;
+        while (start < prompt.size()) {
+            auto end = prompt.find('\n', start);
+            if (end == std::string::npos) end = prompt.size();
+            std::cerr << "  | " << prompt.substr(start, end - start) << "\n";
+            start = end + 1;
+        }
+        std::cerr << "  " << sep << "\n" << std::flush;
+    }
 
     state_ = LoopState::RunningLLM;
 
+    std::cerr << "[3/5] Calling narrative LLM...\n" << std::flush;
     std::string response = llm_cb_(prompt);
+    std::cerr << "  response length: " << response.size() << " chars\n";
 
     state_ = LoopState::AppendingResult;
 
+    std::cerr << "[4/5] Appending to history...\n" << std::flush;
     SceneMessage assistant_msg;
     assistant_msg.role    = Role::Assistant;
     assistant_msg.content = std::move(response);
     scene_->history.append(assistant_msg);
 
+    std::cerr << "[5/5] Turn complete callback...\n" << std::flush;
     if (turn_complete_cb_)
         turn_complete_cb_(assistant_msg);
 
     state_ = LoopState::WaitingForInput;
+    std::cerr << "====== Turn " << (scene_->turn_index - 1) << " done ======\n" << std::flush;
+}
+
+void SceneLoop::set_history_window(size_t normal, size_t resume) {
+    window_size_ = normal;
+    resume_window_size_ = resume;
 }
 
 } // namespace rhapsode

@@ -1,334 +1,221 @@
+---
+sources:
+  - core/include/rhapsode/scene.h
+  - core/include/rhapsode/director.h
+  - core/include/rhapsode/scene_loop.h
+  - core/include/rhapsode/memory_system.h
+  - server/rhapsode/app.py
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[concepts/narrative-philosophy]]"
+  - "[[architecture/stack]]"
+  - "[[architecture/scene-loop]]"
+  - "[[architecture/plot-graph]]"
+  - "[[architecture/memory-system]]"
+  - "[[architecture/python-server]]"
+  - "[[architecture/mvp-v0]]"
+tags:
+  - cross-layer
+---
+
 # System overview
 
-Engineering summary of the Rhapsode architecture. This document translates the narrative philosophy ([[narrative-philosophy]]) into concrete subsystems, data structures, and control flows.
+Engineering summary of the Rhapsode architecture. This page translates the [[concepts/narrative-philosophy|narrative philosophy]] into concrete subsystems, data structures, and control flows.
 
-## Architecture layers
+The system has two layers: **what is built** (the working engine) and **what is planned** (the full vision). This page covers both, clearly marked.
 
-```mermaid
-graph LR
-    subgraph session [Session — shared narrative state]
-        PG[PlotGraph]
-        GS[GitStore]
-        DIR[Director]
-    end
-    subgraph data [Data at rest — per Scene]
-        WS[WorldState / Characters]
-    end
-    subgraph time [Data over time — per Scene]
-        MEM[Memory]
-    end
-    subgraph loops [SceneLoops — concurrent]
-        SL1["SceneLoop_Tavern\n(resolution 1)"]
-        SL2["SceneLoop_World\n(resolution 10)"]
-    end
+## Architecture diagram (current)
 
-    WS --> DIR
-    MEM --> DIR
-    PG --> DIR
-    DIR -->|"on transition"| GS
-    DIR -->|"assemble context"| PROMPT[PromptBuilder]
-    PROMPT --> LLM_PERF["LLM (performer)"]
-    DIR -->|"generation pipeline"| LLM_COMP["LLM (composer)"]
-    LLM_COMP -->|"free text"| DIR
-    DIR -->|"extract"| PG
-    LLM_PERF -->|"prose"| PLAYER[Player]
-    PLAYER -->|"actions"| SL1
-    SL1 -->|"tick(DirectorInput)"| DIR
-    SL2 -->|"tick(DirectorInput)"| DIR
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Frontend (Vue 3)                                           │
+│  ChatView → MessageList + InputBar                          │
+│  WebSocket store (Pinia)                                    │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ WebSocket /ws
+┌──────────────────────────▼──────────────────────────────────┐
+│  Server (FastAPI)                                           │
+│                                                             │
+│  app.py ── WebSocket endpoint                               │
+│    ├── gemini.py ── Gemini LLM client                       │
+│    ├── prompt.py ── prompt builder                          │
+│    ├── memory.py ── Chroma + embeddings callbacks           │
+│    ├── validator.py ── local llama.cpp client                │
+│    └── lemmatization.py ── spaCy BM25 lemmas                │
+│                                                             │
+│  Registers Python callbacks on C++ objects via pybind11     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ pybind11 (_core.pyd)
+┌──────────────────────────▼──────────────────────────────────┐
+│  Core (C++17)                                               │
+│                                                             │
+│  SceneLoop (FSM)                                            │
+│    ├── Scene (state: History + NodePool + Characters)        │
+│    ├── Director (LLM callback → node transitions + new)     │
+│    └── MemorySystem (hybrid retrieval, quality pipeline)     │
+│                                                             │
+│  All game state serialized as JSON                          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Session — the shared narrative container
+## Subsystems
 
-`Session` is the top-level C++ object. It owns:
+### 1. Scene — game state container
 
-- **`PlotGraph`** — the DAG of plot nodes (shared across all scenes)
-- **`GitStore`** — libgit2-backed persistence and history of the graph
-- **`Director`** — deterministic control loop that traverses the graph
+`Scene` holds all per-game state:
 
-Multiple `SceneLoop` instances (each driving a `Scene`) share one `Session`. A `SceneLoop` calls
-`session.tick(DirectorInput)` each turn; the `Session` serialises access with a mutex and delegates
-to `Director::pre_turn`. Each scene has a **`resolution`** parameter: `resolution = 1` means the
-Director ticks every turn (interactive scenes); `resolution = N` means it ticks once every N turns
-(background world scenes running asynchronously at a slower cadence).
+- `scene_id`, `title`, `system_prompt` — static scenario data
+- `characters` — NPCs and the player
+- `history` — ordered conversation messages with timestamps
+- `node_pool` — all plot nodes: dormant, foreshadowed, active, resolved
+- `turn_index` — current turn counter
+- Optional `MemorySystem*` reference
 
-This architecture is the foundation for concurrent scenes — a tavern scene driven by player input
-and a world scene advancing NPC agendas in the background can share the same plot node graph without
-conflicting.
+Scene supports save/load to a `saves/` directory. A save persists the node pool (including `next_id`), full history, `turn_index`, and `memory_next_id`. Loading a save restores game state exactly.
 
-### 1. World State (data at rest)
+### 2. Director — narrative arranger
 
-Characters, locations, relationships, facts. Stored as structured data (C++ structs, JSON serialization).
+The Director operates on the NodePool each turn. Its `tick()` method:
 
-Already built: `Scene`, `Character`, `History`, `SceneMessage`.
+1. **Builds a JSON prompt** from all non-resolved nodes plus scene context
+2. **Calls the LLM** (via callback) requesting transitions and new nodes
+3. **Applies transitions** — updates node states along dormant → foreshadowed → active → resolved
+4. **Applies new nodes** — adds LLM-generated nodes to the pool
+5. **Removes resolved nodes** from the pool (keeps the active set small)
+6. **Collects context blocks** — gathers `foreshadow_ctx` and `active_ctx` strings from foreshadowed/active nodes for the narrative prompt
 
-`Scene` is now a **local view** — it holds the history and characters for one location/context.
-It does not own the `PlotGraph`. Shared narrative structure lives in `Session`.
+The Director uses a retrieval callback to fetch established facts from the memory system and inject them as constraints into its own LLM prompt. This prevents contradictions.
 
-### 2. Memory (data over time)
+The Director's LLM prompt enforces strict fact format: one atomic assertion per node, max 15 words, no hedging, no compound sentences, at least one named entity. Node types are `plot`, `scene`, `world`, `relationship`.
 
-The emotional backbone. Three layers:
+See [cpp-data-model](cpp-data-model.md) for the `Director` and `DirectorOutput` structures.
 
-| Layer | Contents | Lifespan |
-|---|---|---|
-| Raw recent | Last N messages, verbatim | Current context window |
-| Summarized archive | Compressed older history | Permanent, grows over time |
-| Vector store | Embedded event chunks, scored by importance | Permanent, queried by similarity |
+### 3. MemorySystem — emotional backbone
 
-Input to every LLM call via the prompt builder. Ensures the world remembers what happened and what it meant.
+The MemorySystem is implemented as a C++ class with Python callbacks for external services: embedding, vector storage, and local LLM. This split keeps scoring logic in C++ while storage backends stay in Python.
 
-#### Importance scoring
+**Storage:** ChromaDB persistent collections per scene, named `{scene_id}_facts` and `{scene_id}_entities`, with BAAI/bge-base-en-v1.5 sentence embeddings.
 
-Every memory entry receives an **importance score** (float, 0.0 to 1.0) at write time. The score affects:
-
-- **Retrieval priority** -- higher-importance entries rank above lower-importance ones at equal similarity distance
-- **Decay resistance** -- low-importance memories can be pruned or further compressed over time; high-importance ones persist at full detail
-
-Three sources contribute to the score:
-
-| Source | Mechanism | Example |
-|---|---|---|
-| **Plot graph** | Plot node activation/resolution tags associated events as high-importance | "barkeep killed" = 0.9 |
-| **Turn dynamics** | Director detects structural signals (new character, betrayal, death, revelation) | "first encounter with the knight" = 0.7 |
-| **LLM assessment** | During the generation pipeline (not during player turns), the LLM rates which recent events were significant | "the player's mercy was a turning point" = 0.8 |
-
-Default score for ordinary dialogue is 0.3. The importance score is **write-once** -- it doesn't change after the memory is stored. This keeps the memory system simple and deterministic.
-
-#### Retrieval strategy
-
-Memory retrieval combines three signals, following Generative Agents ([[literature-review#Generative Agents]]):
+**Retrieval:** Hybrid three-signal approach:
 
 | Signal | Mechanism |
-|---|---|
-| **Recency** | Exponential decay from last access (biases toward recent context) |
-| **Importance** | The write-time importance score (biases toward significant events) |
-| **Relevance** | Embedding cosine similarity to the retrieval query |
+|--------|-----------|
+| Semantic similarity | Cosine distance via Chroma query |
+| BM25 keyword matching | Okapi BM25 on spaCy-lemmatized tokens (C++ scoring) |
+| Entity boosting | Facts linked to entities mentioned in the query rank higher |
 
-All three are normalized and combined. The retrieval query is the Director's assembled context for the current turn (active plot nodes + world state), following RecurrentGPT's plan-as-retrieval-query pattern ([[literature-review#RecurrentGPT]]).
+**Post-turn pipeline** (`process_new_nodes`): After each turn, newly resolved and created nodes are processed:
 
-#### Short-term memory rewrite
+1. **Distill** — verbose facts are shortened via local LLM
+2. **Quality scoring** — batch score new nodes against existing pool via local LLM
+3. **Entity extraction** — extract entity names via local LLM
+4. **Conflict detection** — check if a new fact contradicts an existing one (semantic proximity check)
+5. **Store** — embed and persist to Chroma with metadata
 
-The "raw recent" layer has a **fixed token budget**. Each turn, the LLM rewrites the working summary with explicit instructions to drop stale facts and add new ones — not simple truncation, but active compression. This follows RecurrentGPT's bounded STM rewrite pattern.
+The local LLM (llama.cpp on port 8012) handles the heavy processing steps. If unreachable, the pipeline degrades gracefully — facts are stored without enrichment.
 
-#### Per-NPC memory
+See [memory system](memory-system.md) for the full breakdown.
 
-NPCs maintain **subjective memory slices** — they remember what they witnessed or were told, not objective truth. This enables secrets, unreliable narrators, and information asymmetry. Memory propagation happens through NPC dialogue (social diffusion), following Generative Agents.
+### 4. SceneLoop — turn FSM
 
-Not yet built. Next major implementation target.
-
-### 3. Plot Graph (narrative state machine)
-
-A directed acyclic graph where nodes are **plot nodes** -- latent facts about the world that could become dramatically relevant.
-
-#### Node structure
+The SceneLoop is a finite state machine driving the turn cycle:
 
 ```
-PlotNode {
-    id:               string
-    type:             enum (secret, conflict, clock, consequence, object, event, rule)
-    state:            enum (dormant, foreshadowed, active, resolved)
-    description:      string
-    characters:       list[string]
-    foreshadow_ctx:   string       // injected into prompt when foreshadowed (hints, not prose)
-    active_ctx:       string       // injected into prompt when active (directional constraint)
-    trigger:          Trigger      // the T in the F-T-P triple
-    consequences:     list[Mutation] // world state changes on activation/resolution
-    knowledge:        KnowledgeState
-    stall_budget:     int          // max turns in active state before force-advance
-    placeholders:     map[string, string | null]  // named slots resolved at runtime
-}
-
-KnowledgeState {
-    player_known:     bool
-    npc_known:        list[string] // character IDs aware of this plot node
-    hidden:           bool         // exists in graph but unknown in-world
-}
+Idle → WaitingForInput → ProcessingInput → BuildingPrompt → RunningLLM → AppendingResult → WaitingForInput
 ```
 
-#### Edge structure
+Each turn:
 
-```
-Edge {
-    source:    plot_node_id
-    target:    plot_node_id
-    trigger:   Trigger
-}
+1. Player input arrives via `submit_input(text)`
+2. Director ticks — evaluates nodes, calls the LLM, returns context blocks
+3. Prompt callback assembles the full prompt from system prompt, NPC characterization, director context blocks, and the history window
+4. LLM callback sends the prompt to Gemini and returns the response
+5. Assistant message is appended to history
+6. Turn-complete callback notifies the server
 
-Trigger = one of:
-    PlayerAction { tags: list[string] }
-    TurnCount    { threshold: int }
-    WorldCondition { predicate: string }
-    PlotNodeState { plot_node_id: string, state: enum }
-```
+The loop supports configurable history windows — by default three messages, ten on resume — and a resume flag for session restoration.
 
-The graph is **mutable at runtime** -- new nodes are added by the generation pipeline. Traversal is `O(edges)` per turn. Pure data structure, no LLM involvement.
-
-Not yet built. Implementation target after memory.
-
-### 4. Director (control loop)
-
-The rhapsode. Arranges LLM-generated fragments into coherent narrative experience. See [[narrative-philosophy#1. The Director is a rhapsode -- an arranger, not a puppeteer]].
-
-Four operations per turn, always in this order:
-
-1. **Traverse** -- walk all edges, fire any whose trigger condition is met, update node states
-2. **Advance world clock** -- tick turn-based triggers, run background loop for off-screen events
-3. **Determine input mode** -- check if the player has arrived at a plot node requiring a write action (constrained choices) or is mid-edge (freeform). See [[narrative-philosophy#6. The interface is part of the dramaturgy — read actions vs. write actions]].
-4. **Assemble context** -- collect prompt fragments from all `foreshadowed` and `active` nodes, pass to prompt builder. If constrained-choice mode, also generate choice options grounded in available graph edges.
-
-Periodically invokes the **generation pipeline** (see below).
-
-#### Literature-informed additions
-
-The following mechanisms are adopted from the literature review ([[literature-review]]):
-
-**Stall budgets.** Each `active` plot node has a maximum turn count before the Director force-advances or escalates. Prevents indefinite stalling on unresolved plot nodes. Adopted from IBSEN's 9-turn cap.
-
-**Knowledge-state scheduling.** The Director uses per-plot-node knowledge state (`player_known`, `npc_known`, `hidden`) to decide revelation timing. Default policy: prefer dramatic irony (player knows before character) over surprise reveals. See [[plot-graph#Knowledge state and revelation timing]].
-
-**Narrowing policy.** When multiple resolution paths exist for a plot node, close the easiest/most obvious ones first to build pressure. The remaining options feel progressively more desperate. Adopted from Suspenseful Stories' rational ordering heuristic.
-
-**Motivation check.** Before the Director arranges an NPC action through the plot graph, it can validate plausibility: "given this character's memory and personality, is the motivation for this action established?" This is a lightweight alignment gate between Director intent and simulator believability. Adopted from StoryVerse.
-
-**Supersession vs. contradiction.** When evaluating freeform player actions against graph state, the Director distinguishes "the world legitimately changed" (update facts, trim validity) from "this is inconsistent" (block or repair). Adopted from FACTTRACK's dual-threshold approach.
-
-#### Five rules for keeping the world interesting
-
-The Director enforces these mechanical properties to ensure the story never goes flat:
-
-**1. Minimum plot node floor.** The Director maintains a minimum count of `active` + `foreshadowed` plot nodes (e.g. 3). When the count drops below the threshold, the generation pipeline fires immediately -- not on a timer, but on demand. The world should never be at rest.
-
-**2. Timescale balance.** Active plot nodes should span multiple timescales:
-
-| Timescale | Horizon | Effect |
-|---|---|---|
-| Immediate | This turn | Urgency -- the stranger reaches for a knife |
-| Short-term | 5-10 turns | Pressure -- the guild's deadline approaches |
-| Long-term | 30+ turns | Weight -- the kingdom edges toward civil war |
-
-If all plot nodes cluster at one timescale, the generation pipeline should bias new plot nodes toward the missing horizons.
-
-**3. NPC autonomy.** NPCs have goals and act on them off-screen via the world-background loop. When the player encounters an NPC, they are mid-action, not standing around waiting. The barkeep is trying to solve his debt. The knight is planning to flee. The assassin is gathering information. This is free drama -- the player walks into situations already in motion.
-
-**4. Disproportionate consequences.** Small player actions should cascade into unexpected outcomes. The generation pipeline prompt includes guidance: "Consider how recent player actions, even minor ones, could have unexpected consequences." The player buys a drink for a stranger -- that stranger turns out to be the guild leader's daughter. The player ignores a rumor -- three turns later, the thing the rumor warned about happens.
-
-**5. Reputation propagation.** Player actions spread through NPC awareness via memory. Events tagged with the player as actor are propagated to relevant NPCs. The prompt builder includes world context like "the barkeep has heard that you helped the merchant." This creates a feedback loop: the player's actions change how the world treats them, which creates new dramatic situations.
-
-Not yet built. Implementation target after plot graph.
+See [scene loop](scene-loop.md) for the full FSM and callback details.
 
 ## Control flow per turn
 
-```mermaid
-sequenceDiagram
-    participant P as Player
-    participant FE as Frontend
-    participant SL as SceneLoop_C++
-    participant SESS as Session
-    participant DIR as Director
-    participant GS as GitStore
-    participant PB as PromptBuilder
-    participant MEM as Memory
-    participant LLM as LLM
-
-    Note over SL,SESS: SceneLoop calls session.tick() every `resolution` turns
-    SL->>SESS: tick(DirectorInput{scene_id, turn_index, user_text})
-    SESS->>DIR: pre_turn(plot_graph, git_store, input)
-
-    Note over DIR: Traversal phase
-    DIR->>DIR: traverse graph edges
-    DIR->>DIR: advance world clock
-    DIR->>DIR: determine input mode
-
-    alt At a plot node (write action)
-        DIR->>LLM: generate choices from graph edges
-        LLM-->>DIR: N choice options
-        DIR->>FE: send choice_prompt (constrained)
-        P->>FE: selects a choice
-        FE->>SL: submit_input(selected_choice)
-    else On an edge (read action)
-        DIR->>FE: send freeform input mode
-        P->>FE: types freely
-        FE->>SL: submit_input(text)
-    end
-
-    opt transition fired during traversal
-        DIR->>GS: commit(graph, "turn N [scene_id]: plot_node dormant→active")
-    end
-    DIR-->>SESS: DirectorOutput
-    SESS-->>SL: DirectorOutput
-
-    SL->>SL: append user message
-    SL->>PB: prompt_callback(history, scene, director_out)
-    PB->>MEM: query relevant memories
-    MEM-->>PB: memory fragments
-    PB->>PB: build_prompt(history + director_ctx + memory)
-    PB-->>SL: prompt string
-
-    SL->>LLM: llm_callback(prompt)
-    LLM-->>SL: assistant text
-
-    SL->>SL: append assistant message
-    SL->>P: turn_complete(msg)
-
-    Note over DIR: After turn completes
-    DIR->>DIR: check generation threshold
-    opt active plot nodes low or N turns elapsed
-        DIR->>LLM: compose(world_state + memory + graph_summary)
-        LLM-->>DIR: free text (dramatic potential)
-        DIR->>LLM: extract(free_text)
-        LLM-->>DIR: structured plot nodes
-        DIR->>DIR: validate and add to graph
-    end
 ```
-
-## Generation pipeline
-
-The plot graph is LLM-generated and Director-maintained. See [[plot-graph#The generation pipeline]] for full detail.
-
-Summary:
-
-1. **Compose** -- LLM reads world state + memory + current graph summary, writes free text describing new dramatic potential. Creative, unconstrained.
-2. **Extract** -- second LLM call (or cheaper model) parses the free text into structured plot nodes. Validates against world state (no duplicates, no phantom characters).
-3. **Insert** -- validated nodes are added to the plot graph as dormant plot nodes.
-
-Three triggers for generation:
-
-| Trigger | When |
-|---|---|
-| Scenario initialization | Once, before the player starts |
-| Periodic world-building | Every N turns |
-| Reactive spawning | After a major plot node resolves |
-
-The pipeline is **lossy by design**. If extraction fails, the raw text is discarded. The system degrades to "fewer new plot nodes" rather than "broken graph."
+Player types message
+    │
+    ▼
+WebSocket receives JSON { type: "player_message", content: "..." }
+    │
+    ▼
+asyncio.run_in_executor → SceneLoop.submit_input(text)
+    │
+    ├── Director.tick(turn_index, scene_context)
+    │     ├── build_prompt(non-resolved nodes + context)
+    │     ├── retrieval_callback → memory.retrieve_for_injection()
+    │     ├── LLM callback → Gemini — director system prompt + established facts
+    │     ├── parse JSON → apply transitions + new nodes
+    │     └── collect context_blocks from foreshadowed/active nodes
+    │
+    ├── Prompt callback → build_prompt — history_window, scene, director_output
+    │     └── system_prompt + NPC names + director context blocks + recent messages
+    │
+    ├── LLM callback → Gemini (narrative prompt)
+    │     └── returns assistant prose
+    │
+    └── Append assistant message → turn_complete callback
+         │
+         ▼
+    Post-turn: memory.process_new_nodes(output.new_nodes, turn_index)
+    Post-turn: scene.save(saves_dir)
+         │
+         ▼
+    WebSocket pushes { type: "assistant_message", content: "..." }
+```
 
 ## Engineering constraints
 
-1. **The Director never calls the LLM synchronously during a player turn.** Graph traversal and context assembly are deterministic. The generation pipeline runs asynchronously between turns.
-2. **The plot graph is serializable.** `PlotGraph::to_json()` / `from_json()` must round-trip cleanly. The `GitStore` commits `plot_nodes.json` on every transition.
-3. **Trigger evaluation is a predicate engine.** Not free-form NLP. Start with simple tag-based matching for player actions, upgrade later.
-4. **The generation pipeline is lossy.** Failed extraction = discarded text, not corrupt state.
-5. **Each subsystem is independently testable.** Memory without plot graph. Plot graph without Director. Director without generation pipeline. Layer by layer, like the C++ core was built.
-6. **Session is the unit of concurrency.** Multiple `SceneLoop`s share one `Session`. The `Session::tick()` method acquires a mutex before calling `Director::pre_turn`, keeping graph writes single-threaded. Loop cadence (resolution) is set per-loop; Python manages the async scheduling of loops.
-7. **`Scene` is a view, not a container.** `Scene` holds only local state (`History`, `Characters`). `PlotGraph`, `GitStore`, and `Director` live in `Session`.
+1. **Two LLM calls per turn.** The Director calls the LLM once (JSON node management). The narrative callback calls it once (prose generation). Both use Gemini via the same client.
+2. **Memory pipeline is async-safe.** The post-turn `process_new_nodes` runs after the turn completes and the response is sent. If it fails, the turn still succeeds.
+3. **Scene is serializable.** `Scene::save()` / `load_save()` round-trips cleanly through JSON. Game state persists across server restarts.
+4. **Callbacks cross the language boundary cleanly.** C++ owns the control flow; Python provides I/O via LLM HTTP, embeddings, and vector storage. No business logic duplicated.
+5. **Graceful degradation.** If the local LLM is unreachable, memory pipeline steps return empty strings and facts are stored without enrichment. If Chroma is empty, retrieval returns nothing and the Director operates without established facts.
 
-## Implementation roadmap
+## Implementation status
 
-| Phase | What | Depends on |
-|---|---|---|
-| **MVP v0** (done) | SceneLoop, Scene, History, Characters, FastAPI, Vue, Gemini | -- |
-| **Memory** | Event log, vector store, summary layer, memory-aware prompt builder | Existing Scene/History |
-| **Plot graph + GitStore** | Plot node structs, edges, trigger predicates, `GitStore` via libgit2 | Nothing (pure data) |
-| **Session** | `Session` class owning PlotGraph + GitStore + Director; `session.json` schema | Plot graph, git store |
-| **Director** | Traversal, world clock, context assembly, `SceneLoop` integration with resolution tick | Session, memory, prompt builder |
-| **Multi-scene** | Second SceneLoop (world scene) running at resolution > 1, Python asyncio management | Session, Director |
-| **Generation pipeline** | Compose + extract LLM calls, validation, async scheduling | Director, LLM client |
-| **Visual editor** | Plot graph inspection/editing UI; git log replay | Plot graph serialization, GitStore.log() |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| SceneMessage, History, Character | Done | JSON round-trip, pybind11 exposed |
+| Scene (with save/load) | Done | Persists node_pool, history, turn_index |
+| Node, NodePool | Done | Flat pool with state-based indexing, no edges |
+| Director | Done | LLM-driven transitions + new node creation |
+| SceneLoop | Done | Director integration, history windows, resume |
+| MemorySystem | Done | Hybrid retrieval, quality pipeline, MD5 dedupe |
+| FastAPI + WebSocket | Done | Single-endpoint architecture |
+| Gemini client | Done | google-genai SDK, configurable model/base URL |
+| Chroma + embeddings | Done | BAAI/bge-base-en-v1.5, persistent per-scene |
+| Local LLM (validator) | Done | llama.cpp HTTP, graceful fallback |
+| Vue 3 frontend | Done | Chat view, WebSocket store |
+| **Plot graph edges + triggers** | **Planned** | DAG structure, predicate-based triggers |
+| **Session (multi-scene)** | **Planned** | Shared PlotGraph across concurrent SceneLoops |
+| **GitStore** | **Planned** | libgit2-backed graph history |
+| **World-background loop** | **Planned** | Off-screen NPC events |
+| **Input mode spectrum** | **Planned** | Constrained choices at graph nodes |
+| **Per-NPC memory** | **Planned** | Subjective memory slices per character |
+| **Visual editor** | **Planned** | Plot graph inspection/editing UI |
+
+## Planned architecture (future)
+
+The full vision introduces a **Session** layer that owns the PlotGraph, GitStore, and Director. Multiple SceneLoops share one Session. Each loop has a `resolution` parameter: resolution 1 = interactive (every turn), resolution N = background world scene (every N turns).
+
+The NodePool evolves into a full directed acyclic graph with typed edges. Trigger predicates fire on player action tags, turn counts, world conditions, or other node states. The Director traverses edges deterministically — no LLM needed for structure.
+
+See [plot graph](plot-graph.md) for the full DAG design and the generation pipeline vision.
 
 ## References
 
-- [[narrative-philosophy]] -- the five design principles
-- [[plot-graph]] -- the narrative state machine in detail
-- [[scene-loop]] -- the C++ FSM (already built)
-- [[coding-guidelines]] -- Karpathy: simplicity first, no speculative abstractions
-- [GRRM on outlines](https://www.youtube.com/watch?v=XF1PyB5v9jI) -- "outlining is like retelling a story you've already told in shorthand"
-- [GRRM architects vs gardeners](https://www.youtube.com/watch?v=nK6VoL76r3Q) -- Rhapsode is a computational gardener
-- [Vonnegut shapes of stories](https://storytellingedge.substack.com/p/the-simple-shapes-of-great-stories) -- the arc emerges, it isn't tracked
+- [[concepts/narrative-philosophy|narrative philosophy]] — the six design principles
+- [plot graph](plot-graph.md) — node/pool design and DAG vision
+- [scene loop](scene-loop.md) — the C++ FSM
+- [memory system](memory-system.md) — hybrid retrieval and quality pipeline
+- [[research/literature-review|literature review]] — 8 papers surveyed

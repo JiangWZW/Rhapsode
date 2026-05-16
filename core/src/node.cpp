@@ -35,6 +35,7 @@ void to_json(nlohmann::json& j, const Node& n) {
         {"active_ctx",     n.active_ctx},
         {"entities",       n.entities},
         {"known_by",       n.known_by},
+        {"related_to",     n.related_to},
         {"created_at",     n.created_at},
         {"resolved_at",    n.resolved_at}
     };
@@ -49,6 +50,7 @@ void from_json(const nlohmann::json& j, Node& n) {
     n.active_ctx     = j.value("active_ctx", "");
     n.entities       = j.value("entities", std::vector<std::string>{});
     n.known_by       = j.value("known_by", std::vector<std::string>{});
+    n.related_to     = j.value("related_to", std::vector<std::uint64_t>{});
     n.created_at     = j.value("created_at", 0);
     n.resolved_at    = j.value("resolved_at", -1);
 }

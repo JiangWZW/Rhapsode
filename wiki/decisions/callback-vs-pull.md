@@ -1,13 +1,28 @@
+---
+sources:
+  - core/include/rhapsode/scene_loop.h
+  - bindings/bind_rhapsode.cpp
+last_updated: 2026-05-12
+confidence: verified
+tier: episodic
+related:
+  - "[[architecture/scene-loop]]"
+  - "[[decisions/ownership-split]]"
+tags:
+  - cpp-core
+  - python-server
+---
+
 # Decision: callback vs pull pattern for SceneLoop-to-Python
 
-**Status:** accepted  
-**Date:** 2026-05-05  
+**Status:** accepted
+**Decided:** early development
 
 ## Context
 
-The `SceneLoop` in C++ needs to invoke Python code at two points during each turn:
+The SceneLoop in C++ needs to invoke Python code at two points during each turn:
 
-1. **Build prompt** — assemble the messages list from history + scenario metadata.
+1. **Build prompt** — assemble the messages list from history + scenario metadata + Director output.
 2. **Run LLM** — send the prompt to an LLM API and get the assistant response.
 
 Two patterns were considered for this cross-language invocation.
@@ -20,72 +35,46 @@ Python registers `std::function` callbacks via pybind11. The C++ loop calls them
 
 ```
 Python                           C++
-  |                               |
-  |-- set_prompt_callback(fn) --->|
-  |-- set_llm_callback(fn) ----->|
-  |                               |
-  |-- submit_input(text) -------->|
-  |                               |-- appends user msg
-  |                               |-- calls prompt_callback
-  |<-- prompt_callback(hist) -----|
-  |-- returns prompt ------------>|
-  |                               |-- calls llm_callback
-  |<-- llm_callback(prompt) ------|
-  |-- returns response ---------->|
-  |                               |-- appends assistant msg
-  |                               |-- calls turn_complete_callback
-  |<-- turn_complete(msg) --------|
+  ├── set_prompt_callback(fn) ──→│
+  ├── set_llm_callback(fn) ─────→│
+  │                               │
+  ├── submit_input(text) ────────→│
+  │                               ├── append user msg
+  │                               ├── Director.tick()
+  │◄── prompt_callback(hist) ─────┤
+  ├── returns prompt ────────────→│
+  │◄── llm_callback(prompt) ──────┤
+  ├── returns response ──────────→│
+  │                               ├── append assistant msg
+  │◄── turn_complete(msg) ────────┤
 ```
 
-**Pros:**
-- C++ controls the flow — the FSM is self-contained and testable.
-- No polling or busy-waiting.
-- Natural fit for pybind11's `std::function` wrapping.
-- Easy to unit-test in C++ with mock callbacks.
+**Pros:** C++ controls the flow — the FSM is self-contained and testable. No polling. Natural fit for pybind11 `std::function` wrapping. Easy to unit-test with mock callbacks.
 
-**Cons:**
-- Callbacks are synchronous — blocks the calling thread while Python runs.
-- Requires `run_in_executor` on the Python side to avoid blocking the asyncio event loop.
+**Cons:** Synchronous — blocks the calling thread while Python runs. Requires `run_in_executor` on the asyncio side.
 
 ### Option B: Pull / polling pattern (rejected)
 
-C++ exposes state and a "needs" query. Python polls `loop.state()` and provides data when the loop is in a waiting state.
+C++ exposes state and a "needs" query. Python polls `loop.state()` and provides data when needed.
 
-```
-Python                           C++
-  |                               |
-  |-- submit_input(text) -------->|
-  |                               |-- appends user msg
-  |                               |-- state = NeedPrompt
-  |-- poll: state()? ------------>|
-  |<-- NeedPrompt ----------------|
-  |-- provide_prompt(prompt) ---->|
-  |                               |-- state = NeedLLM
-  |-- poll: state()? ------------>|
-  |<-- NeedLLM -------------------|
-  |-- provide_llm_result(text) -->|
-  |                               |-- appends assistant msg
-```
+**Pros:** Python controls async scheduling. No callback ownership complexity.
 
-**Pros:**
-- Python has full control over async scheduling.
-- No callback ownership complexity.
-
-**Cons:**
-- More API surface: multiple "provide" methods + polling.
-- The loop is split across two languages — harder to reason about and test.
-- Polling adds latency or complexity (wait conditions, events).
+**Cons:** More API surface. Loop logic split across languages. Polling adds latency or complexity.
 
 ## Decision
 
-**Callback registration** (Option A). The synchronous blocking is acceptable for MVP because:
+**Callback registration** (Option A). The synchronous blocking is acceptable because:
 
-1. Each turn is inherently sequential (prompt -> LLM -> append).
-2. The LLM HTTP call dominates latency — the overhead of `run_in_executor` is negligible.
+1. Each turn is inherently sequential: Director → prompt → LLM → append.
+2. The LLM HTTP call dominates latency — `run_in_executor` overhead is negligible.
 3. The C++ FSM stays self-contained and testable without Python.
 
 ## Consequences
 
-- The Python server must use `asyncio.run_in_executor()` when calling `loop.submit_input()` to avoid blocking the FastAPI event loop.
-- Future streaming support may require a different pattern (e.g. a streaming callback that yields chunks). This is out of scope for MVP.
-- If the loop needs to become async-native (e.g. for parallel LLM calls in multi-character scenes), this decision should be revisited.
+- The Python server uses `asyncio.run_in_executor()` when calling `loop.submit_input()`.
+- The same callback pattern extends to Director — 2 callbacks — and MemorySystem — 7 callbacks for embed, store, query, and others.
+- Future streaming support may require a different pattern — a streaming callback yielding chunks.
+
+## Retrospective
+
+This decision has held well through the addition of the Director and MemorySystem. The callback pattern scaled naturally — the MemorySystem alone registers 7 callbacks, all following the same `std::function` registration pattern through pybind11. The main cost is that all callbacks are synchronous, but since the LLM HTTP call is always the bottleneck, this has not been a practical issue.

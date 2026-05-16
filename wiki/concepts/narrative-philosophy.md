@@ -1,177 +1,133 @@
+---
+sources:
+  - core/include/rhapsode/director.h
+  - core/include/rhapsode/memory_system.h
+  - core/include/rhapsode/node.h
+last_updated: 2026-05-12
+confidence: verified
+tier: semantic
+related:
+  - "[[concepts/rhapsode-overview]]"
+  - "[[architecture/system-overview]]"
+  - "[[architecture/plot-graph]]"
+  - "[[architecture/memory-system]]"
+  - "[[research/literature-review]]"
+tags:
+  - design
+---
+
 # Narrative philosophy
 
-The foundational design beliefs that shape every technical decision in Rhapsode. These are not features to implement -- they are constraints on *how* we think about features.
+The foundational design beliefs that shape every technical decision in Rhapsode. These are not features to implement — they are constraints on *how* we think about features.
 
-## The five principles
+## The six principles
 
-### 1. The Director is a rhapsode -- an arranger, not a puppeteer
+### 1. The Director is a rhapsode — an arranger, not a puppeteer
 
 The project name is the architectural thesis.
 
-A *rhapsode* in ancient Greece didn't invent the stories. The myths, the characters, the battles already existed as oral tradition -- fragments passed down through generations. The rhapsode's art was in the **arrangement**: which episodes to tell, in what order, how to pace the tension, when to linger, when to skip ahead. Homer didn't create Achilles or Troy. He arranged the fragments into the Iliad.
+A *rhapsode* in ancient Greece did not invent stories. The myths already existed as oral tradition — fragments passed down through generations. The rhapsode's art was in the **arrangement**: which episodes to tell, in what order, how to pace the tension, when to linger, when to skip ahead.
 
 The Director works the same way:
 
 | Role | Who |
-|---|---|
-| **Composer** | The LLM -- generates raw dramatic material (character secrets, conflicts, forces in motion) as free text |
-| **Arranger / Rhapsode** | The Director -- parses the raw material into the plot graph, manages timing and pacing, decides when plot nodes surface |
-| **Performer** | The LLM again -- renders the arranged structure into prose for the player |
-| **Audience and co-composer** | The player -- their actions feed back into the next composition |
+|------|-----|
+| **Composer** | The LLM — generates raw dramatic material — character secrets, conflicts, forces in motion |
+| **Arranger / Rhapsode** | The Director — parses raw material into nodes, manages timing and pacing, decides when threads surface |
+| **Performer** | The LLM again — renders the arranged structure into prose for the player |
+| **Audience and co-composer** | The player — their actions feed back into the next composition |
 
-Talemate's Director was a meta-controller: a separate LLM call each turn asking "what should happen?" It became a god-object with no structural model of story. The LLM was making structural decisions through a middleman.
-
-Rhapsode's Director doesn't ask the LLM what should happen. It takes what the LLM has already imagined and **arranges** it -- structures it into a graph, tracks timing, manages which threads surface when, ensures the whole hangs together.
+**Status:** The Director is implemented. Each turn, it builds a JSON prompt from non-resolved nodes plus scene context, calls the LLM, and parses the response into state transitions and new nodes. It collects foreshadow and active context strings for the narrative prompt. See [[architecture/system-overview|system overview]].
 
 ### 2. Long-term memory is the emotional backbone
 
-Vonnegut identified ~8 story shapes. Researchers confirmed this with NLP across 2,000 novels. The shapes are few, but what makes a story *yours* is accumulated experience. When a character you've spent 20 hours with betrays you, the arc shape doesn't matter -- the *memory* does.
+What makes a story *yours* is accumulated experience. When a character you have spent 20 hours with betrays you, the arc shape does not matter — the *memory* does.
 
-This means the memory system is not a technical feature (RAG retrieval). It is the emotional backbone. The system needs to remember:
+The memory system is not a technical feature (RAG retrieval). It is the emotional backbone:
 
-- **What happened** -- event log, summarized history
-- **What it meant** -- emotional tags, significance scores
-- **What changed** -- character relationship deltas, world state mutations
+- **What happened** — facts distilled from plot nodes
+- **What it means** — quality scores, entity links, relationship context
+- **Who knows** — `known_by` metadata per fact for information asymmetry
 
-Talemate's ChromaDB approach is correct in principle: layered context (raw recent dialogue + summarized past + RAG-retrieved relevant memories) with token budgeting. But it treats all memories as equal text chunks. A better system has *weighted* memories -- some moments matter more than others, and the system should know which ones.
+**Status:** Implemented. The MemorySystem stores facts in Chroma with embeddings and supports hybrid retrieval: semantic similarity, BM25 keyword matching, and entity boosting. A local LLM runs the quality pipeline. See [[architecture/memory-system|memory system]].
 
-Talemate's "reinforcements" (periodic Q&A refreshes that keep canonical facts alive) are also a good idea worth carrying forward in simpler form.
+### 3. The Hamlet quality — ambiguity as depth
 
-### 3. The Hamlet quality -- ambiguity as depth
+Vonnegut called out Hamlet as the story where "we don't know whether the news is good or bad." That ambiguity separates good stories from great ones. Interpretation depends on what happens next.
 
-Vonnegut called out Hamlet as the story where "we don't know whether the news is good or bad." The ghost might be salvation or damnation. The audience cannot tell if fortune is rising or falling. That ambiguity -- where interpretation genuinely depends on what happens next -- is what separates good stories from great literature. It is also the shape of real life.
-
-For Rhapsode this means:
+For Rhapsode:
 
 - There is no fortune tracker. The arc is not a number.
-- The arc **emerges** from accumulated memory + active plot nodes. The player looks back and sees a shape, but it was never computed.
-- The world should present situations that *could* be good or bad. The player's interpretation and response determines which world becomes real.
+- The arc **emerges** from accumulated memory + active plot nodes.
+- The world presents situations that *could* be good or bad. The player's response determines which world becomes real.
 
-This is why the LLM-as-simulator framing matters: a simulator doesn't decide if the ghost is good or evil. It computes the consequences and lets the player's actions determine the outcome.
-
-Reference: [The Simple Shapes of Great Stories, According to Kurt Vonnegut (And Science)](https://storytellingedge.substack.com/p/the-simple-shapes-of-great-stories)
+**Why no fortune tracker:** (1) Story arcs are not one-dimensional — winning a battle while losing a relationship cannot be a single float. (2) Tracking the arc creates a circular dependency if the LLM both sets and reads it. (3) The graph and memory already carry dramatic weight implicitly.
 
 ### 4. The LLM is a world simulator, not a storyteller
 
-The critical distinction:
-
 | Storyteller | Simulator |
-|---|---|
-| "What would make a good story here?" | "Given these characters, rules, history, and player action -- what would happen?" |
-| Prone to cliches, deus ex machina, forced drama | Emergent, surprising, real-feeling |
+|-------------|-----------|
+| "What would make a good story here?" | "Given these characters, rules, history, and this action — what would happen?" |
+| Prone to cliches, deus ex machina | Emergent, surprising, real-feeling |
 | Decides the plot | Discovers the plot by following the rules |
 
-The Director provides *arrangement* (which plot nodes are active, what context to inject). The memory system provides *state* (what happened, who knows what). The LLM renders the world within those boundaries. It doesn't decide the plot; it computes the next moment.
+The Director provides *arrangement* — which nodes are active, what context to inject. The memory provides *state* — what happened, who knows what. The LLM renders the world within those boundaries.
 
-But the LLM also has a second role: **composing the raw material**. Before the Director can arrange anything, the LLM generates the dramatic landscape -- what secrets exist, what conflicts are latent, what forces are in motion. This happens at scenario initialization, periodically between turns, and reactively after major events. See [[plot-graph#The generation pipeline]].
+The LLM also has a second role: **composing raw material**. Before the Director can arrange anything, the LLM generates the dramatic landscape — what secrets exist, what conflicts are latent, what forces are in motion. This happens at scenario initialization and as new nodes are created during play.
 
-### 5. The player breaks everything (and that's the point)
+**Status:** Implemented. The Director uses one LLM call per turn for node management. The narrative LLM call receives Director context blocks and memory-retrieved facts, constraining the response without controlling it.
 
-The player will break the arc. That is the fundamental tension of interactive narrative. Three approaches exist:
+### 5. The player breaks everything (and that is the point)
 
 | Approach | How | Result |
-|---|---|---|
+|----------|-----|--------|
 | **Railroad** | Force the player back onto the arc | Players feel powerless, quit |
 | **Sandbox** | No arc at all, just simulate | Boring after a while, no payoff |
 | **Elastic arc** | Story has a *tendency* toward a shape; the player can stretch it | Meaningful agency with narrative coherence |
 
 The elastic arc works by steering the *world's response*, not the player's actions. The player has agency over what they do. The Director has agency over the consequences.
 
-- The player burns the tavern? The city watch comes.
-- The quest-giver dies? Someone else picks up the thread.
-- The player refuses the call to adventure? The adventure comes to them, in a different form.
-
-The world pushes back not by blocking the player, but by introducing consequences that naturally bend the story. The more the player deviates, the more interesting the consequences become.
-
 ### 6. The interface is part of the dramaturgy — read actions vs. write actions
 
-Not all player actions are created equal. The distinction is not "big vs. small" but **whether the action mutates the plot graph**.
+Not all player actions are equal. The distinction is whether the action mutates the plot graph.
 
 | | Read action | Write action |
 |---|---|---|
-| **What** | Observe, talk, explore, investigate | Decide, commit, act irreversibly |
-| **Graph effect** | None — the player gathers information | Transitions a plot node, chooses an edge |
-| **Input mode** | Freeform text | Constrained choices (adaptive count) |
+| **What** | Observe, talk, explore | Decide, commit, act irreversibly |
+| **Graph effect** | None — the player gathers information | Transitions a node, chooses an edge |
+| **Input mode** | Freeform text | Constrained choices |
 | **Who handles it** | LLM simulates freely | Director presents curated options |
 
-The player is always **on an edge** of the plot graph, traveling toward a plot node. While on that edge, freeform input is fine — the player chats, explores, builds relationships. Nothing they do changes the destination.
+The input mode spectrum: freeform → guided freeform → constrained choice → forced progression. The Director decides the mode based on graph position; the frontend renders whatever mode the backend sends.
 
-The mode shift to constrained choices happens **at nodes** — when the player arrives at a plot node and must choose which outgoing edge to take next. This is a visual-novel moment embedded in a freeform RPG. The UI change itself signals weight: "this decision matters."
-
-The shift between freeform and constrained input is itself a storytelling device. When the text box disappears and buttons appear, the player *feels* the gravity of the moment before reading a single word.
-
-#### Input mode spectrum
-
-The system supports a spectrum, not a binary:
-
-| Mode | When | UI |
-|---|---|---|
-| **Freeform** | On an edge, exploring | Text input |
-| **Guided freeform** | Approaching a node, soft nudge | Text input + suggested action chips |
-| **Constrained choice** | At a node, write action required | N buttons, no text input |
-| **Forced progression** | Climax, cutscene-equivalent | Single "Continue" button |
-
-The Director decides the mode based on the player's position in the graph and the plot node state. The frontend renders whatever input mode the backend sends.
-
-#### What the plot graph tracks vs. doesn't
-
-| Tracked by plot graph | NOT tracked |
-|---|---|
-| Which plot node the player is traveling toward | Moment-to-moment dialogue |
-| Which choice they made at the last node | Combat, exploration paths |
-| Plot node states (dormant/foreshadowed/active/resolved) | Freeform roleplay, flavor |
-| Structural edges between plot nodes | World simulation details |
-
-The memory system handles the "not tracked" column. The plot graph only cares about the structural skeleton.
-
-#### Talemate comparison
-
-Talemate's "Dynamic Actions" are floating suggestion chips generated by a random probability roll (`generate_choices_chance`) on each `player_turn_start` signal. The player can always ignore them and type freely. There is no mechanism to constrain input based on narrative weight — the choices are suggestions, never requirements.
-
-Rhapsode's constrained choices are structurally different: they are **mandatory at graph nodes**, driven by plot state rather than randomness, and each option maps to a specific graph edge transition with designed consequences.
-
----
+**Status:** Not yet implemented. Current UI is freeform-only. The constrained choice system requires the full DAG with edges, which is future work.
 
 ## Lessons from Talemate
 
-### What to carry forward
+Rhapsode draws from analysis of the [Talemate][1] codebase.
 
-- **Separation of narrative structure from prose generation.** The Director thinks about arrangement; the LLM thinks about prose.
-- **Layered context.** Raw recent dialogue + summarized older history + retrieved relevant memories. This is the right architecture.
-- **Canonical fact reinforcement.** Small, periodically refreshed facts (character traits, world rules) that stay alive without relying solely on retrieval.
-- **Per-character instructions.** The idea of giving each character private stage directions is powerful.
+### Carry forward
 
-### What to avoid
+- **Separation of narrative structure from prose generation.** Director thinks about arrangement; the LLM thinks about prose.
+- **Layered context.** Raw recent dialogue + summarized past + retrieved relevant memories.
+- **Canonical fact reinforcement.** Small facts that stay alive without relying solely on retrieval.
+- **Per-character instructions.** Private stage directions per character.
 
-- **Director as god-object.** Talemate's Director accumulated mixins for every narrative concern. Keep responsibilities small and separate.
-- **LLM-driven structural decisions at runtime.** The LLM composes raw material; the Director structures it. The LLM never traverses the graph or decides timing.
-- **Equal-weight memories.** Not all moments matter equally. A betrayal after 20 hours should weigh more than what the barkeep said 5 turns ago.
-- **Over-engineered memory pipelines.** Multiple backends, AI-assisted query generation, placement modes. The operation is fundamentally simple: "what does the world remember that's relevant right now?"
+### Avoid
 
----
+- **Director as god-object.** Talemate's Director accumulated mixins for every narrative concern.
+- **LLM-driven structural decisions at runtime.** The LLM composes material; the Director structures it.
+- **Equal-weight memories.** A betrayal after 20 hours should weigh more than small talk 5 turns ago.
+- **Over-engineered memory pipelines.** The operation is fundamentally: "what does the world remember that is relevant here?"
 
-## The plot graph
+## References
 
-These principles led to a concrete architecture: the **plot graph**. See [[plot-graph]] for the full design.
+- [Vonnegut shapes of stories][2]
+- [GRRM on outlines][3]
+- [GRRM architects vs gardeners][4]
+- [[research/literature-review|literature review]] — 8 papers surveyed
 
-In brief: the plot graph is a DAG of latent plot nodes (secrets, ticking clocks, forces in motion). The LLM generates the raw dramatic material as free text; the Director extracts and structures it into graph nodes. The Director traverses the graph deterministically each turn, checking trigger conditions and injecting foreshadowing context. The LLM never sees the graph -- it sees only the prompt context the Director extracts.
-
-The Director also runs a **world-background loop** -- advancing off-screen plot nodes between player turns so the world lives and breathes independently of the player's attention.
-
-## Why there is no fortune tracker
-
-Early design considered a fortune tracker (a float from -1 to +1 representing the player's dramatic fortune). This was rejected for three reasons:
-
-1. **Story arcs are not one-dimensional.** A character can simultaneously be winning a battle and losing a relationship. Reducing this to a number is reductive.
-2. **The arc should emerge, not be tracked.** If the world has rich enough state (active plot nodes, weighted memories, consequences), the arc appears naturally. You don't need a number to tell the LLM "things are bad" -- the memories and world state already encode that.
-3. **Tracking the arc creates a circular dependency.** The fortune tracker is supposed to constrain the LLM, but if the LLM also sets it (via sentiment analysis), the system is chasing its own tail. Rule-based triggers from the graph would work mechanically but add authoring burden for little gain -- the graph itself already carries the dramatic weight.
-
-The Director's job is not "track the arc" but **"ensure the world has active forces."** It checks: are there active plot nodes? Are new ones being seeded? Has any plot node line gone stale? If the world is too quiet, the Director generates new material. The arc emerges from the interaction between the player's choices, the world's consequences, and accumulated memory.
-
-## Open questions (for future design sessions)
-
-1. What is the right data structure for weighted memories? A tagged event log with decay? An explicit significance score at write time?
-2. **Trigger language**: how do we express conditions like "player befriends barkeep"? Keyword matching? LLM classification?
-3. Where is the line between "Director context injection" and "railroading"? How much steering is too much?
-4. How should the extraction step work in detail? What happens when extraction fails or produces inconsistent nodes?
-5. How do plot node templates (reusable patterns like "character has a secret") interact with LLM-generated raw material?
+[1]: https://github.com/vegu-ai/talemate
+[2]: https://storytellingedge.substack.com/p/the-simple-shapes-of-great-stories
+[3]: https://www.youtube.com/watch?v=XF1PyB5v9jI
+[4]: https://www.youtube.com/watch?v=nK6VoL76r3Q

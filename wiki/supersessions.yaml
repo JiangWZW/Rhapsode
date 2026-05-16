@@ -1,0 +1,14 @@
+# Rhapsode Supersession Log
+# Records when new knowledge replaces old knowledge.
+# See SCHEMA.md section 6 for format and process.
+#
+# Format:
+# - date: YYYY-MM-DD
+#   page: path/to/page
+#   summary: What changed
+#   reason: Why it changed
+
+- date: 2026-05-07
+  page: architecture/python-server
+  summary: Embedding model changed from Alibaba-NLP/gte-base-en-v1.5 to BAAI/bge-base-en-v1.5
+  reason: Custom model code caused IndexError with recent torch/transformers versions
