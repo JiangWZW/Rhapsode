@@ -43,18 +43,20 @@ watch(() => props.messages.length, async () => {
   border-radius: 0.6rem;
   line-height: 1.5;
   white-space: pre-wrap;
+  font-size: 0.95rem;
 }
 
 .msg.assistant {
   align-self: flex-start;
-  background: #2a2a4a;
-  color: #d0d0e8;
+  background: #fffbeb;
+  color: #44403c;
+  border-left: 3px solid #d97706;
 }
 
 .msg.user {
   align-self: flex-end;
-  background: #3a5a8a;
-  color: #e8eef8;
+  background: #1e293b;
+  color: #f1f5f9;
 }
 
 .msg.thinking {

@@ -152,19 +152,27 @@ DirectorOutput Director::tick(int turn_index, const std::string& scene_context) 
                                  + " | raw[0:100]: " + raw.substr(0, 100));
     }
 
+    return apply_planned_turn(turn_index, response);
+}
+
+std::string Director::focus_payload_json(int turn_index, const std::string& scene_context) const {
+    return build_prompt(turn_index, scene_context);
+}
+
+DirectorOutput Director::apply_planned_turn(int turn_index, const nlohmann::json& response) {
     log_response_summary(response, graph_);
 
-    std::cerr << "  [1/5.d] Applying transitions...\n" << std::flush;
+    std::cerr << "  [graph] Applying transitions...\n" << std::flush;
     auto resolved = apply_transitions(response, turn_index);
 
-    std::cerr << "  [1/5.e] Applying new nodes...\n" << std::flush;
+    std::cerr << "  [graph] Applying new nodes...\n" << std::flush;
     auto added    = apply_new_nodes(response, turn_index);
     auto auto_resolved = enforce_invariants(added, turn_index);
     resolved.insert(resolved.end(), auto_resolved.begin(), auto_resolved.end());
     auto output   = collect_context(std::move(resolved));
     output.new_nodes = std::move(added);
 
-    std::cerr << "\n  ===== WorldGraph after tick " << turn_index << " =====\n";
+    std::cerr << "\n  ===== WorldGraph after apply " << turn_index << " =====\n";
     auto all = graph_.all_nodes(false);
     std::sort(all.begin(), all.end(), [](const Node& a, const Node& b) {
         if (a.state != b.state) return a.state < b.state;

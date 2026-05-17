@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-interface Message {
+export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  /** Present for assistant rows from merged flow; omission means narrator prose. */
+  scene_kind?: 'narrator' | 'character'
+  speaker?: string
 }
 
 export const useWebSocket = defineStore('websocket', () => {
-  const messages = ref<Message[]>([])
+  const messages = ref<ChatMessage[]>([])
   const connected = ref(false)
   const processing = ref(false)
 
@@ -26,11 +29,36 @@ export const useWebSocket = defineStore('websocket', () => {
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
-      if (data.type === 'assistant_message') {
-        messages.value.push({ role: 'assistant', content: data.content })
+
+      function pushAssistant(
+        content: string,
+        sceneKind?: 'narrator' | 'character',
+        speaker?: string,
+      ) {
+        const row: ChatMessage = {
+          role: 'assistant',
+          content,
+          scene_kind: sceneKind ?? 'narrator',
+        }
+        if (speaker) row.speaker = speaker
+        messages.value.push(row)
         processing.value = false
+      }
+
+      if (data.type === 'scene_message') {
+        const kind =
+          data.scene_kind === 'character'
+            ? 'character'
+            : 'narrator'
+        pushAssistant(data.content ?? '', kind, data.speaker)
+      } else if (data.type === 'assistant_message') {
+        pushAssistant(data.content ?? '', 'narrator')
       } else if (data.type === 'error') {
-        messages.value.push({ role: 'assistant', content: `[Error] ${data.detail}` })
+        messages.value.push({
+          role: 'assistant',
+          content: `[Error] ${data.detail}`,
+          scene_kind: 'narrator',
+        })
         processing.value = false
       } else if (data.type === 'status') {
         processing.value = data.state !== 'idle'

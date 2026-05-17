@@ -19,49 +19,78 @@ function submit() {
     <input
       v-model="text"
       :disabled="disabled"
-      placeholder="What do you do?"
+      placeholder="Describe your action..."
       autofocus
     />
-    <button :disabled="disabled || !text.trim()">Send</button>
+    <button :disabled="disabled || !text.trim()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+      <span>Send</span>
+    </button>
   </form>
 </template>
 
 <style scoped>
 .input-bar {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #2a2a4a;
+  gap: 0.75rem;
 }
 
 input {
   flex: 1;
-  padding: 0.5rem 0.75rem;
-  background: #16162b;
-  border: 1px solid #3a3a5a;
-  border-radius: 0.4rem;
-  color: #e0e0e0;
-  font-size: 0.95rem;
+  padding: 0.85rem 1.25rem;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  color: #111827;
+  font-size: 1rem;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+input::placeholder {
+  color: #9ca3af;
+}
+
 input:focus {
-  border-color: #5a7aba;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
 }
 
 button {
-  padding: 0.5rem 1rem;
-  background: #3a5a8a;
-  color: #e8eef8;
+  padding: 0.85rem 1.75rem;
+  background: #d97706;
+  color: #fff;
   border: none;
-  border-radius: 0.4rem;
+  border-radius: 0.75rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
 }
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+
+button svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
+
 button:not(:disabled):hover {
-  background: #4a6a9a;
+  background: #b45309;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 </style>

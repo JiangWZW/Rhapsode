@@ -168,8 +168,15 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<Director>(m, "Director")
         .def(py::init<WorldGraph&>(), py::arg("graph"))
-        .def("set_llm_callback",        &Director::set_llm_callback)
-        .def("tick",                     &Director::tick, py::arg("turn_index"), py::arg("scene_context"));
+        .def("set_llm_callback", &Director::set_llm_callback)
+        .def("tick", &Director::tick, py::arg("turn_index"), py::arg("scene_context"))
+        .def("focus_payload_json", &Director::focus_payload_json, py::arg("turn_index"),
+             py::arg("scene_context"))
+        .def("apply_planned_turn",
+             [](Director& self, int turn_idx, const std::string& json_txt) -> DirectorOutput {
+                 return self.apply_planned_turn(turn_idx, nlohmann::json::parse(json_txt));
+             },
+             py::arg("turn_index"), py::arg("json_txt"));
 
     // ── Scene Loop ──
 
@@ -183,17 +190,19 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<SceneLoop>(m, "SceneLoop")
         .def(py::init<>())
-        .def("load_scene",                  &SceneLoop::load_scene)
-        .def("submit_input",                &SceneLoop::submit_input)
-        .def("state",                       &SceneLoop::state)
-        .def("set_prompt_callback",         &SceneLoop::set_prompt_callback)
-        .def("set_llm_callback",            &SceneLoop::set_llm_callback)
-        .def("set_turn_complete_callback",  &SceneLoop::set_turn_complete_callback)
-        .def("set_director",                &SceneLoop::set_director, py::arg("director"))
-        .def("last_director_output",        &SceneLoop::last_director_output)
-        .def("set_history_window",          &SceneLoop::set_history_window,
+        .def("load_scene",                   &SceneLoop::load_scene)
+        .def("submit_input",                 &SceneLoop::submit_input)
+        .def("state",                        &SceneLoop::state)
+        .def("set_prompt_callback",          &SceneLoop::set_prompt_callback)
+        .def("set_llm_callback",             &SceneLoop::set_llm_callback)
+        .def("set_turn_complete_callback",   &SceneLoop::set_turn_complete_callback)
+        .def("set_character_synth_callback", &SceneLoop::set_character_synth_callback)
+        .def("take_last_turn_outputs",       &SceneLoop::take_last_turn_outputs)
+        .def("set_director",                 &SceneLoop::set_director, py::arg("director"))
+        .def("last_director_output",         &SceneLoop::last_director_output)
+        .def("set_history_window",           &SceneLoop::set_history_window,
              py::arg("normal") = 3, py::arg("resume") = 10)
-        .def("set_resuming",                &SceneLoop::set_resuming, py::arg("v"));
+        .def("set_resuming",                 &SceneLoop::set_resuming, py::arg("v"));
 
     // ── Memory System ──
 

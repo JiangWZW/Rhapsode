@@ -3,6 +3,7 @@
 
 # Build artifacts
 build/
+build-vs/
 __pycache__/
 *.pyd
 *.egg-info/

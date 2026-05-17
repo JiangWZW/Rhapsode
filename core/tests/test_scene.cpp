@@ -194,10 +194,12 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     std::string captured_prompt;
     SceneMessage captured_result;
 
-    loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s, const DirectorOutput& d) {
+    loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s,
+                                   const DirectorOutput& d, const std::string& focus) {
         (void)hist;
         (void)s;
         (void)d;
+        (void)focus;
         captured_prompt = "prompt_built";
         return "assembled prompt";
     });
