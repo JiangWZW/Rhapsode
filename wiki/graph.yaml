@@ -28,15 +28,30 @@ entities:
     layer: cpp-core
     page: architecture/system-overview
 
-  - name: NodePool
+  - name: WorldGraph
     type: class
     layer: cpp-core
     page: architecture/plot-graph
 
-  - name: PlotGraph
-    type: concept
+  - name: Node
+    type: struct
     layer: cpp-core
     page: architecture/plot-graph
+
+  - name: EdgeData
+    type: struct
+    layer: cpp-core
+    page: architecture/plot-graph
+
+  - name: RelationKind
+    type: enum
+    layer: cpp-core
+    page: architecture/plot-graph
+
+  - name: MemorySystem
+    type: class
+    layer: cpp-core
+    page: architecture/memory-system
 
   - name: SceneMessage
     type: struct
@@ -48,12 +63,17 @@ entities:
     layer: cpp-core
     page: architecture/cpp-data-model
 
-  - name: ResolvedMemory
+  - name: CharacterMemory
     type: class
+    layer: cpp-core
+    page: architecture/character-system
+
+  - name: FastAPI-App
+    type: module
     layer: python-server
     page: architecture/python-server
 
-  - name: FastAPI-App
+  - name: LLMProvider
     type: module
     layer: python-server
     page: architecture/python-server
@@ -63,7 +83,12 @@ entities:
     layer: python-server
     page: architecture/python-server
 
-  - name: GeminiClient
+  - name: CharacterAgent
+    type: module
+    layer: python-server
+    page: architecture/python-server
+
+  - name: MemoryCallbacks
     type: module
     layer: python-server
     page: architecture/python-server
@@ -78,17 +103,12 @@ entities:
     layer: vue-frontend
     page: architecture/vue-frontend
 
+  - name: LayoutStore
+    type: module
+    layer: vue-frontend
+    page: architecture/vue-frontend
+
 relationships:
-  - from: Session
-    to: PlotGraph
-    type: owns
-    page: architecture/system-overview
-
-  - from: Session
-    to: Director
-    type: owns
-    page: architecture/system-overview
-
   - from: SceneLoop
     to: Scene
     type: owns
@@ -99,18 +119,33 @@ relationships:
     type: calls
     page: architecture/scene-loop
 
-  - name: Scene
+  - from: SceneLoop
+    to: CharacterAgent
+    type: calls
+    page: architecture/scene-loop
+
+  - from: Scene
     to: History
     type: owns
     page: architecture/cpp-data-model
 
-  - from: Director
-    to: NodePool
+  - from: Scene
+    to: WorldGraph
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: Scene
+    to: CharacterMemory
+    type: owns
+    page: architecture/character-system
+
+  - from: SceneLoop
+    to: CharacterMemory
     type: calls
-    page: architecture/system-overview
+    page: architecture/character-system
 
   - from: Director
-    to: ResolvedMemory
+    to: WorldGraph
     type: calls
     page: architecture/system-overview
 
@@ -120,7 +155,12 @@ relationships:
     page: architecture/python-server
 
   - from: FastAPI-App
-    to: GeminiClient
+    to: LLMProvider
+    type: depends-on
+    page: architecture/python-server
+
+  - from: FastAPI-App
+    to: MemoryCallbacks
     type: depends-on
     page: architecture/python-server
 
@@ -129,7 +169,12 @@ relationships:
     type: feeds
     page: architecture/python-server
 
-  - from: ResolvedMemory
+  - from: MemoryCallbacks
+    to: MemorySystem
+    type: feeds
+    page: architecture/memory-system
+
+  - from: MemorySystem
     to: PromptBuilder
     type: feeds
     page: architecture/python-server

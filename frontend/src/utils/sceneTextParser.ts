@@ -2,14 +2,15 @@
  * Scene text parser for Rhapsode narrative output.
  *
  * Uses markdown-it (typographer: true) as the rendering engine so that:
- *   - *emphasis*   → <em> (amber-accented in CSS)
- *   - **bold**     → <strong>
  *   - "dialogue"   → <span class="sq"> with proper curly quotes
  *   - (aside)      → <span class="paren"> for parenthetical/whisper
  *   - [note]       → <span class="bk"> for game/system annotations
  *   - --           → — (em-dash)
  *   - ...          → … (ellipsis)
  *   - "..."        → "..." (smart/curly quotes on non-dialogue text)
+ *
+ * Emphasis (*...*  / **...**) is disabled — entity highlighting is
+ * driven by the C++ Annotator + FABLE NER instead.
  *
  * All block paragraphs receive class="sp" for CSS targeting.
  * html: false is kept to prevent XSS from LLM output.
@@ -24,6 +25,8 @@ const md = new MarkdownIt({
   html:        false,
   linkify:     false,
 })
+
+md.disable(['emphasis'])
 
 // Add class="sp" to every paragraph so CSS can target narration text.
 md.renderer.rules.paragraph_open = (tokens, idx, options, _env, self) => {
@@ -87,4 +90,37 @@ md.inline.ruler.push('rhapsode_bracket',  bracketRule)
 export function parseScene(raw: string): string {
   if (!raw) return ''
   return md.render(raw)
+}
+
+export interface EntitySpan {
+  start: number
+  end: number
+  text: string
+  category: string
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export function applyAnnotations(html: string, entities: EntitySpan[]): string {
+  if (!entities || !entities.length) return html
+
+  const sorted = [...entities].sort((a, b) => b.text.length - a.text.length)
+  const seen = new Set<string>()
+
+  for (const ent of sorted) {
+    const key = `${ent.text.toLowerCase()}::${ent.category}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const escaped = escapeRegex(ent.text)
+    const re = new RegExp(`\\b${escaped}\\b`, 'gi')
+    html = html.replace(/([^<]+)|(<[^>]+>)/g, (_match, text, tag) => {
+      if (tag) return tag
+      return text.replace(re, (m: string) =>
+        `<span class="ent ent-${ent.category}">${m}</span>`)
+    })
+  }
+  return html
 }

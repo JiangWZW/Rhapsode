@@ -1,4 +1,4 @@
-"""Python callback implementations for C++ MemorySystem."""
+"""Python callback implementations for C++ MemorySystem and CharacterMemory."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ import logging
 import chromadb
 from sentence_transformers import SentenceTransformer
 
-from rhapsode.lemmatization import lemmatize_for_bm25
 
 log = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 _shared_model: SentenceTransformer | None = None
+_shared_client: chromadb.ClientAPI | None = None
 
 
 def warmup_model() -> None:
@@ -24,35 +24,43 @@ def warmup_model() -> None:
         log.info("Embedding model ready.")
 
 
-def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chroma"):
-    """Register all Python callbacks on a C++ MemorySystem instance."""
+def _get_client(chroma_path: str = "./chroma") -> chromadb.ClientAPI:
+    global _shared_client
+    if _shared_client is None:
+        _shared_client = chromadb.PersistentClient(path=chroma_path)
+    return _shared_client
+
+
+def _make_embed():
+    """Return a shared embed callback."""
     global _shared_model
     if _shared_model is None:
         warmup_model()
     model = _shared_model
 
-    client = chromadb.PersistentClient(path=chroma_path)
-    collections = {
-        f"{scene_id}_facts": client.get_or_create_collection(
-            name=f"{scene_id}_facts", metadata={"hnsw:space": "cosine"}),
-        f"{scene_id}_entities": client.get_or_create_collection(
-            name=f"{scene_id}_entities", metadata={"hnsw:space": "cosine"}),
-    }
-
-    def _col(name: str):
-        return collections[name]
-
     def embed(text: str) -> str:
         return json.dumps(model.encode(text).tolist())
+    return embed
 
-    def lemmatize(text: str) -> str:
-        return lemmatize_for_bm25(text)
 
-    def store(collection: str, id: str, doc: str, embedding_json: str, metadata_json: str):
-        col = _col(collection)
-        col.add(ids=[id], documents=[doc],
-                embeddings=[json.loads(embedding_json)],
-                metadatas=[json.loads(metadata_json)])
+def _make_chroma_callbacks(client: chromadb.ClientAPI):
+    """Build store/query callbacks backed by a shared ChromaDB client.
+
+    Collections are created lazily and cached.
+    """
+    cache: dict[str, chromadb.Collection] = {}
+
+    def _col(name: str) -> chromadb.Collection:
+        if name not in cache:
+            cache[name] = client.get_or_create_collection(
+                name=name, metadata={"hnsw:space": "cosine"})
+        return cache[name]
+
+    def store(collection: str, doc_id: str, doc: str, embedding_json: str, metadata_json: str):
+        _col(collection).upsert(
+            ids=[doc_id], documents=[doc],
+            embeddings=[json.loads(embedding_json)],
+            metadatas=[json.loads(metadata_json)])
 
     def query(collection: str, embedding_json: str, n: int, where_json: str) -> str:
         col = _col(collection)
@@ -69,8 +77,8 @@ def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chrom
         )
         return json.dumps(results)
 
-    def update_meta(collection: str, id: str, metadata_json: str):
-        _col(collection).update(ids=[id], metadatas=[json.loads(metadata_json)])
+    def update_meta(collection: str, doc_id: str, metadata_json: str):
+        _col(collection).update(ids=[doc_id], metadatas=[json.loads(metadata_json)])
 
     def get_by_meta(collection: str, where_json: str) -> str:
         col = _col(collection)
@@ -78,13 +86,36 @@ def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chrom
         results = col.get(where=where if where else None)
         return json.dumps(results)
 
+    def delete(collection: str, ids_json: str):
+        _col(collection).delete(ids=json.loads(ids_json))
+
+    return store, query, update_meta, get_by_meta, delete
+
+
+def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chroma"):
+    """Register all Python callbacks on a C++ MemorySystem instance."""
+    embed = _make_embed()
+    client = _get_client(chroma_path)
+    store, query, update_meta, get_by_meta, delete = _make_chroma_callbacks(client)
+
     memory_system.set_embed_callback(embed)
-    memory_system.set_lemmatize_callback(lemmatize)
     memory_system.set_store_callback(store)
     memory_system.set_query_callback(query)
     memory_system.set_update_meta_callback(update_meta)
     memory_system.set_get_by_meta_callback(get_by_meta)
+    memory_system.set_delete_callback(delete)
 
-    log.info("Memory callbacks registered (facts=%d, entities=%d)",
-             collections[f"{scene_id}_facts"].count(),
-             collections[f"{scene_id}_entities"].count())
+    log.info("MemorySystem callbacks registered for scene %s", scene_id)
+
+
+def register_character_memory_callbacks(char_mem, chroma_path: str = "./chroma"):
+    """Register embed/store/query callbacks on a C++ CharacterMemory instance."""
+    embed = _make_embed()
+    client = _get_client(chroma_path)
+    store, query, _, _, _ = _make_chroma_callbacks(client)
+
+    char_mem.set_embed_callback(embed)
+    char_mem.set_store_callback(store)
+    char_mem.set_query_callback(query)
+
+    log.info("CharacterMemory callbacks registered for %s", char_mem.name)

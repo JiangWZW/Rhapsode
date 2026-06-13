@@ -1,94 +1,93 @@
-"""Merged narrator + plot-graph prompts (single premium-LLM call)."""
+"""Narrator prompt assembly: static system message + dynamic user message."""
 
-GRAPH_RULES = """\
-GRAPH OUTPUT (inside the JSON blob below):
+FORMAT_AND_RULES = """\
+OUTPUT: 2-4 paragraphs of second-person present-tense prose, sensory grounding.
+PROSE IS NARRATION ONLY -- describe what happens; never write what anyone says.
+No quotation marks, no character dialogue, and no *asterisks* / stage directions in the
+prose. Every spoken line goes in speech_turns as a cue (direction, NOT the words) and is
+voiced separately; writing speech in the prose duplicates it and breaks the display.
+No markdown formatting in prose.
 
-  transitions:
-    [{"id": <number>, "state": "dormant|foreshadowed|active|resolved"}, ...]
-
-  new_nodes:
-    [{"fact": <string>, "type": "<plot|scene|world|relationship>",
-      "state": "dormant|foreshadowed|active|resolved",
-      "foreshadow_ctx": <string>, "active_ctx": <string>,
-      "known_by": [<string>], "entities": [<optional strings>]}, ...]
-
-PLAYER AGENCY (strict):
-- NEVER generate facts describing Player actions the Player has not taken.
-- Only the Player's own words determine what they do.
-- You MAY foreshadow Player options ("foreshadowed") but NEVER assert them as resolved.
-
-FACT FORMAT — one atomic proposition, <=15 spoken English tokens, numeric digits okay:
-
-GOOD: "barkeep owes thieves guild 200g"
-BAD:  "The barkeep finally admits he owes coins because reasons"
-
-Maintain tension — max ~3 new_nodes / turn unless graph is sparse.
-Contexts must be evocative plain prose — no bullets, Markdown, quotation marks."""
-
-SPEECH_RULES = """\
-speech_turns (ordering matters):
-[
-  {"character": "<exact scenario name>", "cue": "<1–2 sentences of emotional / situational context — NOT scripted speech>"}
-]
-
-Include one entry each time an NPC should audibly react this chronology;
-use [] only if the narrator beat is ambience-only."""
-
-NARRATIVE_FRAME = """\
-### Narrative (markdown body, FLOW 1)
-2–4 dense paragraphs — second-person present, sensory grounding.
-
-RULES FOR THIS BODY:
-- **No quoted dialogue.** Never wrap spoken lines in quotation marks — that work is outsourced.
-- NEVER write lines for NPCs verbatim; cues go in speech_turns only.
-- *Italic emphasis* sparingly for sensory hits.
-
-THEN output the sentinel line verbatim on its own:
+Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>
+Then raw JSON (no fences):
+{"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
+ "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
+ "speech_turns":[{"character":"Name","cue":"direction not dialogue","dramatic_intent":"...","emotional_state":"...","responds_to":"..."}],
+ "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
+ "active_cast":["present NPC names"]}
 
-Immediately follow with raw JSON (**no fences**) matching:
-{
-  "transitions": [...],
-  "new_nodes": [...],
-  "speech_turns": [...]
-}
-"""
+RULES:
+- Never narrate unperformed Player actions. May foreshadow options.
+- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
+- entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
+- audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
+- speech_turns: one entry per NPC audible reaction. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
+- new_characters: first-time speaking NPCs only. [] if none introduced.
+- active_cast: all living NPCs physically present this scene. [] if player alone."""
 
 
-def build_merged_prompt(
+def build_system_message(scene) -> str:
+    """Static system message: scene premise + output format rules.
+
+    Built once per session; cacheable by the API provider.
+    """
+    return scene.system_prompt.strip() + "\n\n" + FORMAT_AND_RULES
+
+
+_VERBATIM_TAIL = 6
+_MAX_MSG_CHARS = 400
+_MAX_FACTS = 8
+_MAX_STORY_CHARS = 1500
+
+
+def build_user_message(
     history_snapshot,
     scene,
-    director_out=None,
     *,
-    director_focus_json: str = "{}",
+    director_focus_text: str = "",
     established_facts: list[str] | None = None,
     active_characters: list[str] | None = None,
+    story_so_far: str = "",
+    inner_states: str = "",
 ) -> str:
-    parts = [
-        scene.system_prompt.strip(),
-        "",
-        NARRATIVE_FRAME,
-        GRAPH_RULES,
-        "",
-        SPEECH_RULES,
-    ]
+    """Dynamic user message: cast, graph, inner states, past memories, story, conversation."""
+    parts: list[str] = []
 
     if active_characters:
-        parts += ["", "Characters present:", ", ".join(active_characters)]
+        parts += ["### Cast", *active_characters]
+
+    if director_focus_text:
+        parts += ["", "### Graph", director_focus_text]
 
     if established_facts:
-        parts += ["", "### Established memories", *[f"- {f}" for f in established_facts]]
+        facts = established_facts[:_MAX_FACTS]
+        parts += ["", "### Past", *[f"- {f}" for f in facts]]
 
-    if director_out and director_out.context_blocks:
-        parts += ["", "### Active plot pressures", *director_out.context_blocks]
+    if story_so_far:
+        parts += ["", "### Story so far", story_so_far[:_MAX_STORY_CHARS]]
 
+    if inner_states:
+        # Pre-formatted by the C++ scene loop (already carries its own
+        # "### Inner states" header); splice in verbatim.
+        parts += ["", inner_states.rstrip("\n")]
+
+    conv = history_snapshot[-_VERBATIM_TAIL:] if story_so_far else history_snapshot
     parts += [
         "",
-        "### Plot graph snapshot JSON (immutable — reference exact node IDs)",
-        director_focus_json,
+        "### Conversation",
+        *[f"{m.role.name.lower()}: {m.content[:_MAX_MSG_CHARS]}" for m in conv],
+    ]
+
+    # Final, highest-salience reminder of the two most-violated constraints --
+    # placed last so it survives the conversation-history feedback loop above.
+    parts += [
         "",
-        "### Conversation backlog",
-        *[f"{m.role.name.lower()}: {m.content}" for m in history_snapshot],
+        "### Remember",
+        "- Prose is narration only: never a character's spoken words or *actions* -- "
+        "every line of speech is a speech_turns cue, voiced separately.",
+        "- Give a speech_turn only to a character who can speak right now "
+        "(not asleep, unconscious, incapacitated, dead, or absent).",
     ]
 
     return "\n".join(parts)

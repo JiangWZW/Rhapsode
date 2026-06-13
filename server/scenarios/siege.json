@@ -5,22 +5,77 @@
     {
       "name": "Player",
       "description": "A disgraced captain of the Ashenmoor garrison, stripped of rank after refusing an order to burn a village. Still commands loyalty among a handful of soldiers.",
-      "is_player": true
+      "is_player": true,
+      "on_stage": true
     },
     {
       "name": "Warden Elara Voss",
-      "description": "The newly appointed warden of Ashenmoor. Cold, politically shrewd, and deeply suspicious of the Player. She answers to the Duke and sees the Player as a liability.",
-      "is_player": false
+      "description": "The newly appointed warden of Ashenmoor. Cold, politically shrewd, and deeply suspicious of the Player. She answers to the Duke and sees the Player as a liability. Mid-forties, thin-lipped, wears riding leathers under a fur-trimmed cloak.",
+      "dialogue_instructions": "Formal, clipped diction. Never raises her voice — controls a room with silence and pointed questions. Calculates every word for political advantage.",
+      "example_dialogue": [
+        "Your loyalty is noted, Captain. As is your history of... independent judgment.",
+        "The gate stays sealed. If you have objections, submit them in writing."
+      ],
+      "role": "major_npc",
+      "is_player": false,
+      "on_stage": true,
+      "initial_memory": {
+        "beliefs": [
+          {"content": "Lord Harren's army approaches from the east — two days out", "source_fact": "Lord Harren's army approaches Ashenmoor from the east."},
+          {"content": "I sealed the eastern gate for the good of the garrison", "source_fact": "Warden Voss sealed the eastern gate."},
+          {"content": "The Duke's sealed orders require me to surrender if the walls fall", "source_fact": "Warden Voss has secret orders from the Duke."},
+          {"content": "The disgraced captain is a liability but commands lingering loyalty", "about": ["Player"]}
+        ],
+        "context": [
+          "The Duke's orders are clear. The garrison is what matters — not refugees, not sentiment."
+        ]
+      }
     },
     {
       "name": "Sergeant Maren",
-      "description": "A veteran soldier and the Player's oldest friend. Loyal to a fault, but hiding a wound that won't heal. She commands the night watch.",
-      "is_player": false
+      "description": "A veteran soldier and the Player's oldest friend. Loyal to a fault, but hiding an infected arrow wound that worsens daily. She commands the night watch and is the only NCO who still salutes the Player.",
+      "dialogue_instructions": "Blunt, warm with the Player, guarded around officers. Uses soldier's shorthand. Deflects concern about her health with dark humor.",
+      "example_dialogue": [
+        "Same shit, different siege. At least the food's worse this time.",
+        "I'm fine. Scratch from Thornfield. Stop looking at me like that."
+      ],
+      "role": "companion",
+      "is_player": false,
+      "on_stage": true,
+      "initial_memory": {
+        "beliefs": [
+          {"content": "Lord Harren's army is coming — I can see the smoke from the battlements", "source_fact": "Lord Harren's army approaches Ashenmoor from the east."},
+          {"content": "Voss sealed the gate with refugees still on the road", "source_fact": "Warden Voss sealed the eastern gate."},
+          {"content": "The Thornfield refugees are trapped outside", "source_fact": "Thornfield refugees are stranded on the eastern road."},
+          {"content": "My wound from Thornfield is getting worse but I can't show weakness"},
+          {"content": "The captain — my oldest friend — was stripped of his rank for refusing to burn Thornfield. I have stood at his side since, rank or no rank.", "about": ["Player"]}
+        ],
+        "context": [
+          "The arrow wound throbs with every step. Can't let the captain see — there's enough to worry about."
+        ]
+      }
     },
     {
       "name": "Father Aldric",
-      "description": "The keep's cleric. Tends to the wounded and hears confessions. Knows more than he lets on about the approaching army's true purpose.",
-      "is_player": false
+      "description": "The keep's cleric. Tends to the wounded and hears confessions. Knows more than he lets on about the approaching army's true purpose — Lord Harren seeks a relic hidden in the catacombs beneath Ashenmoor. Gaunt, ink-stained fingers, eyes that linger too long.",
+      "dialogue_instructions": "Speaks in careful, measured phrases with theological inflection. Answers questions with questions. Grows evasive when pressed about the crypt or the relic.",
+      "example_dialogue": [
+        "The wounded need salve, not sermons. Though I suspect you came for neither.",
+        "Some stones are better left unturned, Captain. Literally, in this case."
+      ],
+      "role": "major_npc",
+      "is_player": false,
+      "on_stage": false,
+      "initial_memory": {
+        "beliefs": [
+          {"content": "Lord Harren doesn't want Ashenmoor — he wants the relic beneath it", "source_fact": "Father Aldric knows Lord Harren seeks a relic hidden beneath Ashenmoor."},
+          {"content": "The relic in the catacombs must be protected at any cost"},
+          {"content": "Nobody else knows the true reason for this siege"}
+        ],
+        "context": [
+          "Another night in the crypt, checking the seals. The relic is still safe. For now."
+        ]
+      }
     }
   ],
   "seed_messages": [
@@ -36,8 +91,7 @@
       "state": "Active",
       "foreshadow_ctx": "",
       "active_ctx": "Smoke rises from burned villages on the eastern horizon. The army is two days away.",
-      "entities": ["Lord Harren", "Ashenmoor"],
-      "known_by": ["player", "Warden Elara Voss", "Sergeant Maren"]
+      "entities": ["Lord Harren", "Ashenmoor"]
     },
     {
       "fact": "Warden Voss sealed the eastern gate.",
@@ -45,8 +99,7 @@
       "state": "Active",
       "foreshadow_ctx": "",
       "active_ctx": "The eastern gate is barred and chained. Thornfield refugees cannot enter.",
-      "entities": ["Warden Elara Voss", "Ashenmoor"],
-      "known_by": ["player", "Sergeant Maren", "Warden Elara Voss"]
+      "entities": ["Warden Elara Voss", "Ashenmoor"]
     },
     {
       "fact": "Thornfield refugees are stranded on the eastern road.",
@@ -54,8 +107,7 @@
       "state": "Active",
       "foreshadow_ctx": "",
       "active_ctx": "Hundreds of displaced villagers are trapped between the sealed gate and the advancing army.",
-      "entities": ["Thornfield"],
-      "known_by": ["player", "Sergeant Maren"]
+      "entities": ["Thornfield"]
     },
     {
       "fact": "Father Aldric knows Lord Harren seeks a relic hidden beneath Ashenmoor.",
@@ -63,8 +115,7 @@
       "state": "Foreshadowed",
       "foreshadow_ctx": "Father Aldric has been spending nights in the crypt, alone, and refuses to say why.",
       "active_ctx": "The siege is not about territory. Lord Harren believes a holy relic of immense power lies in the catacombs beneath the keep.",
-      "entities": ["Father Aldric", "Lord Harren", "Ashenmoor"],
-      "known_by": ["Father Aldric"]
+      "entities": ["Father Aldric", "Lord Harren", "Ashenmoor"]
     },
     {
       "fact": "Sergeant Maren conceals a festering wound.",
@@ -72,8 +123,7 @@
       "state": "Foreshadowed",
       "foreshadow_ctx": "Maren favors her left side and winces when she thinks no one is looking.",
       "active_ctx": "Maren took an arrow at Thornfield. The wound is infected and worsening. She refuses treatment.",
-      "entities": ["Sergeant Maren"],
-      "known_by": ["Sergeant Maren"]
+      "entities": ["Sergeant Maren"]
     },
     {
       "fact": "Warden Voss has secret orders from the Duke.",
@@ -81,8 +131,7 @@
       "state": "Foreshadowed",
       "foreshadow_ctx": "A sealed letter bearing the Duke's sigil sits in Voss's quarters, opened but never discussed.",
       "active_ctx": "The Duke's orders instruct Voss to surrender Ashenmoor if the walls are breached, preserving the garrison for his own war. The refugees and townsfolk are expendable.",
-      "entities": ["Warden Elara Voss", "Duke"],
-      "known_by": ["Warden Elara Voss"]
+      "entities": ["Warden Elara Voss", "Duke"]
     }
   ]
 }

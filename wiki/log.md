@@ -2,6 +2,284 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-06-11] research | Subplot lifecycle — craft research (WHEN and HOW to start/end threads)
+
+- Created and expanded `wiki/research/subplot-lifecycle-craft-research.md` — comprehensive research
+  into the dramaturgical theory governing subplot (thread) lifecycle decisions: when/how to start,
+  advance, and end off-stage storylines in Rhapsode.
+- **Human writing craft** (Part 1—): McKee (four subplot functions), Truby (scene weave), Snyder
+  (Save the Cat beat sheet — B Story at 22%, payload at 75%), Bell (two doorways + mirror moment),
+  Weiland (Lie/Ghost thematic mirrors), Kress (subplot as secondary war front), Sanderson
+  (Promise/Progress/Payoff), Film Crit Hulk (independent beat structures per thread). Parker &
+  Stone's "but/therefore" rule as a mechanical test for beat readiness. Laws' nine beat types and
+  emotional oscillation as the pacing signal. Rule of Threes (setup-eminder-ayoff) for timing.
+  Story Spine as minimal generative template for subplot chains.
+- **RPG design** (Part 3): Apocalypse World fronts and countdown clocks (the purest model for
+  ticking-clock threads — descriptive/prescriptive advancement, hidden from player, past-threshold
+  irreversibility). DramaSystem petitioner/granter token economy (structural model for what a
+  "dramatic beat" actually is). Sly Flourish's ten secrets (facts fluid until revealed, abstracted
+  from delivery). Alexandrian's Three Clue Rule + proactive nodes (three discovery paths per
+  subplot, proactive push as safety net). TV writers' room A/B/C story structure.
+- **Interactive narrative systems** (Part 4): Emily Short's QBN/salience taxonomy (Rhapsode is
+  inherently salience-based — system selects, not player). Kreminski's storylet design space
+  taxonomy (four dimensions). Felt/Starfreighter story sifting. Valve's fuzzy pattern matching
+  (most-specific-match-wins over a fact database — shipped in L4D). RimWorld storyteller pacing
+  (Cassandra's on/off cycles, Randy's 13-day backstop, wealth-based scaling). Façade beat
+  sequencing (precondition + tension-arc fit).
+- **Convergent principles** (Part 5): subplot = causal chain of 3— beats; start triggers (main
+  plot needs contrast, emotional oscillation, thematic mirror, maximum interval); end signals
+  (question answered, convergence with main plot, premise superseded, dropped). The "pre-plan the
+  chain, improvise the delivery" principle as the consensus resolution.
+- **Implications for Rhapsode** (Part 6): the 06-10 episode's autonomous narrator generates beats
+  with no pre-planned chain (violates plant/payoff); importance (graph centrality) misses dramatic
+  need; what the research supports building: authored subplot chains, salience+oscillation beat
+  selection, countdown clocks for ticking threats, three discovery paths, plant/reminder/payoff
+  tracking, min/max intervals, convergence as the preferred ending.
+- No code changed. Page registered in `index.md`.
+
+## [2026-06-10] design | Parallel scenes — shared pool, LOD by character importance, scene-thread lifecycle
+
+- Turned 06-09's direction (1) into an implementable, phased build plan in
+  `wiki/episodes/2026-06-10-parallel-scenes-shared-pool-lod-lifecycle.md`. Model: one shared pool
+  (graph + minds) hoisted out of `Scene`; scenes are storyline loops/lenses over it, one thread each;
+  per-scene **LOD = player-anchored graph-centrality of the present cast**; an autonomous scene is a
+  narrator call with no player input emitting the same JSON plan; the Validator becomes a per-commit
+  transactional gate (the serialized writer); the Weaver stitches loci on convergence. Spawn/destroy is
+  top-K importance admission + Dormant state + hysteresis, decided by the
+  `scan_death_candidates`/`confirm_deaths` propose-then-confirm idiom.
+- Corrected three wrong claims inherited from an earlier search-agent map, by reading source: the
+  `Validator` **is** wired and live (`app.py:480-484`, `director.cpp:362`); the narrator is the **sole**
+  world-author and the Director only *applies* its plan (`tick()` is unused live); the Weaver computes
+  **no** importance today (edges + supersession only). Also surfaced the real concurrency blocker: the
+  gate's whole-graph `to_json`/`from_json` rollback (`scene_loop.cpp:574,579`) must become per-plan.
+- No code changed. Phases 0— tracked as tasks; survey grounding (Generative Agents, Dwarf Fortress
+  verified; L4D/RimWorld from prior knowledge) recorded in the episode.
+
+## [2026-06-08] design + bugfix | Two-axes model; subjective self_state; reflection echo
+
+- Design episode from an 18-turn `siege` analysis: the engine is a *consistency* engine with no
+  *tension* layer. Captured the model — coherence vs tension axes, freedom as the complement of the
+  live constraint set (`valid_until` as the throttle), intent-vs-outcome, validator `supersede`
+  verdict, and the Director-as-tension-layer — in `wiki/episodes/2026-06-08-freedom-tension-and-the-two-axes.md`
+  and the findings in `wiki/research/narrator-and-mind-weakpoints.md`.
+- Bug: `self_state` was folded from `build_scene_context()` (the shared omniscient narration), so
+  off-stage minds absorbed events they never witnessed (Voss "tasting" the tent-cure potion).
+  `update_self_state(turn)` now folds only the character's *own* perception nodes from `beliefs_`;
+  a character who perceived nothing keeps its prior state. (`character_memory.{h,cpp}`,
+  `scene_loop.cpp` `build_inner_states`, bindings.)
+- Bug: reflected beliefs stored the prompt's echoed label (`"My belief: — `) and ran to purple prose.
+  `reflect_perceptions` now strips the echoed label (`strip_echoed_label`), asks for one terse
+  first-person sentence, and caps output at 240 chars. (`core/src/character_memory.cpp`.)
+- Verified headless against the built `_core.pyd`: stored belief drops the label; off-stage mind's
+  self_state stays put while a perceiving mind updates from its own perceptions.
+
+## [2026-06-06] architecture | Validator: one live-state predicate, contradiction-only
+
+- Fixed the continuity `Validator` rejecting foreshadowed payoffs (e.g. Maren's worsening wound) as
+  contradictions. Cause was duplicate logic: `gather_context` filtered context to `state == Active`
+  on top of the graph's own `valid_until`/`dominated()` notion, hiding Foreshadowed nodes from the
+  gate that judges their own activation.
+- `core/src/validator.cpp` only. Collapsed the filter to the system's existing live definition
+  (Active or Foreshadowed, not superseded) — matching the Director (`director.cpp:191`). Annotated
+  chain lines with the real `to_string(state)` instead of guessing `[active]`/`[ended]`.
+- Narrowed the prompt to contradiction-only: dropped the "every world change must appear in the
+  chain" doctrine and the causal-progression framing that taught novelty-as-contradiction; collapsed
+  the two footers into one; re-aimed examples (dead acts, kill-living, reuse-destroyed, foreshadowed
+  payoff). Net deletion of code.
+- Verified headless against Qwen3-8B: wound-worsening node accepted (foreshadowed wound now in
+  context), dead-character-acts still rejected.
+
+## [2026-06-06] architecture | New page: character-system
+
+- Added `wiki/architecture/character-system.md` — end-to-end documentation of the character system:
+  the static `Character` persona, the per-character `CharacterMemory` mind (graph, intake, three-signal
+  retrieval, reflection, persistent first-person self-state, persona grounding), the stage lifecycle,
+  the per-turn pipeline, and the two prompts (decision + actor) that render dialogue.
+- Includes ASCII diagrams (two-layer split, turn pipeline, reflection pipeline, self-state fold) and
+  critical code excerpts for each subsystem.
+- Registered in `index.md` and `graph.yaml` (`CharacterMemory` entity + Scene/SceneLoop edges).
+  Health score 5.0, lint clean.
+
+## [2026-06-06] architecture | Persistent first-person self-state for characters
+
+- Addresses §1 (character is a render target, not an agent) and §5 (POV corruption) from
+  `wiki/research/character-agent-maren-analysis.md`. Plan: `abstract-scribbling-rain.md`.
+- **`CharacterMemory` now carries a persistent first-person `self_state_`** — a running "who I am
+  right now" folded forward each turn via `update_self_state(recent_events, turn)`
+  (`new_state = LLM(previous_state + what just happened)`), rather than re-derived from a per-turn
+  memory query. This keeps an emotional thread (e.g. Maren's hidden wound) alive across topic shifts.
+  Serialized in `to_json`/`from_json` (survives save/load).
+- **Seeded from authored interiority:** `Scene::load_json` now sets `self_state_` from
+  `initial_memory.context` (already first-person), instead of only burying it in the memory stream.
+- **§5 POV:** `briefing()`, `reflect()` (focal + insight), `distill()`, `score_importance()` prompt
+  strings rewritten from third-person ("what X knows and feels") to first person ("I — ).
+- **Persona grounding:** `CharacterMemory` carries a `persona_` (the `Character.description`), injected
+  as a "Who I am: —  preamble into the first-person prompts so the local model keeps the right
+  identity/pronouns (fixes a misgendering bug — Maren was rendered as "a man"). Not serialized;
+  re-attached from `Character.description` on every load (single source of truth).
+- Also fixed a latent `briefing()` bug: output was capped at `raw.size()`, discarding any summary
+  longer than the bare memory list; now bounded at a fixed 1200 chars.
+- **Decision prompt now reads interiority:** the merged narrator/director prompt is the real
+  decision-maker (no separate Director LLM). `scene_loop.cpp::build_inner_states()` advances + emits
+  an `### Inner states` block (per on-stage NPC) threaded through the `PromptCallback` (new
+  `inner_states` arg). The actor prompt also gains an `Inner state` section. Python (`app.py`,
+  `prompt.py`) is pure plumbing.
+- Deferred: §2 (`source_fact` edges), §3 (unify wound representations), §4 (retrieval ratchet),
+  §6 (reconcile actor-prompt signals).
+
+## [2026-05-23] wiki | Align cpp-data-model and memory-system with current code
+
+- **`cpp-data-model.md` rewritten** to match the actual codebase as of 2026-05-23:
+  - `Character` struct: expanded from 3 fields to full 9 fields (`dialogue_instructions`, `example_dialogue`, `role`, `on_stage`, `dead`, `created_at`).
+  - `Node` struct: removed `known_by` (dropped 2026-05-20), added `trigger` and `arc_position` fields.
+  - `WorldGraph`: removed `RelationKind` enum. `EdgeData` now `{weight, created_at, active}`. Updated `add_relation()` signature, added `set_edge_active()`, `set_edge_weight()`, `all_edges()`, `thread_containing()`, `all_threads()`, `revert_to_turn()`, `to_dot()`.
+  - `Director`: added `set_validator()`, `focus_payload_text()`, `Rejection` struct, `rejections` in `DirectorOutput`.
+  - `MemorySystem`: removed `LemmatizeCallback`, `store_fact()`, `retrieve()`, `retrieve_for_injection()`. New API: `store_node()`, `search_nodes()`, `delete_nodes()`. Single collection `{scene_id}_nodes`.
+  - `SceneLoop`: added `Weaving` state, `set_narrator_llm_callback()` (system+user pair), `set_actor_llm_callback()`, `set_weaver()`, `last_weave_result()`. `PromptCallback` now returns `pair<string,string>`.
+  - `Scene`: added `character_memories`, `downsampler`, `enter_character()`, `find_on_stage()`, `exit_character()`, `exit_stale_characters()`, `revert_turns()`.
+  - **New types documented**: `CharacterMemory`+`MemoryNode`, `Weaver`+`WeaveOp`+`WeaveResult`+`GraphAnalysis`, `Validator`+`Verdict`, `Annotator`+`EntitySpan`, `TextDownsampler`+`Snippet`+`MipLevel`.
+  - pybind11 table fully rewritten — 24 bound types (was 16), all methods listed.
+- **`memory-system.md` rewritten** from scratch:
+  - Removed all references to BM25, entity boosting, lemmatization, spaCy, MD5 hashing, dual collections, distill/quality/conflict pipeline — none of this exists in the current code.
+  - Part 1: MemorySystem documented as simplified node index (store/search/delete + ChromaDB metadata sync).
+  - Part 2: CharacterMemory documented with full Generative Agents cycle — belief graph, observation intake, importance scoring, three-signal retrieval (formula + process), reflection, meta-reflection.
+  - Updated callback signatures table, configuration table, storage layout.
+
+## [2026-05-22] research | Summaryception + Generative Agents code analysis
+
+- Created `wiki/research/summaryception-analysis.md` — full architecture report of Summaryception v5.5.2 (SillyTavern recursive summarization extension). Documents: layered memory model, 4-backend connection routing, prompt isolation, ghosting system, branch repair, retry logic. Includes theoretical framing as recursive IIR filter.
+- Created `wiki/research/generative-agents-code-analysis.md` — full architecture report of Stanford's Generative Agents implementation. Documents: memory stream (AssociativeMemory), ConceptNode structure, three-factor retrieval scoring, importance-triggered reflection, hierarchical planning, social reactions, simulation loop.
+- Comparative analysis: Summaryception = recursive filter (bounded, lossy); Generative Agents = append-only log + triggered compression (unbounded, implicit forgetting).
+- Renamed wiki section to "External Extensions & Reference Implementations".
+
+## [2026-05-20] architecture | Unified memory redesign
+
+- **Humean edges**: Removed `RelationKind` enum. `EdgeData` simplified to `{weight, created_at, active}`. Edge direction enforced temporally (older node = source).
+- **Dropped `known_by`**: Removed from `Node` struct, all scenario seeds, prompt schema, and MemorySystem.
+- **New Node fields**: Added `trigger` and `arc_position` for Foreshadow-Trigger-Payoff tracking.
+- **Thread queries**: Added `thread_containing()` and `all_threads()` using `boost::connected_components`.
+- **MemorySystem refactored**: ChromaDB is now a semantic index. `store_node()` stores by `node_id`; `search_nodes()` returns node IDs. Heavy pipeline (BM25, quality scoring, entity extraction, conflict detection) removed.
+- **CharacterMemory**: New per-character subjective memory system (Generative Agents-inspired). Boost graph of `MemoryNode` beliefs + text context buffer + ChromaDB index. Core retrieval, prompt building, and reflection logic in C++.
+- **Python thin wrapper**: `character_agent.py` rewritten to call C++ `CharacterMemory` methods. `memory.py` refactored with shared ChromaDB client and lazy collection creation.
+- **Scenario migration**: All scenarios updated — `known_by` removed, `initial_memory` added per character with `beliefs` and `context`.
+- Updated `wiki/architecture/plot-graph.md` with full unified memory architecture docs.
+
+## [2026-05-19] research | Third-wave cognitive simulation papers
+
+- Created three new detailed paper pages for the "cognitive simulation" wave (late 2025--2026):
+  - `wiki/research/papers/her-dual-layer-thinking.md` -- HER (Fudan+MiniMax, arXiv 2026): dual-layer thinking (hidden system planning + visible role monologue) trained with RL and a specialized generative reward model. State-of-the-art: +30.2 over Qwen3-32B base on CoSER. Full model/RM/data release.
+  - `wiki/research/papers/humanllm.md` -- HumanLLM (Fudan+JHU, ACL 2026 Main): 244 psychological patterns (Big Five traits + cognitive biases + social influence) as interacting causal forces. Key finding: 8B beats 32B on multi-pattern dynamics -- cognitive process simulation is more parameter-efficient than behavior memorization. Negative transfer ablation shows standard SFT degrades pattern fidelity by 53%.
+  - `wiki/research/papers/character-r1.md` -- Character-R1 (HIT-SZ+Baidu, arXiv 2026): 10-dimension cognitive focus framework with GRPO verifiable rewards. Validated on Qwen2.5-7B (our target family). Character-conditioned normalization for multi-NPC training.
+- Updated `wiki/research/llm-roleplay-survey.md`:
+  - Added "third wave" to Landscape section (approaches 8-10: role-aware reasoning, dual-layer thinking, cognitive pattern simulation)
+  - Added new "Cognitive simulation methods" paper table and comparison table
+  - Expanded architecture from four layers to five (added L+: Cognitive Reasoning)
+  - Updated NPC tier composition table with L+ column
+  - Revised "What to adopt" priority list (cognitive focus at #2, psychological patterns at #4, dual-layer thinking at #6)
+  - Updated rankings: HER #1, HumanLLM #2, Character-R1 #6
+  - Updated code completeness ranking, evaluation landscape, and "What to watch"
+- Updated `wiki/index.md` with new "cognitive simulation (third wave)" section listing all three papers.
+
+## [2026-05-18] research | RAR paper page + experiment setup
+
+- Created `wiki/research/papers/rar-thinking-in-character.md` -- detailed analysis of "Thinking in Character" (Tang et al., NeurIPS 2025).
+- Covers the two-stage RAR pipeline (RIA SFT + RSO DPO), practical analysis for Rhapsode, reproducibility issues found during hands-on testing, hardware requirements, and comparison table against Neeko and OCT.
+- **Experiment in progress**: Stage 1 (RIA SFT) training running on RunPod RTX PRO 4500 (32GB) with Qwen 2.5 7B. Adapted configs to use Qwen template, absolute paths, gradient checkpointing. Fixed hardcoded relative paths in dataset_info.json and generated missing contrastive SFT data file.
+- Updated `wiki/index.md` with new paper entry.
+
+## [2026-05-17] architecture | Protagonist companion system design
+
+- Created `wiki/architecture/companion-system.md` -- design document for a single protagonist companion.
+- **L3 first**: LoRA identity via OCT-derived constitution -> DPO -> introspection SFT pipeline. Constitution authored by designer, re-baked between sessions.
+- **L2 second**: Generative Agents observe-reflect-plan memory. Companion-specific ChromaDB collection, importance scoring, composite retrieval (recency + importance + relevance), reflection generation.
+- **Deferred**: L1 (activation steering -- Qwen reliability caveat) and L1.5 (codified profiles -- more valuable for minor NPCs).
+- **Key design choices**: narrative-driven presence (WorldGraph, not hardcoded), emergent goals/relationships (via reflections, not structured tracking), dynamic evolution (no pre-defined arc phases).
+- **Honest unknowns flagged**: 7B DPO data quality, 7B reflection quality, automated constitution revision (unpublished), LoRA drift after multiple re-bakings, latency budget.
+- Quality gate between L3 and L2: test companion voice before investing in memory infrastructure.
+
+## [2026-05-17] research | Quality-lens re-search — new papers, quality assessment, full survey rewrite
+
+- **Re-searched** the literature with strict quality criteria: institution reputation, venue tier, citation count, code completeness.
+- **Added 3 new paper pages**:
+  - `generative-agents.md`: Park et al. (Stanford+Google, UIST 2023, **4,781 citations**, 21K stars). Seminal NPC memory architecture -- observe-reflect-plan cycle. Directly applicable to Rhapsode's memory system.
+  - `representation-engineering.md`: Zou et al. (CAIS+CMU+Berkeley+Stanford, **988 citations**). Foundation for ALL activation steering methods (PERSONA, CAST, ControlLM).
+  - `codified-profiles.md`: Peng & Shang (UCSD, NeurIPS 2025). Converts character descriptions into executable Python functions. Even 1B models can role-play. Novel approach for minor NPCs.
+- **Added quality assessment** (A/B/C/D ratings) to all 16 papers in the survey based on institution, venue, citations, and code quality.
+- **Downgraded** PERSONA (D: HIT weak in AI, zero community validation) and RoleRAG (D: brand new arXiv, no validation).
+- **Upgraded** OCT (A: Cambridge+AI2+Anthropic authors are the authority) and CharacterGLM (B: Tsinghua+Zhipu is top-tier Chinese AI).
+- **Revised architecture** from three-layer to **four-layer**: added Layer 1.5 (Codified Profiles) for behavioral rules. Updated Layer 2 to include Generative Agents memory (observe-reflect-plan) alongside RAG.
+- **Re-ranked** papers by Rhapsode relevance: Generative Agents #1 (memory architecture), OCT #2 (adversarial robustness), Codified Profiles #3 (novel, practical). PERSONA dropped from #1 to #13.
+- **Added evaluation resources** section: CharacterBox (RUC+MSRA+PKU, NAACL 2025) and PersonaGym (Princeton+CMU+GT+UMD, EMNLP 2025).
+- **Rewrote survey sections**:
+  - "Comparative analysis" now covers all 14 papers in a unified table (training-free vs. training-based), not just the original 6 SFT papers.
+  - "What to adopt" now lists 8 prioritized items mapping to specific papers and layers, not just the first-wave papers.
+  - Removed stale "two-tier architecture" section (superseded by four-layer).
+  - "Code completeness ranking" expanded from 6 to 10 papers.
+  - "Evaluation landscape" expanded to include PersonaGym and CharacterBox as dedicated frameworks, plus Codified benchmark.
+  - "Scaling properties" rewritten to map NPC tiers to specific layers and papers.
+  - Removed duplicate layer descriptions left over from the three-layer → four-layer transition.
+- Updated `index.md` with new paper pages and quality ratings.
+
+## [2026-05-17] research | Character evolution — the unsolved problem
+
+- Added new section to `llm-roleplay-survey.md`: "Character evolution: the unsolved problem."
+- Analysis of how each layer handles change: L1 (steering) and L2 (RAG) evolve naturally; L3 (LoRA) is static after training.
+- Four approaches evaluated: phase-based LoRA switching, invariant-core L3 + L1/L2 evolution, LoRA interpolation, periodic offline retraining.
+- Recommended design: invariant-core constitutions + 2-3 phase adapters for major arcs + L1/L2 for gradual drift.
+- Open questions flagged: LoRA interpolation coherence, L1-only personality change limits, player perception of phase transitions, automated constitution revision.
+
+## [2026-05-17] research | Three-method comparison and OCT deep-dive; wiki corrections
+
+- Added **three-method comparison** section to `llm-roleplay-survey.md`: verified performance data for activation steering vs. RAG vs. Constitutional AI LoRA, robustness hierarchy, cost comparison, and Qwen-specific findings.
+- **Deep-dive on Open Character Training** in `open-character-training.md`: full training pipeline (3 stages with hyperparameters), 11 personas table, all experimental results (revealed preferences, adversarial robustness Table 2/Figure 5, prefill attack F1, coherence Table 3, general capabilities Table 4), Qwen-specific implications.
+- **Corrected errors**:
+  - `persona-steering.md`: removed fabricated PersonalityBench scores (5.32 and 7.83 never appeared in the paper). Replaced with actual Table 4 data (7 methods compared on LLaMA-3-8B-Instruct).
+  - `persona-steering.md`: fixed misleading claim that trait compositions "don't interfere" -- paper's Appendix A.11 shows ~18% cross-trait secondary effects.
+  - `open-character-training.md`: fixed model size error (paper uses Qwen 2.5 **7B**, not 72B). Fixed robustness hierarchy (paper compared 3 methods, not 4 -- removed interpolated "LoRA fine-tuning" position).
+
+## [2026-05-17] research | Second wave — activation steering, RAG, Constitutional AI for characters
+
+- Discovered three new families of modular character approaches beyond LoRA fine-tuning.
+- **Activation steering** (Layer 1: Personality): PERSONA (ICLR 2026) achieves fine-tuning-quality personality control with zero training via vector algebra. CAST (ICLR 2025, IBM) adds conditional context-dependent steering.
+- **RAG-based character memory** (Layer 2: Knowledge): ChatHaruhi (2023, 2K stars) is the most validated system, already supports local Qwen. RoleRAG (2025) adds graph-guided retrieval with cognitive boundary awareness.
+- **Constitutional AI** (Layer 3: Deep Identity): Open Character Training (2025) uses human-readable constitutions + DPO, most adversarially robust method.
+- Revised architecture from two-tier to **three-layer**: Personality (steering vectors) + Knowledge (RAG) + Identity (LoRA). Most NPCs need only L1+L2 (zero training).
+- Created 5 new paper pages in `research/papers/`.
+- Updated `llm-roleplay-survey.md` with new families, three-layer architecture diagram, revised ranking (11 papers).
+- Updated `index.md` with new paper section.
+
+## [2026-05-17] research | Refine role-playing survey for Rhapsode constraints
+
+- Added design constraints to `llm-roleplay-survey.md`: local small LLMs only (Qwen/LLaMA 7-8B), modular architecture (no per-character full SFT).
+- Added two-tier architecture recommendation: Tier 1 (prompt-based, all NPCs) + Tier 2 (LoRA-enhanced, important NPCs).
+- Ranked papers by Rhapsode relevance: Neeko #1 (serving architecture), DITTO #2 (data generation), CoSER #3 (base model), RoleLLM #4 (fallback/eval), CharacterGLM #5 (profile schema), Character-LLM #6 (data method reference).
+- Updated all 6 paper pages with Rhapsode-specific fit assessments and rank explanations.
+- Ruled out Character-LLM (per-char SFT too expensive) and CharacterGLM (wrong model family) as direct adoption targets.
+- Identified key engineering task: reimplement DITTO's self-alignment data generation pipeline on local hardware.
+
+## [2026-05-17] research | LLM role-playing survey — 6 papers on tuning LLMs for game characters
+
+- Created `research/llm-roleplay-survey.md`: survey of methods for fine-tuning LLMs for character role-playing.
+- Reviewed 6 papers: Character-LLM (EMNLP 2023), RoleLLM (ACL 2024), DITTO (ACL 2024), CoSER (ICML 2025), Neeko (EMNLP 2024), CharacterGLM (EMNLP 2024).
+- 3 fully qualify (30+ citations, open-source code): Character-LLM, RoleLLM, DITTO.
+- 3 honorable mentions (below citation threshold but high relevance): CoSER, Neeko, CharacterGLM.
+- Individual paper pages in `research/papers/`.
+- Key takeaways: Experience Reconstruction for data generation, self-alignment over distillation, dynamic LoRA for multi-character serving, attribute/behavior decomposition for character design.
+- Updated `index.md` with new research section.
+
+## [2026-05-17] wiki | Align wiki with May 16—7 refactors
+
+- **NodePool replaced by WorldGraph**: flat `unordered_map` replaced by Boost.Graph `adjacency_list` with typed directed edges (`Related`, `Supersedes`, `Contradicts`, `CausedBy`). `EdgeData` carries confidence, created_at, active flag. BFS neighbor queries (`neighbors_within`) for 2-hop context. Legacy save compat via `from_legacy_node_pool_json`. Updated all pages referencing NodePool.
+- **Director redesigned**: no longer makes its own LLM call. `focus_payload_json()` provides graph context for the merged prompt. `apply_planned_turn()` applies transitions/new_nodes from parsed JSON. `enforce_invariants()` auto-resolves superseded/contradicted nodes via typed edges. `RetrievalCallback` removed.
+- **Merged narrator prompt (single LLM call)**: `prompt.py:build_merged_prompt()` combines narrative frame, graph rules, speech cue rules, active characters, established facts, plot pressures, graph snapshot, and history backlog. LLM response split at `<<<RHAPSODE_JSON>>>` sentinel in C++ `scene_loop.cpp`.
+- **SceneLoop expanded**: 4-arg `PromptCallback` (added `director_focus_json`), `CharacterSynthCallback` for NPC dialogue synthesis, `take_last_turn_outputs()` for multi-message turn output, history window defaults 8/12 (was 3/10).
+- **Multi-provider LLM**: new `llm.py` with `RHAPSODE_PROVIDER` selecting Gemini or DeepSeek. `gemini.py` superseded.
+- **Character synthesis**: new `character_agent.py` — local llama.cpp generates NPC dialogue from speech cues.
+- **Frontend redesigned**: panel-based layout (`StatusPanel`, `StoryPanel`, `ConversationPanel`), layout store (Pinia), `sceneTextParser.ts` (markdown-it with custom dialogue/bracket/paren rules), `scene_message` protocol with `scene_kind` and `speaker`.
+- **WebSocket protocol**: `scene_message` replaces `assistant_message`; multiple messages per turn (narrator + character lines); `memory.sync_resolved()` post-turn.
+- **README.md**: repo layout no longer says "(future)" for core/server/frontend.
+- Updated: `plot-graph.md`, `cpp-data-model.md`, `scene-loop.md`, `python-server.md`, `vue-frontend.md`, `system-overview.md`, `rhapsode-overview.md`, `index.md`, `graph.yaml`, `concepts.yaml`, `memory-system.md`, `AGENTS.md`, `README.md`.
+
 ## [2026-05-12] wiki | Full wiki rewrite — align docs with implementation
 
 - **Problem**: The entire wiki was deleted from disk (all pages showed as `D` in git). Content had diverged significantly from the actual codebase — the old wiki described planned structures that were never built (Session layer, PlotGraph DAG, llm/ subpackage, ws.py, session.py) while missing implemented features (MemorySystem, Director, save/load, local LLM integration).

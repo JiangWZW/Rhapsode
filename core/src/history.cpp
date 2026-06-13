@@ -41,6 +41,11 @@ size_t History::size() const {
     return messages_.size();
 }
 
+void History::truncate(size_t new_size) {
+    if (new_size < messages_.size())
+        messages_.resize(new_size);
+}
+
 void History::clear() {
     messages_.clear();
 }

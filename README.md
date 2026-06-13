@@ -25,9 +25,11 @@ Rhapsode/
 ├── AGENTS.md          # Wiki + agent schema (tracked)
 ├── raw/               # Reference sources (tracked)
 ├── wiki/              # Obsidian vault — curated docs (tracked)
-├── core/              # C++ (future)
-├── server/            # FastAPI (future)
-└── frontend/          # Vue 3 (future)
+├── core/              # C++17 engine (SceneLoop, Director, WorldGraph, MemorySystem)
+├── bindings/          # pybind11 module (_core)
+├── server/            # FastAPI WebSocket server + LLM + memory
+├── frontend/          # Vue 3 panel-based UI
+└── third_party/       # Boost headers, llama.cpp binaries
 ```
 
 ## Note on `wiki/`

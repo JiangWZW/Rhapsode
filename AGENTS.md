@@ -45,4 +45,4 @@ When dropping a new reference into `raw/`:
 
 ## Relationship to code
 
-- Code will eventually live under `core/`, `server/`, `frontend/` per plan. This wiki documents **intent and design**; implementation status should be noted on relevant pages (e.g. "not implemented yet").
+- Code lives under `core/` (C++), `bindings/` (pybind11), `server/` (FastAPI), `frontend/` (Vue 3). This wiki documents **intent and design**; implementation status should be noted on relevant pages.

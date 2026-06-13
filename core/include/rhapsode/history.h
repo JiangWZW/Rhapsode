@@ -10,6 +10,7 @@ public:
     void append(SceneMessage msg);
     std::vector<SceneMessage> snapshot(std::optional<size_t> n = std::nullopt) const;
     size_t size() const;
+    void truncate(size_t new_size);
     void clear();
     const std::vector<SceneMessage>& messages() const;
 

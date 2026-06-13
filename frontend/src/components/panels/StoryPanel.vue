@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import type { ChatMessage } from '../../stores/websocket'
-import { parseScene } from '../../utils/sceneTextParser'
+import { parseScene, applyAnnotations } from '../../utils/sceneTextParser'
 
 const props = defineProps<{
   messages: ChatMessage[]
@@ -36,12 +36,12 @@ watch(() => props.messages.length, async () => {
         <div
           v-else-if="msg.role === 'assistant'"
           class="narration-block"
-          v-html="parseScene(msg.content)"
+          v-html="applyAnnotations(parseScene(msg.content), msg.entities || [])"
         />
         <!-- Player action -->
         <div v-else class="action-block">
           <div class="action-label">YOU</div>
-          <div class="action-bubble">
+          <div class="action-body">
             <p>{{ msg.content }}</p>
           </div>
         </div>
@@ -96,6 +96,12 @@ watch(() => props.messages.length, async () => {
   background: transparent;
 }
 
+@media (max-width: 640px) {
+  .story-scroll {
+    padding: 1.25rem 1rem;
+  }
+}
+
 /* Narration block — clean flowing text, no boxes */
 .narration-block {
   /* No border, no background — pure text flow */
@@ -123,17 +129,14 @@ watch(() => props.messages.length, async () => {
   font-weight: 500;
 }
 
-/* *Emphasis* — markdown-it renders *text* as <em>; warm amber accent */
-.narration-block :deep(em) {
-  color: #b45309;
-  font-style: italic;
-}
-
-/* **Bold** — markdown-it renders **text** as <strong> */
-.narration-block :deep(strong) {
-  color: #292524;
-  font-weight: 600;
-}
+/* Entity highlights — semantic, driven by C++ Annotator + FABLE NER */
+.narration-block :deep(.ent)           { font-weight: 500; }
+.narration-block :deep(.ent-character) { color: #b45309; }
+.narration-block :deep(.ent-location)  { color: #0369a1; }
+.narration-block :deep(.ent-item)      { color: #7e22ce; }
+.narration-block :deep(.ent-event)     { color: #b91c1c; }
+.narration-block :deep(.ent-faction)   { color: #047857; }
+.narration-block :deep(.ent-entity)    { color: #57534e; }
 
 /* (Parenthetical) — italic muted aside, now that prose is upright */
 .narration-block :deep(.paren) {
@@ -157,37 +160,34 @@ watch(() => props.messages.length, async () => {
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-/* Player action block — lightweight, right-aligned */
+/* Player action block — right-anchored bubble, text flows left-aligned inside */
 .action-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
+  border-right: 3px solid #a78bfa;
+  padding: 0.35rem 1rem 0.35rem 0;
+  margin-left: auto;
+  width: fit-content;
+  max-width: 85%;
+  text-align: left;
 }
 
 .action-label {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  color: #a78bfa;
+  letter-spacing: 0.12em;
+  color: #7c3aed;
   text-transform: uppercase;
+  margin-bottom: 0.35rem;
+  text-align: right;
 }
 
-.action-bubble {
-  background: #fffbeb;
-  border: 1px solid #d97706;
-  border-radius: 0.5rem;
-  padding: 0.6rem 1rem;
-  max-width: 85%;
-}
-
-.action-bubble p {
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #292524;
-  font-size: 0.9875rem;
-  line-height: 1.65;
-  font-style: normal;
+.action-body p {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #1c1917;
+  font-weight: 500;
+  margin: 0;
 }
 
 .dialogue-block {

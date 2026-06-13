@@ -13,8 +13,8 @@
   pages: [scene-loop, system-overview]
 
 - name: plot-graph
-  aliases: [PlotGraph, NodePool, plot node, DAG, tension node, narrative graph]
-  desc: Directed acyclic graph of latent world facts that drive narrative
+  aliases: [PlotGraph, WorldGraph, NodePool, plot node, DAG, tension node, narrative graph, RelationKind, EdgeData]
+  desc: Directed graph of latent world facts with typed edges that drive narrative
   pages: [plot-graph, system-overview]
 
 - name: director
@@ -23,14 +23,19 @@
   pages: [system-overview, plot-graph]
 
 - name: prompt-construction
-  aliases: [prompt builder, build_prompt, context assembly, LLM prompt]
-  desc: How history, director output, and memory are assembled into LLM prompts
+  aliases: [prompt builder, build_merged_prompt, context assembly, LLM prompt, merged prompt]
+  desc: How history, director focus, memory, and graph rules are assembled into a single merged LLM prompt
   pages: [python-server]
 
 - name: llm-integration
-  aliases: [Gemini, google-genai, AthenAI, LLM client, complete()]
-  desc: How the server calls LLM APIs for generation
+  aliases: [Gemini, DeepSeek, google-genai, LLM client, complete(), RHAPSODE_PROVIDER, llm.py]
+  desc: How the server calls LLM APIs for generation (multi-provider)
   pages: [python-server, stack]
+
+- name: character-synth
+  aliases: [character synthesis, speech cues, character_agent, NPC dialogue, speech_turns]
+  desc: Local llama.cpp model generates NPC dialogue lines from speech cues
+  pages: [python-server, scene-loop]
 
 - name: websocket-protocol
   aliases: [WebSocket, /ws, ws_endpoint, real-time, frontend protocol]

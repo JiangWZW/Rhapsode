@@ -30,6 +30,17 @@
         "Python3_EXECUTABLE": "${sourceDir}/server/.venv/Scripts/python.exe",
         "CMAKE_MAKE_PROGRAM": "${sourceDir}/server/.venv/Scripts/ninja.exe"
       }
+    },
+    {
+      "name": "msvc2019",
+      "displayName": "VS 2019 MSVC (command-line build)",
+      "generator": "Visual Studio 16 2019",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "Python3_EXECUTABLE": "${sourceDir}/server/.venv/Scripts/python.exe"
+      }
     }
   ],
   "buildPresets": [
@@ -40,6 +51,11 @@
     {
       "name": "default",
       "configurePreset": "default"
+    },
+    {
+      "name": "msvc2019",
+      "configurePreset": "msvc2019",
+      "configuration": "Release"
     }
   ]
 }

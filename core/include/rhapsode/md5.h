@@ -1,5 +1,5 @@
 #pragma once
-// Public-domain MD5 implementation — header only
+// Public-domain MD5 implementation -- header only
 // Based on RFC 1321 reference implementation, simplified for C++11+
 
 #include <cstdint>

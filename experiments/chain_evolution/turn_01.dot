@@ -1,0 +1,34 @@
+digraph WorldGraph {
+  rankdir=LR;
+  bgcolor="#1e1e2e";
+  node [shape=box, style="filled,rounded", fontname="Segoe UI", fontsize=10];
+  edge [fontname="Segoe UI", fontsize=8, fontcolor="#cdd6f4"];
+
+  n1 [label="[1] Lord Harren's army approaches Ashenmoor from the east.", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n2 [label="[2] Warden Voss sealed the eastern gate.", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n3 [label="[3] Thornfield refugees are stranded on the eastern road.", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n4 [label="[4] Father Aldric knows Lord Harren seeks a relic hidden beneath...", fillcolor="#f9e2af", fontcolor="#1e1e2e", color="#f2c678"];
+  n5 [label="[5] Sergeant Maren conceals a festering wound.", fillcolor="#f9e2af", fontcolor="#1e1e2e", color="#f2c678"];
+  n6 [label="[6] Warden Voss has secret orders from the Duke.", fillcolor="#f9e2af", fontcolor="#1e1e2e", color="#f2c678"];
+  n7 [label="[7] Maren's arrow wound is seeping through her surcoat.", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n8 [label="[8] Voss believes the refugees are a drain on limited winter rat...", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n9 [label="[9] Soldiers are hoarding personal rations in anticipation of a ...", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n10 [label="[10] Kaelen suspects the Warden is waiting for a signal from the ...", fillcolor="#f9e2af", fontcolor="#1e1e2e", color="#f2c678"];
+  n11 [label="[11] Marens arrow wound is festering and smells of rot.", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+  n12 [label="[12] Soldiers believe the granaries cannot support a winter siege...", fillcolor="#a6e3a1", fontcolor="#1e1e2e", color="#74c76e"];
+
+  n1 -> n2 [color="#a6adc8", style=solid];
+  n1 -> n3 [color="#a6adc8", style=solid];
+  n1 -> n4 [color="#a6adc8", style=solid];
+  n2 -> n3 [color="#a6adc8", style=solid];
+  n2 -> n6 [color="#a6adc8", style=solid];
+  n2 -> n8 [color="#a6adc8", style=solid];
+  n4 -> n6 [color="#a6adc8", style=solid];
+  n7 -> n11 [color="#a6adc8", style=solid];
+  n8 -> n10 [color="#a6adc8", style=solid];
+  n9 -> n10 [color="#a6adc8", style=solid];
+  n11 -> n12 [color="#a6adc8", style=solid];
+
+  label="Rhapsode World Graph";
+  fontname="Segoe UI"; fontsize=14; fontcolor="#cdd6f4";
+}

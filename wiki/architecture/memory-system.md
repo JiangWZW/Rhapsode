@@ -2,19 +2,20 @@
 sources:
   - core/include/rhapsode/memory_system.h
   - core/src/memory_system.cpp
+  - core/include/rhapsode/character_memory.h
+  - core/src/character_memory.cpp
   - server/rhapsode/memory.py
   - server/rhapsode/validator.py
-  - server/rhapsode/lemmatization.py
-last_updated: 2026-05-12
+last_updated: 2026-05-23
 confidence: verified
 tier: semantic
 related:
   - "[[architecture/system-overview]]"
   - "[[architecture/plot-graph]]"
   - "[[architecture/python-server]]"
-  - "[[talemate/comparison]]"
+  - "[[architecture/companion-system]]"
   - "[[research/memory-systems-survey]]"
-  - "[[research/memory-systems-internals]]"
+  - "[[research/generative-agents-code-analysis]]"
 tags:
   - cpp-core
   - python-server
@@ -23,117 +24,217 @@ tags:
 
 # Memory system
 
-The memory system gives Rhapsode persistent, weighted knowledge of what happened during a game session. It stores facts extracted from plot nodes, retrieves them using hybrid search, and enriches them through a multi-step quality pipeline.
+Rhapsode has two complementary memory subsystems:
+
+1. **MemorySystem** — scene-scoped semantic index of WorldGraph nodes in ChromaDB. Provides similarity-based node retrieval for the Director and Weaver.
+2. **CharacterMemory** — per-character subjective memory with Generative Agents-style observe-reflect-plan cycle. Maintains a belief graph, importance-scored observations, and multi-level reflections.
+
+Both share the same Python callback infrastructure (embedding model, ChromaDB client) but serve different purposes.
 
 ## Architecture split
 
-The memory system is split across C++ and Python:
-
 | Concern | Language | Why |
 |---------|----------|-----|
-| Scoring logic (BM25, entity boosting, dedup) | C++ | Deterministic, testable, no I/O |
-| Retrieval orchestration | C++ | Combines semantic + keyword + entity signals |
-| Post-turn pipeline control flow | C++ | Sequences distill → score → extract → conflict → store |
+| Node storage/retrieval logic | C++ (`MemorySystem`) | Deterministic, no I/O |
+| Belief graph, reflection, retrieval scoring | C++ (`CharacterMemory`) | Core cognitive logic, deterministic ranking |
 | Embedding (BAAI/bge-base-en-v1.5) | Python | sentence-transformers is Python-native |
 | Vector storage (ChromaDB) | Python | Chroma is Python-native |
-| Lemmatization (spaCy) | Python | spaCy is Python-native |
 | Local LLM calls (llama.cpp) | Python | HTTP client to localhost:8012 |
 
-C++ owns the `MemorySystem` class. Python registers seven callbacks at startup:
+C++ owns both `MemorySystem` and `CharacterMemory` classes. Python registers callbacks at startup via `memory.py`.
 
-| Callback | Signature | Python implementation |
-|----------|-----------|---------------------|
-| `embed` | `text → embedding_json` | `sentence_transformers.encode()` → JSON array |
-| `lemmatize` | `text → lemmatized_text` | `spacy_models.get_nlp_lemma()` → stop-word removal + lemma |
-| `store` | `(collection, id, doc, embedding_json, metadata_json) → void` | `chromadb.Collection.add()` |
-| `query` | `(collection, embedding_json, n, where_json) → results_json` | `chromadb.Collection.query()` |
-| `update_meta` | `(collection, id, metadata_json) → void` | `chromadb.Collection.update()` |
-| `get_by_meta` | `(collection, where_json) → results_json` | `chromadb.Collection.get()` |
-| `local_llm` | `prompt → response_text` | `httpx.post()` to llama.cpp `/v1/chat/completions` |
+## Callback signatures
 
-## Storage layout
+```cpp
+// Shared across both systems
+using EmbedCallback      = std::function<std::string(const std::string& text)>;
+using StoreCallback      = std::function<void(const std::string& collection,
+                                              const std::string& id,
+                                              const std::string& doc,
+                                              const std::string& embedding_json,
+                                              const std::string& metadata_json)>;
+using QueryCallback      = std::function<std::string(const std::string& collection,
+                                                     const std::string& embedding_json,
+                                                     int n,
+                                                     const std::string& where_json)>;
 
-Each scene gets two ChromaDB collections (persistent, cosine distance):
+// MemorySystem-specific
+using UpdateMetaCallback = std::function<void(const std::string& collection,
+                                              const std::string& id,
+                                              const std::string& metadata_json)>;
+using GetByMetaCallback  = std::function<std::string(const std::string& collection,
+                                                     const std::string& where_json)>;
+using DeleteCallback     = std::function<void(const std::string& collection,
+                                              const std::string& ids_json)>;
+using LocalLLMCallback   = std::function<std::string(const std::string& prompt)>;
+
+// CharacterMemory-specific
+using ReflectionLLMCallback = std::function<std::string(const std::string& prompt)>;
+```
+
+## Python callback registration
+
+`server/rhapsode/memory.py` provides two registration functions:
+
+| Function | Target | Callbacks registered |
+|----------|--------|---------------------|
+| `register_callbacks(memory_system, scene_id)` | `MemorySystem` | embed, store, query, update_meta, get_by_meta, delete |
+| `register_character_memory_callbacks(char_mem)` | `CharacterMemory` | embed, store, query |
+
+Both share a single `SentenceTransformer` model and `chromadb.PersistentClient`. Collections are created lazily with cosine distance via `get_or_create_collection`.
+
+The `ReflectionLLMCallback` for `CharacterMemory` is registered separately (typically using the same local LLM callback from `validator.py`).
+
+---
+
+## Part 1: MemorySystem (scene-scoped node index)
+
+### Storage layout
+
+Each scene gets a single ChromaDB collection:
 
 | Collection | Contents |
 |------------|----------|
-| `{scene_id}_facts` | Distilled facts from plot nodes. Each document has metadata: `state`, `type`, `known_by`, `entities`, `turn`, `hash`, `lemmatized` |
-| `{scene_id}_entities` | Entity index. Links entity names to the fact IDs that mention them |
+| `{scene_id}_nodes` | Embedded facts from WorldGraph nodes. Metadata: `node_id`, `state`, `type`, `created_at` |
 
 Embeddings use **BAAI/bge-base-en-v1.5** (768-dimensional). The model is loaded once at server startup (`warmup_model()`).
 
-## Fact storage
+### Store
 
-`store_fact()` takes a fact string, its state, type, `known_by` list, entity list, and turn number. It:
+`store_node(node_id, fact, state, type, turn)` embeds the fact text and stores it with metadata. Document ID format: `"node_{node_id}"`. Uses upsert semantics (same node re-stored overwrites).
 
-1. Computes an MD5 hash of the fact text
-2. Checks for duplicates — same hash already in the collection
-3. Embeds the fact — or accepts a pre-computed embedding
-4. Lemmatizes the fact for BM25 keyword matching
-5. Stores in the facts collection with full metadata
-6. Links each entity to the fact via the entities collection
+### Search
 
-## Retrieval
+`search_nodes(query, top_k)` embeds the query, queries ChromaDB with a `$ne: "dormant"` filter (dormant nodes are excluded), and returns matching node IDs ranked by cosine similarity.
 
-Two retrieval methods:
+### Delete
 
-### `retrieve(query, top_k)`
+`delete_nodes(node_ids)` removes the specified nodes from ChromaDB by document ID.
 
-General-purpose retrieval combining three signals:
+### Post-turn pipeline
 
-| Signal | Mechanism | Weight |
-|--------|-----------|--------|
-| **Semantic** | Embed the query, Chroma cosine query, top-k | Primary ranking |
-| **BM25** | Lemmatize query, compute Okapi BM25 against stored lemmatized facts | Re-ranking boost |
-| **Entity** | Query the entities collection, boost facts linked to matched entities | Re-ranking boost |
+After each turn, two methods run:
 
-BM25 uses adaptive parameters based on query length via `get_bm25_params()`. Scores are normalized through a sigmoid function.
+- `process_new_nodes(nodes, turn)` — stores each new node (skipping nodes with `id == 0`).
+- `sync_resolved(resolved_nodes, turn)` — updates metadata on resolved nodes (sets `state: "resolved"` and `resolved_at` timestamp) so they remain retrievable but are correctly labeled.
 
-### `retrieve_for_injection(scene_context, max_results)`
+### Graceful degradation
 
-Specialized for the Director's established-facts injection. Retrieves facts relevant to the scene context and returns them as a JSON array of strings. The output is formatted for the "ESTABLISHED FACTS" block in the Director system prompt.
+| Condition | Behavior |
+|-----------|----------|
+| Embed callback available | Nodes stored and searchable |
+| Embed or store callback missing | `store_node()` throws; system non-functional |
+| Chroma empty | `search_nodes()` returns empty; Director operates without memory context |
+| Local LLM unreachable | No impact on MemorySystem (LLM callback unused by current implementation) |
 
-## Post-turn pipeline
+---
 
-After each turn completes, `process_new_nodes()` runs on newly created and resolved nodes:
+## Part 2: CharacterMemory (per-character cognitive layer)
+
+Based on [Generative Agents](../research/papers/generative-agents.md) (Park et al., Stanford + Google, UIST 2023). Each character gets an independent memory instance stored in `Scene::character_memories`.
+
+### Storage layout
+
+Each character gets a ChromaDB collection: `charmem_{character_name}` (sanitized to alphanumeric + dots + hyphens).
+
+Two types of documents are stored:
+- **Observations**: `obs_{name}_{index}` — events the character witnessed
+- **Beliefs**: `belief_{id}` — subjective beliefs and reflections
+
+Both carry metadata: `type`, `turn`, `poignancy`, and (for beliefs) `belief_id`, `depth`, `source_node`.
+
+### Belief graph
+
+Internally, a Boost `adjacency_list<directedS, MemoryNode, EdgeData>` stores beliefs as vertices with weighted directed edges between related beliefs.
+
+```cpp
+struct MemoryNode {
+    uint64_t id;
+    std::string content;
+    std::optional<uint64_t> source_node;  // link to WorldGraph node
+    int created_at;                        // turn
+    int poignancy;                         // importance (1-10)
+    int depth;                             // 0 = base, 1+ = reflection
+    std::string mem_type;                  // "belief", "observation", "reflection"
+    std::vector<uint64_t> filling;         // evidence IDs for reflections
+};
+```
+
+### Observation intake
+
+`add_observation(text, turn)`:
+1. Appends to the short-term context buffer
+2. Scores importance (1-10) via the reflection LLM callback
+3. Embeds and stores in ChromaDB with `type: "observation"` metadata
+4. Decrements the importance accumulator (triggers meta-reflection when it crosses zero)
+
+### Importance scoring
+
+The LLM is prompted to rate event poignancy on a 1-10 scale specific to the character. On failure, defaults to 4. The score is used for both retrieval weighting and meta-reflection triggering.
+
+### Retrieval
+
+`retrieve_context(query, top_k)` implements three-signal composite scoring:
 
 ```
-Input: vector<Node> new_nodes, int turn
-                │
                 ▼
         ┌── Distill verbose facts ──┐
-        │   Local LLM shortens      │
+Where:
+- **Relevance** = normalized cosine distance (1.0 = closest, 0.0 = furthest in the result set)
+- **Recency** = normalized turn distance (1.0 = most recent, 0.0 = oldest in the result set)
+- **Importance** = poignancy / 10.0
         │   facts > threshold        │
-        └───────────┬───────────────┘
+Process:
+1. Over-fetch from ChromaDB (2× `top_k`)
+2. Normalize signals across the result set
+3. Compute composite score per result
+4. Sort descending, take top `top_k`
+5. Append the last 3 observations as a short-term buffer (always visible regardless of scoring)
                     ▼
-        ┌── Quality score batch ────┐
+### Reflection
         │   Local LLM rates nodes   │
-        │   against existing pool   │
+`process_reflection(dialogue, cue_json, narrator_beat, turn)`:
+1. Builds a prompt presenting the character as their "inner mind"
+2. Includes current beliefs, recent observations, and what just happened
+3. Asks the LLM to produce JSON: `{ new_beliefs, updated_beliefs, observation }`
+4. Applies the response: new beliefs are added to the graph, updated beliefs are modified in place, observations are stored
+5. Calls `try_meta_reflection(turn)` afterwards
         └───────────┬───────────────┘
-                    ▼
+### Meta-reflection (importance-gated)
         ┌── Entity extraction ──────┐
-        │   Local LLM identifies    │
+Fires when `importance_trigger_curr_` drops below zero (accumulates from observation poignancy, resets at `importance_trigger_max_ = 150`). Multi-step:
         │   named entities          │
-        └───────────┬───────────────┘
+1. **Focal questions**: LLM generates 3 salient questions about what's happening in the character's life
+2. **Evidence retrieval**: For each question, retrieves top-10 context
+3. **Insight extraction**: LLM produces 3 high-level insights per question
+4. **Storage**: Insights stored as `depth=1` reflection nodes with their own importance scores
                     ▼
-        ┌── For each surviving node ┐
+This follows the Generative Agents architecture closely — higher-order reflections that compound over time.
         │   ├── Embed fact          │
-        │   ├── Conflict detection      │
+### Self-state (persistent first-person) — added 2026-06-06
         │   │   — semantic proximity    │
-        │   │     to existing facts     │
+Distinct from query-driven `retrieve()`/`briefing()`, each `CharacterMemory` carries a persistent
+first-person inner monologue, `self_state_`:
         │   └── store_fact()        │
-        └───────────────────────────┘
+- `update_self_state(recent_events, turn)` folds the **previous** state forward with what just
+  happened: `new_state = LLM(previous_state + recent_events)`. Because it does not depend on
+  cue/semantic similarity, an emotional thread persists across topic shifts (sidestepping the
+  retrieval-ratchet for the self-state specifically). No-op if no reflection LLM; never blanks an
+  existing state on failure.
+- `self_state()` / `set_self_state()` read/seed it. At scenario load, `Scene::load_json` seeds it
+  from the authored first-person `initial_memory.context`.
+- The retrieval/reflection prompts (`briefing`, `reflect`, `distill`, `score_importance`) are written
+  in the **first person** so all memory text is in the character's own voice.
 ```
-
+It is advanced once per on-stage NPC per turn in `SceneLoop::advance` (Phase 1, via
+`build_inner_states`) and surfaced both in the decision prompt (`### Inner states`) and the actor
+prompt (`Inner state` section). See [[scene-loop]] and [[character-system]].
 Each step uses the local LLM callback at llama.cpp port 8012. If unreachable, each step returns an empty string and the pipeline continues with reduced quality. Facts are stored without distillation, scoring, or enriched entity links.
-
+### Serialization
 ### Distill
+`to_json()` / `from_json()` serialize the full belief graph (nodes + edges), context buffer, importance accumulator state, the `self_state` string, and ID counter. Stored as part of the Scene save file under `character_memories`.
 
-Facts longer than a threshold are shortened by the local LLM into concise atomic statements. Follows the Director's fact format guidelines — max ~15 words, no hedging, no compound sentences.
-
-### Quality scoring
-
-New nodes are batch-scored against the existing pool. The LLM rates whether each fact is meaningful, non-redundant, and relevant. Low-quality facts may be filtered or downgraded.
+---
 
 ### Entity extraction
 
@@ -164,6 +265,10 @@ The memory system is designed to work at multiple quality levels:
 |---------|---------|--------|
 | Embedding model | BAAI/bge-base-en-v1.5 | `memory.py:EMBEDDING_MODEL` |
 | Chroma path | `./chroma` | `register_callbacks()` parameter |
-| Local LLM URL | `http://localhost:8012` | `validator.py:LLAMA_URL` |
-| Local LLM timeout | 120 seconds | `validator.py:LLAMA_TIMEOUT` |
-| Default retrieval top_k | 8 | `MemorySystem::retrieve()` parameter |
+| Local LLM URL | `http://127.0.0.1:8012` | `validator.py:LLAMA_URL` (env: `RHAPSODE_LOCAL_LLM_URL`) |
+| Local LLM timeout | 120 seconds | `validator.py:LLAMA_TIMEOUT` (env: `RHAPSODE_LOCAL_LLM_TIMEOUT`) |
+| MemorySystem search top_k | 10 | `search_nodes()` default parameter |
+| CharacterMemory retrieve top_k | 5 | `retrieve_context()` default parameter |
+| Retrieval weights | 0.5 / 3.0 / 2.0 | Hardcoded (recency / relevance / importance) |
+| Meta-reflection threshold | 150 | `CharacterMemory::importance_trigger_max_` |
+| Short-term context buffer | last 3 observations | Always appended to retrieval output |

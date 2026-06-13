@@ -1,39 +1,60 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "rhapsode/character.h"
+#include "rhapsode/character_memory.h"
 #include "rhapsode/history.h"
+#include "rhapsode/text_downsampler.h"
 #include "rhapsode/world_graph.h"
 
 namespace rhapsode {
 
 class MemorySystem;
 
+struct DeathCandidate {
+    std::string character_name;
+    std::vector<std::string> evidence;
+};
+
 class Scene {
 public:
-    // ── Static (from scenario file) ──
+    // -- Static (from scenario file) --
     std::string scene_id;
     std::string title;
     std::string system_prompt;
     std::vector<Character> characters;
 
-    // ── Mutable game state ──
+    // -- Mutable game state --
     History history;
     WorldGraph world_graph;
+    TextDownsampler downsampler;
+    std::unordered_map<std::string, CharacterMemory> character_memories;
     int turn_index = 0;
 
     static Scene load_json(const std::string& path);
 
-    // ── System references ──
-    void set_memory(MemorySystem* mem) { memory_ = mem; }
+    // -- Character lifecycle (theatre model) --
+    Character& enter_character(Character ch);
+    Character* find_on_stage(const std::string& name);
+    const Character* find_on_stage(const std::string& name) const;
+    bool exit_character(const std::string& name);
+    std::vector<DeathCandidate> scan_death_candidates();
 
-    // ── Persistence (game state) ──
+    // -- Undo --
+    int revert_turns(int n);
+
+    // -- System references --
+    void set_memory(MemorySystem* mem) { memory_ = mem; }
+    MemorySystem* memory() const { return memory_; }
+
+    // -- Persistence (game state) --
     bool has_save(const std::string& saves_dir) const;
     void load_save(const std::string& saves_dir);
     void save(const std::string& saves_dir) const;
     void delete_save(const std::string& saves_dir) const;
 
-    // ── Scenario-format serialization (existing, for tests) ──
+    // -- Scenario-format serialization (existing, for tests) --
     void save_json(const std::string& path) const;
     nlohmann::json to_json() const;
     static Scene from_json(const nlohmann::json& j);

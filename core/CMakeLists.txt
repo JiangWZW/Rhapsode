@@ -1,22 +1,33 @@
 add_library(rhapsode STATIC
+    include/rhapsode/annotator.h
     include/rhapsode/character.h
+    include/rhapsode/character_memory.h
     include/rhapsode/director.h
     include/rhapsode/history.h
     include/rhapsode/md5.h
     include/rhapsode/memory_system.h
     include/rhapsode/node.h
     include/rhapsode/scene.h
+    include/rhapsode/json_util.h
     include/rhapsode/scene_loop.h
     include/rhapsode/scene_message.h
+    include/rhapsode/text_downsampler.h
+    include/rhapsode/validator.h
+    include/rhapsode/weaver.h
     include/rhapsode/world_graph.h
+    src/annotator.cpp
     src/scene_message.cpp
     src/history.cpp
     src/character.cpp
+    src/character_memory.cpp
     src/scene.cpp
     src/scene_loop.cpp
+    src/text_downsampler.cpp
     src/node.cpp
     src/director.cpp
     src/memory_system.cpp
+    src/validator.cpp
+    src/weaver.cpp
     src/world_graph.cpp
 )
 

@@ -1,12 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+export interface EntitySpan {
+  start: number
+  end: number
+  text: string
+  category: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   /** Present for assistant rows from merged flow; omission means narrator prose. */
   scene_kind?: 'narrator' | 'character'
   speaker?: string
+  entities?: EntitySpan[]
 }
 
 export const useWebSocket = defineStore('websocket', () => {
@@ -34,6 +42,7 @@ export const useWebSocket = defineStore('websocket', () => {
         content: string,
         sceneKind?: 'narrator' | 'character',
         speaker?: string,
+        entities?: EntitySpan[],
       ) {
         const row: ChatMessage = {
           role: 'assistant',
@@ -41,6 +50,7 @@ export const useWebSocket = defineStore('websocket', () => {
           scene_kind: sceneKind ?? 'narrator',
         }
         if (speaker) row.speaker = speaker
+        if (entities) row.entities = entities
         messages.value.push(row)
         processing.value = false
       }
@@ -50,9 +60,11 @@ export const useWebSocket = defineStore('websocket', () => {
           data.scene_kind === 'character'
             ? 'character'
             : 'narrator'
-        pushAssistant(data.content ?? '', kind, data.speaker)
+        pushAssistant(data.content ?? '', kind, data.speaker, data.entities)
       } else if (data.type === 'assistant_message') {
         pushAssistant(data.content ?? '', 'narrator')
+      } else if (data.type === 'user_message') {
+        messages.value.push({ role: 'user', content: data.content ?? '' })
       } else if (data.type === 'error') {
         messages.value.push({
           role: 'assistant',

@@ -9,8 +9,23 @@
     },
     {
       "name": "Barkeep",
-      "description": "A gruff dwarf who runs the tavern",
-      "is_player": false
+      "description": "A gruff dwarf who runs the tavern. Barrel-chested, with a braided red beard and scarred knuckles. Knows every regular by name and every stranger by suspicion. Owes money to the thieves guild and lives in quiet fear of the next collection visit.",
+      "dialogue_instructions": "Speaks in short, clipped sentences. Uses tavern slang and dwarven curses. Deflects personal questions with gruff humor. Becomes evasive when money or debts come up.",
+      "example_dialogue": [
+        "Ale's two copper. Tab's for regulars. You ain't regular.",
+        "Keep your voice down about the guild, unless you fancy a shorter neck."
+      ],
+      "role": "major_npc",
+      "is_player": false,
+      "initial_memory": {
+        "beliefs": [
+          {"content": "I owe the thieves guild a dangerous sum of money", "source_fact": "The barkeep owes money to the thieves guild."},
+          {"content": "A lone knight has been drinking quietly all evening"}
+        ],
+        "context": [
+          "Another slow evening at the Flagon. The debt collectors could come any day now."
+        ]
+      }
     }
   ],
   "seed_messages": [
@@ -26,8 +41,7 @@
       "state": "Foreshadowed",
       "foreshadow_ctx": "The barkeep keeps glancing nervously at the door whenever it opens.",
       "active_ctx": "The barkeep is frightened; debt collectors are expected soon.",
-      "entities": ["barkeep", "guild"],
-      "known_by": ["barkeep"]
+      "entities": ["barkeep", "guild"]
     },
     {
       "fact": "A knight drinks alone at the far end of the tavern.",
@@ -35,8 +49,7 @@
       "state": "Active",
       "foreshadow_ctx": "",
       "active_ctx": "A solitary knight watches the room with guarded attention.",
-      "entities": ["knight", "tavern"],
-      "known_by": ["player", "barkeep"]
+      "entities": ["knight", "tavern"]
     }
   ]
 }

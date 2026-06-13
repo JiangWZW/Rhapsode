@@ -1,0 +1,579 @@
+
+ AI Storytellers - RimWorld Wiki 
+ AI Storytellers 
+ From RimWorld Wiki 
+ Jump to navigation 
+ Jump to search 
+ Basics 
+ Menus 
+ Game Creation 
+ Gameplay 
+ Pawns 
+ Plants 
+ Resources 
+ Gear 
+ Mods 
+ Game Creation 
+ Scenario system 
+ AI Storytellers 
+ World Generation 
+ Biomes 
+ AI Storytellers 
+ Cassandra Classic 
+ Phoebe Chillax 
+ Randy Random 
+ Contents 
+ 1 Current AI storytellers 
+ 2 Difficulties 
+ 2.1 Commitment mode 
+ 3 Options 
+ 3.1 Threats 
+ 3.2 Economy 
+ 3.3 General 
+ 3.4 Player tools 
+ 3.5 Adaptation 
+ 3.6 Ideology 
+ 3.7 Biotech 
+ 3.8 Anomaly 
+ 3.8.1 Standard with monolith options 
+ 3.8.2 Ambient horror options 
+ 4 Technical info 
+ 4.1 New colonist events 
+ 5 Trivia 
+ 6 Version history 
+ The AI storyteller is the main mechanism used to determine game difficulty and play style. There are currently three presets for narrative settings. Each preset features different raid frequencies and an eponymous cartoon mascot. The player must choose either Cassandra Classic, Phoebe Chillax, or Randy Random to act as their "unseeable God." They will periodically
+create events for your colony, including pirate raids, resource drops, or manhunter animal packs. 
+The AI Storyteller does not have an in-game body, location, or manifestation; it is just a name given to describe game settings.
+ Your choice of storyteller sets the tone for your colony - a more benevolent storyteller like Phoebe will send trade caravans or helpful travelers after hitting your colony hard with a tough raid.
+ The frequency and type of storyteller events are based on a number of factors. Colony wealth, building wealth, colonists count, animal count, if a colonist has died or been severely wounded recently, and how long it has been since the last major event are all considered before a storyteller event occurs. 
+ The difficulty is adjusted separately from the storyteller, however, some storytellers are less merciful than others. Both difficulty and storyteller are changeable mid-game from the Settings Menu, with no downside or penalty.
+ Current AI storytellers [ edit ] 
+ Cassandra Classic Cassandra creates story events on a classic increasing curve of challenge and tension. She'll push you with dangerous events, then give breathing room, then come back to push once more. 
+ Phoebe Chillax Phoebe gives lots of time between disasters to build your colony. But beware - at high difficulties, she'll hit as hard as anyone. 
+ Randy Random Randy doesn't follow rules. He'll generate random events, and he doesn't care if they make a story of triumph or utter hopelessness. It's all drama to him. Warning: Since Randy is truly random, he will sometimes send extremely difficult or unfair groups of events at you. It makes for high drama - and unavoidable sacrifices. 
+ Difficulties [ edit ] 
+ There are 6 default difficulties:
+ Difficulty 
+ In-game description
+ Peaceful
+ Build a community in a sandbox environment. Major direct threats are disabled, but challenges like disease, mental breaks, and mad animals can still occur.
+ Recommended for:
+ Players who want to learn the game mechanics with minimal pressure. 
+ Players who just want to build. 
+ Players who just want to relax. 
+ Community builder
+ Build a community with a taste of danger. Threats appear, but they're weakened.
+ Recommended for:
+ Players who are new to this kind of game. 
+ Players who want to build a perfect colony. 
+ Players who want to relax. 
+ Adventure story
+ There's room to grow and thrive, but it's still a dangerous planet.
+ Recommended for:
+ Experienced strategy gamers on their first game of RimWorld. 
+ Experienced RimWorld players who want some breathing room to pursue funny or weird goals. 
+ Strive to survive
+ Strive to survive on a rough, tough planet. There will be triumph and tragedy.
+ Recommended for:
+ Experienced players who want a rough story requiring skill to survive. 
+ Blood and dust
+ Face brutal survival challenges. Even if you play well, people will die. You will need to anticipate threats before they arrive, and seek out every advantage.
+ Recommended for:
+ Experienced players who want to struggle to survive. 
+ Losing is fun
+ This setting is designed to be unfair. Huge threats will crash upon you without mercy until your colony dies. Only choose this setting if you are happy with the drama of struggling and dying.
+ Recommended for:
+ Experienced players who want to face a brutal, unfair challenge where even great skill may not prevent death. 
+ Lovers of tragedy. 
+ Digital masochists. 
+ Each difficulty works by changing the values of each setting, displayed down below. Using the Custom difficulty will allow you to change each setting yourself. The default values are based on the "Strive to survive" difficulty level, where most values are at 1.0, or 100%. When creating a custom difficulty, you can use the "Set to Standard Playstyle" button to change the values to one of the 6 default difficulties.
+ Commitment mode [ edit ] 
+ When creating a game, the player must choose between "Commitment" and "Reload anytime" mode. Unlike storyteller and difficulty, this cannot be changed after game creation . If desired, you can disable (or enable) commitment mode by editing the save file .
+ With reload anytime, you can save and reload the game as you wish. Good if you're still learning the game, if you intend to self-enforce commitment mode, or if you want to have a more relaxed experience. RimWorld is a single player game - nobody will judge you for playing with saves.
+ In commitment mode, you only get one save file and can only save when quitting the game. You cannot reload the game to fix mistakes. When the entire colony dies, but only when the entire colony dies, that's it . This is the way RimWorld was meant to be played with every dramatic turn - whether tragic or hopeful - played out to full impact. (Note: this can be dangerous if you use lots of mods - if something soft-locks, you cannot go back to an earlier save to avoid the situation!)
+ Options [ edit ] 
+ Threats [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Threat scale
+ Adjust the size of threats like raids (using raid points ) and infestations, and the difficulty of quests. 
+ 0% - 500% 
+ 10% 
+ 30% 
+ 60% 
+ 100% 
+ 155% 
+ 220%
+ Major threats
+ Allow major threats such as raids , infestations , manhunter packs, crashed mechanoid ships and more. 
+ Toggle 
+ Quests threats
+ Allow quests to present with violent threats and challenges. If this is disabled, quests will be modified to be non-violent. 
+ Toggle 
+ Intro threats
+ Enable the fixed intro threats that appear near game start. 
+ Toggle 
+ Predators hunt humans
+ Allow wild predators to hunt humans. 
+ Toggle 
+ Extreme weather
+ Allow extreme weather incidents such as toxic fallout , volcanic winters and flashstorms . 
+ Toggle 
+ Economy [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Harvest yield
+ Adjust the amount of materials produced when harvesting plants and crops. This includes harvesting plants and cutting trees . 
+ 0% - 500% 
+ 120% 
+ 120% 
+ 100% 
+ 100% 
+ 95% 
+ 80%
+ Mining yield
+ Adjust the amount of materials produced when mining. 
+ 0% - 500% 
+ 120% 
+ 120% 
+ 100% 
+ 100% 
+ 95% 
+ 80%
+ Butchering yield
+ Adjust the amount of materials produced when butchering. This includes meat , leather , and yield from shredding mechanoids . 
+ 0% - 500% 
+ 100% 
+ 100% 
+ 100% 
+ 100% 
+ 90% 
+ 80%
+ Research speed
+ Adjust the speed of research. 
+ 0% - 500% 
+ 120% 
+ 120% 
+ 100% 
+ 100% 
+ 95% 
+ 90%
+ Quest rewards
+ Adjust the value of rewards given for quests. Note: Quest reward value is also automatically scaled to compensate for threat scale. If you adjust this setting, you'll be adding an additional multiplier. 
+ 0% - 500% 
+ 100%
+ Raid loot
+ Adjust the value of loot carried by raiders. Note: Raid loot value is also automatically scaled to compensate for threat scale. If you adjust this setting, you'll be adding an additional multiplier. 
+ 0% - 500% 
+ 100%
+ Trade price disadvantage
+ When trading, buy prices are increased by this amount while sell prices are reduced by this amount. 
+ 0% - 50% 
+ 0% 
+ 0% 
+ 0% 
+ 0% 
+ 10% 
+ 20%
+ Turret rearm cost
+ Adjust the cost of rearming turrets. 
+ 1% - 100% 
+ 100%
+ Scaria rot chance
+ The probability that a corpse will immediately rot upon death, if the creature has the scaria disease. Note: The default settings are designed to exactly balance out the increase in animal count at higher difficulties, so all players get the same meat rewards. 
+ 0% - 100% 
+ 0% 
+ 0% 
+ 33% 
+ 60% 
+ 74% 
+ 82%
+ Enemy death on downed
+ Adjust the extra chance that an enemy will immediately die when downed. This affects the chances to take prisoners, and thus colony population growth rates. 
+ 0% - 100% 
+ 50% 
+ 90% 
+ 100% 
+ 100% 
+ 100% 
+ 100%
+ General [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Colonist mood
+ A permanent mood offset applied to every colonist and prisoner. Colonists have a base mood of 50%. 
+ -20 - +20 
+ +10 
+ +10 
+ +5 
+ +0 
+ -5 
+ -10
+ Food poison chance
+ Adjust the chance that a person will get food poisoning from eating a potentially-poisoned meal. 
+ 0% - 500% 
+ 30% 
+ 50% 
+ 75% 
+ 100% 
+ 110% 
+ 120%
+ Animal revenge chance
+ Adjust the chance that injuring a wild animal will cause it to attack. 
+ 0% - 500% 
+ 25% 
+ 100% 
+ 100% 
+ 100% 
+ 100% 
+ 100%
+ Infection chance
+ Adjust the chance that a wound will become infected . 
+ 0% - 500% 
+ 30% 
+ 50% 
+ 75% 
+ 100% 
+ 100% 
+ 110%
+ Disease frequency
+ Adjust the frequency of random disease events. 
+ 0% - 500% 
+ 33% 
+ 40% 
+ 67% 
+ 100% 
+ 105% 
+ 111%
+ Insect spawning rate
+ Adjust the rate at which existing insect hives spawn new insects . Lower values means more time between spawn events. This does not affect whether infestations can occur - only the speed at which active hives produce insects. 
+ 0% - 500% 
+ 10% 
+ 15% 
+ 50% 
+ 100% 
+ 100% 
+ 100%
+ Deep drilling infestations
+ Adjust the chance that deep drilling will trigger an infestation . 
+ 0% - 500% 
+ 0% 
+ 25% 
+ 75% 
+ 100% 
+ 110% 
+ 130%
+ Friendly fire
+ Adjust the chance of friendly fire . Note: This setting only affects direct shots which were going to hit their target. It does not prevent damage from explosions, or from shots which were going to miss their target. 
+ 0% - 100% 
+ 40%
+ Colonist instant kills
+ Adjust the chance that a colonist can die instantly due to an attack. The incoming damage is adjusted so it will down the colonist instead. This only prevents some kinds of instant kills - colonists can still be downed and bleed to death, die from fire, explosions, disease, and so on. 
+ 0% - 100% 
+ 100%
+ Map generation ancient threats
+ Ancient structures may contain dangerous threats . 
+ Toggle 
+ Map generation natural hives
+ Dormant insect hives may spawn in natural caves. This setting only applies to map generation and does not affect active insects that may tunnel in during play. 
+ Toggle 
+ Player tools [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Player can build spike traps
+ Player can build traps like spike traps and IED traps . 
+ Toggle 
+ Player can build turrets
+ Player can build static turrets like mini-turrets , autocannon turrets , and uranium slug turrets . You can still use captured turrets even if this is disabled. 
+ Toggle 
+ Player can build mortars
+ Player can build mortars. You can still use captured mortars even if this is disabled. 
+ Toggle 
+ Classic mortars
+ Mortars will not require reinforced barrels to construct or reload, and are balanced for this ease of access.
+ With "Classic Mortars", mortars are as they were before 1.3. Namely:
+ The barrel need not be changed every 20 shots. 
+ Reinforced barrels are removed from the recipe and game. 
+ Forced miss radius increased from 9 to 13. 
+ Steel cost of all mortar shells increased by 10. 
+ Note that the Mortar Miss Radius Multiplier still applies with this setting applied.
+ Toggle 
+ Adaptation [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Adaptation growth rate
+ Adaptation means the storyteller makes the game more challenging when you're doing well. An adaptation score grows over time, and is knocked down when you take damage. This setting adjusts how fast the adaptation score grows over time. 
+ 0% - 100% 
+ 0% 
+ 25% 
+ 75% 
+ 100% 
+ 100% 
+ 100%
+ Adaptation impact
+ Adaptation means the storyteller makes the game more challenging when you're doing well. An adaptation score grows over time, and is knocked down when you take damage. This setting adjusts how much the adaptation score affects the difficulty. 
+ 0% - 100% 
+ 100% 
+ 100% 
+ 100% 
+ 90% 
+ 70% 
+ 40%
+ Wealth-independent progress mode
+ Play in a wealth-independent progress mode. In normal mode, the storyteller scales threats according to colonist count, player wealth, and a variety of other factors. Wealth-independent mode removes the wealth factor and replaces it with a fixed progress curve based on time. The time is counted from the founding of each colony. This is only recommended for those looking for a strict skill challenge. In wealth-independent mode, it may be nearly impossible to recover from serious losses unless you found a new settlement. It's also possible to get too far ahead of the curve and find the game too easy. 
+ Toggle 
+ Years until maximum threat
+ The number of game years until the wealth-independent mode reaches its maximum threat level. Note that the storyteller will still scale threats according to colonist count and a variety of other factors. 
+ 1 - 20 
+ 12
+ Ideology [ edit ] 
+ This section relates to content added by Ideology (DLC) . Please note that it will not be present without the DLC enabled. 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Low pop conversion boost
+ With a single colonist of the player's starting ideoligion , conversion chance to their ideoligion is multiplied by this amount. Conversion attempts against them have their impact divided by that amount. With two colonists of the player's starting ideoligion, the effect is halved. With three or more colonists of the player's starting ideoligion, this has no effect. 
+ x100% - x500% 
+ 300%
+ Biotech [ edit ] 
+ This section relates to content added by Biotech (DLC) . Please note that it will not be present without the DLC enabled. 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Wastepack cocoon infestation
+ Adjust the chance that a dissolved wastepack will trigger the arrival of insect cocoons. 
+ 0% - 500% 
+ 0% 
+ 25% 
+ 50% 
+ 100% 
+ 150% 
+ 200%
+ Babies always healthy
+ Human babies are always born healthy. Mothers can't die in childbirth or have miscarriages. 
+ Toggle 
+ Disable children
+ Humans can't become pregnant. Human babies and children will never appear unless you choose them as starting colonist. 
+ Toggle 
+ Child enemies
+ Hostile raids will sometimes include children. Disabling child enemies will not stop pregnant raiders from spawning. 
+ Toggle 
+ Child aging rate
+ Adjust the rate at which babies and children will age. 
+ 100% - 600% 
+ 400%
+ Adult aging rate
+ Adjust the rate at which adults will age. 
+ 100% - 600% 
+ 100%
+ Anomaly [ edit ] 
+ This section relates to content added by Anomaly (DLC) . Please note that it will not be present without the DLC enabled. 
+ These settings determine if the Void monolith spawns and how Anomaly threats are treated by the Storyteller.
+ Monolith setting 
+ In-game description
+ Standard with monolith
+ The standard Anomaly experience. Anomaly threats are linked to the activation of the void monolith.
+ Ambient horror
+ The monolith does not appear. Any Anomaly threat can occur, but Anomaly threats will be rare by default. Good if you want to interact with Anomaly expansion content without it being the focus. Note: The monolith endgame cannot occur in this mode.
+ Anomaly incidents disabled
+ Anomaly threats do not occur. Good if you don't want to interact with most Anomaly expansion content.
+ Standard with monolith options [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Anomaly threats inactive
+ Adjust the percentage of major threats that will be Anomaly-related when the monolith is not active. Only certain minor Anomaly incidents can occur when the monolith is inactive. 
+ 0% - 100% 
+ Anomaly threats active
+ Adjust the percentage of major threats that will be Anomaly-related when the monolith is active. The percentage of major threats that are Anomaly related when the monolith is at levels 2, 3, and 4 is this setting multiplied by 1.5x 
+ 0%-100% 
+ Study efficiency
+ Adds a multiplier to how much research is gained when studying unnatural entities. 
+ 0% - 500% 
+ 200% 
+ 120% 
+ 100% 
+ 100% 
+ 90% 
+ 80%
+ Ambient horror options [ edit ] 
+ Options 
+ Description 
+ Value options 
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ Blood and dust 
+ Losing is fun
+ Anomaly threats
+ Adjust the percentage of major threats that will be Anomaly-related. 
+ 0% - 100% 
+ Study efficiency
+ Adds a multiplier to how much research is gained when studying unnatural entities. 
+ 0% - 500% 
+ 200% 
+ 120% 
+ 100% 
+ 100% 
+ 90% 
+ 80%
+ Technical info [ edit ] 
+ New colonist events [ edit ] 
+ The formula that calculates the odds of random events that add new colonists has changed in 1.0. It factors in how long a player has been at the location for which the event is generated, and the current population of that colony, including pawns who are traveling on the world map. These events include " refugee chased ", " transport pod crash ", " wanderer joins " and " wild (human) wanders in ". 
+ The following code examples and analysis were provided by user Bar0th on Steam, who gave permission for their inclusion here. To summarize these findings: There is a new variable, "PopulationIntent," which replaces the old variables "desiredPopulationMin," "desiredPopulationMax" and "desiredPopulationCritical." It controls the odds of colonist-adding incidents happening on a particular map. The odds based on the time at location decrease until the 10th day, and the odds based on population decrease until the 20th colonist. (For purposes of this formula, prisoners count as half a colonist.) Once both variables have decreased to their long-term minimum, the odds remain stable. Randy's minimum chance is .08%, while for Cassandra and Phoebe the minimum chance is .02%, so Randy is still the best option for players who wish to reach a large colony size.
+ PopulationIntent (from StorytellerDef): 
+ populationIntentFactorFromPopCurve x populationIntentFactorFromPopAdaptDaysCurve 
+ minIncChancePopulationIntentFactor 
+ Default = 0.05 (from C#) 
+ Randy = 0.20 (from StorytellerDef) 
+ IncidentChanceFactor_PopulationIntent (from C#): 
+ None = 1 
+ IncreaseHard = Max(0.4 + PopulationIntent, minIncChancePopulationIntentFactor) 
+ IncreaseMedium = Max(PopulationIntent, minIncChancePopulationIntentFactor) 
+ IncreaseEasy = Max(-0.4 + PopulationIntent, minIncChancePopulationIntentFactor) 
+ IncidentChanceFinal (from C#): 
+ baseChance (from IncidentDef) x IncidentChanceFactor_PopulationIntent 
+ Example Event: Wanderer Join (baseChance = 0.4, populationEffect = IncreaseEasy) 
+ Day >= 10, 5 Population (PopulationIntent = 1.0) 
+ Randy: 0.24% (0.4 x Max(-0.4 + 1.0, 0.2) = 0.4 x 0.6) 
+ Other: 0.24% (0.4 x Max(-0.4 + 1.0, 0.05) = 0.4 x 0.6) 
+ - They are the same, because of the high PopulationIntent.
+ Day >= 10, 20+ Population (PopulationIntent = -1.0): 
+ Randy: 0.08% (0.4 x Max(-0.4 + -1.0, 0.2) = 0.4 x 0.2) 
+ Other: 0.02% (0.4 x Max(-0.4 + -1.0, 0.05) = 0.4 x 0.05) 
+ - Here, the low PopulationIntent allows Randy's higher minIncChancePopulationIntentFactor to take effect.
+ So, there doesn't appear to be a hard cap on any of the storytellers anymore. However, some events can become much rarer at high populations (0.02% chance of a wanderer join, 0.08% if using Randy @ 20+ population). Also, for purposes of population calculation, it searches the entire map for pawns of that colony (ie: includes caravans, etc), and it also includes prisoners of that colony (each prisoner counts as half a colonist).
+ The multiple colony trick works, because it doesn't check all pawns in the map for all colonies, only the one it is currently determining the event for.
+ Also, you can check the table for the PopulationIntent from the "debug logging menu" while in dev mode. Search for the population, and you can bring up the table. You'll notice that after 10 days (at the top), and populations > 20 (at the left) the numbers remain the same. That's because of the curves in Storytellers.xml:
+ <populationIntentFactorFromPopCurve> 
+ <points> 
+ 0, 8.0 
+ 1, 2.0 
+ 5, 1.0 
+ 9, 0.4 
+ 12, 0.0 
+ 20,-1.0 
+ </points> 
+ </populationIntentFactorFromPopCurve> 
+ <populationIntentFactorFromPopAdaptDaysCurve> 
+ <points> 
+ ( 0, 0) 
+ (10, 1.00) 
+ </points> 
+ </populationIntentFactorFromPopAdaptDaysCurve> 
+ Further investigation and updates are needed.
+ Trivia [ edit ] 
+ The "Losing is fun" difficulty is a reference to the game Dwarf Fortress , which also happens to be that game's tagline. More specifically, it refers to Dwarf Fortress lacking a definite ending, as the game will end with the player losing no matter how skilled they are. 
+ Version history [ edit ] 
+ 0.0.254B - Added Chill Callie Classic storyteller . Rebalanced Cassandra's raiders to not send advanced enemies too early, and to pace them a bit slower. 
+ 00.1.334 - Kassandra renamed to Cleopatra. 
+ 0.4.460 - Storytellers now focus on wealth and let you recover from serious damage. 
+ 0.11.877 - Storytellers no longer entirely disallow events because of population. Randy's event chances are affected by population (somewhat). Re-tuned storyteller population intent based on new output tables for smoother population gain with higher maximum and better recovery at small populations 
+ 0.13.1135 - Permadeath mode added - One save file, save on quit or autosave only. 
+ The names of the difficulty levels were changed from 1.0 to:
+ Peaceful 
+ Builder 
+ Medium 
+ Rough 
+ Savage 
+ Merciless 
+ 0.14.1236 - Fix: Storyteller incorrectly adjusts trader frequency in relation to ally count. 
+ 0.14.1238 - Phoebe's random incidents density reduced. Previously the same as Cassandra's, which conflicted with Phoebe supposedly giving more breathing space between events. 
+ 0.14.1241 - Reduced event density on Randy Random from 1.5x that of Cassandra to about the same as Cassandra. The combination and distribution of events is still very different from Cassandra. Toxic fallout , flashstorm and volcanic winter are now disabled in Free Play difficulty. 
+ 1.1.2647 - they have changed again to the following:
+ Peaceful 
+ Community builder 
+ Adventure story 
+ Strive to survive 
+ The price of survival is blood 
+ Losing is fun 
+ 1.1.2654 - "The price of survival is blood" was changed to Blood and Dust. 
+ 1.2.2719 - Custom playstyle system added. You can now select a new custom playstyle setting. This opens up a new menu that allows you to customize a large number of different settings exactly as you prefer. 
+ 1.2.2753 - Rename "fixed wealth" mode to "wealth-independent" mode, and give the player a slider to control how many years until this mode delivers its maximum threat level. 
+ 1.3.3200 - Turret ammo cost is no longer factored by difficulty. 
+ 1.4.3555 - Renamed "child raiders" storyteller setting to "child enemies" to be more accurate. Allow modifying the 鈥渃hild aging rate—and 鈥渂abies are healthy—storyteller settings even if children are disabled, in case there are already children in the game. Fix: Wastepack cocoon infestation storyteller setting appearing in the wrong spot. 
+ 1.6.4850 - Fix: Butcher yield storyteller setting affecting "make any stone blocks" bill yield. 
+ AI Storytellers 
+ Classic 
+ Cassandra Classic 
+ Friendly 
+ Phoebe Chillax 
+ Random 
+ Randy Random 
+ Retrieved from " https://rimworldwiki.com/index.php?title=AI_Storytellers&oldid=180759 " 
+ Category : AI 
+ Navigation menu 
+ Personal tools 
+ Not logged in Talk Contributions Create account Log in 
+ Namespaces 
+ Page Discussion 
+ Variants 
+ Views 
+ Read Edit View history 
+ More 
+ Search 
+ RimWorld 
+ Official Site Official Twitter Subreddit Community Discord 
+ Navigation 
+ Main page Recent changes Random page 
+ Tools 
+ What links here Related changes Special pages Printable version Permanent link Page information Browse properties 
+ This page was last edited on 9 June 2026, at 02:29. 
+ Content is available under CC BY-SA 3.0 unless otherwise noted. 
+ Privacy policy 
+ About RimWorld Wiki 
+ Disclaimers 

@@ -5,5 +5,7 @@ third_party\llama.cpp\build\bin\Release\llama-server.exe ^
     -m models\Qwen3-8B-Q4_K_M.gguf ^
     --port 8012 ^
     -ngl 99 ^
-    -c 4096 ^
+    -c 8192 ^
+    -np 1 ^
+    -fa on ^
     --reasoning-format deepseek

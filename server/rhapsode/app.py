@@ -1,19 +1,25 @@
 import asyncio
+import html
 import json
 import logging
 import os
 import pathlib
+import re
+import subprocess
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import Response
 
-from rhapsode._core import Director, MemorySystem, NodeState, Scene, SceneLoop, SceneMessage
-from rhapsode.character_agent import make_character_synth
+from rhapsode._core import (
+    Annotator, Director, MemorySystem, Scene, SceneLoop, SceneMessage,
+    Validator, Weaver, analyze_graph,
+)
 from rhapsode.llm import complete
-from rhapsode.memory import register_callbacks, warmup_model
-from rhapsode.prompt import build_merged_prompt
-from rhapsode.spacy_models import get_nlp_lemma
+from rhapsode.memory import register_callbacks, register_character_memory_callbacks, warmup_model
+from rhapsode.prompt import build_system_message, build_user_message
+from rhapsode.fable import make_ner_callback, warmup_fable
 from rhapsode.validator import make_local_llm_callback
 
 load_dotenv()
@@ -27,7 +33,7 @@ SAVES_DIR = str(_server_dir / "saves")
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     warmup_model()
-    get_nlp_lemma()
+    warmup_fable()
     yield
 
 
@@ -39,6 +45,34 @@ def _init_memory(scene_id: str) -> MemorySystem:
     register_callbacks(memory, scene_id)
     memory.set_local_llm_callback(make_local_llm_callback())
     return memory
+
+
+def _init_character_memories(scene: Scene):
+    """Register ChromaDB + LLM callbacks on all CharacterMemory instances."""
+    for name, mem in scene.character_memories.items():
+        register_character_memory_callbacks(mem)
+        mem.set_reflection_llm_callback(make_local_llm_callback())
+        mem.sync_to_chroma()
+
+
+def _sync_graph_to_memory(scene: Scene, memory: MemorySystem) -> None:
+    """Ensure all graph nodes are indexed in ChromaDB (catches seed nodes from scenario load).
+
+    Uses upsert so it's safe to call on every startup — already-indexed nodes
+    are overwritten with the same data.  ~30 nodes embeds in 1-2 seconds.
+    """
+    all_nodes = scene.world_graph.all_nodes_including_expired()
+    if not all_nodes:
+        return
+    for n in all_nodes:
+        if n.id == 0:
+            continue
+        memory.store_node(n.id, n.fact, n.state.name.lower(), n.type, n.created_at)
+    expired = [n for n in all_nodes if n.valid_until != -1]
+    if expired:
+        memory.sync_expired(expired)
+    log.info("  [memory] Synced %d graph nodes to ChromaDB (%d expired)",
+             len(all_nodes), len(expired))
 
 
 def _scene_ws_payload(msg: SceneMessage) -> dict:
@@ -57,6 +91,13 @@ def _call_llm(prompt: str) -> str:
     return complete([{"role": "user", "parts": [{"text": prompt}]}])
 
 
+def _call_narrator_llm(system: str, user: str) -> str:
+    return complete([
+        {"role": "system", "parts": [{"text": system}]},
+        {"role": "user", "parts": [{"text": user}]},
+    ])
+
+
 def _build_memory_query(history: list[SceneMessage], scene_obj: Scene, director_out) -> str:
     parts = [scene_obj.title]
     for msg in history[-4:]:
@@ -67,63 +108,134 @@ def _build_memory_query(history: list[SceneMessage], scene_obj: Scene, director_
     return "\n".join(parts)
 
 
-def _active_characters(scene_obj: Scene) -> list[str]:
-    char_lookup = {
-        c.name.lower(): c.name
-        for c in scene_obj.characters
-        if not c.is_player
-    }
-    active_names: set[str] = set()
-    for node in scene_obj.world_graph.all_nodes():
-        if node.state != NodeState.Active:
-            continue
+def _extract_entity_queries(history: list[SceneMessage], scene_obj: Scene) -> list[str]:
+    """Pull entity names from the latest player message for targeted retrieval."""
+    queries: list[str] = []
+    last_user = ""
+    for msg in reversed(history):
+        if msg.role.name.lower() == "user":
+            last_user = msg.content
+            break
+    if not last_user:
+        return queries
+
+    text_lower = last_user.lower()
+    for c in scene_obj.characters:
+        if c.name and c.name.lower() in text_lower:
+            queries.append(c.name)
+
+    all_nodes = scene_obj.world_graph.all_nodes_including_expired()
+    seen: set[str] = set()
+    for node in all_nodes:
         for ent in node.entities:
-            ent_l = ent.lower()
-            for key, display in char_lookup.items():
-                if key in ent_l or ent_l in key:
-                    active_names.add(display)
-    return sorted(active_names)
+            ent_lower = ent.lower()
+            if ent_lower in seen:
+                continue
+            if ent_lower in text_lower:
+                seen.add(ent_lower)
+                queries.append(ent)
+    return queries
+
+
+def _active_characters(scene_obj: Scene) -> list[str]:
+    lines: list[str] = []
+    on_stage_names: list[str] = []
+    off_stage_names: list[str] = []
+    for c in scene_obj.characters:
+        if c.is_player:
+            continue
+        if c.dead:
+            continue
+        if c.on_stage:
+            on_stage_names.append(c.name)
+            desc = c.description.strip() if c.description else ""
+            role_tag = f"[{c.role}]" if c.role else ""
+            parts = [f"- {c.name}"]
+            if role_tag:
+                parts.append(role_tag)
+            if desc:
+                parts.append(f"—{desc}")
+            lines.append(" ".join(parts))
+        else:
+            off_stage_names.append(c.name)
+    header: list[str] = []
+    if on_stage_names:
+        header.append("On-stage: " + ", ".join(sorted(on_stage_names)))
+    if off_stage_names:
+        header.append("Off-stage: " + ", ".join(sorted(off_stage_names)))
+    return header + lines
 
 
 def _established_facts(
     memory: MemorySystem, history: list[SceneMessage], scene_obj: Scene, director_out
 ) -> list[str]:
+    """Retrieve expired-only facts from ChromaDB -- avoids duplication with live graph nodes."""
     try:
-        raw = memory.retrieve_for_injection(_build_memory_query(history, scene_obj, director_out), 8)
-        facts = json.loads(raw)
-        if isinstance(facts, list):
-            return [str(f) for f in facts]
+        seen_ids: set[int] = set()
+        facts: list[str] = []
+
+        def _collect(ids: list[int]) -> None:
+            for nid in ids:
+                if nid in seen_ids:
+                    continue
+                seen_ids.add(nid)
+                node = scene_obj.world_graph.get_node(nid)
+                if node and node.fact and node.valid_until != -1:
+                    facts.append(node.fact)
+
+        broad_query = _build_memory_query(history, scene_obj, director_out)
+        _collect(memory.search_nodes(broad_query, 6))
+
+        for entity_q in _extract_entity_queries(history, scene_obj):
+            _collect(memory.search_nodes(entity_q, 4))
+
+        return facts
     except Exception:
         log.exception("Failed to retrieve narrator established facts")
     return []
 
 
-def _wire_loop(scene: Scene, director: Director, memory: MemorySystem) -> SceneLoop:
+def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
+               weaver: Weaver | None = None) -> SceneLoop:
     loop = SceneLoop()
     loop.load_scene(scene)
     loop.set_director(director)
-    loop.set_character_synth_callback(make_character_synth(scene))
+    loop.set_actor_llm_callback(_call_llm)
 
-    loop.set_prompt_callback(
-        lambda hist, scene_obj, director_out, focus_json: build_merged_prompt(
+    scene.downsampler.set_llm_callback(make_local_llm_callback())
+
+    system_msg = build_system_message(scene)
+
+    def _prompt_callback(hist, scene_obj, director_out, focus_text, inner_states):
+        story_so_far = scene_obj.downsampler.render()
+        user_msg = build_user_message(
             hist,
             scene_obj,
-            director_out,
-            director_focus_json=focus_json,
+            director_focus_text=focus_text,
             established_facts=_established_facts(memory, hist, scene_obj, director_out),
             active_characters=_active_characters(scene_obj),
+            story_so_far=story_so_far,
+            inner_states=inner_states,
         )
-    )
+        return (system_msg, user_msg)
+
+    loop.set_prompt_callback(_prompt_callback)
+    loop.set_narrator_llm_callback(_call_narrator_llm)
     loop.set_llm_callback(_call_llm)
+    if weaver:
+        loop.set_weaver(weaver)
+    loop.set_saves_dir(SAVES_DIR)
     return loop
 
 
 async def _send_seed_messages(ws: WebSocket, scene: Scene, is_resuming: bool = False):
     seeds = scene.history.snapshot(8) if is_resuming else scene.history.messages()
     for msg in seeds:
-        if msg.role.name.lower() != "assistant":
-            continue
-        await ws.send_json(_scene_ws_payload(msg))
+        role = msg.role.name.lower()
+        if role == "assistant":
+            await ws.send_json(_scene_ws_payload(msg))
+        elif role == "user":
+            await ws.send_json({"type": "user_message", "content": msg.content})
 
 
 def _player_text(data: dict) -> str | None:
@@ -131,6 +243,207 @@ def _player_text(data: dict) -> str | None:
         return None
     text = data.get("content", "").strip()
     return text or None
+
+
+def _load_saved_scene() -> Scene | None:
+    scene = Scene.load_json(str(SCENARIO_PATH))
+    if scene.has_save(SAVES_DIR):
+        scene.load_save(SAVES_DIR)
+        return scene
+    return scene
+
+
+@app.get("/graph.dot", response_class=Response)
+def graph_dot():
+    scene = _load_saved_scene()
+    if scene is None:
+        return Response("// no active scene", media_type="text/plain", status_code=404)
+    return Response(scene.world_graph.to_dot(), media_type="text/vnd.graphviz")
+
+
+@app.get("/graph.svg", response_class=Response)
+def graph_svg():
+    scene = _load_saved_scene()
+    if scene is None:
+        return Response("no active scene", media_type="text/plain", status_code=404)
+    dot = scene.world_graph.to_dot()
+    try:
+        proc = subprocess.run(
+            ["dot", "-Tsvg"],
+            input=dot.encode("utf-8"),
+            capture_output=True,
+            timeout=10,
+        )
+        if proc.returncode != 0:
+            detail = proc.stderr.decode(errors="replace")
+            return Response(f"dot failed: {detail}", media_type="text/plain", status_code=500)
+        return Response(proc.stdout, media_type="image/svg+xml")
+    except FileNotFoundError:
+        return Response(
+            "Graphviz 'dot' not found. Install: winget install Graphviz",
+            media_type="text/plain",
+            status_code=500,
+        )
+
+
+def _dot_to_svg_response(dot: str) -> Response:
+    """Render a Graphviz dot string to an SVG Response (shared by graph endpoints)."""
+    try:
+        proc = subprocess.run(
+            ["dot", "-Tsvg"],
+            input=dot.encode("utf-8"),
+            capture_output=True,
+            timeout=10,
+        )
+        if proc.returncode != 0:
+            detail = proc.stderr.decode(errors="replace")
+            return Response(f"dot failed: {detail}", media_type="text/plain", status_code=500)
+        return Response(proc.stdout, media_type="image/svg+xml")
+    except FileNotFoundError:
+        return Response(
+            "Graphviz 'dot' not found. Install: winget install Graphviz",
+            media_type="text/plain",
+            status_code=500,
+        )
+
+
+def _find_character_memory(scene, name: str):
+    """Look up a character's mind by name (case-insensitive), or None."""
+    mems = scene.character_memories
+    if name in mems:
+        return mems[name]
+    for key in mems.keys():
+        if key.lower() == name.lower():
+            return mems[key]
+    return None
+
+
+@app.get("/characters")
+def characters_endpoint():
+    """List characters with a mind, and their current inner state."""
+    scene = _load_saved_scene()
+    if scene is None:
+        return {"error": "no active scene"}
+    return {
+        "characters": [
+            {"name": name, "self_state": mem.self_state}
+            for name, mem in scene.character_memories.items()
+        ]
+    }
+
+
+@app.get("/character/{name}/graph.dot", response_class=Response)
+def character_graph_dot(name: str):
+    """Graphviz dot of one character's subjective belief graph."""
+    scene = _load_saved_scene()
+    if scene is None:
+        return Response("// no active scene", media_type="text/plain", status_code=404)
+    mem = _find_character_memory(scene, name)
+    if mem is None:
+        return Response(f"// no character '{name}'", media_type="text/plain", status_code=404)
+    return Response(mem.beliefs.to_dot(), media_type="text/vnd.graphviz")
+
+
+@app.get("/character/{name}/graph.svg", response_class=Response)
+def character_graph_svg(name: str):
+    """Rendered SVG of one character's subjective belief graph."""
+    scene = _load_saved_scene()
+    if scene is None:
+        return Response("no active scene", media_type="text/plain", status_code=404)
+    mem = _find_character_memory(scene, name)
+    if mem is None:
+        return Response(f"no character '{name}'", media_type="text/plain", status_code=404)
+    return _dot_to_svg_response(mem.beliefs.to_dot())
+
+
+@app.get("/minds", response_class=Response)
+def minds_endpoint():
+    """Debug view: every character's inner state + belief graph on one page."""
+    scene = _load_saved_scene()
+    if scene is None:
+        return Response("<h1>no active scene</h1>", media_type="text/html", status_code=404)
+
+    parts = [
+        "<html><head><meta charset='utf-8'><title>Character minds</title><style>",
+        "body{background:#1e1e2e;color:#cdd6f4;font-family:'Segoe UI',sans-serif;margin:24px}",
+        "h1{color:#cdd6f4} h2{color:#f9e2af;border-bottom:1px solid #45475a;padding-bottom:4px}",
+        ".state{color:#a6adc8;font-style:italic;white-space:pre-wrap;margin:8px 0 12px}",
+        ".mind{margin-bottom:48px}",
+        # Render the SVG at its natural size inside a scrollable box.  Clamping
+        # to the page width (max-width:100%) shrank large graphs to illegibility
+        # and made browser zoom useless -- it just re-fit to the viewport.
+        ".graphwrap{overflow:auto;max-height:85vh;border:1px solid #45475a;"
+        "border-radius:6px;resize:vertical}",
+        "svg{display:block;background:#1e1e2e}",
+        ".legend{font-size:12px;color:#6c7086;margin-bottom:24px}",
+        "</style></head><body><h1>Character minds</h1>",
+        "<p class='legend'>green = current belief / perception &nbsp;|&nbsp; "
+        "blue = superseded (history) &nbsp;|&nbsp; yellow = foreshadowed</p>",
+    ]
+    for name, mem in scene.character_memories.items():
+        try:
+            dot = mem.beliefs.to_dot()
+        except Exception as exc:  # noqa: BLE001 -- one bad mind must not 500 the page
+            parts.append(
+                f"<div class='mind'><h2>{html.escape(name)}</h2>"
+                f"<pre>belief graph unavailable: {html.escape(str(exc))}</pre></div>"
+            )
+            continue
+        try:
+            proc = subprocess.run(
+                ["dot", "-Tsvg"], input=dot.encode("utf-8"),
+                capture_output=True, timeout=10,
+            )
+            if proc.returncode == 0:
+                svg = proc.stdout.decode("utf-8", errors="replace")
+                idx = svg.find("<svg")
+                svg = svg[idx:] if idx >= 0 else svg
+            else:
+                svg = f"<pre>dot failed: {html.escape(proc.stderr.decode(errors='replace'))}</pre>"
+        except FileNotFoundError:
+            svg = "<pre>Graphviz 'dot' not found. Install: winget install Graphviz</pre>"
+        state = mem.self_state or "(no inner state yet)"
+        parts.append(
+            f"<div class='mind'><h2>{html.escape(name)}</h2>"
+            f"<div class='state'>{html.escape(state)}</div>"
+            f"<div class='graphwrap'>{svg}</div></div>"
+        )
+    parts.append("</body></html>")
+    return Response("".join(parts), media_type="text/html")
+
+
+@app.get("/analyze")
+def analyze_endpoint():
+    scene = _load_saved_scene()
+    if scene is None:
+        return {"error": "no active scene"}
+    a = analyze_graph(scene.world_graph)
+    return {
+        "live_node_count": a.live_node_count,
+        "active_edge_count": a.active_edge_count,
+        "orphan_count": a.orphan_count,
+    }
+
+
+@app.post("/weave")
+def weave_endpoint():
+    scene = _load_saved_scene()
+    if scene is None:
+        return {"error": "no active scene"}
+    w = Weaver(scene.world_graph)
+    w.set_llm_callback(_call_llm)
+    result = w.weave(scene.turn_index)
+    scene.save(SAVES_DIR)
+    return {
+        "connected": len(result.connected),
+        "disconnected": len(result.disconnected),
+        "reweighted": len(result.reweighted),
+        "analysis": {
+            "live_node_count": result.analysis.live_node_count,
+            "active_edge_count": result.analysis.active_edge_count,
+            "orphan_count": result.analysis.orphan_count,
+        },
+    }
 
 
 @app.websocket("/ws")
@@ -159,8 +472,25 @@ async def ws_endpoint(ws: WebSocket):
             scene.history.size(),
         )
 
+    _sync_graph_to_memory(scene, memory)
+    _init_character_memories(scene)
+
     director = Director(scene.world_graph)
-    loop = _wire_loop(scene, director, memory)
+
+    validator = Validator(scene.world_graph)
+    validator.set_llm_callback(make_local_llm_callback())
+    validator.set_search_callback(lambda q, k: memory.search_nodes(q, k))
+    validator.set_dead_check(lambda: [c.name for c in scene.characters if c.dead])
+    director.set_validator(validator)
+
+    weaver = Weaver(scene.world_graph)
+    weaver.set_llm_callback(_call_llm)
+    weaver.set_local_llm_callback(make_local_llm_callback())
+
+    annotator = Annotator(scene)
+    annotator.set_ner_callback(make_ner_callback())
+
+    loop = _wire_loop(scene, director, memory, weaver)
     if is_resuming:
         loop.set_resuming(True)
 
@@ -173,6 +503,23 @@ async def ws_endpoint(ws: WebSocket):
             if not text:
                 continue
 
+            undo_match = re.match(r"^/undo(?:\s+(\d+))?$", text.strip())
+            if undo_match:
+                n = int(undo_match.group(1) or "1")
+                await asyncio.get_event_loop().run_in_executor(
+                    None, loop.join_background)
+                reverted = scene.revert_turns(n)
+                log.info("/undo %d -> reverted %d turns, now at turn %d",
+                         n, reverted, scene.turn_index)
+                scene.save(SAVES_DIR)
+                loop = _wire_loop(scene, director, memory, weaver)
+                loop.set_resuming(True)
+                await ws.send_json({"type": "undo", "turns_reverted": reverted,
+                                    "turn_index": scene.turn_index})
+                await _send_seed_messages(ws, scene, is_resuming=True)
+                await ws.send_json({"type": "status", "state": "idle"})
+                continue
+
             await ws.send_json({"type": "status", "state": "processing"})
 
             try:
@@ -181,27 +528,48 @@ async def ws_endpoint(ws: WebSocket):
                 log.exception("Turn failed")
                 await ws.send_json({"type": "error", "detail": str(exc)})
                 await ws.send_json({"type": "status", "state": "idle"})
-                loop = _wire_loop(scene, director, memory)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, loop.join_background)
+                loop = _wire_loop(scene, director, memory, weaver)
                 continue
+
+            try:
+                expiry_ops = loop.take_completed_expiry_ops()
+                if expiry_ops:
+                    nodes = [scene.world_graph.get_node(op.id)
+                             for op in expiry_ops]
+                    nodes = [n for n in nodes if n is not None]
+                    if nodes:
+                        memory.sync_expired(nodes)
+                        log.info("  [expiry] synced %d superseded fact(s)",
+                                 len(nodes))
+            except Exception:
+                log.exception("Expiry sync failed")
 
             try:
                 output = loop.last_director_output()
                 if output.new_nodes:
                     memory.process_new_nodes(output.new_nodes, scene.turn_index)
-                if output.newly_resolved:
-                    memory.sync_resolved(output.newly_resolved, scene.turn_index)
+                if output.newly_expired:
+                    memory.sync_expired(output.newly_expired)
             except Exception:
                 log.exception("Post-generation pipeline failed")
 
-            try:
-                scene.save(SAVES_DIR)
-            except Exception:
-                log.exception("Auto-save failed")
-
             for chunk in loop.take_last_turn_outputs():
-                await ws.send_json(_scene_ws_payload(chunk))
+                payload = _scene_ws_payload(chunk)
+                if payload.get("scene_kind") == "narrator":
+                    try:
+                        spans = annotator.annotate(chunk.content)
+                        payload["entities"] = [
+                            {"start": s.start, "end": s.end_,
+                             "text": s.text, "category": s.category}
+                            for s in spans
+                        ]
+                    except Exception:
+                        log.exception("Entity annotation failed")
+                await ws.send_json(payload)
 
             await ws.send_json({"type": "status", "state": "idle"})
 
     except WebSocketDisconnect:
-        pass
+        loop.join_background()
