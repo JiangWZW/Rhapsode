@@ -57,6 +57,7 @@ public:
                       const std::string& kind = "");
     bool set_edge_active(std::uint64_t from_id, std::uint64_t to_id, bool active);
     bool set_edge_weight(std::uint64_t from_id, std::uint64_t to_id, float weight);
+    bool set_edge_kind(std::uint64_t from_id, std::uint64_t to_id, const std::string& kind);
     std::vector<EdgeInfo> all_edges() const;
 
     std::vector<std::uint64_t> neighbors(std::uint64_t node_id) const;

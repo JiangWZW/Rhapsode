@@ -189,52 +189,23 @@ PYBIND11_MODULE(_core, m) {
 
     // -- Character Memory --
 
-    py::class_<CharacterMemory::MemoryNode>(m, "MemoryNode")
-        .def(py::init<>())
-        .def_readwrite("id",            &CharacterMemory::MemoryNode::id)
-        .def_readwrite("type",          &CharacterMemory::MemoryNode::type)
-        .def_readwrite("content",       &CharacterMemory::MemoryNode::content)
-        .def_readwrite("created_at",    &CharacterMemory::MemoryNode::created_at)
-        .def_readwrite("weight",        &CharacterMemory::MemoryNode::weight)
-        .def_readwrite("depth",         &CharacterMemory::MemoryNode::depth)
-        .def_readwrite("last_accessed", &CharacterMemory::MemoryNode::last_accessed)
-        .def("__repr__", [](const CharacterMemory::MemoryNode& n) {
-            return "MemoryNode(" + std::to_string(n.id) + ", \""
-                   + n.content.substr(0, 40) + "\")";
-        });
-
     py::class_<CharacterMemory>(m, "CharacterMemory")
         .def(py::init<std::string>(), py::arg("name"))
-        .def("set_embed_callback",           &CharacterMemory::set_embed_callback)
-        .def("set_store_callback",           &CharacterMemory::set_store_callback)
-        .def("set_query_callback",           &CharacterMemory::set_query_callback)
+        .def("set_persona",       &CharacterMemory::set_persona, py::arg("p"))
         .def("set_reflection_llm_callback",  &CharacterMemory::set_reflection_llm_callback)
-        .def("speak",             &CharacterMemory::speak,
-             py::arg("scene_context"), py::arg("turn"))
-        .def("observe",           &CharacterMemory::observe,
-             py::arg("scene_context"), py::arg("turn"))
-        .def("reflect",           &CharacterMemory::reflect)
-        .def("needs_reflection",  &CharacterMemory::needs_reflection)
-        .def("retrieve",          &CharacterMemory::retrieve,
-             py::arg("query"), py::arg("top_k") = 5)
-        .def("briefing",          &CharacterMemory::briefing,
-             py::arg("query"), py::arg("top_k") = 5)
-        .def("update_self_state", &CharacterMemory::update_self_state, py::arg("turn"))
-        .def("set_self_state",    &CharacterMemory::set_self_state, py::arg("s"))
-        .def_property_readonly("self_state", &CharacterMemory::self_state)
-        .def("score_importance",  &CharacterMemory::score_importance,
-             py::arg("description"))
-        .def("seed_from_graph",   &CharacterMemory::seed_from_graph,
-             py::arg("fact"), py::arg("created_at"))
         .def("seed_belief",       &CharacterMemory::seed_belief,
-             py::arg("fact"), py::arg("entities"), py::arg("created_at"))
+             py::arg("fact"), py::arg("entities"), py::arg("created_at"),
+             py::arg("weight") = CharacterMemory::kAuthoredSeedWeight)
+        .def("link_tension",      &CharacterMemory::link_tension,
+             py::arg("a_id"), py::arg("b_id"), py::arg("turn"))
         .def("view_of",           &CharacterMemory::view_of, py::arg("subjects"))
         .def("route_fact",        &CharacterMemory::route_fact,
              py::arg("fact"), py::arg("entities"), py::arg("turn"))
         .def("reflect_perceptions", &CharacterMemory::reflect_perceptions, py::arg("turn"))
+        .def("render_thoughts",   &CharacterMemory::render_thoughts,
+             py::arg("subjects") = std::vector<std::string>{})
         .def_property_readonly("beliefs", &CharacterMemory::beliefs,
              py::return_value_policy::reference_internal)
-        .def("sync_to_chroma",    &CharacterMemory::sync_to_chroma)
         .def("to_json_str", [](const CharacterMemory& self) { return self.to_json().dump(2); })
         .def_static("from_json_str", [](const std::string& s) {
             return CharacterMemory::from_json(nlohmann::json::parse(s));

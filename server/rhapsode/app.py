@@ -18,7 +18,7 @@ from rhapsode._core import (
     Validator, Weaver, analyze_graph,
 )
 from rhapsode.llm import complete
-from rhapsode.memory import register_callbacks, register_character_memory_callbacks, warmup_model
+from rhapsode.memory import register_callbacks, warmup_model
 from rhapsode.prompt import build_system_message, build_user_message
 from rhapsode.fable import make_ner_callback, warmup_fable
 from rhapsode.validator import make_local_llm_callback
@@ -49,15 +49,12 @@ def _init_memory(scene_id: str) -> MemorySystem:
 
 
 def _init_character_memories(scene: Scene):
-    """Register ChromaDB + LLM callbacks on all CharacterMemory instances."""
+    """Wire the reflection LLM callback on all CharacterMemory instances."""
     for name, mem in scene.character_memories.items():
-        register_character_memory_callbacks(mem)
         # Background reflection (contradict-vs-extend + weight judgments) runs on
         # the cloud provider (DeepSeek when RHAPSODE_PROVIDER=deepseek); it is
-        # async/off the turn's critical path so the latency hides.  Embedding
-        # similarity stays on the local seam via register_character_memory_callbacks.
+        # async/off the turn's critical path so the latency hides.
         mem.set_reflection_llm_callback(_call_llm)
-        mem.sync_to_chroma()
 
 
 def _sync_graph_to_memory(scene: Scene, memory: MemorySystem) -> None:
@@ -337,7 +334,7 @@ def characters_endpoint():
         return {"error": "no active scene"}
     return {
         "characters": [
-            {"name": name, "self_state": mem.self_state}
+            {"name": name, "interior": mem.render_thoughts([])}
             for name, mem in scene.character_memories.items()
         ]
     }
@@ -413,7 +410,7 @@ def minds_endpoint():
                 svg = f"<pre>dot failed: {html.escape(proc.stderr.decode(errors='replace'))}</pre>"
         except FileNotFoundError:
             svg = "<pre>Graphviz 'dot' not found. Install: winget install Graphviz</pre>"
-        state = mem.self_state or "(no inner state yet)"
+        state = mem.render_thoughts([]) or "(no live thoughts yet)"
         parts.append(
             f"<div class='mind'><h2>{html.escape(name)}</h2>"
             f"<div class='state'>{html.escape(state)}</div>"

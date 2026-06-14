@@ -255,30 +255,47 @@ Scene Scene::load_json(const std::string& path) {
         const auto& im = ch_j["initial_memory"];
 
         // Authored beliefs are the character's t=0 view, seeded into the
-        // subjective belief graph as Active nodes tagged with their subject
-        // (the optional `about` field -- a name or list of names).
-        for (const auto& bj : im.value("beliefs", nlohmann::json::array())) {
+        // subjective belief graph as Active, charged nodes tagged with their
+        // subject (the optional `about` field -- a name or list of names).  Each
+        // node's id is kept by array index so an authored contradiction
+        // ("tension_with": <index>) can be cross-linked as a live tension.
+        const auto& beliefs_j = im.value("beliefs", nlohmann::json::array());
+        std::vector<std::uint64_t> seeded_ids(beliefs_j.size(), 0);
+        for (std::size_t bi = 0; bi < beliefs_j.size(); ++bi) {
+            const auto& bj = beliefs_j[bi];
             std::vector<std::string> about;
             if (bj.contains("about")) {
                 const auto& aj = bj["about"];
                 if (aj.is_string())     about.push_back(aj.get<std::string>());
                 else if (aj.is_array()) for (const auto& a : aj) about.push_back(a.get<std::string>());
             }
-            mem.seed_belief(bj.value("content", ""), about, 0);
+            float w = CharacterMemory::kAuthoredSeedWeight;
+            if (bj.contains("weight")) w = bj["weight"].get<float>();
+            seeded_ids[bi] = mem.seed_belief(bj.value("content", ""), about, 0, w);
         }
 
-        // The authored `context` entries are already first-person interiority,
-        // so they double as the character's starting self-state (instead of being
-        // discarded into the memory soup and later laundered to third person).
-        std::string joined_context;
-        for (const auto& ctx : im.value("context", nlohmann::json::array())) {
-            const auto c = ctx.get<std::string>();
-            mem.seed_from_graph(c, 0);
-            if (!joined_context.empty()) joined_context += ' ';
-            joined_context += c;
+        // Authored contradictions: a belief may declare it sits in tension with
+        // an earlier belief (by its index in this array).  Cross-link the pair so
+        // it surfaces in the rendered Tensions section instead of silently
+        // chaining.  Both Thoughts stay live.
+        for (std::size_t bi = 0; bi < beliefs_j.size(); ++bi) {
+            if (!beliefs_j[bi].contains("tension_with")) continue;
+            const auto& tw = beliefs_j[bi]["tension_with"];
+            auto link = [&](long long other) {
+                if (other >= 0 && static_cast<std::size_t>(other) < seeded_ids.size())
+                    mem.link_tension(seeded_ids[bi],
+                                     seeded_ids[static_cast<std::size_t>(other)], 0);
+            };
+            if (tw.is_number())     link(tw.get<long long>());
+            else if (tw.is_array()) for (const auto& o : tw) if (o.is_number()) link(o.get<long long>());
         }
-        if (!joined_context.empty())
-            mem.set_self_state(joined_context);
+
+        // The authored `context` entries are first-person interiority: seed them
+        // as charged self-beliefs (subject = the character itself) so they enter
+        // the live mind and surface via render_thoughts, rather than a separate
+        // self_state field that the narrator no longer reads.
+        for (const auto& ctx : im.value("context", nlohmann::json::array()))
+            mem.seed_belief(ctx.get<std::string>(), {name}, 0);
 
         s.character_memories.emplace(name, std::move(mem));
     }

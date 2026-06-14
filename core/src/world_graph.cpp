@@ -183,6 +183,20 @@ bool WorldGraph::set_edge_weight(std::uint64_t from_id, std::uint64_t to_id, flo
     return false;
 }
 
+bool WorldGraph::set_edge_kind(std::uint64_t from_id, std::uint64_t to_id,
+                               const std::string& kind) {
+    auto fi = id_to_vertex_.find(from_id);
+    auto ti = id_to_vertex_.find(to_id);
+    if (fi == id_to_vertex_.end() || ti == id_to_vertex_.end()) return false;
+
+    for (auto [s, t] : {std::pair{fi->second, ti->second},
+                         std::pair{ti->second, fi->second}}) {
+        auto [e, ok] = boost::edge(s, t, graph_);
+        if (ok) { graph_[e].kind = kind; return true; }
+    }
+    return false;
+}
+
 std::vector<EdgeInfo> WorldGraph::all_edges() const {
     std::vector<EdgeInfo> result;
     auto [eit, eend] = boost::edges(graph_);

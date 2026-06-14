@@ -17,7 +17,7 @@ from rhapsode._core import (
     Validator, Weaver,
 )
 from rhapsode.memory import (
-    register_callbacks, register_character_memory_callbacks,
+    register_callbacks,
     warmup_model,
 )
 from rhapsode.prompt import build_system_message, build_user_message
@@ -83,9 +83,7 @@ print(f"Synced {len(all_nodes)} graph nodes")
 
 # Init character memories
 for name, mem in scene.character_memories.items():
-    register_character_memory_callbacks(mem, CHROMA_PATH)
     mem.set_reflection_llm_callback(make_local_llm_callback())
-    mem.sync_to_chroma()
 print("Character memories initialized")
 
 # --- Wire up SceneLoop exactly as _wire_loop does ---

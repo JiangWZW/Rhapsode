@@ -106,16 +106,3 @@ def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chrom
     memory_system.set_delete_callback(delete)
 
     log.info("MemorySystem callbacks registered for scene %s", scene_id)
-
-
-def register_character_memory_callbacks(char_mem, chroma_path: str = "./chroma"):
-    """Register embed/store/query callbacks on a C++ CharacterMemory instance."""
-    embed = _make_embed()
-    client = _get_client(chroma_path)
-    store, query, _, _, _ = _make_chroma_callbacks(client)
-
-    char_mem.set_embed_callback(embed)
-    char_mem.set_store_callback(store)
-    char_mem.set_query_callback(query)
-
-    log.info("CharacterMemory callbacks registered for %s", char_mem.name)

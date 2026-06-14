@@ -16,10 +16,12 @@ and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
  "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
  "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],
  "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
- "active_cast":["present NPC names"]}
+ "active_cast":["present NPC names"],
+ "location":"current physical setting (only when it changes this turn)"}
 
 RULES:
 - Never narrate unperformed Player actions. May foreshadow options.
+- Setting: the "### Setting" line is where the scene currently is. Honor it -- do not silently relocate or invent a new place. When the action genuinely moves (the player leaves, travels, goes home), set "location" to the new setting AND list in active_cast ONLY the characters who are actually there; everyone left behind at the old place is dropped (no speech_turn for them). Respect established places from the graph -- if the party's home is a mansion, they sleep in the mansion, not a new place you invent.
 - Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
 - entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
 - audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
