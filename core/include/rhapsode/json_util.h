@@ -50,6 +50,33 @@ inline std::string sanitize_utf8(const std::string& s) {
     return out;
 }
 
+/// Normalize "smart"/typographic punctuation that LLMs habitually emit into the
+/// ASCII forms JSON requires.  Curly double quotes (U+201C/D/E) become ", curly
+/// single quotes / primes (U+2018/19, U+2032) become ' (valid inside JSON
+/// strings).  Everything else is left untouched.  Without this, a model that
+/// "prettifies" its JSON with smart quotes produces unparseable output and the
+/// whole turn's structured plan is lost.
+inline std::string normalize_json_punct(std::string s) {
+    struct Repl { const char* from; char to; };
+    static const Repl repls[] = {
+        {"\xE2\x80\x9C", '"'},   // U+201C left double quote
+        {"\xE2\x80\x9D", '"'},   // U+201D right double quote
+        {"\xE2\x80\x9E", '"'},   // U+201E low double quote
+        {"\xE2\x80\x98", '\''},  // U+2018 left single quote
+        {"\xE2\x80\x99", '\''},  // U+2019 right single quote
+        {"\xE2\x80\xB2", '\''},  // U+2032 prime
+    };
+    for (const auto& r : repls) {
+        const std::string from = r.from;
+        std::string::size_type pos = 0;
+        while ((pos = s.find(from, pos)) != std::string::npos) {
+            s.replace(pos, from.size(), 1, r.to);
+            pos += 1;
+        }
+    }
+    return s;
+}
+
 inline bool extract_balanced_json(std::string_view text, std::string& out) {
     auto start = text.find('{');
     if (start == std::string_view::npos) return false;
@@ -80,11 +107,17 @@ inline nlohmann::json try_parse_json(const std::string& text) {
     try { return nlohmann::json::parse(text); }
     catch (...) {}
 
+    // Retry after normalizing smart quotes -- the most common reason a model's
+    // JSON fails to parse.
+    const std::string norm = normalize_json_punct(text);
+
     std::string salvaged;
-    if (extract_balanced_json(text, salvaged)) {
+    if (extract_balanced_json(norm, salvaged)) {
         try { return nlohmann::json::parse(salvaged); }
         catch (...) {}
     }
+    try { return nlohmann::json::parse(norm); }
+    catch (...) {}
 
     std::cerr << "  [parse] JSON extraction failed -- using empty object\n";
     return nlohmann::json::object();

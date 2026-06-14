@@ -4,16 +4,17 @@ FORMAT_AND_RULES = """\
 OUTPUT: 2-4 paragraphs of second-person present-tense prose, sensory grounding.
 PROSE IS NARRATION ONLY -- describe what happens; never write what anyone says.
 No quotation marks, no character dialogue, and no *asterisks* / stage directions in the
-prose. Every spoken line goes in speech_turns as a cue (direction, NOT the words) and is
-voiced separately; writing speech in the prose duplicates it and breaks the display.
+prose. Each character's spoken words go in speech_turns.line, written verbatim in that
+character's own voice; writing speech in the prose duplicates it and breaks the display.
 No markdown formatting in prose.
 
 Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>
-Then raw JSON (no fences):
+Then raw JSON (no fences). Use ONLY straight ASCII double quotes (") for all keys
+and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
 {"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
  "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
- "speech_turns":[{"character":"Name","cue":"direction not dialogue","dramatic_intent":"...","emotional_state":"...","responds_to":"..."}],
+ "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],
  "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
  "active_cast":["present NPC names"]}
 
@@ -22,7 +23,7 @@ RULES:
 - Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
 - entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
 - audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
-- speech_turns: one entry per NPC audible reaction. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
+- speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
 - active_cast: all living NPCs physically present this scene. [] if player alone."""
 
@@ -69,7 +70,7 @@ def build_user_message(
 
     if inner_states:
         # Pre-formatted by the C++ scene loop (already carries its own
-        # "### Inner states" header); splice in verbatim.
+        # "### Inner lives" header); splice in verbatim.
         parts += ["", inner_states.rstrip("\n")]
 
     conv = history_snapshot[-_VERBATIM_TAIL:] if story_so_far else history_snapshot
@@ -85,7 +86,7 @@ def build_user_message(
         "",
         "### Remember",
         "- Prose is narration only: never a character's spoken words or *actions* -- "
-        "every line of speech is a speech_turns cue, voiced separately.",
+        "each character's words go in speech_turns.line, written in their own voice.",
         "- Give a speech_turn only to a character who can speak right now "
         "(not asleep, unconscious, incapacitated, dead, or absent).",
     ]

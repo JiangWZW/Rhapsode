@@ -15,6 +15,10 @@ struct EdgeData {
     float weight = 1.0f;
     int created_at = 0;
     bool active = true;
+    // Relation kind: "" / "chain" = entity-timeline predecessor link;
+    // "evidence" = a Thought extended/supported by this node;
+    // "tension" = a contradiction kept live (never collapsed).
+    std::string kind;
 };
 
 struct EdgeInfo {
@@ -49,7 +53,8 @@ public:
     bool add_relation(std::uint64_t from_id,
                       std::uint64_t to_id,
                       float weight = 1.0f,
-                      int created_at = 0);
+                      int created_at = 0,
+                      const std::string& kind = "");
     bool set_edge_active(std::uint64_t from_id, std::uint64_t to_id, bool active);
     bool set_edge_weight(std::uint64_t from_id, std::uint64_t to_id, float weight);
     std::vector<EdgeInfo> all_edges() const;

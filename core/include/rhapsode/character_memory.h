@@ -122,8 +122,9 @@ public:
                      int created_at);
 
     // What I currently believe about the given subjects (character names and/or
-    // descriptions): the live (Active, non-superseded) belief facts whose entities
-    // match any subject, newest first.  Empty string if I hold no view of them.
+    // descriptions): my live Thoughts about them rendered as oldest->newest
+    // chains (graph adjacency), ordered by how much they press (weight) with
+    // contradictions kept live as tension cross-links.  Empty if I hold no view.
     std::string view_of(const std::vector<std::string>& subjects) const;
 
     // Route a perceived fact into this mind (perception layer).  Stored as an
@@ -142,6 +143,25 @@ public:
     void reflect_perceptions(int turn);
 
     const WorldGraph& beliefs() const { return beliefs_; }
+
+    // Render my live Thoughts as oldest->newest chains by traversing belief-graph
+    // adjacency (NOT Node.related_to): grouped by subject, each chain annotated
+    // with its peak weight, contradictions drawn as tension cross-links.  When
+    // `subjects` is empty, render every chain (dispositional self-view included);
+    // otherwise restrict to chains about a matching subject.  Chains are ordered
+    // most-pressing first.  Used by view_of and the narrator inner-state context.
+    std::string render_thoughts(const std::vector<std::string>& subjects = {}) const;
+
+    // -- Gated experiments (rendered as context for the narrator, never a
+    //    command).  See the "Phase 3 experiments" section of the design. --
+
+    // Among my most-charged live Thoughts, pick one (seeded) as the one
+    // "pressing today".  Returns its text, or "" if nothing presses.
+    std::string pressing_thought(unsigned seed) const;
+
+    // If a Thought sits near the ceiling, name its charge: an unbearable tension
+    // (it is cross-linked) or a hardened conviction (it stands alone).  "" else.
+    std::string charge_state() const;
 
     // Re-embed and upsert all memories to ChromaDB. Called once at session
     // start to ensure ChromaDB is in sync with the graph after loading a save.

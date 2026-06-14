@@ -47,8 +47,6 @@ public:
     /// Falls back to single-string llm_cb_ with concatenation if unset.
     void set_narrator_llm_callback(NarratorLLMCallback cb);
     void set_turn_complete_callback(TurnCompleteCallback cb);
-    /// LLM callback for NPC dialogue synthesis.  Falls back to llm_cb_ if unset.
-    void set_actor_llm_callback(LLMCallback cb);
     void set_director(Director* director);
     const DirectorOutput& last_director_output() const;
 
@@ -84,7 +82,6 @@ private:
     PromptCallback prompt_cb_;
     LLMCallback llm_cb_;
     NarratorLLMCallback narrator_llm_cb_;
-    LLMCallback actor_llm_cb_;
     TurnCompleteCallback turn_complete_cb_;
     Director* director_ = nullptr;
     DirectorOutput last_director_out_;

@@ -2,13 +2,77 @@
 #include "rhapsode/json_util.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <set>
 #include <sstream>
+#include <string_view>
 #include <unordered_set>
 
 namespace rhapsode {
+
+namespace {
+
+bool weave_log_verbose() {
+    if (std::getenv("RHAPSODE_WEAVE_LOG")) return true;
+    if (std::getenv("RHAPSODE_VERBOSE_LOG")) return true;
+    return false;
+}
+
+std::uint64_t fnv1a64(std::string_view s) {
+    std::uint64_t h = 14695981039346656037ULL;
+    for (unsigned char c : s) {
+        h ^= c;
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
+
+std::string hex_u64(std::uint64_t v) {
+    std::ostringstream os;
+    os << std::hex << std::setfill('0') << std::setw(16) << v;
+    return os.str();
+}
+
+std::string truncate_log(std::string_view s, size_t max_len) {
+    if (s.size() <= max_len) return std::string(s);
+    return std::string(s.substr(0, max_len)) + "...";
+}
+
+void write_weave_artifact(int turn_index, const char* label,
+                          const std::string& prompt,
+                          const std::string& response,
+                          const std::string& summary) {
+    if (!weave_log_verbose()) return;
+
+    const char* dir_env = std::getenv("RHAPSODE_WEAVE_LOG_DIR");
+    std::filesystem::path dir = dir_env ? dir_env : "logs";
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+
+    std::ostringstream name;
+    name << "weave-turn-" << turn_index << "-" << label << ".txt";
+    std::filesystem::path path = dir / name.str();
+
+    std::ofstream out(path, std::ios::binary);
+    if (!out) {
+        std::cerr << "  [weave] could not write artifact " << path.string() << "\n";
+        return;
+    }
+    out << "turn=" << turn_index << " label=" << label << "\n"
+        << "prompt_fnv=" << hex_u64(fnv1a64(prompt))
+        << " prompt_chars=" << prompt.size() << "\n"
+        << summary << "\n\n"
+        << "=== PROMPT ===\n" << prompt << "\n\n"
+        << "=== RESPONSE ===\n" << response << "\n";
+    std::cerr << "  [weave] artifact written: " << path.string() << "\n";
+}
+
+}  // namespace
 
 // ---------------------------------------------------------------------------
 // Free function: lightweight graph analysis
@@ -179,6 +243,15 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
     WeaveResult result;
     auto j = try_parse_json(llm_response);
 
+    const bool parse_failed =
+        !llm_response.empty() && j.empty();
+
+    if (parse_failed) {
+        std::cerr << "  [weave] parse FAILED: JSON extraction failed — "
+                  << "response preview: "
+                  << truncate_log(llm_response, 300) << "\n";
+    }
+
     auto parse_ops = [](const nlohmann::json& arr) {
         std::vector<WeaveOp> ops;
         if (!arr.is_array()) return ops;
@@ -198,6 +271,11 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
     auto connect_ops    = parse_ops(j.value("connect",    nlohmann::json::array()));
     auto disconnect_ops = parse_ops(j.value("disconnect", nlohmann::json::array()));
     auto reweight_ops   = parse_ops(j.value("reweight",   nlohmann::json::array()));
+
+    std::cerr << "  [weave] parse: connect=" << connect_ops.size()
+              << " disconnect=" << disconnect_ops.size()
+              << " reweight=" << reweight_ops.size()
+              << (parse_failed ? " (JSON salvage failed)" : "") << "\n";
 
     std::cerr << "  [weave] LLM proposed: "
               << connect_ops.size() << " connect, "
@@ -265,34 +343,61 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
         return {{}, {}, {}, pre};
     }
 
+    std::cerr << "  [weave] turn=" << turn_index << " label=" << label << "\n";
     std::cerr << "  [weave] before: "
               << pre.live_node_count << " nodes, "
               << pre.active_edge_count << " active edges, "
               << pre.orphan_count << " orphans\n";
 
     auto prompt = build_prompt(turn_index, scene_context);
-    std::cerr << "  [weave] prompt built (" << prompt.size()
-              << " chars), calling " << label << " LLM...\n"
+    std::cerr << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
+              << " prompt_chars=" << prompt.size()
+              << " — calling " << label << " LLM...\n"
               << std::flush;
+
+    if (weave_log_verbose()) {
+        std::cerr << "  [weave] --- PROMPT BEGIN ---\n"
+                  << prompt << "\n  [weave] --- PROMPT END ---\n"
+                  << std::flush;
+    }
 
     std::string response;
     try {
         response = cb(sanitize_utf8(prompt));
     } catch (const std::exception& e) {
         std::cerr << "  [weave] " << label << " LLM call FAILED: " << e.what() << "\n";
+        write_weave_artifact(turn_index, label, prompt, "",
+                             std::string("exception: ") + e.what());
         return {{}, {}, {}, pre};
     }
+
+    std::cerr << "  [weave] response_chars=" << response.size() << "\n";
 
     if (response.empty()) {
-        std::cerr << "  [weave] " << label << " LLM returned empty response\n";
+        std::cerr << "  [weave] " << label
+                  << " LLM returned empty response "
+                  << "(see [local_llm:weave] lines above for HTTP details)\n";
+        write_weave_artifact(turn_index, label, prompt, response,
+                             "empty response from local LLM callback");
         return {{}, {}, {}, pre};
     }
 
-    std::cerr << "  [weave] " << label << " LLM response ("
-              << response.size() << " chars):\n"
-              << response << "\n";
+    if (weave_log_verbose()) {
+        std::cerr << "  [weave] --- RESPONSE BEGIN ---\n"
+                  << response << "\n  [weave] --- RESPONSE END ---\n"
+                  << std::flush;
+    }
 
-    return parse_and_apply(response, turn_index);
+    auto result = parse_and_apply(response, turn_index);
+
+    std::ostringstream summary;
+    summary << "response_chars=" << response.size()
+            << " connect=" << result.connected.size()
+            << " disconnect=" << result.disconnected.size()
+            << " reweight=" << result.reweighted.size();
+    write_weave_artifact(turn_index, label, prompt, response, summary.str());
+
+    return result;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,12 +2,16 @@
  * Scene text parser for Rhapsode narrative output.
  *
  * Uses markdown-it (typographer: true) as the rendering engine so that:
- *   - "dialogue"   → <span class="sq"> with proper curly quotes
  *   - (aside)      → <span class="paren"> for parenthetical/whisper
  *   - [note]       → <span class="bk"> for game/system annotations
  *   - --           → — (em-dash)
  *   - ...          → … (ellipsis)
- *   - "..."        → "..." (smart/curly quotes on non-dialogue text)
+ *
+ * Dialogue is NOT detected by matching quote pairs. Under the current design
+ * the narrator prose is narration-only; every spoken line arrives structurally
+ * as a separate `character` message (rendered by StoryPanel's .dialogue-block,
+ * styled by CSS). Quote-pair matching is therefore gone — it would only mangle
+ * stray quotes (e.g. a leaked JSON fragment) into fake dialogue spans.
  *
  * Emphasis (*...*  / **...**) is disabled — entity highlighting is
  * driven by the C++ Annotator + FABLE NER instead.
@@ -36,25 +40,8 @@ md.renderer.rules.paragraph_open = (tokens, idx, options, _env, self) => {
 
 // --- Custom inline rules ---
 // These run before markdown-it's typographer core pass, so we look for
-// plain straight-quote characters (U+0022 / U+0028 / U+005B) and emit
-// html_inline tokens that are never touched by the typographer.
-
-function dialogueRule(state: StateInline, silent: boolean): boolean {
-  if (state.src.charCodeAt(state.pos) !== 0x22 /* " */) return false
-  const start = state.pos + 1
-  const close = state.src.indexOf('"', start)
-  if (close < start + 1) return false
-  if (!silent) {
-    const inner = state.src.slice(start, close)
-    const token  = state.push('html_inline', '', 0)
-    // Manually apply em-dash / ellipsis inside the span since it won't be
-    // visited by the typographer core rule (which only touches text tokens).
-    const cooked = inner.replace(/--/g, '\u2014').replace(/\.\.\./g, '\u2026')
-    token.content = `<span class="sq">\u201C${cooked}\u201D</span>`
-  }
-  state.pos = close + 1
-  return true
-}
+// plain bracket characters (U+0028 ( / U+005B [) and emit html_inline tokens
+// that are never touched by the typographer.
 
 function parenRule(state: StateInline, silent: boolean): boolean {
   if (state.src.charCodeAt(state.pos) !== 0x28 /* ( */) return false
@@ -83,7 +70,6 @@ function bracketRule(state: StateInline, silent: boolean): boolean {
 }
 
 // Push after all built-in rules so Markdown links ([text](url)) are handled first.
-md.inline.ruler.push('rhapsode_dialogue', dialogueRule)
 md.inline.ruler.push('rhapsode_paren',    parenRule)
 md.inline.ruler.push('rhapsode_bracket',  bracketRule)
 

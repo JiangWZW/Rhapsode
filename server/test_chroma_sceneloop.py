@@ -103,7 +103,6 @@ weaver.set_local_llm_callback(make_local_llm_callback())
 loop = SceneLoop()
 loop.load_scene(scene)
 loop.set_director(director)
-loop.set_actor_llm_callback(stub_llm)
 
 scene.downsampler.set_llm_callback(make_local_llm_callback())
 system_msg = build_system_message(scene)

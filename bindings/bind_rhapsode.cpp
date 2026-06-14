@@ -136,6 +136,7 @@ PYBIND11_MODULE(_core, m) {
         .def_readwrite("related_to",     &Node::related_to)
         .def_readwrite("created_at",     &Node::created_at)
         .def_readwrite("valid_until",    &Node::valid_until)
+        .def_readwrite("weight",         &Node::weight)
         .def("__repr__", [](const Node& n) {
             return "Node(" + std::to_string(n.id) + ", "
                    + to_string(n.state) + ", \""
@@ -150,7 +151,8 @@ PYBIND11_MODULE(_core, m) {
     py::class_<EdgeData>(m, "EdgeData")
         .def_readonly("weight",     &EdgeData::weight)
         .def_readonly("created_at", &EdgeData::created_at)
-        .def_readonly("active",     &EdgeData::active);
+        .def_readonly("active",     &EdgeData::active)
+        .def_readonly("kind",       &EdgeData::kind);
 
     py::class_<WorldGraph>(m, "WorldGraph")
         .def(py::init<>())
@@ -162,7 +164,8 @@ PYBIND11_MODULE(_core, m) {
         .def("add_relation", &WorldGraph::add_relation,
              py::arg("from_id"), py::arg("to_id"),
              py::arg("weight") = 1.0f,
-             py::arg("created_at") = 0)
+             py::arg("created_at") = 0,
+             py::arg("kind") = "")
         .def("set_edge_active", &WorldGraph::set_edge_active,
              py::arg("from_id"), py::arg("to_id"), py::arg("active"))
         .def("set_edge_weight", &WorldGraph::set_edge_weight,
@@ -390,7 +393,6 @@ PYBIND11_MODULE(_core, m) {
         .def("set_llm_callback",             &SceneLoop::set_llm_callback)
         .def("set_narrator_llm_callback",    &SceneLoop::set_narrator_llm_callback)
         .def("set_turn_complete_callback",   &SceneLoop::set_turn_complete_callback)
-        .def("set_actor_llm_callback",       &SceneLoop::set_actor_llm_callback)
         .def("take_last_turn_outputs",       &SceneLoop::take_last_turn_outputs)
         .def("set_director",                 &SceneLoop::set_director, py::arg("director"))
         .def("last_director_output",         &SceneLoop::last_director_output)

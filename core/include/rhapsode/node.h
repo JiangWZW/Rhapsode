@@ -26,6 +26,12 @@ struct Node {
     int created_at = 0;
     int valid_until = -1;  // -1 = still valid; >0 = turn when superseded
 
+    // How much this node presses (a Thought's "weight").  Not factual
+    // confidence: it is reinforced when new related material touches it and
+    // decays when untouched (set only by the background reflection pass).
+    // Facts leave it at 0; only character minds use it.
+    float weight = 0.0f;
+
     // Perception routing (transient): which characters perceive this fact.
     // Set by the narrator on new_nodes; consumed when routing the fact into
     // character minds.  NOT serialized into the world graph -- it is an

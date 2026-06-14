@@ -47,7 +47,7 @@ Node& WorldGraph::add_node_chained(Node node, int turn) {
     Node& ref = add_node(std::move(node));
     for (const auto& [pred_id, entity] : chain_predecessors(ref)) {
         (void)entity;
-        if (add_relation(ref.id, pred_id, 1.0f, turn))
+        if (add_relation(ref.id, pred_id, 1.0f, turn, "chain"))
             ref.related_to.push_back(pred_id);
     }
     return ref;
@@ -125,7 +125,8 @@ void WorldGraph::for_each(const std::function<void(const Node&)>& fn,
 bool WorldGraph::add_relation(std::uint64_t from_id,
                               std::uint64_t to_id,
                               float weight,
-                              int created_at) {
+                              int created_at,
+                              const std::string& kind) {
     auto from_it = id_to_vertex_.find(from_id);
     auto to_it = id_to_vertex_.find(to_id);
     if (from_it == id_to_vertex_.end() || to_it == id_to_vertex_.end())
@@ -151,6 +152,7 @@ bool WorldGraph::add_relation(std::uint64_t from_id,
     graph_[edge].weight = weight;
     graph_[edge].created_at = created_at;
     graph_[edge].active = true;
+    graph_[edge].kind = kind;
     return inserted;
 }
 
@@ -422,13 +424,15 @@ nlohmann::json WorldGraph::to_json() const {
         Vertex src = boost::source(*edge_it, graph_);
         Vertex dst = boost::target(*edge_it, graph_);
         const EdgeData& data = graph_[*edge_it];
-        edges.push_back({
+        nlohmann::json e = {
             {"from", graph_[src].id},
             {"to", graph_[dst].id},
             {"weight", data.weight},
             {"created_at", data.created_at},
             {"active", data.active},
-        });
+        };
+        if (!data.kind.empty()) e["kind"] = data.kind;
+        edges.push_back(std::move(e));
     }
     j["edges"] = std::move(edges);
 
@@ -530,8 +534,9 @@ WorldGraph WorldGraph::from_json(const nlohmann::json& j) {
         float weight = edge_j.value("weight", edge_j.value("confidence", 1.0f));
         int created_at = edge_j.value("created_at", 0);
         bool active = edge_j.value("active", true);
+        std::string kind = edge_j.value("kind", std::string());
 
-        if (g.add_relation(from, to, weight, created_at)) {
+        if (g.add_relation(from, to, weight, created_at, kind)) {
             auto from_it = g.id_to_vertex_.find(from);
             auto to_it = g.id_to_vertex_.find(to);
             if (from_it != g.id_to_vertex_.end() && to_it != g.id_to_vertex_.end()) {

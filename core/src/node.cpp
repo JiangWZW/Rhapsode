@@ -40,6 +40,7 @@ void to_json(nlohmann::json& j, const Node& n) {
     };
     if (!n.trigger.empty())      j["trigger"]      = n.trigger;
     if (!n.arc_position.empty()) j["arc_position"] = n.arc_position;
+    if (n.weight != 0.0f)        j["weight"]       = n.weight;
 }
 
 void from_json(const nlohmann::json& j, Node& n) {
@@ -53,6 +54,7 @@ void from_json(const nlohmann::json& j, Node& n) {
     n.trigger        = sanitize_utf8(j.value("trigger", ""));
     n.arc_position   = j.value("arc_position", "");
     n.related_to     = j.value("related_to", std::vector<std::uint64_t>{});
+    n.weight         = j.value("weight", 0.0f);
     n.created_at     = json_number<int>(j, "created_at", 0);
     // Migration: prefer valid_until, fall back to resolved_at from old saves
     n.valid_until    = json_number<int>(j, "valid_until",

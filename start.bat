@@ -2,6 +2,10 @@
 title Rhapsode
 set "PATH=C:\Program Files\Graphviz\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin;%PATH%"
 
+rem Never route localhost LLM calls through an ambient proxy (empty-body 502s).
+set "NO_PROXY=127.0.0.1,localhost"
+set "no_proxy=127.0.0.1,localhost"
+
 cd /d "%~dp0"
 start "Rhapsode LLM" third_party\llama.cpp\build\bin\Release\llama-server.exe -m models\Qwen3-8B-Q4_K_M.gguf --port 8012 -ngl 99 -c 8192 -np 1 -fa on --reasoning-format deepseek
 

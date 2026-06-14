@@ -6,8 +6,11 @@
 #include "rhapsode/json_util.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <string_view>
 #include <unordered_set>
@@ -36,24 +39,6 @@ std::string truncate(const std::string& s, size_t max_len) {
     while (pos > 0 && (static_cast<unsigned char>(s[pos]) & 0xC0) == 0x80)
         --pos;
     return s.substr(0, pos);
-}
-
-/// Append a markdown section.  No-op if body is empty.
-void section(std::string& out, const char* heading, const std::string& body) {
-    if (body.empty()) return;
-    out += "\n### ";
-    out += heading;
-    out += '\n';
-    out += body;
-    out += '\n';
-}
-
-/// Append a tagged line.  No-op if value is empty.
-void tagged_line(std::string& out, const char* tag, const std::string& value) {
-    if (value.empty()) return;
-    out += tag;
-    out += value;
-    out += '\n';
 }
 
 std::string to_lower(const std::string& s) {
@@ -113,27 +98,44 @@ std::vector<Rejection> validate_active_cast(const nlohmann::json& plan,
 
 // -- LLM response parsing --------------------------------------------
 
-constexpr char kJsonMarker[] = "\n<<<RHAPSODE_JSON>>>\n";
+constexpr char kJsonToken[] = "<<<RHAPSODE_JSON>>>";
 
 std::pair<std::string, nlohmann::json> split_merged_response(std::string raw) {
-    auto marker = raw.find(kJsonMarker);
+    // Normalize smart quotes etc. up front so both the marker split and the
+    // brace-fallback below operate on parseable text (models frequently emit
+    // curly quotes that otherwise corrupt the whole structured plan).
+    raw = normalize_json_punct(std::move(raw));
+
+    // Tolerate the marker with or without its surrounding newlines.
+    auto marker = raw.find(kJsonToken);
     if (marker != std::string::npos) {
         auto prose = trim(raw.substr(0, marker));
-        auto json  = trim(raw.substr(marker + std::strlen(kJsonMarker)));
+        auto json  = trim(raw.substr(marker + std::strlen(kJsonToken)));
         return {std::move(prose), json.empty() ? nlohmann::json::object()
                                                : try_parse_json(json)};
     }
 
-    // Fallback: find last top-level JSON object.
-    auto brace = raw.rfind('{');
-    if (brace != std::string::npos) {
+    // Fallback (model omitted the sentinel): scan braces left-to-right and take
+    // the FIRST balanced object that parses AND looks like a plan.  Scanning from
+    // the first '{' captures the OUTERMOST object; the old rfind('{') grabbed the
+    // last nested object (e.g. the final speech_turns entry), which left the rest
+    // of the JSON sitting in the prose -- the leak.  Requiring a known key lets us
+    // skip a stray '{' that might appear in narration.
+    static constexpr std::array<const char*, 5> kPlanKeys = {
+        "transitions", "new_nodes", "speech_turns", "active_cast", "new_characters"};
+    for (auto brace = raw.find('{'); brace != std::string::npos;
+         brace = raw.find('{', brace + 1)) {
         std::string fragment;
-        if (extract_balanced_json(std::string_view(raw).substr(brace), fragment)) {
-            try {
-                auto plan = nlohmann::json::parse(fragment);
+        if (!extract_balanced_json(std::string_view(raw).substr(brace), fragment))
+            break;  // no balanced object from here on
+        try {
+            auto plan = nlohmann::json::parse(fragment);
+            if (plan.is_object() &&
+                std::any_of(kPlanKeys.begin(), kPlanKeys.end(),
+                            [&](const char* k) { return plan.contains(k); })) {
                 return {trim(raw.substr(0, brace)), std::move(plan)};
-            } catch (...) {}
-        }
+            }
+        } catch (...) {}
     }
 
     return {trim(std::move(raw)), nlohmann::json::object()};
@@ -207,51 +209,77 @@ void apply_active_cast(const nlohmann::json& plan,
     }
 }
 
-// -- Actor prompt assembly --------------------------------------------
-
-std::string format_history(const Scene& scene, size_t limit = 8) {
-    auto msgs = scene.history.snapshot(limit);
-    std::string out;
-    for (const auto& msg : msgs) {
-        const auto& md = msg.metadata;
-        auto kind    = md.value("scene_kind", "");
-        auto speaker = md.value("speaker", "");
-
-        if (msg.role == Role::User)
-            out += "Player: ";
-        else if (kind == "character" && !speaker.empty())
-            out += speaker + ": ";
-
-        out += truncate(msg.content, 400);
-        out += '\n';
-    }
-    return out;
-}
-
-// Advance each on-stage character's persistent self-state and collect the
-// first-person states into a block for the decision (narrator) prompt.  Mutates
-// the CharacterMemory (update_self_state folds the state forward), so it takes
-// a non-const Scene&.  Returns "" if no character has a self-state (section
-// omitted entirely).
+// Render each on-stage character's interior INTO the narrator's context: their
+// voice (dialogue_instructions + a couple example lines) and their live Thoughts
+// as weighted, tension-marked chains.  This is the state the single narrator
+// writes FROM; the engine never commands behavior, it only renders.  Read-only
+// over the minds now (no per-turn self-state rewrite).  Returns "" if nothing to
+// show (section omitted entirely).
 std::string build_inner_states(Scene& scene, int turn) {
+    // Gated experiments: rendered as context, never commands (off by default).
+    const bool exp_surfacing = std::getenv("RHAPSODE_EXP_SURFACING") != nullptr;
+    const bool exp_crisis    = std::getenv("RHAPSODE_EXP_CRISIS") != nullptr;
+
     std::string body;
     for (const auto& ch : scene.characters) {
         if (ch.is_player || ch.dead || !ch.on_stage) continue;
         auto it = scene.character_memories.find(ch.name);
         if (it == scene.character_memories.end()) continue;
+        const CharacterMemory& mem = it->second;
 
-        CharacterMemory& mem = it->second;
-        mem.update_self_state(turn);
-        const std::string& state = mem.self_state();
-        if (state.empty()) continue;
+        // Subjects this character holds a view of: the others present (and the
+        // player by description) plus itself (its dispositional self-view).
+        std::vector<std::string> subjects;
+        for (const auto& c : scene.characters) {
+            if (c.name == ch.name || c.dead || !c.on_stage) continue;
+            subjects.push_back(c.name);
+            if (c.is_player && !c.description.empty())
+                subjects.push_back(c.description);
+        }
+        subjects.push_back(ch.name);
 
-        body += "- " + ch.name + ": " + truncate(state, 400) + "\n";
+        std::string block;
+        if (!ch.dialogue_instructions.empty())
+            block += "  Voice: " + ch.dialogue_instructions + "\n";
+        if (!ch.example_dialogue.empty()) {
+            block += "  Example lines:\n";
+            int shown = 0;
+            for (const auto& ex : ch.example_dialogue) {
+                block += "    - " + ex + "\n";
+                if (++shown >= 2) break;
+            }
+        }
+        std::string thoughts = mem.render_thoughts(subjects);
+        if (!thoughts.empty()) {
+            block += "  Interior (live thoughts; weight = how much it presses, "
+                     "tension = a contradiction held unresolved):\n";
+            block += thoughts;
+        }
+
+        if (exp_surfacing) {
+            const unsigned seed =
+                static_cast<unsigned>(std::hash<std::string>{}(ch.name)) ^
+                static_cast<unsigned>(turn);
+            std::string p = mem.pressing_thought(seed);
+            if (!p.empty())
+                block += "  Pressing today: " + p + "\n";
+        }
+        if (exp_crisis) {
+            std::string c = mem.charge_state();
+            if (!c.empty())
+                block += "  Charge: " + c + "\n";
+        }
+
+        if (block.empty()) continue;
+        body += "- " + ch.name + ":\n" + block;
     }
     if (body.empty()) return {};
 
-    return "### Inner states\n"
-           "(Each is the character's own first-person state of mind; make their "
-           "speech_turns emotional_state and dramatic_intent consistent with it.)\n"
+    return "### Inner lives\n"
+           "(Each character's voice and the interior you are writing FROM. These "
+           "are not commands -- perform them. A high-weight thought in tension "
+           "pulls toward subtext, a slip, or crisis; a high-weight thought "
+           "standing alone pulls toward action. You decide what surfaces.)\n"
            + body;
 }
 
@@ -284,80 +312,6 @@ void route_perception(Scene& scene, const std::vector<Node>& new_nodes, int turn
     std::cerr << "  [perceive] " << new_nodes.size() << " new_node(s) -> "
               << deliveries << " perception(s) routed to " << minds.size()
               << " mind(s)\n" << std::flush;
-}
-
-std::string build_actor_prompt(const Character& character,
-                               const SpeechCue&  cue,
-                               const std::string& narration,
-                               const Scene&       scene,
-                               CharacterMemory* char_mem = nullptr) {
-    std::string prompt;
-    prompt.reserve(2048);
-
-    prompt += "You are **" + character.name
-           +  "** in \"" + scene.title + "\".\n";
-
-    // -- Identity --
-    section(prompt, "Character",    character.description);
-    section(prompt, "Voice & style", character.dialogue_instructions);
-
-    if (!character.example_dialogue.empty()) {
-        std::string lines;
-        for (const auto& ex : character.example_dialogue)
-            lines += "- " + character.name + ": " + ex + "\n";
-        section(prompt, "Example lines", lines);
-    }
-
-    // -- Scene --
-    std::string others;
-    for (const auto& c : scene.characters)
-        if (c.name != character.name && c.on_stage && !c.dead && !c.is_player) {
-            if (!others.empty()) others += ", ";
-            others += c.name;
-        }
-    section(prompt, "Others present", others);
-
-    // -- Knowledge: ONLY this character's own mind.  Never the narrator's
-    //    omniscient world graph -- the actor cannot read what it hasn't been
-    //    told or perceived.
-    if (char_mem) {
-        // Who I am right now (carried across turns), first person.
-        section(prompt, "Inner state", char_mem->self_state());
-
-        // What I believe about the people in front of me -- drawn from my own
-        // subjective belief graph, keyed on who is present.
-        std::vector<std::string> subjects;
-        for (const auto& c : scene.characters) {
-            if (c.name == character.name || c.dead || !c.on_stage) continue;
-            subjects.push_back(c.name);
-            if (c.is_player && !c.description.empty())
-                subjects.push_back(c.description);
-        }
-        std::string views = char_mem->view_of(subjects);
-        if (!views.empty())
-            section(prompt, "What I know about who's here", views);
-    }
-
-    section(prompt, "Recent events", format_history(scene));
-
-    // -- Direction --
-    section(prompt, "Current narrator beat", truncate(narration, 600));
-
-    std::string stage = cue.field("cue");
-    tagged_line(stage, "\nDramatic intent: ",    cue.field("dramatic_intent"));
-    tagged_line(stage, "Your emotional state: ", cue.field("emotional_state"));
-    tagged_line(stage, "Responding to: ",        cue.field("responds_to"));
-    section(prompt, "Stage direction", stage);
-
-    // -- Task --
-    prompt += "\n### Task\n"
-              "Write ONLY what " + character.name + " says. Wrap every spoken line in "
-              "straight double quotes, e.g. \"We hold the gate till dawn.\"\n"
-              "Put brief actions in (parentheses), kept minimal. Do NOT use *asterisks*.\n"
-              "Do NOT narrate the scene, describe surroundings, or write other characters' lines.\n"
-              "Stay faithful to your character's voice and emotional state.\n";
-
-    return prompt;
 }
 
 SceneMessage make_message(const std::string& kind,
@@ -398,7 +352,6 @@ LoopState SceneLoop::state() const { return state_; }
 void SceneLoop::set_prompt_callback(PromptCallback cb)         { prompt_cb_       = std::move(cb); }
 void SceneLoop::set_llm_callback(LLMCallback cb)               { llm_cb_          = std::move(cb); }
 void SceneLoop::set_narrator_llm_callback(NarratorLLMCallback cb) { narrator_llm_cb_ = std::move(cb); }
-void SceneLoop::set_actor_llm_callback(LLMCallback cb)         { actor_llm_cb_    = std::move(cb); }
 void SceneLoop::set_turn_complete_callback(TurnCompleteCallback cb) { turn_complete_cb_ = std::move(cb); }
 void SceneLoop::set_director(Director* director)                { director_        = director; }
 void SceneLoop::set_weaver(Weaver* weaver)                      { weaver_          = weaver; }
@@ -480,6 +433,27 @@ void SceneLoop::dispatch_background() {
         // minds that perceived nothing).
         for (auto& [name, mem] : scene_->character_memories)
             mem.reflect_perceptions(turn);
+
+        // Downsample history off the foreground (thinking-on, multi-call). Safe
+        // here: the next turn's join_background() completes this before the
+        // prompt callback reads downsampler.render(), and history is not mutated
+        // while the main thread waits for player input.
+        if (scene_->downsampler.has_llm_callback()) {
+            try {
+                int before = scene_->downsampler.summarized_up_to();
+                scene_->downsampler.process_turn(scene_->history.messages());
+                int after = scene_->downsampler.summarized_up_to();
+                std::cerr << "  [downsampler] summarized_up_to " << before
+                          << " -> " << after << "\n";
+                auto rendered = scene_->downsampler.render();
+                if (!rendered.empty())
+                    std::cerr << "  [downsampler] story_so_far (" << rendered.size()
+                              << " chars): " << rendered.substr(0, 200)
+                              << (rendered.size() > 200 ? "..." : "") << "\n";
+            } catch (const std::exception& e) {
+                std::cerr << "  [downsampler] process_turn failed: " << e.what() << "\n";
+            }
+        }
     });
 }
 
@@ -649,65 +623,33 @@ void SceneLoop::advance() {
     //    Reflection (perception -> belief) runs later in the background. --
     route_perception(*scene_, last_director_out_.new_nodes, turn);
 
-    // -- Phase 4: Actor synthesis --
+    // -- Phase 4: Emit narrator-authored dialogue --
+    // The narrator authored each spoken line directly in speech_turns; we emit
+    // it verbatim (no separate actor LLM) and distill it back into the speaker's
+    // own mind so the character carries its own words into reflection.
 
-    std::cerr << "[4/4] Actor synthesis...\n" << std::flush;
-    const auto& actor_llm = actor_llm_cb_ ? actor_llm_cb_ : llm_cb_;
+    std::cerr << "[4/4] Emit authored dialogue...\n" << std::flush;
 
     for (const auto& cue : cues) {
         const auto* ch = resolve_cast_name(cue.character, scene_->characters);
-        std::string spoken;
 
-        if (ch) {
-            CharacterMemory* char_mem = nullptr;
-            auto mem_it = scene_->character_memories.find(ch->name);
-            if (mem_it != scene_->character_memories.end())
-                char_mem = &mem_it->second;
-
-            auto actor_prompt = build_actor_prompt(*ch, cue, narration, *scene_, char_mem);
-            std::cerr << "  [actor] " << ch->name << " prompt=" << actor_prompt.size() << " chars\n" << std::flush;
-            if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
-                std::cerr << "--- ACTOR PROMPT: " << ch->name << " ---\n"
-                          << actor_prompt << "\n--- END ACTOR PROMPT ---\n" << std::flush;
-            }
-            try {
-                spoken = trim(actor_llm(actor_prompt));
-                std::cerr << "  [actor] " << ch->name << " response=" << spoken.size() << " chars\n" << std::flush;
-                if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
-                    std::cerr << "--- ACTOR RESPONSE: " << ch->name << " ---\n"
-                              << spoken << "\n--- END ACTOR RESPONSE ---\n" << std::flush;
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "  [actor] FAILED " << ch->name << ": " << e.what() << "\n";
-            }
-
-            // A character's mind is no longer written here: it learns only
-            // through narrator-routed perception (route_perception above), which
-            // reflection folds into belief in the background.
-        }
+        std::string spoken = trim(cue.field("line"));
+        std::string action = trim(cue.field("action"));
+        if (!action.empty())
+            spoken += (spoken.empty() ? "" : " ") + ("(" + action + ")");
 
         if (spoken.empty())
             spoken = "(" + cue.character + " is at a loss for words.)";
 
-        emit_output(make_message("character", std::move(spoken), cue.character));
-    }
-
-    // -- Post-turn: run downsampler on history --
-    if (scene_->downsampler.has_llm_callback()) {
-        try {
-            int before = scene_->downsampler.summarized_up_to();
-            scene_->downsampler.process_turn(scene_->history.messages());
-            int after = scene_->downsampler.summarized_up_to();
-            std::cerr << "  [downsampler] summarized_up_to " << before
-                      << " -> " << after << "\n";
-            auto rendered = scene_->downsampler.render();
-            if (!rendered.empty())
-                std::cerr << "  [downsampler] story_so_far (" << rendered.size()
-                          << " chars): " << rendered.substr(0, 200)
-                          << (rendered.size() > 200 ? "..." : "") << "\n";
-        } catch (const std::exception& e) {
-            std::cerr << "  [downsampler] process_turn failed: " << e.what() << "\n";
+        // Distill the authored line into the speaker's own interior so it
+        // carries its own words; background reflection relates and re-weights it.
+        if (ch) {
+            auto mem_it = scene_->character_memories.find(ch->name);
+            if (mem_it != scene_->character_memories.end())
+                mem_it->second.route_fact(spoken, {ch->name}, turn);
         }
+
+        emit_output(make_message("character", std::move(spoken), cue.character));
     }
 
     // -- Post-turn: death detection (keyword pre-filter + LLM confirmation) --
@@ -737,7 +679,7 @@ void SceneLoop::advance() {
 
 void SceneLoop::confirm_deaths(const std::vector<DeathCandidate>& candidates,
                                const std::string& narration) {
-    const auto& llm = actor_llm_cb_ ? actor_llm_cb_ : llm_cb_;
+    const auto& llm = llm_cb_;
     if (!llm) return;
 
     for (const auto& dc : candidates) {

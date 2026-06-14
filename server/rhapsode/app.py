@@ -6,6 +6,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -51,7 +52,11 @@ def _init_character_memories(scene: Scene):
     """Register ChromaDB + LLM callbacks on all CharacterMemory instances."""
     for name, mem in scene.character_memories.items():
         register_character_memory_callbacks(mem)
-        mem.set_reflection_llm_callback(make_local_llm_callback())
+        # Background reflection (contradict-vs-extend + weight judgments) runs on
+        # the cloud provider (DeepSeek when RHAPSODE_PROVIDER=deepseek); it is
+        # async/off the turn's critical path so the latency hides.  Embedding
+        # similarity stays on the local seam via register_character_memory_callbacks.
+        mem.set_reflection_llm_callback(_call_llm)
         mem.sync_to_chroma()
 
 
@@ -200,9 +205,8 @@ def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
     loop = SceneLoop()
     loop.load_scene(scene)
     loop.set_director(director)
-    loop.set_actor_llm_callback(_call_llm)
 
-    scene.downsampler.set_llm_callback(make_local_llm_callback())
+    scene.downsampler.set_llm_callback(make_local_llm_callback(repair_json=False))
 
     system_msg = build_system_message(scene)
 
@@ -216,6 +220,13 @@ def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
             active_characters=_active_characters(scene_obj),
             story_so_far=story_so_far,
             inner_states=inner_states,
+        )
+        # Full, uncapped dump of exactly what the narrator receives.
+        print(
+            "\n===== NARRATOR PROMPT (system) =====\n" + system_msg +
+            "\n===== NARRATOR PROMPT (user) =====\n" + user_msg +
+            "\n===== END NARRATOR PROMPT =====\n",
+            file=sys.stderr, flush=True,
         )
         return (system_msg, user_msg)
 
