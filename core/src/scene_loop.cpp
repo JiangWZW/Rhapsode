@@ -482,196 +482,203 @@ void SceneLoop::advance() {
     if (!prompt_cb_) throw std::runtime_error("No prompt callback registered");
     if (!llm_cb_)    throw std::runtime_error("No LLM callback registered");
 
-    // -- Join previous background work (weave + expiry + reflections) --
+    // --- Turn setup -----------------------------------------------------
     join_background();
 
     const int turn = scene_->turn_index;
     std::cerr << "\n====== Turn " << turn << " ======\n";
     last_turn_outputs_.clear();
 
-    // -- Phase 1: Build merged Director+Narrator prompt --
+    // --- Phase 1: Build merged Director+Narrator prompt -----------------
+    std::string system_msg;
+    std::string user_msg;
+    {
+        state_ = LoopState::BuildingPrompt;
+        std::cerr << "[1/4] Building merged prompt...\n" << std::flush;
 
-    state_ = LoopState::BuildingPrompt;
-    std::cerr << "[1/4] Building merged prompt...\n" << std::flush;
+        const std::string scene_ctx = build_scene_context();
+        const std::string focus_text = director_
+            ? director_->focus_payload_text(turn, scene_ctx) : "";
+        const std::string inner_states = build_inner_states(*scene_, turn);
 
-    std::string scene_ctx  = build_scene_context();
-    std::string focus_text = director_
-        ? director_->focus_payload_text(turn, scene_ctx) : "";
+        const size_t win = resuming_ ? resume_window_size_ : window_size_;
+        const auto history = scene_->history.snapshot(win);
+        resuming_ = false;
 
-    // Advance + collect each on-stage character's persistent first-person
-    // self-state, using the same scene context as "what just happened".
-    std::string inner_states = build_inner_states(*scene_, turn);
+        std::tie(system_msg, user_msg) =
+            prompt_cb_(history, *scene_, last_director_out_, focus_text, inner_states);
+        ++scene_->turn_index;
 
-    size_t win   = resuming_ ? resume_window_size_ : window_size_;
-    auto history = scene_->history.snapshot(win);
-    resuming_    = false;
-
-    auto [system_msg, user_msg] =
-        prompt_cb_(history, *scene_, last_director_out_, focus_text, inner_states);
-    ++scene_->turn_index;
-
-    std::cerr << "  [prompt] system=" << system_msg.size()
-              << " user=" << user_msg.size() << " chars\n" << std::flush;
-    if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
-        std::cerr << "--- NARRATOR SYSTEM ---\n" << system_msg << "\n"
-                  << "--- NARRATOR USER ---\n" << user_msg << "\n"
-                  << "--- END NARRATOR PROMPT ---\n" << std::flush;
+        std::cerr << "  [prompt] system=" << system_msg.size()
+                  << " user=" << user_msg.size() << " chars\n" << std::flush;
+        if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
+            std::cerr << "--- NARRATOR SYSTEM ---\n" << system_msg << "\n"
+                      << "--- NARRATOR USER ---\n" << user_msg << "\n"
+                      << "--- END NARRATOR PROMPT ---\n" << std::flush;
+        }
     }
 
-    // -- Phase 2+3: Call narrative LLM + apply (with retry on contradiction) --
+    // --- Phase 2+3: Call narrative LLM + apply (retry on rejection) -----
+    std::string prose;
+    nlohmann::json plan;
+    std::vector<SpeechCue> cues;
+    {
+        const auto call_narrator = [&](const std::string& sys, const std::string& usr) -> std::string {
+            if (narrator_llm_cb_)
+                return narrator_llm_cb_(sys, usr);
+            return llm_cb_(sys + "\n\n" + usr);
+        };
 
-    auto call_narrator = [&](const std::string& sys, const std::string& usr) -> std::string {
-        if (narrator_llm_cb_)
-            return narrator_llm_cb_(sys, usr);
-        return llm_cb_(sys + "\n\n" + usr);
-    };
-
-    state_ = LoopState::RunningLLM;
-    std::cerr << "[2/4] Calling narrative LLM...\n" << std::flush;
-
-    auto raw_response = call_narrator(system_msg, user_msg);
-    std::cerr << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
-    if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
-        std::cerr << "--- NARRATOR RESPONSE ---\n" << raw_response
-                  << "\n--- END NARRATOR RESPONSE ---\n" << std::flush;
-    }
-
-    auto [prose, plan] = split_merged_response(std::move(raw_response));
-
-    state_ = LoopState::AppendingResult;
-    std::cerr << "[3/4] Applying graph...\n" << std::flush;
-
-    constexpr int kMaxAttempts = 3;
-    std::vector<Rejection> all_rejections;
-    nlohmann::json graph_snapshot;
-    if (director_)
-        graph_snapshot = scene_->world_graph.to_json();
-
-    for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
-        if (attempt > 0) {
-            if (director_)
-                scene_->world_graph = WorldGraph::from_json(graph_snapshot);
-
-            // Undo characters dynamically added by the previous attempt
-            auto& chars = scene_->characters;
-            chars.erase(
-                std::remove_if(chars.begin(), chars.end(),
-                    [turn](const Character& c) { return c.created_at >= turn; }),
-                chars.end());
-
-            std::string rewrite_user = user_msg;
-            rewrite_user += "\n\n### REVISION REQUIRED\n"
-                            "The following issues were found in your plan:\n";
-            for (const auto& r : all_rejections)
-                rewrite_user += "- " + r.fact + " -- " + r.reason + "\n";
-            rewrite_user += "\nRewrite your narrative and plan to fix these issues.\n";
-
+        {
             state_ = LoopState::RunningLLM;
-            auto [new_prose, new_plan] = split_merged_response(
-                call_narrator(system_msg, rewrite_user));
-            prose = std::move(new_prose);
-            plan = std::move(new_plan);
-            state_ = LoopState::AppendingResult;
-        }
+            std::cerr << "[2/4] Calling narrative LLM...\n" << std::flush;
 
-        last_director_out_ = {};
-        if (director_)
-            last_director_out_ = director_->apply_planned_turn(turn, plan);
-
-        // Register new characters BEFORE validating active_cast,
-        // so freshly introduced NPCs are recognized as valid cast.
-        if (plan.contains("new_characters") && plan["new_characters"].is_array()) {
-            for (const auto& ch_j : plan["new_characters"]) {
-                Character ch;
-                ch.name = ch_j.value("name", "");
-                ch.description = ch_j.value("description", "");
-                ch.dialogue_instructions = ch_j.value("dialogue_instructions", "");
-                ch.role = ch_j.value("role", "minor_npc");
-                ch.on_stage = true;
-                ch.created_at = scene_->turn_index;
-                if (!ch.name.empty() && !scene_->find_on_stage(ch.name)) {
-                    std::cerr << "  [enter] " << ch.name << " enters the stage\n";
-                    scene_->enter_character(std::move(ch));
-                }
+            auto raw_response = call_narrator(system_msg, user_msg);
+            std::cerr << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
+            if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
+                std::cerr << "--- NARRATOR RESPONSE ---\n" << raw_response
+                          << "\n--- END NARRATOR RESPONSE ---\n" << std::flush;
             }
+
+            std::tie(prose, plan) = split_merged_response(std::move(raw_response));
         }
 
-        auto cast_rejections = validate_active_cast(plan, *scene_);
-        all_rejections = last_director_out_.rejections;
-        all_rejections.insert(all_rejections.end(),
-                              cast_rejections.begin(), cast_rejections.end());
+        {
+            state_ = LoopState::AppendingResult;
+            std::cerr << "[3/4] Applying graph...\n" << std::flush;
 
-        if (all_rejections.empty())
-            break;
+            constexpr int kMaxAttempts = 3;
+            std::vector<Rejection> all_rejections;
+            nlohmann::json graph_snapshot;
+            if (director_)
+                graph_snapshot = scene_->world_graph.to_json();
 
-        std::cerr << "  [retry] attempt " << (attempt + 1) << "/" << kMaxAttempts
-                  << ": " << all_rejections.size() << " issue(s)\n";
-        for (const auto& r : all_rejections)
-            std::cerr << "    - " << r.fact << " -- " << r.reason << "\n";
-        std::cerr << std::flush;
+            for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
+                if (attempt > 0) {
+                    if (director_)
+                        scene_->world_graph = WorldGraph::from_json(graph_snapshot);
+
+                    // Undo characters dynamically added by the previous attempt
+                    auto& chars = scene_->characters;
+                    chars.erase(
+                        std::remove_if(chars.begin(), chars.end(),
+                            [turn](const Character& c) { return c.created_at >= turn; }),
+                        chars.end());
+
+                    std::string rewrite_user = user_msg;
+                    rewrite_user += "\n\n### REVISION REQUIRED\n"
+                                    "The following issues were found in your plan:\n";
+                    for (const auto& r : all_rejections)
+                        rewrite_user += "- " + r.fact + " -- " + r.reason + "\n";
+                    rewrite_user += "\nRewrite your narrative and plan to fix these issues.\n";
+
+                    state_ = LoopState::RunningLLM;
+                    auto [new_prose, new_plan] = split_merged_response(
+                        call_narrator(system_msg, rewrite_user));
+                    prose = std::move(new_prose);
+                    plan  = std::move(new_plan);
+                    state_ = LoopState::AppendingResult;
+                }
+
+                last_director_out_ = {};
+                if (director_)
+                    last_director_out_ = director_->apply_planned_turn(turn, plan);
+
+                // Register new characters BEFORE validating active_cast,
+                // so freshly introduced NPCs are recognized as valid cast.
+                if (plan.contains("new_characters") && plan["new_characters"].is_array()) {
+                    for (const auto& ch_j : plan["new_characters"]) {
+                        Character ch;
+                        ch.name = ch_j.value("name", "");
+                        ch.description = ch_j.value("description", "");
+                        ch.dialogue_instructions = ch_j.value("dialogue_instructions", "");
+                        ch.role = ch_j.value("role", "minor_npc");
+                        ch.on_stage = true;
+                        ch.created_at = scene_->turn_index;
+                        if (!ch.name.empty() && !scene_->find_on_stage(ch.name)) {
+                            std::cerr << "  [enter] " << ch.name << " enters the stage\n";
+                            scene_->enter_character(std::move(ch));
+                        }
+                    }
+                }
+
+                const auto cast_rejections = validate_active_cast(plan, *scene_);
+                all_rejections = last_director_out_.rejections;
+                all_rejections.insert(all_rejections.end(),
+                                      cast_rejections.begin(), cast_rejections.end());
+
+                if (all_rejections.empty())
+                    break;
+
+                std::cerr << "  [retry] attempt " << (attempt + 1) << "/" << kMaxAttempts
+                          << ": " << all_rejections.size() << " issue(s)\n";
+                for (const auto& r : all_rejections)
+                    std::cerr << "    - " << r.fact << " -- " << r.reason << "\n";
+                std::cerr << std::flush;
+            }
+
+            cues = extract_speech_cues(plan);
+        }
     }
 
-    auto cues = extract_speech_cues(plan);
+    // --- Apply active_cast ----------------------------------------------
+    {
+        apply_active_cast(plan, cues, *scene_);
+    }
 
-    // -- Apply active_cast (exits absent, re-enters returning) --
-    apply_active_cast(plan, cues, *scene_);
-
+    // --- Emit narrator + route perception -------------------------------
     const std::string narration = prose;
-    emit_output(make_message("narrator", std::move(prose)));
+    {
+        emit_output(make_message("narrator", std::move(prose)));
+        route_perception(*scene_, last_director_out_.new_nodes, turn);
+    }
 
-    // -- Route this turn's facts into the minds that perceive them.
-    //    Reflection (perception -> belief) runs later in the background. --
-    route_perception(*scene_, last_director_out_.new_nodes, turn);
+    // --- Phase 4: Emit authored dialogue --------------------------------
+    {
+        std::cerr << "[4/4] Emit authored dialogue...\n" << std::flush;
 
-    // -- Phase 4: Emit narrator-authored dialogue --
-    // The narrator authored each spoken line directly in speech_turns; we emit
-    // it verbatim (no separate actor LLM) and distill it back into the speaker's
-    // own mind so the character carries its own words into reflection.
+        for (const auto& cue : cues) {
+            const auto* ch = resolve_cast_name(cue.character, scene_->characters);
 
-    std::cerr << "[4/4] Emit authored dialogue...\n" << std::flush;
+            std::string spoken = trim(cue.field("line"));
+            std::string action = trim(cue.field("action"));
+            if (!action.empty())
+                spoken += (spoken.empty() ? "" : " ") + ("(" + action + ")");
 
-    for (const auto& cue : cues) {
-        const auto* ch = resolve_cast_name(cue.character, scene_->characters);
+            if (spoken.empty())
+                spoken = "(" + cue.character + " is at a loss for words.)";
 
-        std::string spoken = trim(cue.field("line"));
-        std::string action = trim(cue.field("action"));
-        if (!action.empty())
-            spoken += (spoken.empty() ? "" : " ") + ("(" + action + ")");
+            // Distill the authored line into the speaker's own interior so it
+            // carries its own words; background reflection relates and re-weights it.
+            if (ch) {
+                auto mem_it = scene_->character_memories.find(ch->name);
+                if (mem_it != scene_->character_memories.end())
+                    mem_it->second.route_fact(spoken, {ch->name}, turn);
+            }
 
-        if (spoken.empty())
-            spoken = "(" + cue.character + " is at a loss for words.)";
+            emit_output(make_message("character", std::move(spoken), cue.character));
+        }
+    }
 
-        // Distill the authored line into the speaker's own interior so it
-        // carries its own words; background reflection relates and re-weights it.
-        if (ch) {
-            auto mem_it = scene_->character_memories.find(ch->name);
-            if (mem_it != scene_->character_memories.end())
-                mem_it->second.route_fact(spoken, {ch->name}, turn);
+    // --- Post-turn cleanup ----------------------------------------------
+    {
+        const auto death_candidates = scene_->scan_death_candidates();
+        if (!death_candidates.empty())
+            confirm_deaths(death_candidates, narration);
+
+        if (weaver_) {
+            std::vector<std::string> prio;
+            for (const auto& n : last_director_out_.new_nodes)
+                for (const auto& e : n.entities)
+                    prio.push_back(e);
+            weaver_->rebuild_expiry_queue(prio);
         }
 
-        emit_output(make_message("character", std::move(spoken), cue.character));
+        if (!saves_dir_.empty())
+            scene_->save(saves_dir_);
+
+        dispatch_background();
     }
-
-    // -- Post-turn: death detection (keyword pre-filter + LLM confirmation) --
-    auto death_candidates = scene_->scan_death_candidates();
-    if (!death_candidates.empty())
-        confirm_deaths(death_candidates, narration);
-
-    // -- Post-turn: prepare expiry queue for background drain --
-    if (weaver_) {
-        std::vector<std::string> prio;
-        for (const auto& n : last_director_out_.new_nodes)
-            for (const auto& e : n.entities)
-                prio.push_back(e);
-        weaver_->rebuild_expiry_queue(prio);
-    }
-
-    // -- Save while graph is still consistent (before bg mutations) --
-    if (!saves_dir_.empty())
-        scene_->save(saves_dir_);
-
-    // -- Kick off background thread: weave + expiry drain + reflections --
-    dispatch_background();
 
     std::cerr << "====== Turn " << turn << " done ======\n" << std::flush;
     state_ = LoopState::WaitingForInput;

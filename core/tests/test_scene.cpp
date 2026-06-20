@@ -195,18 +195,26 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     SceneMessage captured_result;
 
     loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s,
-                                   const DirectorOutput& d, const std::string& focus) {
+                                   const DirectorOutput& d, const std::string& focus,
+                                   const std::string& inner_states) {
         (void)hist;
         (void)s;
         (void)d;
         (void)focus;
+        (void)inner_states;
         captured_prompt = "prompt_built";
-        return "assembled prompt";
+        return std::make_pair(std::string("system part"), std::string("user part"));
+    });
+
+    loop.set_narrator_llm_callback([&](const std::string& sys, const std::string& usr) {
+        REQUIRE(sys == "system part");
+        REQUIRE(usr == "user part");
+        return "The tavern is warm.";
     });
 
     loop.set_llm_callback([&](const std::string& prompt) {
-        REQUIRE(prompt == "assembled prompt");
-        return "The tavern is warm.";
+        (void)prompt;
+        return "fallback";
     });
 
     loop.set_turn_complete_callback([&](const SceneMessage& msg) {
