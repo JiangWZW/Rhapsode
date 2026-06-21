@@ -107,40 +107,40 @@ std::vector<const Node*> Validator::gather_context(const Node& candidate) const 
 namespace {
 
 const std::string kHeader =
-    "You are a continuity editor for a dark fantasy story. "
+    "You are a continuity editor for an interactive story. "
     "Your job is to check whether a new event contradicts established facts.\n\n";
 
 const std::string kExamples =
     "=== EXAMPLES ===\n\n"
 
     "Example 1 (dead character acts):\n"
-    "Dead: Warden Voss\n"
+    "Dead: Captain Reed\n"
     "Chain: (empty)\n"
-    "New: \"Voss addresses the garrison from the ramparts\"\n"
-    "Answer: {\"contradicts\": true, \"reasoning\": \"Voss is dead. "
+    "New: \"Reed addresses the squad from the podium\"\n"
+    "Answer: {\"contradicts\": true, \"reasoning\": \"Reed is dead. "
     "Dead characters cannot speak or appear.\"}\n\n"
 
     "Example 2 (a living character can be killed):\n"
     "Dead: (none)\n"
     "Chain:\n"
-    "  (turn 2) [active] \"The Herald is at the gate\"\n"
-    "New: \"An explosion kills the Herald\"\n"
-    "Answer: {\"contradicts\": false, \"reasoning\": \"The Herald is alive "
+    "  (turn 2) [active] \"The guard is at the gate\"\n"
+    "New: \"An accident kills the guard\"\n"
+    "Answer: {\"contradicts\": false, \"reasoning\": \"The guard is alive "
     "and present. A living character can be killed.\"}\n\n"
 
     "Example 3 (reuse of a destroyed thing):\n"
     "Chain:\n"
-    "  (turn 3) [active] \"The tavern exploded and burned to rubble\"\n"
-    "New: \"The militia regroups inside the tavern\"\n"
-    "Answer: {\"contradicts\": true, \"reasoning\": \"The tavern was destroyed "
+    "  (turn 3) [active] \"The guild hall collapsed into rubble\"\n"
+    "New: \"The party meets inside the guild hall\"\n"
+    "Answer: {\"contradicts\": true, \"reasoning\": \"The guild hall was destroyed "
     "and no rebuilding event appears in the chain.\"}\n\n"
 
     "Example 4 (a foreshadowed payoff is expected, not a contradiction):\n"
     "Chain:\n"
-    "  (turn 0) [foreshadowed] \"Maren conceals a festering wound\"\n"
-    "New: \"Maren's wound festers and worsens\"\n"
-    "Answer: {\"contradicts\": false, \"reasoning\": \"The wound is already "
-    "planted as foreshadowed. Its worsening is the expected payoff.\"}\n\n";
+    "  (turn 0) [foreshadowed] \"A rival faction plans a surprise attack\"\n"
+    "New: \"The rival faction launches the surprise attack\"\n"
+    "Answer: {\"contradicts\": false, \"reasoning\": \"The attack is already "
+    "planted as foreshadowed. It happening is the expected payoff.\"}\n\n";
 
 const std::string kFooter =
     "=== YOUR TASK ===\n"

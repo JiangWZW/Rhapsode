@@ -791,8 +791,6 @@ void SceneLoop::advance() {
         std::cerr << "[4/4] Emit authored dialogue...\n" << std::flush;
 
         for (const auto& cue : cues) {
-            const auto* ch = resolve_cast_name(cue.character, scene_->characters);
-
             std::string spoken = trim(cue.field("line"));
             std::string action = trim(cue.field("action"));
             if (!action.empty())
@@ -801,13 +799,8 @@ void SceneLoop::advance() {
             if (spoken.empty())
                 spoken = "(" + cue.character + " is at a loss for words.)";
 
-            // Distill the authored line into the speaker's own interior so it
-            // carries its own words; background reflection relates and re-weights it.
-            if (ch) {
-                auto mem_it = scene_->character_memories.find(ch->name);
-                if (mem_it != scene_->character_memories.end())
-                    mem_it->second.route_fact(spoken, {ch->name}, turn);
-            }
+            // Dialogue is UI-only (dialogue log). Subjective minds learn beats via
+            // route_perception(new_nodes), not by re-ingesting the speaker's line.
 
             auto msg = make_message("character", std::move(spoken), cue.character);
             msg.metadata["turn"] = turn;

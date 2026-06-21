@@ -285,6 +285,13 @@ TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
     REQUIRE(scene.dialogue.messages()[0].metadata["scene_kind"] == "character");
     REQUIRE(scene.dialogue.messages()[0].content.find("What'll it be?") != std::string::npos);
 
+    const auto& barkeep_mem = scene.character_memories.at("Barkeep");
+    int perceptions = 0;
+    barkeep_mem.beliefs().for_each([&](const Node& n) {
+        if (n.type == "perception") ++perceptions;
+    }, false);
+    REQUIRE(perceptions == 0);
+
     const auto timeline = scene.display_timeline();
     REQUIRE(timeline.size() == 3);
 }

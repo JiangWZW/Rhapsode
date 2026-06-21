@@ -25,6 +25,8 @@ def _call_kind(prompt: str) -> str:
         return "weave"
     if "NO LONGER TRUE" in prompt and '"superseded"' in prompt:
         return "expiry"
+    if "continuity editor" in prompt and "contradicts established facts" in prompt:
+        return "validator"
     return "other"
 
 
