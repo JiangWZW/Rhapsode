@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -204,6 +205,31 @@ std::string CharacterMemory::render_thoughts(
     }
 
     return os.str();
+}
+
+std::string CharacterMemory::build_prompt__interior_thoughts(
+    const std::vector<std::string>& subjects, int turn) const
+{
+    std::string block;
+    const std::string thoughts = render_thoughts(subjects);
+    if (!thoughts.empty()) {
+        block += "  Interior (live thoughts; weight = how much it presses, "
+                  "tension = a contradiction held unresolved):\n";
+        block += thoughts;
+    }
+
+    if (std::getenv("RHAPSODE_EXP_SURFACING")) {
+        const unsigned seed =
+            static_cast<unsigned>(std::hash<std::string>{}(char_name_)) ^
+            static_cast<unsigned>(turn);
+        if (std::string p = pressing_thought(seed); !p.empty())
+            block += "  Pressing today: " + p + "\n";
+    }
+    if (std::getenv("RHAPSODE_EXP_CRISIS")) {
+        if (std::string c = charge_state(); !c.empty())
+            block += "  Charge: " + c + "\n";
+    }
+    return block;
 }
 
 std::string CharacterMemory::view_of(const std::vector<std::string>& subjects) const {

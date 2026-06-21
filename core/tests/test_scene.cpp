@@ -87,6 +87,25 @@ TEST_CASE("History append and snapshot", "[history]") {
     }
 }
 
+TEST_CASE("History drop_from_turn", "[history]") {
+    History h;
+    SceneMessage m1;
+    m1.role = Role::Assistant;
+    m1.content = "turn 0";
+    m1.metadata = {{"turn", 0}, {"scene_kind", "character"}};
+    h.append(m1);
+
+    SceneMessage m2;
+    m2.role = Role::Assistant;
+    m2.content = "turn 1";
+    m2.metadata = {{"turn", 1}, {"scene_kind", "character"}};
+    h.append(m2);
+
+    h.drop_from_turn(1);
+    REQUIRE(h.size() == 1);
+    REQUIRE(h.messages()[0].content == "turn 0");
+}
+
 TEST_CASE("History sets timestamp on append", "[history]") {
     History h;
     SceneMessage msg;
@@ -191,24 +210,19 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     loop.load_scene(scene);
     REQUIRE(loop.state() == LoopState::WaitingForInput);
 
-    std::string captured_prompt;
+    std::string captured_instructions;
+    std::string captured_turn_state;
     SceneMessage captured_result;
 
-    loop.set_prompt_callback([&](const std::vector<SceneMessage>& hist, const Scene& s,
-                                   const DirectorOutput& d, const std::string& focus,
-                                   const std::string& inner_states) {
-        (void)hist;
-        (void)s;
-        (void)d;
-        (void)focus;
-        (void)inner_states;
-        captured_prompt = "prompt_built";
-        return std::make_pair(std::string("system part"), std::string("user part"));
-    });
+    Director director(scene.world_graph);
+    loop.set_director(&director);
 
-    loop.set_narrator_llm_callback([&](const std::string& sys, const std::string& usr) {
-        REQUIRE(sys == "system part");
-        REQUIRE(usr == "user part");
+    loop.set_narrator_llm_callback([&](const std::string& instructions,
+                                       const std::string& turn_state) {
+        captured_instructions = instructions;
+        captured_turn_state = turn_state;
+        REQUIRE(instructions.find("<<<RHAPSODE_JSON>>>") != std::string::npos);
+        REQUIRE(turn_state.find("### Turn transcript") != std::string::npos);
         return "The tavern is warm.";
     });
 
@@ -229,8 +243,50 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     REQUIRE(scene.history.messages()[0].content == "I enter the tavern.");
     REQUIRE(scene.history.messages()[1].role == Role::Assistant);
     REQUIRE(scene.history.messages()[1].content == "The tavern is warm.");
-    REQUIRE(captured_prompt == "prompt_built");
+    REQUIRE(captured_instructions.find("<<<RHAPSODE_JSON>>>") != std::string::npos);
+    REQUIRE(captured_turn_state.find("I enter the tavern.") != std::string::npos);
     REQUIRE(captured_result.content == "The tavern is warm.");
+}
+
+TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
+    Scene scene;
+    scene.title = "Test";
+    scene.system_prompt = "Narrate.";
+
+    Character npc{"Barkeep", "A gruff dwarf", false};
+    npc.on_stage = true;
+    scene.enter_character(std::move(npc));
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+
+    Director director(scene.world_graph);
+    loop.set_director(&director);
+
+    loop.set_narrator_llm_callback([&](const std::string& instructions,
+                                       const std::string& turn_state) {
+        (void)instructions;
+        (void)turn_state;
+        return R"(You step inside.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Barkeep","line":"What'll it be?"}],"new_characters":[],"active_cast":["Barkeep"]})";
+    });
+
+    loop.set_llm_callback([&](const std::string& prompt) {
+        (void)prompt;
+        return "fallback";
+    });
+
+    loop.submit_input("I enter the tavern.");
+
+    REQUIRE(scene.history.size() == 2);
+    REQUIRE(scene.dialogue.size() == 1);
+    REQUIRE(scene.dialogue.messages()[0].metadata["scene_kind"] == "character");
+    REQUIRE(scene.dialogue.messages()[0].content.find("What'll it be?") != std::string::npos);
+
+    const auto timeline = scene.display_timeline();
+    REQUIRE(timeline.size() == 3);
 }
 
 TEST_CASE("SceneLoop rejects input in wrong state", "[scene_loop]") {

@@ -41,6 +41,8 @@ struct Node {
 
 std::string to_string(NodeState s);
 NodeState node_state_from_string(const std::string& s);
+/// True for "resolved" and common LLM shorthand "resolve".
+bool node_state_means_resolved(const std::string& s);
 
 void to_json(nlohmann::json& j, const Node& n);
 void from_json(const nlohmann::json& j, Node& n);

@@ -86,6 +86,7 @@ PYBIND11_MODULE(_core, m) {
         .def_readwrite("system_prompt",      &Scene::system_prompt)
         .def_readwrite("characters",         &Scene::characters)
         .def_readwrite("history",            &Scene::history)
+        .def_readwrite("dialogue",           &Scene::dialogue)
         .def_readwrite("scene_id",           &Scene::scene_id)
         .def_readwrite("turn_index",         &Scene::turn_index)
         .def_readwrite("character_memories", &Scene::character_memories)
@@ -107,6 +108,8 @@ PYBIND11_MODULE(_core, m) {
         .def("load_save",   &Scene::load_save, py::arg("saves_dir"))
         .def("save",        &Scene::save, py::arg("saves_dir"))
         .def("revert_turns", &Scene::revert_turns, py::arg("n"))
+        .def("display_timeline", &Scene::display_timeline, py::arg("cap") = std::nullopt,
+             "Chronological merge of history + dialogue for UI replay.")
         .def("delete_save", &Scene::delete_save, py::arg("saves_dir"))
         .def_static("load_json",  &Scene::load_json)
         .def("save_json",         &Scene::save_json)
@@ -236,8 +239,8 @@ PYBIND11_MODULE(_core, m) {
         .def("tick", &Director::tick, py::arg("turn_index"), py::arg("scene_context"))
         .def("focus_payload_json", &Director::focus_payload_json, py::arg("turn_index"),
              py::arg("scene_context"))
-        .def("focus_payload_text", &Director::focus_payload_text, py::arg("turn_index"),
-             py::arg("scene_context"))
+        .def("build_text__world_graph_context", &Director::build_prompt__world_graph_context,
+             py::arg("turn_index"), py::arg("capped_prev_turns_text"))
         .def("apply_planned_turn",
              [](Director& self, int turn_idx, const std::string& json_txt) -> DirectorOutput {
                  return self.apply_planned_turn(turn_idx, nlohmann::json::parse(json_txt));
@@ -360,7 +363,6 @@ PYBIND11_MODULE(_core, m) {
         .def("submit_input",                 &SceneLoop::submit_input,
              py::call_guard<py::gil_scoped_release>())
         .def("state",                        &SceneLoop::state)
-        .def("set_prompt_callback",          &SceneLoop::set_prompt_callback)
         .def("set_llm_callback",             &SceneLoop::set_llm_callback)
         .def("set_narrator_llm_callback",    &SceneLoop::set_narrator_llm_callback)
         .def("set_turn_complete_callback",   &SceneLoop::set_turn_complete_callback)

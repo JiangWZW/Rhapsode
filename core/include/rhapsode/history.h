@@ -12,6 +12,8 @@ public:
     size_t size() const;
     void truncate(size_t new_size);
     void clear();
+    /// Remove messages whose metadata["turn"] is >= min_turn (no-op if key missing).
+    void drop_from_turn(int min_turn);
     const std::vector<SceneMessage>& messages() const;
 
 private:

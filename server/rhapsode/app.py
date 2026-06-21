@@ -19,7 +19,6 @@ from rhapsode._core import (
 )
 from rhapsode.llm import complete
 from rhapsode.memory import register_callbacks, warmup_model
-from rhapsode.prompt import build_system_message, build_user_message
 from rhapsode.fable import make_ner_callback, warmup_fable
 from rhapsode.validator import make_local_llm_callback
 
@@ -93,108 +92,11 @@ def _call_llm(prompt: str) -> str:
     return complete([{"role": "user", "parts": [{"text": prompt}]}])
 
 
-def _call_narrator_llm(system: str, user: str) -> str:
+def _call_narrator_llm(instructions: str, turn_state: str) -> str:
     return complete([
-        {"role": "system", "parts": [{"text": system}]},
-        {"role": "user", "parts": [{"text": user}]},
+        {"role": "system", "parts": [{"text": instructions}]},
+        {"role": "user", "parts": [{"text": turn_state}]},
     ])
-
-
-def _build_memory_query(history: list[SceneMessage], scene_obj: Scene, director_out) -> str:
-    parts = [scene_obj.title]
-    for msg in history[-4:]:
-        role = msg.role.name.lower()
-        parts.append(f"{role}: {msg.content}")
-    if director_out and director_out.context_blocks:
-        parts.extend(director_out.context_blocks)
-    return "\n".join(parts)
-
-
-def _extract_entity_queries(history: list[SceneMessage], scene_obj: Scene) -> list[str]:
-    """Pull entity names from the latest player message for targeted retrieval."""
-    queries: list[str] = []
-    last_user = ""
-    for msg in reversed(history):
-        if msg.role.name.lower() == "user":
-            last_user = msg.content
-            break
-    if not last_user:
-        return queries
-
-    text_lower = last_user.lower()
-    for c in scene_obj.characters:
-        if c.name and c.name.lower() in text_lower:
-            queries.append(c.name)
-
-    all_nodes = scene_obj.world_graph.all_nodes_including_expired()
-    seen: set[str] = set()
-    for node in all_nodes:
-        for ent in node.entities:
-            ent_lower = ent.lower()
-            if ent_lower in seen:
-                continue
-            if ent_lower in text_lower:
-                seen.add(ent_lower)
-                queries.append(ent)
-    return queries
-
-
-def _active_characters(scene_obj: Scene) -> list[str]:
-    lines: list[str] = []
-    on_stage_names: list[str] = []
-    off_stage_names: list[str] = []
-    for c in scene_obj.characters:
-        if c.is_player:
-            continue
-        if c.dead:
-            continue
-        if c.on_stage:
-            on_stage_names.append(c.name)
-            desc = c.description.strip() if c.description else ""
-            role_tag = f"[{c.role}]" if c.role else ""
-            parts = [f"- {c.name}"]
-            if role_tag:
-                parts.append(role_tag)
-            if desc:
-                parts.append(f"—{desc}")
-            lines.append(" ".join(parts))
-        else:
-            off_stage_names.append(c.name)
-    header: list[str] = []
-    if on_stage_names:
-        header.append("On-stage: " + ", ".join(sorted(on_stage_names)))
-    if off_stage_names:
-        header.append("Off-stage: " + ", ".join(sorted(off_stage_names)))
-    return header + lines
-
-
-def _established_facts(
-    memory: MemorySystem, history: list[SceneMessage], scene_obj: Scene, director_out
-) -> list[str]:
-    """Retrieve expired-only facts from ChromaDB -- avoids duplication with live graph nodes."""
-    try:
-        seen_ids: set[int] = set()
-        facts: list[str] = []
-
-        def _collect(ids: list[int]) -> None:
-            for nid in ids:
-                if nid in seen_ids:
-                    continue
-                seen_ids.add(nid)
-                node = scene_obj.world_graph.get_node(nid)
-                if node and node.fact and node.valid_until != -1:
-                    facts.append(node.fact)
-
-        broad_query = _build_memory_query(history, scene_obj, director_out)
-        _collect(memory.search_nodes(broad_query, 6))
-
-        for entity_q in _extract_entity_queries(history, scene_obj):
-            _collect(memory.search_nodes(entity_q, 4))
-
-        return facts
-    except Exception:
-        log.exception("Failed to retrieve narrator established facts")
-    return []
 
 
 def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
@@ -205,29 +107,6 @@ def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
 
     scene.downsampler.set_llm_callback(make_local_llm_callback(repair_json=False))
 
-    system_msg = build_system_message(scene)
-
-    def _prompt_callback(hist, scene_obj, director_out, focus_text, inner_states):
-        story_so_far = scene_obj.downsampler.render()
-        user_msg = build_user_message(
-            hist,
-            scene_obj,
-            director_focus_text=focus_text,
-            established_facts=_established_facts(memory, hist, scene_obj, director_out),
-            active_characters=_active_characters(scene_obj),
-            story_so_far=story_so_far,
-            inner_states=inner_states,
-        )
-        # Full, uncapped dump of exactly what the narrator receives.
-        print(
-            "\n===== NARRATOR PROMPT (system) =====\n" + system_msg +
-            "\n===== NARRATOR PROMPT (user) =====\n" + user_msg +
-            "\n===== END NARRATOR PROMPT =====\n",
-            file=sys.stderr, flush=True,
-        )
-        return (system_msg, user_msg)
-
-    loop.set_prompt_callback(_prompt_callback)
     loop.set_narrator_llm_callback(_call_narrator_llm)
     loop.set_llm_callback(_call_llm)
     if weaver:
@@ -237,7 +116,7 @@ def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
 
 
 async def _send_seed_messages(ws: WebSocket, scene: Scene, is_resuming: bool = False):
-    seeds = scene.history.snapshot(8) if is_resuming else scene.history.messages()
+    seeds = scene.display_timeline(8) if is_resuming else scene.display_timeline()
     for msg in seeds:
         role = msg.role.name.lower()
         if role == "assistant":

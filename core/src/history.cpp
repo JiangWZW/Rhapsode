@@ -1,4 +1,5 @@
 #include "rhapsode/history.h"
+#include <algorithm>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -48,6 +49,16 @@ void History::truncate(size_t new_size) {
 
 void History::clear() {
     messages_.clear();
+}
+
+void History::drop_from_turn(int min_turn) {
+    messages_.erase(
+        std::remove_if(messages_.begin(), messages_.end(),
+            [min_turn](const SceneMessage& m) {
+                if (!m.metadata.contains("turn")) return false;
+                return m.metadata["turn"].get<int>() >= min_turn;
+            }),
+        messages_.end());
 }
 
 const std::vector<SceneMessage>& History::messages() const {

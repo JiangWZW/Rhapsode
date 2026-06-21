@@ -38,7 +38,8 @@ public:
 
     /// Compact text payload for the narrator prompt: one-liner per node,
     /// Active + Foreshadowed only, with BFS-seeded focus IDs in the header.
-    std::string focus_payload_text(int turn_index, const std::string& scene_context) const;
+    std::string build_prompt__world_graph_context(int turn_index,
+                                                const std::string& capped_prev_turns_text) const;
 
     /// Applies `transitions` / `new_nodes` from parsed JSON -- no LLM call.
     /// Extra keys such as `speech_turns` are ignored by the graph engine.

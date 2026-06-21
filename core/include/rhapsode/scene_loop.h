@@ -13,6 +13,11 @@ namespace rhapsode {
 class Scene;
 struct DeathCandidate;
 
+struct NarratorPrompt {
+    std::string instructions;
+    std::string turn_state;
+};
+
 enum class LoopState {
     Idle,
     WaitingForInput,
@@ -23,16 +28,9 @@ enum class LoopState {
     AppendingResult
 };
 
-using PromptCallback =
-    std::function<std::pair<std::string, std::string>(
-                              const std::vector<SceneMessage>&,
-                              const Scene&,
-                              const DirectorOutput&,
-                              const std::string& director_focus_text,
-                              const std::string& inner_states)>;
 using LLMCallback          = std::function<std::string(const std::string& prompt)>;
-using NarratorLLMCallback  = std::function<std::string(const std::string& system_msg,
-                                                        const std::string& user_msg)>;
+using NarratorLLMCallback  = std::function<std::string(const std::string& instructions,
+                                                        const std::string& turn_state)>;
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
 
 class SceneLoop {
@@ -41,9 +39,8 @@ public:
     void submit_input(const std::string& text);
     LoopState state() const;
 
-    void set_prompt_callback(PromptCallback cb);
     void set_llm_callback(LLMCallback cb);
-    /// Two-part (system, user) callback for the narrator LLM.
+    /// Narrator LLM: instructions (rules + contract) and turn_state (per-turn context).
     /// Falls back to single-string llm_cb_ with concatenation if unset.
     void set_narrator_llm_callback(NarratorLLMCallback cb);
     void set_turn_complete_callback(TurnCompleteCallback cb);
@@ -70,16 +67,16 @@ public:
     std::vector<ExpiryOp> take_completed_expiry_ops();
 
 private:
+    enum class OutputBucket { Story, Dialogue };
+
     void advance();
-    void emit_output(SceneMessage msg);
-    std::string build_scene_context() const;
+    void emit_output(SceneMessage msg, OutputBucket bucket);
     void dispatch_background();
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,
                         const std::string& narration);
 
     LoopState state_ = LoopState::Idle;
     Scene* scene_ = nullptr;
-    PromptCallback prompt_cb_;
     LLMCallback llm_cb_;
     NarratorLLMCallback narrator_llm_cb_;
     TurnCompleteCallback turn_complete_cb_;

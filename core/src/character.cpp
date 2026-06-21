@@ -33,4 +33,19 @@ void from_json(const nlohmann::json& j, Character& c)
     c.created_at = j.value("created_at", 0);
 }
 
+std::string Character::build_prompt__dialogue_voice() const {
+    std::string out;
+    if (!dialogue_instructions.empty())
+        out += "  Voice: " + dialogue_instructions + "\n";
+    if (!example_dialogue.empty()) {
+        out += "  Example lines:\n";
+        int shown = 0;
+        for (const auto& ex : example_dialogue) {
+            out += "    - " + ex + "\n";
+            if (++shown >= 2) break;
+        }
+    }
+    return out;
+}
+
 } // namespace rhapsode

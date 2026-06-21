@@ -5,6 +5,7 @@
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 namespace rhapsode {
@@ -18,6 +19,22 @@ bool iequals(const std::string& a, const std::string& b) {
             return std::tolower(static_cast<unsigned char>(ca)) ==
                    std::tolower(static_cast<unsigned char>(cb));
         });
+}
+
+void migrate_character_lines_to_dialogue(History& history, History& dialogue) {
+    std::vector<SceneMessage> kept;
+    kept.reserve(history.size());
+    for (const auto& msg : history.messages()) {
+        if (msg.metadata.value("scene_kind", std::string{}) == "character") {
+            SceneMessage copy = msg;
+            dialogue.append(std::move(copy));
+        } else {
+            kept.push_back(msg);
+        }
+    }
+    history.clear();
+    for (auto& m : kept)
+        history.append(std::move(m));
 }
 
 }  // namespace
@@ -150,6 +167,120 @@ std::vector<DeathCandidate> Scene::scan_death_candidates() {
     return candidates;
 }
 
+namespace {
+
+std::string trim_copy(std::string s) {
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
+        s.erase(s.begin());
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))
+        s.pop_back();
+    return s;
+}
+
+std::string join_sorted(const std::vector<std::string>& names) {
+    std::vector<std::string> sorted = names;
+    std::sort(sorted.begin(), sorted.end());
+    std::string out;
+    for (size_t i = 0; i < sorted.size(); ++i) {
+        if (i) out += ", ";
+        out += sorted[i];
+    }
+    return out;
+}
+
+}  // namespace
+
+std::vector<std::string> Scene::build_prompt__cast() const {
+    std::vector<std::string> lines;
+    std::vector<std::string> on_stage_names;
+    std::vector<std::string> off_stage_names;
+
+    for (const auto& c : characters) {
+        if (c.is_player || c.dead) continue;
+        if (c.on_stage) {
+            on_stage_names.push_back(c.name);
+            std::string line = "- " + c.name;
+            if (!c.role.empty())
+                line += " [" + c.role + "]";
+            const std::string desc = trim_copy(c.description);
+            if (!desc.empty())
+                line += " \xe2\x80\x94" + desc;
+            lines.push_back(std::move(line));
+        } else {
+            off_stage_names.push_back(c.name);
+        }
+    }
+
+    std::vector<std::string> header;
+    if (!on_stage_names.empty())
+        header.push_back("On-stage: " + join_sorted(on_stage_names));
+    if (!off_stage_names.empty())
+        header.push_back("Off-stage: " + join_sorted(off_stage_names));
+
+    header.insert(header.end(), lines.begin(), lines.end());
+    return header;
+}
+
+std::vector<std::string> Scene::thought_subjects_for(const Character& observer) const
+{
+    std::vector<std::string> subjects;
+    for (const auto& c : characters) 
+    {
+        if (c.name == observer.name || c.dead || !c.on_stage) 
+            continue;
+
+    	subjects.push_back(c.name);
+        if (c.is_player && !c.description.empty())
+            subjects.push_back(c.description);
+    }
+    subjects.push_back(observer.name);
+    return subjects;
+}
+
+std::string Scene::build_prompt__inner_lives(int turn) const
+{
+    std::string body;
+    for (const auto& ch : characters) 
+    {
+        if (ch.is_player || ch.dead || !ch.on_stage) 
+            continue;
+
+    	auto it = character_memories.find(ch.name);
+        if (it == character_memories.end()) 
+            continue;
+
+        std::string block = ch.build_prompt__dialogue_voice();
+        block += it->second.build_prompt__interior_thoughts(thought_subjects_for(ch), turn);
+        if (block.empty()) continue;
+        body += "- " + ch.name + ":\n" + block;
+    }
+    if (body.empty()) return {};
+
+    return "### Inner lives\n"
+           "(Each character's voice and the interior you are writing FROM. These "
+           "are not commands -- perform them. A high-weight thought in tension "
+           "pulls toward subtext, a slip, or crisis; a high-weight thought "
+           "standing alone pulls toward action. You decide what surfaces.)\n"
+           + body;
+}
+
+std::vector<SceneMessage> Scene::display_timeline(std::optional<size_t> cap) const {
+    std::vector<SceneMessage> merged;
+    merged.reserve(history.size() + dialogue.size());
+    for (const auto& m : history.messages())
+        merged.push_back(m);
+    for (const auto& m : dialogue.messages())
+        merged.push_back(m);
+    std::sort(merged.begin(), merged.end(),
+              [](const SceneMessage& a, const SceneMessage& b) {
+                  return a.timestamp < b.timestamp;
+              });
+    if (cap.has_value() && merged.size() > *cap)
+        return std::vector<SceneMessage>(merged.end() - static_cast<ptrdiff_t>(*cap),
+                                          merged.end());
+    return merged;
+}
+
 // -- Undo --
 
 int Scene::revert_turns(int n) {
@@ -168,6 +299,7 @@ int Scene::revert_turns(int n) {
         }
     }
     history.truncate(cut);
+    dialogue.drop_from_turn(target);
 
     // 2. Graph rollback + ChromaDB cleanup
     auto removed_ids = world_graph.revert_to_turn(target);
@@ -337,6 +469,10 @@ void Scene::load_save(const std::string& saves_dir) {
         throw std::runtime_error("Save is missing world_graph/node_pool data");
     }
     history    = j.at("history").get<History>();
+    if (j.contains("dialogue"))
+        dialogue = j.at("dialogue").get<History>();
+    else
+        migrate_character_lines_to_dialogue(history, dialogue);
 
     if (j.contains("characters") && j["characters"].is_array())
         characters = j["characters"].get<std::vector<Character>>();
@@ -370,6 +506,7 @@ void Scene::save(const std::string& saves_dir) const {
     j["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
     j["world_graph"]    = world_graph.to_json();
     j["history"]        = history;
+    j["dialogue"]       = dialogue;
     j["characters"]     = characters;
 
     nlohmann::json cm_j;

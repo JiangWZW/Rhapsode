@@ -12,6 +12,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <unordered_set>
 
@@ -45,6 +46,26 @@ std::string to_lower(const std::string& s) {
     std::string out = s;
     std::transform(out.begin(), out.end(), out.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return out;
+}
+
+constexpr size_t kGraphSeedMessages = 4;
+
+std::string format_graph_seed(const std::vector<SceneMessage>& history,
+                              const std::string& title,
+                              std::optional<size_t> cap_per_msg = std::nullopt) {
+    std::string out = title;
+    const size_t start = history.size() > kGraphSeedMessages
+                             ? history.size() - kGraphSeedMessages
+                             : 0;
+    for (size_t i = start; i < history.size(); ++i) {
+        const auto& msg = history[i];
+        if (msg.role != Role::User && msg.role != Role::Assistant)
+            continue;
+        out += '\n';
+        out += (msg.role == Role::User ? "user: " : "assistant: ");
+        out += cap_per_msg ? truncate(msg.content, *cap_per_msg) : msg.content;
+    }
     return out;
 }
 
@@ -213,76 +234,6 @@ void apply_active_cast(const nlohmann::json& plan,
 // voice (dialogue_instructions + a couple example lines) and their live Thoughts
 // as weighted, tension-marked chains.  This is the state the single narrator
 // writes FROM; the engine never commands behavior, it only renders.  Read-only
-// over the minds now (no per-turn self-state rewrite).  Returns "" if nothing to
-// show (section omitted entirely).
-std::string build_inner_states(Scene& scene, int turn) {
-    // Gated experiments: rendered as context, never commands (off by default).
-    const bool exp_surfacing = std::getenv("RHAPSODE_EXP_SURFACING") != nullptr;
-    const bool exp_crisis    = std::getenv("RHAPSODE_EXP_CRISIS") != nullptr;
-
-    std::string body;
-    for (const auto& ch : scene.characters) {
-        if (ch.is_player || ch.dead || !ch.on_stage) continue;
-        auto it = scene.character_memories.find(ch.name);
-        if (it == scene.character_memories.end()) continue;
-        const CharacterMemory& mem = it->second;
-
-        // Subjects this character holds a view of: the others present (and the
-        // player by description) plus itself (its dispositional self-view).
-        std::vector<std::string> subjects;
-        for (const auto& c : scene.characters) {
-            if (c.name == ch.name || c.dead || !c.on_stage) continue;
-            subjects.push_back(c.name);
-            if (c.is_player && !c.description.empty())
-                subjects.push_back(c.description);
-        }
-        subjects.push_back(ch.name);
-
-        std::string block;
-        if (!ch.dialogue_instructions.empty())
-            block += "  Voice: " + ch.dialogue_instructions + "\n";
-        if (!ch.example_dialogue.empty()) {
-            block += "  Example lines:\n";
-            int shown = 0;
-            for (const auto& ex : ch.example_dialogue) {
-                block += "    - " + ex + "\n";
-                if (++shown >= 2) break;
-            }
-        }
-        std::string thoughts = mem.render_thoughts(subjects);
-        if (!thoughts.empty()) {
-            block += "  Interior (live thoughts; weight = how much it presses, "
-                     "tension = a contradiction held unresolved):\n";
-            block += thoughts;
-        }
-
-        if (exp_surfacing) {
-            const unsigned seed =
-                static_cast<unsigned>(std::hash<std::string>{}(ch.name)) ^
-                static_cast<unsigned>(turn);
-            std::string p = mem.pressing_thought(seed);
-            if (!p.empty())
-                block += "  Pressing today: " + p + "\n";
-        }
-        if (exp_crisis) {
-            std::string c = mem.charge_state();
-            if (!c.empty())
-                block += "  Charge: " + c + "\n";
-        }
-
-        if (block.empty()) continue;
-        body += "- " + ch.name + ":\n" + block;
-    }
-    if (body.empty()) return {};
-
-    return "### Inner lives\n"
-           "(Each character's voice and the interior you are writing FROM. These "
-           "are not commands -- perform them. A high-weight thought in tension "
-           "pulls toward subtext, a slip, or crisis; a high-weight thought "
-           "standing alone pulls toward action. You decide what surfaces.)\n"
-           + body;
-}
-
 // Route the turn's new facts into the minds that perceive them.  An explicit
 // `audience` restricts perception to the named characters; an empty audience is
 // a public beat, perceived by everyone present (on-stage, alive, non-player).
@@ -349,7 +300,6 @@ void SceneLoop::submit_input(const std::string& text) {
 
 LoopState SceneLoop::state() const { return state_; }
 
-void SceneLoop::set_prompt_callback(PromptCallback cb)         { prompt_cb_       = std::move(cb); }
 void SceneLoop::set_llm_callback(LLMCallback cb)               { llm_cb_          = std::move(cb); }
 void SceneLoop::set_narrator_llm_callback(NarratorLLMCallback cb) { narrator_llm_cb_ = std::move(cb); }
 void SceneLoop::set_turn_complete_callback(TurnCompleteCallback cb) { turn_complete_cb_ = std::move(cb); }
@@ -403,7 +353,8 @@ std::vector<ExpiryOp> SceneLoop::take_completed_expiry_ops() {
 }
 
 void SceneLoop::dispatch_background() {
-    std::string ctx = build_scene_context();
+    const auto history = scene_->history.snapshot(window_size_);
+    const std::string ctx = format_graph_seed(history, scene_->title, 300);
     int turn = scene_->turn_index;
 
     bool has_weaver = weaver_ != nullptr;
@@ -459,28 +410,230 @@ void SceneLoop::dispatch_background() {
 
 // -- SceneLoop -- private helpers -------------------------------------
 
-void SceneLoop::emit_output(SceneMessage msg) {
-    scene_->history.append(std::move(msg));
-    last_turn_outputs_.push_back(scene_->history.messages().back());
+void SceneLoop::emit_output(SceneMessage msg, OutputBucket bucket) {
+    History& target = bucket == OutputBucket::Story ? scene_->history : scene_->dialogue;
+    target.append(std::move(msg));
+    last_turn_outputs_.push_back(target.messages().back());
     if (turn_complete_cb_)
-        turn_complete_cb_(scene_->history.messages().back());
+        turn_complete_cb_(target.messages().back());
 }
 
-std::string SceneLoop::build_scene_context() const {
-    std::string ctx = scene_->title;
-    for (const auto& msg : scene_->history.snapshot(4)) {
-        ctx += '\n';
-        ctx += (msg.role == Role::User ? "user: " : "assistant: ");
-        ctx += truncate(msg.content, 300);
+namespace {
+
+constexpr size_t kVerbatimTail   = 6;
+constexpr size_t kMaxMsgChars    = 400;
+constexpr size_t kMaxFacts       = 8;
+constexpr size_t kMaxStoryChars  = 1500;
+
+const char* role_name(Role role) {
+    switch (role) {
+        case Role::User:      return "user";
+        case Role::Assistant: return "assistant";
+        case Role::System:    return "system";
     }
-    return ctx;
+    return "user";
 }
+
+void append_part(std::vector<std::string>& parts, const std::string& text) {
+    if (!text.empty()) parts.push_back(text);
+}
+
+std::string build_memory_query(const std::vector<SceneMessage>& history,
+                               const Scene& scene,
+                               const DirectorOutput& director_out) {
+    std::string query = scene.title;
+    const size_t start = history.size() > 4 ? history.size() - 4 : 0;
+    for (size_t i = start; i < history.size(); ++i) {
+        query += '\n';
+        query += role_name(history[i].role);
+        query += ": ";
+        query += history[i].content;
+    }
+    for (const auto& block : director_out.context_blocks)
+        query += '\n' + block;
+    return query;
+}
+
+std::vector<std::string> extract_entity_queries(const std::vector<SceneMessage>& history,
+                                                const Scene& scene) {
+    std::string last_user;
+    for (auto it = history.rbegin(); it != history.rend(); ++it) {
+        if (it->role == Role::User) {
+            last_user = it->content;
+            break;
+        }
+    }
+    if (last_user.empty()) return {};
+
+    const std::string text_lower = to_lower(last_user);
+    std::vector<std::string> queries;
+
+    for (const auto& c : scene.characters) {
+        if (!c.name.empty() && text_lower.find(to_lower(c.name)) != std::string::npos)
+            queries.push_back(c.name);
+    }
+
+    std::unordered_set<std::string> seen;
+    for (const auto& node : scene.world_graph.all_nodes(true)) {
+        for (const auto& ent : node.entities) {
+            const std::string ent_lower = to_lower(ent);
+            if (seen.count(ent_lower)) continue;
+            if (text_lower.find(ent_lower) != std::string::npos) {
+                seen.insert(ent_lower);
+                queries.push_back(ent);
+            }
+        }
+    }
+    return queries;
+}
+
+std::vector<std::string> build_established_facts(
+    MemorySystem* memory,
+    const std::vector<SceneMessage>& history,
+    const Scene& scene,
+    const DirectorOutput& director_out) {
+    if (!memory) return {};
+
+    try {
+        std::unordered_set<std::uint64_t> seen_ids;
+        std::vector<std::string> facts;
+
+        auto collect = [&](const std::vector<std::uint64_t>& ids) {
+            for (auto nid : ids) {
+                if (!seen_ids.insert(nid).second) continue;
+                const Node* node = scene.world_graph.get_node(nid);
+                if (node && !node->fact.empty() && node->valid_until != -1)
+                    facts.push_back(node->fact);
+            }
+        };
+
+        collect(memory->search_nodes(build_memory_query(history, scene, director_out), 6));
+        for (const auto& entity_q : extract_entity_queries(history, scene))
+            collect(memory->search_nodes(entity_q, 4));
+
+        if (facts.size() > kMaxFacts)
+            facts.resize(kMaxFacts);
+        return facts;
+    } catch (const std::exception& e) {
+        std::cerr << "  [prompt] established facts retrieval failed: " << e.what() << "\n";
+        return {};
+    }
+}
+
+std::string build_prompt__narrator_turn_state(
+    const std::vector<SceneMessage>& history,
+    const Scene& scene,
+    const DirectorOutput& director_out,
+    MemorySystem* memory,
+    const std::string& world_graph_context,
+    const std::string& inner_lives) {
+    std::vector<std::string> parts;
+
+    const auto cast_lines = scene.build_prompt__cast();
+    if (!cast_lines.empty()) {
+        parts.push_back("### Cast");
+        for (const auto& line : cast_lines)
+            parts.push_back(line);
+    }
+
+    if (!world_graph_context.empty()) {
+        append_part(parts, "");
+        parts.push_back("### Graph");
+        parts.push_back(world_graph_context);
+    }
+
+    const auto established = build_established_facts(memory, history, scene, director_out);
+    if (!established.empty()) {
+        append_part(parts, "");
+        parts.push_back("### Past");
+        for (const auto& fact : established)
+            parts.push_back("- " + fact);
+    }
+
+    const std::string story_so_far = scene.downsampler.render();
+    if (!story_so_far.empty()) {
+        append_part(parts, "");
+        parts.push_back("### Story so far");
+        parts.push_back(truncate(story_so_far, kMaxStoryChars));
+    }
+
+    if (!inner_lives.empty()) {
+        append_part(parts, "");
+        std::string block = inner_lives;
+        while (!block.empty() && (block.back() == '\n' || block.back() == '\r'))
+            block.pop_back();
+        parts.push_back(block);
+    }
+
+    const std::vector<SceneMessage> conv =
+        story_so_far.empty()
+            ? history
+            : [&]() {
+                  const size_t start = history.size() > kVerbatimTail
+                                           ? history.size() - kVerbatimTail
+                                           : 0;
+                  return std::vector<SceneMessage>(history.begin() + start, history.end());
+              }();
+
+    append_part(parts, "");
+    parts.push_back("### Turn transcript");
+    for (const auto& msg : conv) {
+        parts.push_back(std::string(role_name(msg.role)) + ": "
+                        + truncate(msg.content, kMaxMsgChars));
+    }
+
+    append_part(parts, "");
+    parts.push_back("### Remember");
+    parts.push_back(
+        "- Prose is narration only: never a character's spoken words or *actions* -- "
+        "each character's words go in speech_turns.line, written in their own voice.");
+    parts.push_back(
+        "- Give a speech_turn only to a character who can speak right now "
+        "(not asleep, unconscious, incapacitated, dead, or absent).");
+
+    std::string out;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        if (i) out += '\n';
+        out += parts[i];
+    }
+    return out;
+}
+
+std::string build_prompt__narrator_instructions() {
+    return R"RHAPSODE(OUTPUT: 2-4 paragraphs of second-person present-tense prose, sensory grounding.
+PROSE IS NARRATION ONLY -- describe what happens; never write what anyone says.
+No quotation marks, no character dialogue, and no *asterisks* / stage directions in the
+prose. Each character's spoken words go in speech_turns.line, written verbatim in that
+character's own voice; writing speech in the prose duplicates it and breaks the display.
+No markdown formatting in prose.
+
+Then output the sentinel line verbatim on its own:
+<<<RHAPSODE_JSON>>>
+Then raw JSON (no fences). Use ONLY straight ASCII double quotes (") for all keys
+and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
+{"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
+ "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
+ "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],
+ "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
+ "active_cast":["present NPC names"]}
+
+RULES:
+- Never narrate unperformed Player actions. May foreshadow options.
+- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
+- entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
+- audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
+- speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
+- new_characters: first-time speaking NPCs only. [] if none introduced.
+- active_cast: all living NPCs physically present this scene. [] if player alone.)RHAPSODE";
+}
+
+}  // namespace
 
 // -- SceneLoop::advance -- the four-phase turn pipeline --------------
 
 void SceneLoop::advance() {
-    if (!prompt_cb_) throw std::runtime_error("No prompt callback registered");
     if (!llm_cb_)    throw std::runtime_error("No LLM callback registered");
+    if (!director_)  throw std::runtime_error("Null director in scene");
 
     // --- Turn setup -----------------------------------------------------
     join_background();
@@ -490,30 +643,29 @@ void SceneLoop::advance() {
     last_turn_outputs_.clear();
 
     // --- Phase 1: Build merged Director+Narrator prompt -----------------
-    std::string system_msg;
-    std::string user_msg;
+    NarratorPrompt narrator_prompt;
     {
         state_ = LoopState::BuildingPrompt;
         std::cerr << "[1/4] Building merged prompt...\n" << std::flush;
 
-        const std::string scene_ctx = build_scene_context();
-        const std::string focus_text = director_
-            ? director_->focus_payload_text(turn, scene_ctx) : "";
-        const std::string inner_states = build_inner_states(*scene_, turn);
-
         const size_t win = resuming_ ? resume_window_size_ : window_size_;
-        const auto history = scene_->history.snapshot(win);
+        const std::vector<SceneMessage> history = scene_->history.snapshot(win);
+        const std::string graph_seeds = format_graph_seed(history, scene_->title); 
         resuming_ = false;
 
-        std::tie(system_msg, user_msg) =
-            prompt_cb_(history, *scene_, last_director_out_, focus_text, inner_states);
-        ++scene_->turn_index;
+        narrator_prompt.instructions = build_prompt__narrator_instructions();
+        narrator_prompt.turn_state   = build_prompt__narrator_turn_state(
+            history, *scene_, last_director_out_, scene_->memory(),
+            director_->build_prompt__world_graph_context(turn, graph_seeds),
+            scene_->build_prompt__inner_lives(turn));
 
-        std::cerr << "  [prompt] system=" << system_msg.size()
-                  << " user=" << user_msg.size() << " chars\n" << std::flush;
+    	++scene_->turn_index;
+
+        std::cerr << "  [prompt] instructions=" << narrator_prompt.instructions.size()
+                  << " turn_state=" << narrator_prompt.turn_state.size() << " chars\n" << std::flush;
         if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
-            std::cerr << "--- NARRATOR SYSTEM ---\n" << system_msg << "\n"
-                      << "--- NARRATOR USER ---\n" << user_msg << "\n"
+            std::cerr << "--- NARRATOR INSTRUCTIONS ---\n" << narrator_prompt.instructions << "\n"
+                      << "--- NARRATOR TURN STATE ---\n" << narrator_prompt.turn_state << "\n"
                       << "--- END NARRATOR PROMPT ---\n" << std::flush;
         }
     }
@@ -523,17 +675,18 @@ void SceneLoop::advance() {
     nlohmann::json plan;
     std::vector<SpeechCue> cues;
     {
-        const auto call_narrator = [&](const std::string& sys, const std::string& usr) -> std::string {
+        const auto call_narrator = [&](const std::string& instructions,
+                                       const std::string& turn_state) -> std::string {
             if (narrator_llm_cb_)
-                return narrator_llm_cb_(sys, usr);
-            return llm_cb_(sys + "\n\n" + usr);
+                return narrator_llm_cb_(instructions, turn_state);
+            return llm_cb_(instructions + "\n\n" + turn_state);
         };
 
         {
             state_ = LoopState::RunningLLM;
             std::cerr << "[2/4] Calling narrative LLM...\n" << std::flush;
 
-            auto raw_response = call_narrator(system_msg, user_msg);
+            auto raw_response = call_narrator(narrator_prompt.instructions, narrator_prompt.turn_state);
             std::cerr << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
             if (std::getenv("RHAPSODE_VERBOSE_LOG")) {
                 std::cerr << "--- NARRATOR RESPONSE ---\n" << raw_response
@@ -565,16 +718,16 @@ void SceneLoop::advance() {
                             [turn](const Character& c) { return c.created_at >= turn; }),
                         chars.end());
 
-                    std::string rewrite_user = user_msg;
-                    rewrite_user += "\n\n### REVISION REQUIRED\n"
-                                    "The following issues were found in your plan:\n";
+                    std::string rewrite_turn_state = narrator_prompt.turn_state;
+                    rewrite_turn_state += "\n\n### REVISION REQUIRED\n"
+                                           "The following issues were found in your plan:\n";
                     for (const auto& r : all_rejections)
-                        rewrite_user += "- " + r.fact + " -- " + r.reason + "\n";
-                    rewrite_user += "\nRewrite your narrative and plan to fix these issues.\n";
+                        rewrite_turn_state += "- " + r.fact + " -- " + r.reason + "\n";
+                    rewrite_turn_state += "\nRewrite your narrative and plan to fix these issues.\n";
 
                     state_ = LoopState::RunningLLM;
                     auto [new_prose, new_plan] = split_merged_response(
-                        call_narrator(system_msg, rewrite_user));
+                        call_narrator(narrator_prompt.instructions, rewrite_turn_state));
                     prose = std::move(new_prose);
                     plan  = std::move(new_plan);
                     state_ = LoopState::AppendingResult;
@@ -629,7 +782,7 @@ void SceneLoop::advance() {
     // --- Emit narrator + route perception -------------------------------
     const std::string narration = prose;
     {
-        emit_output(make_message("narrator", std::move(prose)));
+        emit_output(make_message("narrator", std::move(prose)), OutputBucket::Story);
         route_perception(*scene_, last_director_out_.new_nodes, turn);
     }
 
@@ -656,7 +809,9 @@ void SceneLoop::advance() {
                     mem_it->second.route_fact(spoken, {ch->name}, turn);
             }
 
-            emit_output(make_message("character", std::move(spoken), cue.character));
+            auto msg = make_message("character", std::move(spoken), cue.character);
+            msg.metadata["turn"] = turn;
+            emit_output(std::move(msg), OutputBucket::Dialogue);
         }
     }
 

@@ -14,6 +14,12 @@ std::string to_string(NodeState s) {
     throw std::runtime_error("Invalid NodeState");
 }
 
+bool node_state_means_resolved(const std::string& s) {
+    std::string lower = s;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    return lower == "resolved" || lower == "resolve";
+}
+
 NodeState node_state_from_string(const std::string& s) {
     std::string lower = s;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
@@ -21,7 +27,7 @@ NodeState node_state_from_string(const std::string& s) {
     if (lower == "dormant")      return NodeState::Dormant;
     if (lower == "foreshadowed") return NodeState::Foreshadowed;
     if (lower == "active")       return NodeState::Active;
-    if (lower == "resolved")     return NodeState::Active;  // migration
+    if (node_state_means_resolved(s)) return NodeState::Active;
     throw std::runtime_error("Invalid node state string: " + s);
 }
 

@@ -80,6 +80,10 @@ public:
     // most-pressing first.  Used by view_of and the narrator inner-state context.
     std::string render_thoughts(const std::vector<std::string>& subjects = {}) const;
 
+    /// Prompt text: live thought chains for `subjects`, plus optional experiment lines.
+    std::string build_prompt__interior_thoughts(const std::vector<std::string>& subjects,
+                                              int turn) const;
+
     // -- Gated experiments (rendered as context for the narrator, never a
     //    command).  See the "Phase 3 experiments" section of the design. --
 

@@ -142,11 +142,13 @@ std::string Director::focus_payload_json(int turn_index, const std::string& scen
     return build_prompt(turn_index, scene_context);
 }
 
-std::string Director::focus_payload_text(int turn_index, const std::string& scene_context) const {
+std::string Director::build_prompt__world_graph_context(int turn_index,
+                                                   const std::string& capped_prev_turns_text) const {
+    (void)turn_index;
     auto all_nodes = graph_.all_nodes(false);
 
-    // BFS seeding: entity-match against scene_context, fallback to recency
-    std::string scene_context_lower = to_lower_copy(scene_context);
+    // BFS seeding: entity-match against recent transcript, fallback to recency
+    std::string scene_context_lower = to_lower_copy(capped_prev_turns_text);
     std::set<std::uint64_t> seed_ids;
     for (const auto& node : all_nodes) {
         bool matched = false;
@@ -325,8 +327,7 @@ std::vector<Node> Director::apply_transitions(const nlohmann::json& response, in
         if (!node)
             continue;
 
-        auto lower_state = to_lower_copy(state_str);
-        if (lower_state == "resolved") {
+        if (node_state_means_resolved(state_str)) {
             node->state = NodeState::Active;
             graph_.set_valid_until(id, turn_index);
             expired.push_back(*node);
@@ -355,7 +356,7 @@ std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response, int 
         // If not provided (still -1), check the raw state string.
         if (node.valid_until < 0) {
             auto raw_state = to_lower_copy(entry.value("state", ""));
-            if (raw_state == "resolved")
+            if (node_state_means_resolved(raw_state))
                 node.valid_until = turn_index;
         }
 

@@ -20,7 +20,6 @@ from rhapsode.memory import (
     register_callbacks,
     warmup_model,
 )
-from rhapsode.prompt import build_system_message, build_user_message
 from rhapsode.validator import make_local_llm_callback
 
 print(f"chromadb {chromadb.__version__}")
@@ -38,7 +37,7 @@ def stub_llm(prompt: str) -> str:
     """Minimal LLM response for actor synthesis."""
     return '"I have nothing to say right now."'
 
-def stub_narrator_llm(system: str, user: str) -> str:
+def stub_narrator_llm(instructions: str, turn_state: str) -> str:
     """Minimal narrator response with valid JSON plan."""
     global TURN_COUNT
     TURN_COUNT += 1
@@ -103,38 +102,7 @@ loop.load_scene(scene)
 loop.set_director(director)
 
 scene.downsampler.set_llm_callback(make_local_llm_callback())
-system_msg = build_system_message(scene)
 
-def _established_facts_stub(hist, scene_obj, director_out):
-    try:
-        ids = memory.search_nodes("recent events", 6)
-        return [scene_obj.world_graph.get_node(nid).fact for nid in ids
-                if scene_obj.world_graph.get_node(nid)]
-    except Exception as e:
-        print(f"  [established_facts] FAILED: {e}")
-        return []
-
-def _active_characters(scene_obj):
-    lines = []
-    for c in scene_obj.characters:
-        if c.is_player or c.dead:
-            continue
-        if c.on_stage:
-            lines.append(f"- {c.name} [{c.role}] — {c.description[:50]}")
-    return lines
-
-def prompt_callback(hist, scene_obj, director_out, focus_text, inner_states):
-    story_so_far = scene_obj.downsampler.render()
-    user_msg = build_user_message(
-        hist, scene_obj,
-        director_focus_text=focus_text,
-        established_facts=_established_facts_stub(hist, scene_obj, director_out),
-        active_characters=_active_characters(scene_obj),
-        story_so_far=story_so_far,
-    )
-    return (system_msg, user_msg)
-
-loop.set_prompt_callback(prompt_callback)
 loop.set_narrator_llm_callback(stub_narrator_llm)
 loop.set_llm_callback(stub_llm)
 loop.set_weaver(weaver)
