@@ -296,6 +296,90 @@ TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
     REQUIRE(timeline.size() == 3);
 }
 
+TEST_CASE("SceneLoop retries Player-only speech_turns", "[scene_loop]") {
+    Scene scene;
+    scene.title = "Test";
+    scene.system_prompt = "Narrate.";
+
+    Character npc{"Barkeep", "A gruff dwarf", false};
+    npc.on_stage = true;
+    scene.enter_character(std::move(npc));
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+
+    Director director(scene.world_graph);
+    loop.set_director(&director);
+
+    int narrator_calls = 0;
+    loop.set_narrator_llm_callback([&](const std::string& instructions,
+                                       const std::string& turn_state) {
+        (void)instructions;
+        ++narrator_calls;
+        if (narrator_calls == 1) {
+            REQUIRE(turn_state.find("REVISION REQUIRED") == std::string::npos);
+            return R"(The barkeep watches.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Player","line":"Ale please"}],"new_characters":[],"active_cast":["Barkeep"]})";
+        }
+        REQUIRE(turn_state.find("REVISION REQUIRED") != std::string::npos);
+        return R"(The barkeep watches.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Barkeep","line":"What'll it be?"}],"new_characters":[],"active_cast":["Barkeep"]})";
+    });
+
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+
+    loop.submit_input("Ale please");
+
+    REQUIRE(narrator_calls == 2);
+    REQUIRE(scene.dialogue.size() == 1);
+    REQUIRE(scene.dialogue.messages()[0].metadata["speaker"] == "Barkeep");
+    REQUIRE(scene.dialogue.messages()[0].content.find("What'll it be?") != std::string::npos);
+}
+
+TEST_CASE("SceneLoop allows empty speech_turns with NPCs on stage", "[scene_loop]") {
+    Scene scene;
+    scene.title = "Test";
+    scene.system_prompt = "Narrate.";
+
+    Character npc{"Barkeep", "A gruff dwarf", false};
+    npc.on_stage = true;
+    scene.enter_character(std::move(npc));
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+
+    Director director(scene.world_graph);
+    loop.set_director(&director);
+
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&) {
+        return R"(You sit in silence.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Barkeep"]})";
+    });
+
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+
+    loop.submit_input("I wait quietly.");
+
+    REQUIRE(scene.dialogue.size() == 0);
+    REQUIRE(scene.history.size() == 2);
+}
+
+TEST_CASE("History sanitizes invalid UTF-8 on append", "[history]") {
+    History h;
+    SceneMessage msg;
+    msg.role = Role::User;
+    msg.content = std::string("hello") + '\xE2';
+    h.append(msg);
+    REQUIRE(h.messages()[0].content.find("hello") == 0);
+    REQUIRE(h.messages()[0].content.size() > 5);
+}
+
 TEST_CASE("SceneLoop rejects input in wrong state", "[scene_loop]") {
     SceneLoop loop;
     REQUIRE_THROWS_AS(loop.submit_input("test"), std::runtime_error);

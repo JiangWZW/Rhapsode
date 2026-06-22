@@ -1,4 +1,5 @@
 #include "rhapsode/scene_message.h"
+#include "rhapsode/json_util.h"
 
 namespace rhapsode {
 
@@ -13,7 +14,7 @@ void to_json(nlohmann::json& j, const SceneMessage& m) {
 
 void from_json(const nlohmann::json& j, SceneMessage& m) {
     j.at("role").get_to(m.role);
-    j.at("content").get_to(m.content);
+    m.content = sanitize_utf8(j.at("content").get<std::string>());
     if (j.contains("timestamp")) {
         j.at("timestamp").get_to(m.timestamp);
     }

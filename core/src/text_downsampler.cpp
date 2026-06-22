@@ -1,4 +1,5 @@
 #include "rhapsode/text_downsampler.h"
+#include "rhapsode/json_util.h"
 
 #include <algorithm>
 #include <chrono>
@@ -109,12 +110,12 @@ std::string TextDownsampler::summarize(const std::string& passage, int level) {
     std::string full_prompt = std::string(SUMMARIZER_SYSTEM) + "\n\n" + user_prompt;
 
     try {
-        auto result = llm_cb_(full_prompt);
+        auto result = llm_cb_(sanitize_utf8(full_prompt));
         // Strip whitespace
         auto start = result.find_first_not_of(" \t\n\r");
         if (start == std::string::npos) return {};
         auto end = result.find_last_not_of(" \t\n\r");
-        return result.substr(start, end - start + 1);
+        return sanitize_utf8(result.substr(start, end - start + 1));
     } catch (const std::exception& e) {
         std::cerr << "  [downsampler] summarize failed: " << e.what() << "\n";
         return {};
@@ -244,7 +245,7 @@ TextDownsampler TextDownsampler::from_json(const nlohmann::json& j) {
             if (lj.contains("snippets") && lj["snippets"].is_array()) {
                 for (const auto& sj : lj["snippets"]) {
                     Snippet s;
-                    s.text = sj.value("text", "");
+                    s.text = sanitize_utf8(sj.value("text", ""));
                     s.turn_start = sj.value("turn_start", 0);
                     s.turn_end = sj.value("turn_end", 0);
                     s.timestamp = sj.value("timestamp", 0.0);

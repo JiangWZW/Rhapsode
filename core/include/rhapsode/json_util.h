@@ -50,6 +50,15 @@ inline std::string sanitize_utf8(const std::string& s) {
     return out;
 }
 
+/// Truncate to at most max_len bytes without splitting a UTF-8 code point.
+inline std::string truncate_utf8(const std::string& s, size_t max_len) {
+    if (s.size() <= max_len) return s;
+    size_t pos = max_len;
+    while (pos > 0 && (static_cast<unsigned char>(s[pos]) & 0xC0) == 0x80)
+        --pos;
+    return s.substr(0, pos);
+}
+
 /// Normalize "smart"/typographic punctuation that LLMs habitually emit into the
 /// ASCII forms JSON requires.  Curly double quotes (U+201C/D/E) become ", curly
 /// single quotes / primes (U+2018/19, U+2032) become ' (valid inside JSON

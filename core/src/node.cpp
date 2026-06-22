@@ -56,7 +56,10 @@ void from_json(const nlohmann::json& j, Node& n) {
     n.state          = node_state_from_string(j.value("state", "dormant"));
     n.foreshadow_ctx = sanitize_utf8(j.value("foreshadow_ctx", ""));
     n.active_ctx     = sanitize_utf8(j.value("active_ctx", ""));
-    n.entities       = j.value("entities", std::vector<std::string>{});
+    if (j.contains("entities") && j["entities"].is_array()) {
+        for (const auto& e : j["entities"])
+            if (e.is_string()) n.entities.push_back(sanitize_utf8(e.get<std::string>()));
+    }
     n.trigger        = sanitize_utf8(j.value("trigger", ""));
     n.arc_position   = j.value("arc_position", "");
     n.related_to     = j.value("related_to", std::vector<std::uint64_t>{});

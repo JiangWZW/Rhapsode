@@ -194,6 +194,13 @@ def _dot_to_svg_response(dot: str) -> Response:
         )
 
 
+def _safe_render_thoughts(mem) -> str:
+    try:
+        return mem.render_thoughts([]) or "(no live thoughts yet)"
+    except UnicodeDecodeError:
+        return "(thoughts unavailable: invalid UTF-8 in belief data)"
+
+
 def _find_character_memory(scene, name: str):
     """Look up a character's mind by name (case-insensitive), or None."""
     mems = scene.character_memories
@@ -213,7 +220,7 @@ def characters_endpoint():
         return {"error": "no active scene"}
     return {
         "characters": [
-            {"name": name, "interior": mem.render_thoughts([])}
+            {"name": name, "interior": _safe_render_thoughts(mem)}
             for name, mem in scene.character_memories.items()
         ]
     }
@@ -289,7 +296,7 @@ def minds_endpoint():
                 svg = f"<pre>dot failed: {html.escape(proc.stderr.decode(errors='replace'))}</pre>"
         except FileNotFoundError:
             svg = "<pre>Graphviz 'dot' not found. Install: winget install Graphviz</pre>"
-        state = mem.render_thoughts([]) or "(no live thoughts yet)"
+        state = _safe_render_thoughts(mem)
         parts.append(
             f"<div class='mind'><h2>{html.escape(name)}</h2>"
             f"<div class='state'>{html.escape(state)}</div>"

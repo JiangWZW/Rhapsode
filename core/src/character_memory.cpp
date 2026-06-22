@@ -166,7 +166,8 @@ std::string CharacterMemory::render_thoughts(
                   [](const Chain& a, const Chain& b) { return a.peak > b.peak; });
 
     auto short_fact = [](const std::string& f) -> std::string {
-        return f.size() <= 80 ? f : f.substr(0, 77) + "...";
+        if (f.size() <= 80) return f;
+        return truncate_utf8(f, 77) + "...";
     };
 
     std::ostringstream os;
@@ -185,7 +186,7 @@ std::string CharacterMemory::render_thoughts(
         }
     }
 
-    if (no_charge) return os.str();
+    if (no_charge) return sanitize_utf8(os.str());
 
     // Explicit cross-links so the narrator sees exactly which Thoughts collide.
     bool header = false;
@@ -204,7 +205,7 @@ std::string CharacterMemory::render_thoughts(
            << short_fact(nb->fact) << "\"\n";
     }
 
-    return os.str();
+    return sanitize_utf8(os.str());
 }
 
 std::string CharacterMemory::build_prompt__interior_thoughts(
@@ -254,7 +255,7 @@ std::string CharacterMemory::pressing_thought(unsigned seed) const {
         if (n->weight >= peak - 1.0f) top.push_back(n);
     if (top.empty()) return {};
     std::mt19937 rng(seed);
-    return top[rng() % top.size()]->fact;
+    return sanitize_utf8(top[rng() % top.size()]->fact);
 }
 
 std::string CharacterMemory::charge_state() const {

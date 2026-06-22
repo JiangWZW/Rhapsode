@@ -1,4 +1,5 @@
 #include "rhapsode/history.h"
+#include "rhapsode/json_util.h"
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -25,6 +26,7 @@ void History::append(SceneMessage msg) {
     if (msg.timestamp.empty()) {
         msg.timestamp = utc_now_iso8601();
     }
+    msg.content = sanitize_utf8(std::move(msg.content));
     messages_.push_back(std::move(msg));
 }
 

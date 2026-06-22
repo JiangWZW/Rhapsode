@@ -117,6 +117,66 @@ std::vector<Rejection> validate_active_cast(const nlohmann::json& plan,
     return rejections;
 }
 
+bool is_player_speech_name(const std::string& name, const Scene& scene) {
+    if (to_lower(name) == "player") return true;
+    for (const auto& ch : scene.characters) {
+        if (ch.is_player && name_matches(name, ch.name)) return true;
+    }
+    return false;
+}
+
+bool is_npc_speech_cue(const std::string& name, const Scene& scene) {
+    if (is_player_speech_name(name, scene)) return false;
+    const Character* ch = resolve_cast_name(name, scene.characters);
+    return ch && !ch->dead;
+}
+
+int count_speakable_npcs_in_cast(const nlohmann::json& plan, const Scene& scene) {
+    if (!plan.contains("active_cast") || !plan["active_cast"].is_array()) return 0;
+    int count = 0;
+    for (const auto& elem : plan["active_cast"]) {
+        if (!elem.is_string()) continue;
+        const Character* ch = resolve_cast_name(elem.get<std::string>(), scene.characters);
+        if (ch && !ch->dead) ++count;
+    }
+    return count;
+}
+
+std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
+                                             const Scene& scene) {
+    std::vector<Rejection> rejections;
+    if (!plan.contains("speech_turns") || !plan["speech_turns"].is_array())
+        return rejections;
+
+    const auto& turns = plan["speech_turns"];
+    int npc_cues = 0;
+    for (const auto& el : turns) {
+        if (!el.is_object()) continue;
+        const auto name = el.value("character", "");
+        if (name.empty()) continue;
+        if (is_player_speech_name(name, scene)) {
+            rejections.push_back({
+                "speech_turns includes \"" + name + "\"",
+                "Player must not appear in speech_turns; the user message is the "
+                "player's speech -- give responding NPCs their own speech_turn entries"
+            });
+            continue;
+        }
+        if (is_npc_speech_cue(name, scene)) ++npc_cues;
+    }
+
+    if (turns.empty()) return rejections;
+
+    if (count_speakable_npcs_in_cast(plan, scene) > 0 && npc_cues == 0) {
+        rejections.push_back({
+            "speech_turns",
+            "NPCs are present in active_cast but no NPC speech_turns were authored "
+            "(speech_turns must contain each speaking NPC's line, not the Player's)"
+        });
+    }
+    return rejections;
+}
+
 // -- LLM response parsing --------------------------------------------
 
 constexpr char kJsonToken[] = "<<<RHAPSODE_JSON>>>";
@@ -590,6 +650,12 @@ std::string build_prompt__narrator_turn_state(
     parts.push_back(
         "- Give a speech_turn only to a character who can speak right now "
         "(not asleep, unconscious, incapacitated, dead, or absent).");
+    parts.push_back(
+        "- speech_turns is NPC dialogue ONLY. NEVER use \"Player\" or echo the "
+        "user's lines there -- the turn transcript user entry IS the player's speech.");
+    parts.push_back(
+        "- When the player speaks to NPCs, give each responding on-stage NPC their "
+        "own speech_turn in their voice.");
 
     std::string out;
     for (size_t i = 0; i < parts.size(); ++i) {
@@ -622,7 +688,8 @@ RULES:
 - Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
 - entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
 - audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
-- speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
+- speech_turns: NPC dialogue ONLY -- NEVER include "Player" or the player character here; the user's message is already the player's speech. Do not echo quoted user lines in speech_turns. One entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn. When the player addresses NPCs, each responding on-stage NPC gets their own speech_turn.
+- entities "Player" is ONLY for new_nodes memory routing -- never for speech_turns character names.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
 - active_cast: all living NPCs physically present this scene. [] if player alone.)RHAPSODE";
 }
@@ -677,9 +744,13 @@ void SceneLoop::advance() {
     {
         const auto call_narrator = [&](const std::string& instructions,
                                        const std::string& turn_state) -> std::string {
+            const std::string safe_instructions = sanitize_utf8(instructions);
+            const std::string safe_turn_state   = sanitize_utf8(turn_state);
             if (narrator_llm_cb_)
-                return narrator_llm_cb_(instructions, turn_state);
-            return llm_cb_(instructions + "\n\n" + turn_state);
+                return sanitize_utf8(
+                    narrator_llm_cb_(safe_instructions, safe_turn_state));
+            return sanitize_utf8(
+                llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
         };
 
         {
@@ -756,9 +827,12 @@ void SceneLoop::advance() {
                 }
 
                 const auto cast_rejections = validate_active_cast(plan, *scene_);
+                const auto speech_rejections = validate_speech_turns(plan, *scene_);
                 all_rejections = last_director_out_.rejections;
                 all_rejections.insert(all_rejections.end(),
                                       cast_rejections.begin(), cast_rejections.end());
+                all_rejections.insert(all_rejections.end(),
+                                      speech_rejections.begin(), speech_rejections.end());
 
                 if (all_rejections.empty())
                     break;
