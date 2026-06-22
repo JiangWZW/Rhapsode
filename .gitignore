@@ -18,6 +18,12 @@ node_modules/
 chroma/
 saves/
 models/
+server/logs/
+server/chroma_test/
+
+# Local dev artifacts
+*.patch
+experiments/**/autotest_log.txt
 
 # Third-party downloads (bootstrapped locally)
 third_party/llama.cpp/build/
