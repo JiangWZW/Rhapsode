@@ -21,17 +21,13 @@ namespace rhapsode {
 CharacterMemory::CharacterMemory(std::string name)
     : char_name_(std::move(name)) {}
 
-void CharacterMemory::set_reflection_llm_callback(ReflectionLLMCallback cb) { reflection_llm_cb_ = std::move(cb); }
+void CharacterMemory::set_reflection_llm_callback(LLMCallback cb) { reflection_llm_cb_ = std::move(cb); }
 
 // ---------------------------------------------------------------------------
 // Subjective belief graph (beliefs_)
 // ---------------------------------------------------------------------------
 
 namespace {
-
-std::string lower_str(std::string s) {
-    return str::to_lower(s);
-}
 
 // Case-insensitive identity test for two entity strings.  Exact equality only.
 // The narrator is the sole identity authority: it emits canonical subjects
@@ -53,7 +49,7 @@ std::string strip_echoed_label(std::string s) {
     s = s.substr(a);
     auto colon = s.find(':');
     if (colon != std::string::npos && colon <= 24) {
-        std::string label = lower_str(s.substr(0, colon));
+        std::string label = str::to_lower(s.substr(0, colon));
         if (label.find("belief") != std::string::npos ||
             label.find("inner state") != std::string::npos) {
             auto rest = s.find_first_not_of(" \t\"", colon + 1);
@@ -97,7 +93,7 @@ std::string CharacterMemory::render_thoughts(
     std::vector<std::string> wanted;
     wanted.reserve(subjects.size());
     for (const auto& s : subjects)
-        if (!s.empty()) wanted.push_back(lower_str(s));
+        if (!s.empty()) wanted.push_back(str::to_lower(s));
     const bool all = wanted.empty();
 
     // Collect my live Thoughts (Active belief nodes), optionally scoped to the
@@ -109,7 +105,7 @@ std::string CharacterMemory::render_thoughts(
         if (n.type != "belief" || n.state != NodeState::Active) return;
         if (all) { thoughts.push_back(&n); return; }
         for (const auto& e : n.entities) {
-            const std::string el = lower_str(e);
+            const std::string el = str::to_lower(e);
             for (const auto& w : wanted)
                 if (entity_matches(el, w)) { thoughts.push_back(&n); return; }
         }
@@ -351,11 +347,11 @@ void CharacterMemory::reflect_perceptions(int turn) {
         b.idxs    = idxs;
         // My prior Thoughts about this subject (live "belief" nodes).  We NEVER
         // supersede them: contradictory Thoughts coexist and are kept as tension.
-        const std::string subj_lower = lower_str(subject);
+        const std::string subj_lower = str::to_lower(subject);
         beliefs_.for_each([&](const Node& n) {
             if (n.type != "belief" || n.state != NodeState::Active) return;
             for (const auto& e : n.entities) {
-                if (entity_matches(lower_str(e), subj_lower)) {
+                if (entity_matches(str::to_lower(e), subj_lower)) {
                     b.prior_ids.push_back(n.id);
                     b.prior_text += "- " + n.fact + "\n";
                     return;
@@ -421,7 +417,7 @@ void CharacterMemory::reflect_perceptions(int turn) {
                 if (belief.empty()) continue;
 
                 const int w = std::clamp(json_number<int>(t, "weight", 5), 1, 10);
-                const std::string rel = lower_str(t.value("relation", "evidence"));
+                const std::string rel = str::to_lower(t.value("relation", "evidence"));
                 const std::string kind =
                     (rel.find("tension") != std::string::npos ||
                      rel.find("contradict") != std::string::npos)

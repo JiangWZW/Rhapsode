@@ -10,7 +10,6 @@ namespace rhapsode {
 
 namespace {
 
-constexpr int VERBATIM_TAIL_DEFAULT = 6;
 constexpr int BATCH_SIZE = 3;
 constexpr int MIP0_MAX = 10;
 constexpr int MIP1_MAX = 5;
@@ -21,11 +20,6 @@ constexpr int MAX_MIPS = 3;
 constexpr const char* SUMMARIZER_SYSTEM =
     "You are a precise narrative-state tracker. "
     "Output only the summary line.";
-
-constexpr const char* SUMMARIZER_USER_FMT =
-    "<prior_context>%s</prior_context>\n"
-    "<passage>%s</passage>\n"
-    "Summarize only new elements not in prior_context. Short phrases, single line.";
 
 double now_seconds() {
     auto tp = std::chrono::system_clock::now();
@@ -50,7 +44,7 @@ TextDownsampler::TextDownsampler() {
     levels_[2].max_snippets = MIP2_MAX;
 }
 
-void TextDownsampler::set_llm_callback(DownsamplerLLMCallback cb) {
+void TextDownsampler::set_llm_callback(LLMCallback cb) {
     llm_cb_ = std::move(cb);
 }
 

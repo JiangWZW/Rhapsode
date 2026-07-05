@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/scene_message.h"
 
 namespace rhapsode {
@@ -22,13 +23,11 @@ struct MipLevel {
     int max_snippets = 10;
 };
 
-using DownsamplerLLMCallback = std::function<std::string(const std::string& prompt)>;
-
 class TextDownsampler {
 public:
     TextDownsampler();
 
-    void set_llm_callback(DownsamplerLLMCallback cb);
+    void set_llm_callback(LLMCallback cb);
     bool has_llm_callback() const { return static_cast<bool>(llm_cb_); }
 
     void process_turn(const std::vector<SceneMessage>& messages, int verbatim_tail = 6);
@@ -39,7 +38,7 @@ public:
     static TextDownsampler from_json(const nlohmann::json& j);
 
 private:
-    DownsamplerLLMCallback llm_cb_;
+    LLMCallback llm_cb_;
     std::vector<MipLevel> levels_;
     int summarized_up_to_ = 0;
 

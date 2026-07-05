@@ -39,7 +39,6 @@ public:
     /// follows). Use for live insertions; from_json uses raw add_node so it
     /// does not re-chain over its explicitly-restored edges.
     Node& add_node_chained(Node node, int turn);
-    void upsert_node(const Node& node);
     bool has_node(std::uint64_t node_id) const;
     Node* get_node(std::uint64_t node_id);
     const Node* get_node(std::uint64_t node_id) const;

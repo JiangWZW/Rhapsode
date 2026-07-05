@@ -60,6 +60,12 @@ inline std::string truncate_utf8(const std::string& s, size_t max_len) {
     return s.substr(0, pos);
 }
 
+/// Truncate to at most max_len bytes (UTF-8 safe) and append "..." if truncated.
+inline std::string truncate_utf8_ellipsis(const std::string& s, size_t max_len) {
+    if (s.size() <= max_len) return s;
+    return truncate_utf8(s, max_len > 3 ? max_len - 3 : 0) + "...";
+}
+
 /// Normalize "smart"/typographic punctuation that LLMs habitually emit into the
 /// ASCII forms JSON requires.  Curly double quotes (U+201C/D/E) become ", curly
 /// single quotes / primes (U+2018/19, U+2032) become ' (valid inside JSON

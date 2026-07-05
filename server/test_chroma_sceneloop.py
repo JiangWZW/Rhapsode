@@ -60,7 +60,6 @@ def stub_narrator_llm(instructions: str, turn_state: str) -> str:
 scene = Scene.load_json(SCENARIO)
 memory = MemorySystem(scene.scene_id)
 register_callbacks(memory, scene.scene_id, CHROMA_PATH)
-memory.set_local_llm_callback(make_local_llm_callback())
 scene.set_memory(memory)
 
 is_resuming = scene.has_save(SAVES_DIR)

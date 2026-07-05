@@ -1,5 +1,4 @@
 #pragma once
-#include <functional>
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -21,15 +20,11 @@ struct DirectorOutput {
     std::vector<Rejection>   rejections;
 };
 
-using DirectorLLMCallback  = std::function<std::string(const std::string& prompt_json)>;
-
 class Director {
 public:
     explicit Director(WorldGraph& graph);
 
-    void set_llm_callback(DirectorLLMCallback cb);
     void set_validator(Validator* v);
-    DirectorOutput tick(int turn_index, const std::string& scene_context);
 
     /// JSON blob (serialized object) embedding `turn_index`, `scene_context`,
     /// `nodes`, and optional `graph_context_2hop` -- same payload the legacy
@@ -47,7 +42,6 @@ public:
 
 private:
     WorldGraph& graph_;
-    DirectorLLMCallback  llm_cb_;
     Validator* validator_ = nullptr;
 
     std::string    build_prompt(int turn_index, const std::string& scene_context) const;

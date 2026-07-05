@@ -43,7 +43,6 @@ app = FastAPI(title="Rhapsode", lifespan=lifespan)
 def _init_memory(scene_id: str) -> MemorySystem:
     memory = MemorySystem(scene_id)
     register_callbacks(memory, scene_id)
-    memory.set_local_llm_callback(make_local_llm_callback())
     return memory
 
 

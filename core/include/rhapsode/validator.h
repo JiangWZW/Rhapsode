@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/node.h"
 #include "rhapsode/world_graph.h"
 
@@ -15,7 +16,6 @@ struct Verdict {
     std::string reason;
 };
 
-using ValidatorLLMCallback = std::function<std::string(const std::string&)>;
 using SearchCallback = std::function<std::vector<std::uint64_t>(const std::string&, int)>;
 using DeadCheckCallback = std::function<std::vector<std::string>()>;
 
@@ -23,7 +23,7 @@ class Validator {
 public:
     explicit Validator(const WorldGraph& graph);
 
-    void set_llm_callback(ValidatorLLMCallback cb);
+    void set_llm_callback(LLMCallback cb);
     void set_search_callback(SearchCallback cb);
     void set_dead_check(DeadCheckCallback cb);
 
@@ -31,7 +31,7 @@ public:
 
 private:
     const WorldGraph& graph_;
-    ValidatorLLMCallback llm_cb_;
+    LLMCallback llm_cb_;
     SearchCallback search_cb_;
     DeadCheckCallback dead_check_cb_;
 

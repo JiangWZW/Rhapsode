@@ -16,9 +16,7 @@ void MemorySystem::set_embed_callback(EmbedCallback cb)            { embed_cb_ =
 void MemorySystem::set_store_callback(StoreCallback cb)            { store_cb_ = std::move(cb); }
 void MemorySystem::set_query_callback(QueryCallback cb)            { query_cb_ = std::move(cb); }
 void MemorySystem::set_update_meta_callback(UpdateMetaCallback cb) { update_meta_cb_ = std::move(cb); }
-void MemorySystem::set_get_by_meta_callback(GetByMetaCallback cb)  { get_by_meta_cb_ = std::move(cb); }
 void MemorySystem::set_delete_callback(DeleteCallback cb)          { delete_cb_ = std::move(cb); }
-void MemorySystem::set_local_llm_callback(LocalLLMCallback cb)     { local_llm_cb_ = std::move(cb); }
 
 // -- Delete --
 

@@ -1,9 +1,9 @@
 #pragma once
-#include <functional>
 #include <future>
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/director.h"
 #include "rhapsode/scene_loop_support.h"
@@ -29,7 +29,6 @@ enum class LoopState {
     AppendingResult
 };
 
-using LLMCallback          = std::function<std::string(const std::string& prompt)>;
 using NarratorLLMCallback  = std::function<std::string(const std::string& instructions,
                                                         const std::string& turn_state)>;
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;

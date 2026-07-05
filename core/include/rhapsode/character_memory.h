@@ -6,11 +6,10 @@
 #include <string>
 #include <vector>
 
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/world_graph.h"
 
 namespace rhapsode {
-
-using ReflectionLLMCallback = std::function<std::string(const std::string& prompt)>;
 
 
 class CharacterMemory {
@@ -29,7 +28,7 @@ public:
     void set_persona(std::string p) { persona_ = std::move(p); }
 
     // -- Callback (set from Python, once at session start) --
-    void set_reflection_llm_callback(ReflectionLLMCallback cb); // prompt -> completion (cloud LLM)
+    void set_reflection_llm_callback(LLMCallback cb); // prompt -> completion (cloud LLM)
 
     // -- Subjective belief graph (beliefs_) --
     // A character's view of the world and of others is a WorldGraph of its own,
@@ -117,7 +116,7 @@ private:
     // owned per-character.  This is the whole persisted mind.
     WorldGraph beliefs_;
 
-    ReflectionLLMCallback reflection_llm_cb_;
+    LLMCallback reflection_llm_cb_;
 };
 
 } // namespace rhapsode

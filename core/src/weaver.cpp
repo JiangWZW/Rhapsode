@@ -39,11 +39,6 @@ std::string hex_u64(std::uint64_t v) {
     return os.str();
 }
 
-std::string truncate_log(std::string_view s, size_t max_len) {
-    if (s.size() <= max_len) return std::string(s);
-    return std::string(s.substr(0, max_len)) + "...";
-}
-
 void write_weave_artifact(int turn_index, const char* label,
                           const std::string& prompt,
                           const std::string& response,
@@ -102,8 +97,8 @@ GraphAnalysis analyze(const WorldGraph& graph) {
 
 Weaver::Weaver(WorldGraph& graph) : graph_(graph) {}
 
-void Weaver::set_llm_callback(WeaverLLMCallback cb) { llm_cb_ = std::move(cb); }
-void Weaver::set_local_llm_callback(WeaverLLMCallback cb) { local_llm_cb_ = std::move(cb); }
+void Weaver::set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
+void Weaver::set_local_llm_callback(LLMCallback cb) { local_llm_cb_ = std::move(cb); }
 void Weaver::set_interval(int turns) { interval_ = turns > 0 ? turns : 1; }
 
 bool Weaver::should_weave(int turn_index) const {
@@ -250,7 +245,7 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
     if (parse_failed) {
         log() << "  [weave] parse FAILED: JSON extraction failed — "
               << "response preview "
-              << truncate_log(llm_response, 300) << "\n";
+              << truncate_utf8_ellipsis(llm_response, 300) << "\n";
     }
 
     auto parse_ops = [](const nlohmann::json& arr) {
@@ -332,7 +327,7 @@ WeaveResult Weaver::weave_local(int turn_index, const std::string& scene_context
 }
 
 WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
-                                WeaverLLMCallback& cb, const char* label) {
+                                LLMCallback& cb, const char* label) {
     GraphAnalysis pre = analyze(graph_);
 
     if (pre.live_node_count < 2) {

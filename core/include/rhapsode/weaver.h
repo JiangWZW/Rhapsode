@@ -2,11 +2,11 @@
 
 #include <atomic>
 #include <cstdint>
-#include <functional>
 #include <random>
 #include <string>
 #include <vector>
 
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/world_graph.h"
 
 namespace rhapsode {
@@ -38,14 +38,12 @@ struct ExpiryOp {
     std::string reason;
 };
 
-using WeaverLLMCallback = std::function<std::string(const std::string&)>;
-
 class Weaver {
 public:
     explicit Weaver(WorldGraph& graph);
 
-    void set_llm_callback(WeaverLLMCallback cb);
-    void set_local_llm_callback(WeaverLLMCallback cb);
+    void set_llm_callback(LLMCallback cb);
+    void set_local_llm_callback(LLMCallback cb);
     void set_interval(int turns);
     bool should_weave(int turn_index) const;
 
@@ -73,8 +71,8 @@ public:
 
 private:
     WorldGraph& graph_;
-    WeaverLLMCallback llm_cb_;
-    WeaverLLMCallback local_llm_cb_;
+    LLMCallback llm_cb_;
+    LLMCallback local_llm_cb_;
     int interval_ = 3;
 
     std::string build_prompt(int turn_index,
@@ -82,7 +80,7 @@ private:
     WeaveResult parse_and_apply(const std::string& llm_response,
                                 int turn_index);
     WeaveResult weave_impl(int turn_index, const std::string& scene_context,
-                           WeaverLLMCallback& cb, const char* label);
+                           LLMCallback& cb, const char* label);
 
     // Selection RNG (mutable: not part of observable Weaver state)
     mutable std::mt19937 rng_{std::random_device{}()};

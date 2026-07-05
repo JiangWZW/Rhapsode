@@ -11,7 +11,7 @@ namespace rhapsode {
 
 Validator::Validator(const WorldGraph& graph) : graph_(graph) {}
 
-void Validator::set_llm_callback(ValidatorLLMCallback cb) { llm_cb_ = std::move(cb); }
+void Validator::set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
 void Validator::set_search_callback(SearchCallback cb) { search_cb_ = std::move(cb); }
 void Validator::set_dead_check(DeadCheckCallback cb) { dead_check_cb_ = std::move(cb); }
 

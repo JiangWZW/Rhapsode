@@ -80,29 +80,22 @@ def _make_chroma_callbacks(client: chromadb.ClientAPI):
     def update_meta(collection: str, doc_id: str, metadata_json: str):
         _col(collection).update(ids=[doc_id], metadatas=[json.loads(metadata_json)])
 
-    def get_by_meta(collection: str, where_json: str) -> str:
-        col = _col(collection)
-        where = json.loads(where_json)
-        results = col.get(where=where if where else None)
-        return json.dumps(results)
-
     def delete(collection: str, ids_json: str):
         _col(collection).delete(ids=json.loads(ids_json))
 
-    return store, query, update_meta, get_by_meta, delete
+    return store, query, update_meta, delete
 
 
 def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chroma"):
     """Register all Python callbacks on a C++ MemorySystem instance."""
     embed = _make_embed()
     client = _get_client(chroma_path)
-    store, query, update_meta, get_by_meta, delete = _make_chroma_callbacks(client)
+    store, query, update_meta, delete = _make_chroma_callbacks(client)
 
     memory_system.set_embed_callback(embed)
     memory_system.set_store_callback(store)
     memory_system.set_query_callback(query)
     memory_system.set_update_meta_callback(update_meta)
-    memory_system.set_get_by_meta_callback(get_by_meta)
     memory_system.set_delete_callback(delete)
 
     log.info("MemorySystem callbacks registered for scene %s", scene_id)

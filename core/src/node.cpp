@@ -1,5 +1,6 @@
 #include "rhapsode/node.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/str_util.h"
 #include <algorithm>
 #include <stdexcept>
 
@@ -15,14 +16,12 @@ std::string to_string(NodeState s) {
 }
 
 bool node_state_means_resolved(const std::string& s) {
-    std::string lower = s;
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    std::string lower = str::to_lower(s);
     return lower == "resolved" || lower == "resolve";
 }
 
 NodeState node_state_from_string(const std::string& s) {
-    std::string lower = s;
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    std::string lower = str::to_lower(s);
 
     if (lower == "dormant")      return NodeState::Dormant;
     if (lower == "foreshadowed") return NodeState::Foreshadowed;

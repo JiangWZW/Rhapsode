@@ -10,51 +10,10 @@ namespace rhapsode {
 
 namespace {
 
-std::string truncate(const std::string& s, size_t max_len = 60) {
-    if (s.size() <= max_len) return s;
-    size_t pos = max_len - 3;
-    while (pos > 0 && (static_cast<unsigned char>(s[pos]) & 0xC0) == 0x80)
-        --pos;
-    return s.substr(0, pos) + "...";
-}
-
 void log_node_line(const Node& n, const char* prefix = "    ") {
     log() << prefix << "[" << n.id << "] "
           << to_string(n.state) << " | " << n.type
-          << " | \"" << truncate(n.fact) << "\"\n";
-}
-
-void log_prompt_summary(const nlohmann::json& prompt) {
-    log() << "\n  --- Director input summary ---\n";
-    log() << "  turn:          " << prompt.value("turn_index", -1) << "\n";
-
-    auto sc = prompt.value("scene_context", "");
-    log() << "  scene_context: \"" << truncate(sc, 120) << "\"\n";
-
-    if (prompt.contains("nodes") && prompt["nodes"].is_array()) {
-        int dormant = 0, foreshadowed = 0, active = 0;
-        for (const auto& n : prompt["nodes"]) {
-            auto s = n.value("state", "");
-            if (s == "active")        active++;
-            else if (s == "foreshadowed") foreshadowed++;
-            else if (s == "dormant")  dormant++;
-        }
-        log() << "  graph nodes:   " << prompt["nodes"].size()
-              << " (active=" << active << " foreshadowed=" << foreshadowed
-              << " dormant=" << dormant << ")\n";
-    }
-
-    if (prompt.contains("graph_context_2hop") && prompt["graph_context_2hop"].is_array()) {
-        log() << "  2-hop context (" << prompt["graph_context_2hop"].size() << " nodes):\n";
-        for (const auto& n : prompt["graph_context_2hop"]) {
-            log() << "    [" << n.value("id", 0) << "] "
-                  << n.value("state", "?") << " | " << n.value("type", "?")
-                  << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
-        }
-    }
-
-    log() << "  prompt bytes:  " << prompt.dump().size() << "\n";
-    log() << "  ---\n";
+          << " | \"" << truncate_utf8_ellipsis(n.fact, 60) << "\"\n";
 }
 
 void log_response_summary(const nlohmann::json& response, const WorldGraph& graph) {
@@ -67,7 +26,7 @@ void log_response_summary(const nlohmann::json& response, const WorldGraph& grap
             auto id = json_number<std::uint64_t>(t, "id", 0);
             auto new_state = t.value("state", "?");
             const Node* n = graph.get_node(id);
-            std::string fact_str = n ? ("\"" + truncate(n->fact, 50) + "\"")
+            std::string fact_str = n ? ("\"" + truncate_utf8_ellipsis(n->fact, 50) + "\"")
                                      : "(unknown)";
             std::string old_state = n ? to_string(n->state) : "?";
             log() << "    [" << id << "] " << old_state
@@ -83,7 +42,7 @@ void log_response_summary(const nlohmann::json& response, const WorldGraph& grap
         for (const auto& n : *nn_it) {
             log() << "    + " << n.value("state", "?")
                   << " | " << n.value("type", "?")
-                  << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
+                  << " | \"" << truncate_utf8_ellipsis(n.value("fact", ""), 50) << "\"\n";
         }
     } else {
         log() << "  new nodes: (none)\n";
@@ -96,39 +55,8 @@ void log_response_summary(const nlohmann::json& response, const WorldGraph& grap
 
 Director::Director(WorldGraph& graph) : graph_(graph) {}
 
-void Director::set_llm_callback(DirectorLLMCallback cb) {
-    llm_cb_ = std::move(cb);
-}
-
 void Director::set_validator(Validator* v) {
     validator_ = v;
-}
-
-DirectorOutput Director::tick(int turn_index, const std::string& scene_context) {
-    if (!llm_cb_)
-        throw std::runtime_error("No Director LLM callback registered");
-
-    log() << "  [1/5.a] Building director prompt...\n" << std::flush;
-    auto prompt = build_prompt(turn_index, scene_context);
-
-    {
-        auto prompt_json = nlohmann::json::parse(prompt);
-        log_prompt_summary(prompt_json);
-    }
-
-    log() << "  [1/5.b] Calling director LLM...\n" << std::flush;
-    auto raw = llm_cb_(sanitize_utf8(prompt));
-
-    log() << "  [1/5.c] Parsing director response (" << raw.size() << " chars)...\n" << std::flush;
-    nlohmann::json response;
-    try {
-        response = nlohmann::json::parse(raw);
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Director JSON parse failed: ") + e.what()
-                                 + " | raw[0:100]: " + raw.substr(0, 100));
-    }
-
-    return apply_planned_turn(turn_index, response);
 }
 
 std::string Director::focus_payload_json(int turn_index, const std::string& scene_context) const {
@@ -193,9 +121,9 @@ std::string Director::build_prompt__world_graph_context(int turn_index,
 
         body += "[" + std::to_string(n->id) + "] "
               + to_string(n->state) + " " + n->type
-              + " \"" + truncate(n->fact, 80) + "\"";
+              + " \"" + truncate_utf8_ellipsis(n->fact, 80) + "\"";
         if (!ctx.empty())
-            body += " -- " + truncate(ctx, 100);
+            body += " -- " + truncate_utf8_ellipsis(ctx, 100);
         body += "\n";
     }
 

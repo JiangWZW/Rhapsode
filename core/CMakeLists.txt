@@ -4,7 +4,7 @@ add_library(rhapsode STATIC
     include/rhapsode/character_memory.h
     include/rhapsode/director.h
     include/rhapsode/history.h
-    include/rhapsode/md5.h
+    include/rhapsode/llm_callback.h
     include/rhapsode/memory_system.h
     include/rhapsode/log_util.h
     include/rhapsode/narrator_prompt.h

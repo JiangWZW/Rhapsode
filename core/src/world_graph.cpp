@@ -1,9 +1,9 @@
 #include "rhapsode/world_graph.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/str_util.h"
 
 #include <algorithm>
 #include <boost/graph/connected_components.hpp>
-#include <boost/graph/filtered_graph.hpp>
 #include <cctype>
 #include <deque>
 #include <sstream>
@@ -13,13 +13,6 @@
 namespace rhapsode {
 
 namespace {
-
-std::string to_lower_ascii(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char ch) {
-        return static_cast<char>(std::tolower(ch));
-    });
-    return s;
-}
 
 }  // namespace
 
@@ -51,10 +44,6 @@ Node& WorldGraph::add_node_chained(Node node, int turn) {
             ref.related_to.push_back(pred_id);
     }
     return ref;
-}
-
-void WorldGraph::upsert_node(const Node& node) {
-    add_node(node);
 }
 
 bool WorldGraph::has_node(std::uint64_t node_id) const {
@@ -350,7 +339,7 @@ std::vector<std::pair<std::uint64_t, std::string>>
 WorldGraph::chain_predecessors(const Node& new_node) const {
     std::unordered_set<std::string> target_entities;
     for (const auto& e : new_node.entities)
-        target_entities.insert(to_lower_ascii(e));
+        target_entities.insert(str::to_lower(e));
 
     struct Best { std::uint64_t id = 0; int created_at = -1; };
     std::unordered_map<std::string, Best> most_recent;
@@ -361,7 +350,7 @@ WorldGraph::chain_predecessors(const Node& new_node) const {
         if (node.state != NodeState::Active || node.valid_until != -1) continue;
 
         for (const auto& e : node.entities) {
-            std::string key = to_lower_ascii(e);
+            std::string key = str::to_lower(e);
             if (!target_entities.count(key)) continue;
             auto& best = most_recent[key];
             if (node.created_at > best.created_at ||

@@ -234,9 +234,7 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<Director>(m, "Director")
         .def(py::init<WorldGraph&>(), py::arg("graph"))
-        .def("set_llm_callback", &Director::set_llm_callback)
         .def("set_validator",    &Director::set_validator, py::arg("validator"))
-        .def("tick", &Director::tick, py::arg("turn_index"), py::arg("scene_context"))
         .def("focus_payload_json", &Director::focus_payload_json, py::arg("turn_index"),
              py::arg("scene_context"))
         .def("build_text__world_graph_context", &Director::build_prompt__world_graph_context,
@@ -387,9 +385,7 @@ PYBIND11_MODULE(_core, m) {
         .def("set_store_callback",       &MemorySystem::set_store_callback)
         .def("set_query_callback",       &MemorySystem::set_query_callback)
         .def("set_update_meta_callback", &MemorySystem::set_update_meta_callback)
-        .def("set_get_by_meta_callback", &MemorySystem::set_get_by_meta_callback)
         .def("set_delete_callback",      &MemorySystem::set_delete_callback)
-        .def("set_local_llm_callback",   &MemorySystem::set_local_llm_callback)
         .def("delete_nodes",             &MemorySystem::delete_nodes, py::arg("node_ids"))
         .def("store_node",              &MemorySystem::store_node,
              py::arg("node_id"), py::arg("fact"), py::arg("state"),
