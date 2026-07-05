@@ -87,6 +87,115 @@ void CharacterMemory::link_tension(std::uint64_t a_id, std::uint64_t b_id, int t
         beliefs_.set_edge_kind(a_id, b_id, "tension");
 }
 
+namespace {
+
+// -- render_thoughts helpers --------------------------------------------------
+
+struct ThoughtRenderMode {
+    bool no_charge = false;
+    static ThoughtRenderMode from_env() {
+        ThoughtRenderMode m;
+        m.no_charge = std::getenv("RHAPSODE_BASELINE_NO_CHARGE") != nullptr;
+        return m;
+    }
+};
+
+struct ThoughtChain {
+    std::string subject;
+    std::vector<const Node*> nodes;
+    float peak = 0.0f;
+};
+
+std::string short_fact(const std::string& f) {
+    if (f.size() <= 80) return f;
+    return truncate_utf8(f, 77) + "...";
+}
+
+std::unordered_set<std::uint64_t> collect_tension_node_ids(const WorldGraph& beliefs) {
+    std::unordered_set<std::uint64_t> in_tension;
+    for (const auto& e : beliefs.all_edges()) {
+        if (e.data.kind != "tension") continue;
+        in_tension.insert(e.from_id);
+        in_tension.insert(e.to_id);
+    }
+    return in_tension;
+}
+
+std::vector<ThoughtChain> group_and_order_thought_chains(
+    const std::vector<const Node*>& thoughts, bool no_charge)
+{
+    std::unordered_map<std::string, std::vector<const Node*>> chains;
+    for (const auto* n : thoughts) {
+        std::string key = n->entities.empty() ? std::string("(myself)")
+                                              : n->entities.front();
+        chains[key].push_back(n);
+    }
+    std::vector<ThoughtChain> ordered;
+    ordered.reserve(chains.size());
+    for (auto& [subj, ns] : chains) {
+        std::sort(ns.begin(), ns.end(),
+                  [](const Node* a, const Node* b) { return a->created_at < b->created_at; });
+        float peak = 0.0f;
+        for (const auto* n : ns) peak = std::max(peak, n->weight);
+        ordered.push_back({subj, std::move(ns), peak});
+    }
+    if (no_charge)
+        // Control arm: most-recently-formed chains lead, weight ignored.
+        std::sort(ordered.begin(), ordered.end(),
+                  [](const ThoughtChain& a, const ThoughtChain& b) {
+                      return a.nodes.back()->created_at > b.nodes.back()->created_at;
+                  });
+    else
+        // Most-pressing chains lead.
+        std::sort(ordered.begin(), ordered.end(),
+                  [](const ThoughtChain& a, const ThoughtChain& b) { return a.peak > b.peak; });
+    return ordered;
+}
+
+void append_thought_chains(std::ostringstream& os,
+                           const std::vector<ThoughtChain>& ordered,
+                           const ThoughtRenderMode& mode,
+                           const std::unordered_set<std::uint64_t>& in_tension)
+{
+    for (const auto& c : ordered) {
+        os << "About " << c.subject;
+        if (!mode.no_charge && c.peak > 0.0f)
+            os << "  [pressing ~" << std::lround(c.peak) << "/10]";
+        os << ":\n";
+        for (const auto* n : c.nodes) {
+            os << "   - " << n->fact;
+            if (!mode.no_charge) {
+                os << "  (w" << std::lround(n->weight) << ")";
+                if (in_tension.count(n->id)) os << "  [in tension]";
+            }
+            os << "\n";
+        }
+    }
+}
+
+void append_tension_crosslinks(std::ostringstream& os,
+                               const WorldGraph& beliefs,
+                               const std::unordered_set<std::uint64_t>& rendered_ids)
+{
+    bool header = false;
+    std::unordered_set<std::string> seen;
+    for (const auto& e : beliefs.all_edges()) {
+        if (e.data.kind != "tension") continue;
+        if (!rendered_ids.count(e.from_id) && !rendered_ids.count(e.to_id)) continue;
+        const std::uint64_t a = std::min(e.from_id, e.to_id);
+        const std::uint64_t b = std::max(e.from_id, e.to_id);
+        if (!seen.insert(std::to_string(a) + "-" + std::to_string(b)).second) continue;
+        const Node* na = beliefs.get_node(e.from_id);
+        const Node* nb = beliefs.get_node(e.to_id);
+        if (!na || !nb) continue;
+        if (!header) { os << "Tensions (held, not resolved):\n"; header = true; }
+        os << "   * \"" << short_fact(na->fact) << "\" <-> \""
+           << short_fact(nb->fact) << "\"\n";
+    }
+}
+
+}  // namespace
+
 std::string CharacterMemory::render_thoughts(
     const std::vector<std::string>& subjects) const {
 
@@ -112,119 +221,21 @@ std::string CharacterMemory::render_thoughts(
     }, false);
     if (thoughts.empty()) return {};
 
-    // A/B baseline arm: when set, render a flat, recency-ordered view that
-    // ignores weight and tension -- the control the charged interior is measured
-    // against (see the design's Phase 3 experiments / ab-eval).
-    const bool no_charge = std::getenv("RHAPSODE_BASELINE_NO_CHARGE") != nullptr;
-
+    auto mode = ThoughtRenderMode::from_env();
     std::unordered_set<std::uint64_t> rendered;
     for (const auto* n : thoughts) rendered.insert(n->id);
+    std::unordered_set<std::uint64_t> in_tension =
+        mode.no_charge ? std::unordered_set<std::uint64_t>{}
+                       : collect_tension_node_ids(beliefs_);
 
-    // Tension adjacency from typed edges -- the contradictions kept live.
-    std::unordered_set<std::uint64_t> in_tension;
-    if (!no_charge) {
-        for (const auto& e : beliefs_.all_edges()) {
-            if (e.data.kind != "tension") continue;
-            in_tension.insert(e.from_id);
-            in_tension.insert(e.to_id);
-        }
-    }
-
-    // Group Thoughts into chains by subject (first entity, or "(myself)").
-    std::unordered_map<std::string, std::vector<const Node*>> chains;
-    for (const auto* n : thoughts) {
-        std::string key = n->entities.empty() ? std::string("(myself)")
-                                              : n->entities.front();
-        chains[key].push_back(n);
-    }
-
-    struct Chain { std::string subject; std::vector<const Node*> nodes; float peak; };
-    std::vector<Chain> ordered;
-    ordered.reserve(chains.size());
-    for (auto& [subj, ns] : chains) {
-        std::sort(ns.begin(), ns.end(),
-                  [](const Node* a, const Node* b) { return a->created_at < b->created_at; });
-        float peak = 0.0f;
-        for (const auto* n : ns) peak = std::max(peak, n->weight);
-        ordered.push_back({subj, std::move(ns), peak});
-    }
-    if (no_charge)
-        // Control arm: most-recently-formed chains lead, weight ignored.
-        std::sort(ordered.begin(), ordered.end(),
-                  [](const Chain& a, const Chain& b) {
-                      return a.nodes.back()->created_at > b.nodes.back()->created_at;
-                  });
-    else
-        // Most-pressing chains lead.
-        std::sort(ordered.begin(), ordered.end(),
-                  [](const Chain& a, const Chain& b) { return a.peak > b.peak; });
-
-    auto short_fact = [](const std::string& f) -> std::string {
-        if (f.size() <= 80) return f;
-        return truncate_utf8(f, 77) + "...";
-    };
+    auto ordered = group_and_order_thought_chains(thoughts, mode.no_charge);
 
     std::ostringstream os;
-    for (const auto& c : ordered) {
-        os << "About " << c.subject;
-        if (!no_charge && c.peak > 0.0f)
-            os << "  [pressing ~" << std::lround(c.peak) << "/10]";
-        os << ":\n";
-        for (const auto* n : c.nodes) {
-            os << "   - " << n->fact;
-            if (!no_charge) {
-                os << "  (w" << std::lround(n->weight) << ")";
-                if (in_tension.count(n->id)) os << "  [in tension]";
-            }
-            os << "\n";
-        }
-    }
-
-    if (no_charge) return sanitize_utf8(os.str());
-
-    // Explicit cross-links so the narrator sees exactly which Thoughts collide.
-    bool header = false;
-    std::unordered_set<std::string> seen;
-    for (const auto& e : beliefs_.all_edges()) {
-        if (e.data.kind != "tension") continue;
-        if (!rendered.count(e.from_id) && !rendered.count(e.to_id)) continue;
-        const std::uint64_t a = std::min(e.from_id, e.to_id);
-        const std::uint64_t b = std::max(e.from_id, e.to_id);
-        if (!seen.insert(std::to_string(a) + "-" + std::to_string(b)).second) continue;
-        const Node* na = beliefs_.get_node(e.from_id);
-        const Node* nb = beliefs_.get_node(e.to_id);
-        if (!na || !nb) continue;
-        if (!header) { os << "Tensions (held, not resolved):\n"; header = true; }
-        os << "   * \"" << short_fact(na->fact) << "\" <-> \""
-           << short_fact(nb->fact) << "\"\n";
-    }
+    append_thought_chains(os, ordered, mode, in_tension);
+    if (!mode.no_charge)
+        append_tension_crosslinks(os, beliefs_, rendered);
 
     return sanitize_utf8(os.str());
-}
-
-std::string CharacterMemory::build_prompt__interior_thoughts(
-    const std::vector<std::string>& subjects, int turn) const
-{
-    std::string block;
-    const std::string thoughts = render_thoughts(subjects);
-    if (!thoughts.empty()) {
-        block += "  Interior (live thoughts; weight = how much it presses, "
-                  "tension = a contradiction held unresolved):\n";
-        block += thoughts;
-    }
-
-    if (std::getenv("RHAPSODE_EXP_SURFACING")) {
-        const unsigned seed =
-            static_cast<unsigned>(std::hash<std::string>{}(char_name_)) ^
-            static_cast<unsigned>(turn);
-        if (std::string p = pressing_thought(seed); !p.empty())
-            block += "  Pressing today: " + p + "\n";
-    }
-    if (std::getenv("RHAPSODE_EXP_CRISIS")) {
-        if (std::string c = charge_state(); !c.empty())
-            block += "  Charge: " + c + "\n";
-    }
-    return block;
 }
 
 std::string CharacterMemory::view_of(const std::vector<std::string>& subjects) const {
@@ -253,12 +264,7 @@ std::string CharacterMemory::pressing_thought(unsigned seed) const {
 }
 
 std::string CharacterMemory::charge_state() const {
-    std::unordered_set<std::uint64_t> in_tension;
-    for (const auto& e : beliefs_.all_edges())
-        if (e.data.kind == "tension") {
-            in_tension.insert(e.from_id);
-            in_tension.insert(e.to_id);
-        }
+    const auto in_tension = collect_tension_node_ids(beliefs_);
 
     const Node* top = nullptr;
     beliefs_.for_each([&](const Node& n) {
@@ -286,29 +292,54 @@ void CharacterMemory::route_fact(const std::string& fact,
     beliefs_.add_node_chained(std::move(n), turn);
 }
 
-void CharacterMemory::reflect_perceptions(int turn) {
-    if (!reflection_llm_cb_) {
-        log() << "  [char_mem:" << char_name_
-              << "] reflect skip: no reflection LLM callback\n" << std::flush;
-        return;
-    }
+namespace {
 
-    // Gather unreflected perceptions (live "perception" nodes), grouped by subject.
-    struct Perc { std::uint64_t id; std::string fact; std::vector<std::string> entities; };
+// -- reflect_perceptions helpers ----------------------------------------------
+// One batched LLM call per character forms a Thought per subject, rates its
+// felt-pressure, and classifies its relation to priors.  These helpers keep
+// perceptions and buckets aligned by index through prompt -> parse -> apply.
+
+struct Perc {
+    std::uint64_t id;
+    std::string fact;
+    std::vector<std::string> entities;
+};
+
+struct ReflectionBucket {
+    std::string subject;
+    std::vector<std::uint64_t> prior_ids;      // live beliefs about this subject
+    std::string prior_text;
+    std::vector<std::size_t> perception_idxs;  // perceptions routed to this subject
+};
+
+struct ParsedThought {
+    std::size_t bucket_idx;
+    std::string belief;
+    int weight;
+    std::string kind;  // "tension" or "evidence"
+};
+
+struct WeightTuning {
+    int   touch_hops = 3;
+    float weight_cap = 10.0f;
+    float reinforce  = 1.0f;
+    float decay      = 0.9f;
+    float cull_floor = 0.05f;
+};
+
+std::vector<Perc> gather_unreflected_perceptions(const WorldGraph& beliefs) {
     std::vector<Perc> perceptions;
-    beliefs_.for_each([&](const Node& n) {
+    beliefs.for_each([&](const Node& n) {
         if (n.type == "perception" && n.state == NodeState::Active)
             perceptions.push_back({n.id, n.fact, n.entities});
     }, false);
-    if (perceptions.empty()) {
-        log() << "  [char_mem:" << char_name_
-              << "] reflect skip: no new perceptions\n" << std::flush;
-        return;
-    }
+    return perceptions;
+}
 
-    // Subject -> indices of the perceptions about it.  Entity-less perceptions
-    // fold under a synthetic "(world)" subject so general news still becomes
-    // belief.  Indices (not just facts) so the belief can link to its evidence.
+// Entity-less perceptions fold under a synthetic "(world)" subject so general
+// news still becomes belief.
+std::unordered_map<std::string, std::vector<std::size_t>>
+group_perceptions_by_subject(const std::vector<Perc>& perceptions) {
     std::unordered_map<std::string, std::vector<std::size_t>> by_subject;
     for (std::size_t i = 0; i < perceptions.size(); ++i) {
         const auto& p = perceptions[i];
@@ -318,37 +349,24 @@ void CharacterMemory::reflect_perceptions(int turn) {
             for (const auto& e : p.entities) by_subject[e].push_back(i);
         }
     }
+    return by_subject;
+}
 
-    // -- Reinforce-vs-decay tuning (the design's central knob). --
-    constexpr int   kTouchHops  = 3;      // neighborhood a new Thought reinforces
-    constexpr float kWeightCap  = 10.0f;  // ceiling on a Thought's pressure
-    constexpr float kReinforce  = 1.0f;   // added to each touched neighbor
-    constexpr float kDecay      = 0.9f;   // multiplied into untouched Thoughts
-    constexpr float kCullFloor  = 0.05f;  // below this a Thought leaves the live pool
-
-    // -- Batched reflection: ONE LLM call per character. --
-    // Build a bucket per subject (its live priors + the perceptions just routed
-    // about it), hand the whole set to the model in a single prompt, and read
-    // back one thought per subject carrying its felt-pressure weight and its
-    // relation to priors.  This collapses the old per-subject fan-out of 2-3
-    // round-trips (form-thought + score_importance + classify_relation) into a
-    // single call -- the dominant cost in the reflection pass.
-    struct Bucket {
-        std::string subject;
-        std::vector<std::uint64_t> prior_ids;   // live beliefs about this subject
-        std::string prior_text;
-        std::vector<std::size_t> idxs;          // perceptions about this subject
-    };
-    std::vector<Bucket> buckets;
+// Prior Thoughts about each subject are NEVER superseded: contradictory
+// Thoughts coexist and are kept as tension.
+std::vector<ReflectionBucket> build_reflection_buckets(
+    const WorldGraph& beliefs,
+    const std::vector<Perc>& perceptions,
+    const std::unordered_map<std::string, std::vector<std::size_t>>& by_subject)
+{
+    std::vector<ReflectionBucket> buckets;
     buckets.reserve(by_subject.size());
     for (const auto& [subject, idxs] : by_subject) {
-        Bucket b;
-        b.subject = subject;
-        b.idxs    = idxs;
-        // My prior Thoughts about this subject (live "belief" nodes).  We NEVER
-        // supersede them: contradictory Thoughts coexist and are kept as tension.
+        ReflectionBucket b;
+        b.subject           = subject;
+        b.perception_idxs   = idxs;
         const std::string subj_lower = str::to_lower(subject);
-        beliefs_.for_each([&](const Node& n) {
+        beliefs.for_each([&](const Node& n) {
             if (n.type != "belief" || n.state != NodeState::Active) return;
             for (const auto& e : n.entities) {
                 if (entity_matches(str::to_lower(e), subj_lower)) {
@@ -360,13 +378,18 @@ void CharacterMemory::reflect_perceptions(int turn) {
         }, false);
         buckets.push_back(std::move(b));
     }
+    return buckets;
+}
 
-    // One prompt enumerating every subject; the model returns a JSON object with
-    // one entry per subject id.  Forming the Thought, rating its pressure, and
-    // classifying its relation to priors all happen here at once.
+std::string build_reflection_prompt(
+    const std::string& char_name,
+    const std::string& description,
+    const std::vector<ReflectionBucket>& buckets,
+    const std::vector<Perc>& perceptions)
+{
     std::string prompt =
-        "You are " + char_name_ + ".\n"
-        + persona_line() +
+        "You are " + char_name + ".\n"
+        + (description.empty() ? std::string() : "Who I am: " + description + "\n") +
         "I have just perceived new things about several subjects. For EACH "
         "subject below, in ONE terse first-person sentence -- how I would "
         "actually think it, not prose -- say what this now makes me think or "
@@ -382,7 +405,7 @@ void CharacterMemory::reflect_perceptions(int turn) {
         else
             prompt += "  What I already think:\n" + buckets[bi].prior_text;
         prompt += "  What I just perceived:\n";
-        for (auto i : buckets[bi].idxs)
+        for (auto i : buckets[bi].perception_idxs)
             prompt += "  - " + perceptions[i].fact + "\n";
     }
     prompt +=
@@ -391,6 +414,139 @@ void CharacterMemory::reflect_perceptions(int turn) {
         "{\"thoughts\":[{\"id\":0,\"thought\":\"...\",\"weight\":7,"
         "\"relation\":\"tension\"}]}\n"
         "Use only straight ASCII double quotes.";
+    return prompt;
+}
+
+std::vector<ParsedThought> parse_reflection_response(
+    const std::string& raw, std::size_t bucket_count)
+{
+    std::vector<ParsedThought> thoughts;
+    const nlohmann::json parsed = try_parse_json(raw);
+    const auto it = parsed.find("thoughts");
+    if (it == parsed.end() || !it->is_array())
+        return thoughts;
+    for (const auto& t : *it) {
+        if (!t.is_object()) continue;
+        const std::size_t bi = static_cast<std::size_t>(
+            json_number<int>(t, "id", -1));
+        if (bi >= bucket_count) continue;
+        std::string belief =
+            strip_echoed_label(sanitize_utf8(t.value("thought", "")));
+        if (belief.empty()) continue;
+        const int w = std::clamp(json_number<int>(t, "weight", 5), 1, 10);
+        const std::string rel = str::to_lower(t.value("relation", "evidence"));
+        const std::string kind =
+            (rel.find("tension") != std::string::npos ||
+             rel.find("contradict") != std::string::npos)
+                ? "tension" : "evidence";
+        thoughts.push_back({bi, std::move(belief), w, kind});
+    }
+    return thoughts;
+}
+
+// Creates belief nodes + tension/evidence edges to priors and perceptions.
+std::vector<std::uint64_t> apply_reflection_thoughts(
+    WorldGraph& beliefs,
+    int turn,
+    const std::vector<ReflectionBucket>& buckets,
+    const std::vector<Perc>& perceptions,
+    const std::vector<ParsedThought>& thoughts)
+{
+    std::vector<std::uint64_t> new_ids;
+    for (const auto& th : thoughts) {
+        const ReflectionBucket& bk = buckets[th.bucket_idx];
+        Node nb;
+        nb.fact        = sanitize_utf8(th.belief);
+        nb.type        = "belief";
+        nb.state       = NodeState::Active;
+        nb.entities    = (bk.subject == "(world)")
+                             ? std::vector<std::string>{}
+                             : std::vector<std::string>{bk.subject};
+        nb.created_at  = turn;
+        nb.valid_until = -1;
+        nb.weight      = static_cast<float>(th.weight);
+        Node& ref = beliefs.add_node(std::move(nb));
+        const std::uint64_t new_id = ref.id;
+        new_ids.push_back(new_id);
+
+        for (auto pid : bk.prior_ids)
+            beliefs.add_relation(new_id, pid, 1.0f, turn, th.kind);
+        for (auto i : bk.perception_idxs)
+            beliefs.add_relation(new_id, perceptions[i].id, 1.0f, turn, "evidence");
+    }
+    return new_ids;
+}
+
+// Mark consolidated perceptions as no longer live (kept as history, not
+// re-reflected next turn).
+void consolidate_perceptions(WorldGraph& beliefs,
+                             const std::vector<Perc>& perceptions,
+                             int turn)
+{
+    for (const auto& p : perceptions)
+        beliefs.set_valid_until(p.id, turn);
+}
+
+// Weight lives by reinforce-vs-decay (the only writer of Thought weight).
+// Each new Thought touches its local neighborhood and reinforces it; Thoughts
+// left untouched this pass decay.  Below the cull floor a Thought is retired
+// from the live pool.  Returns the cull count.
+int apply_reinforce_decay(WorldGraph& beliefs, int turn,
+                          const std::vector<std::uint64_t>& new_thought_ids,
+                          const WeightTuning& tuning,
+                          const std::string& char_name)
+{
+    std::unordered_set<std::uint64_t> touched;
+    for (auto nid : new_thought_ids) {
+        touched.insert(nid);
+        for (auto nb_id : beliefs.neighbors_within(nid, tuning.touch_hops)) {
+            touched.insert(nb_id);
+            Node* n = beliefs.get_node(nb_id);
+            if (n && n->type == "belief")
+                n->weight = std::min(tuning.weight_cap, n->weight + tuning.reinforce);
+        }
+    }
+    std::vector<std::uint64_t> live_thoughts;
+    beliefs.for_each([&](const Node& n) {
+        if (n.type == "belief" && n.state == NodeState::Active)
+            live_thoughts.push_back(n.id);
+    }, false);
+    int culled = 0;
+    for (auto bid : live_thoughts) {
+        if (touched.count(bid)) continue;
+        Node* n = beliefs.get_node(bid);
+        if (!n) continue;
+        n->weight *= tuning.decay;
+        if (n->weight < tuning.cull_floor) {
+            beliefs.set_valid_until(bid, turn);
+            ++culled;
+            log() << "  [char_mem:" << char_name << "] culled #" << bid
+                  << " (w=" << n->weight << "): " << n->fact << "\n";
+        }
+    }
+    return culled;
+}
+
+}  // namespace
+
+void CharacterMemory::reflect_perceptions(int turn, const std::string& description) {
+    if (!reflection_llm_cb_) {
+        log() << "  [char_mem:" << char_name_
+              << "] reflect skip: no reflection LLM callback\n" << std::flush;
+        return;
+    }
+
+    auto perceptions = gather_unreflected_perceptions(beliefs_);
+    if (perceptions.empty()) {
+        log() << "  [char_mem:" << char_name_
+              << "] reflect skip: no new perceptions\n" << std::flush;
+        return;
+    }
+
+    auto by_subject = group_perceptions_by_subject(perceptions);
+    auto buckets    = build_reflection_buckets(beliefs_, perceptions, by_subject);
+    auto prompt     = build_reflection_prompt(
+        char_name_, description, buckets, perceptions);
 
     std::string raw;
     try {
@@ -403,96 +559,14 @@ void CharacterMemory::reflect_perceptions(int turn) {
 
     std::vector<std::uint64_t> new_thought_ids;
     if (!raw.empty()) {
-        const nlohmann::json parsed = try_parse_json(raw);
-        const auto it = parsed.find("thoughts");
-        if (it != parsed.end() && it->is_array()) {
-            for (const auto& t : *it) {
-                if (!t.is_object()) continue;
-                const std::size_t bi = static_cast<std::size_t>(
-                    json_number<int>(t, "id", -1));
-                if (bi >= buckets.size()) continue;
-
-                std::string belief =
-                    strip_echoed_label(sanitize_utf8(t.value("thought", "")));
-                if (belief.empty()) continue;
-
-                const int w = std::clamp(json_number<int>(t, "weight", 5), 1, 10);
-                const std::string rel = str::to_lower(t.value("relation", "evidence"));
-                const std::string kind =
-                    (rel.find("tension") != std::string::npos ||
-                     rel.find("contradict") != std::string::npos)
-                        ? "tension" : "evidence";
-
-                const Bucket& bk = buckets[bi];
-                Node nb;
-                nb.fact        = sanitize_utf8(belief);
-                nb.type        = "belief";
-                nb.state       = NodeState::Active;
-                nb.entities    = (bk.subject == "(world)")
-                                     ? std::vector<std::string>{}
-                                     : std::vector<std::string>{bk.subject};
-                nb.created_at  = turn;
-                nb.valid_until = -1;
-                nb.weight      = static_cast<float>(w);
-                Node& ref = beliefs_.add_node(std::move(nb));
-                const std::uint64_t new_id = ref.id;
-                new_thought_ids.push_back(new_id);
-
-                // Relate to priors WITHOUT collapsing: tension (contradict) or
-                // evidence (extend).  Both Thoughts stay live.
-                for (auto pid : bk.prior_ids)
-                    beliefs_.add_relation(new_id, pid, 1.0f, turn, kind);
-                // Evidence: link the Thought to the perceptions it came from.
-                for (auto i : bk.idxs)
-                    beliefs_.add_relation(new_id, perceptions[i].id, 1.0f, turn,
-                                          "evidence");
-            }
-        }
+        auto thoughts = parse_reflection_response(raw, buckets.size());
+        new_thought_ids = apply_reflection_thoughts(
+            beliefs_, turn, buckets, perceptions, thoughts);
     }
 
-    // Mark consolidated perceptions as no longer live (kept as history, not
-    // re-reflected next turn).
-    for (const auto& p : perceptions)
-        beliefs_.set_valid_until(p.id, turn);
-
-    // -- Weight lives by reinforce-vs-decay (the only writer of Thought weight).
-    //    Each new Thought touches its local neighborhood (a few hops) and
-    //    reinforces it; Thoughts left untouched this pass decay.  A foundational
-    //    Thought stays charged while related material keeps touching it, and an
-    //    external contradiction that links into a withheld Thought's neighborhood
-    //    raises its pressure for free. --
-    std::unordered_set<std::uint64_t> touched;
-    for (auto nid : new_thought_ids) {
-        touched.insert(nid);
-        for (auto nb_id : beliefs_.neighbors_within(nid, kTouchHops)) {
-            touched.insert(nb_id);
-            Node* n = beliefs_.get_node(nb_id);
-            if (n && n->type == "belief")
-                n->weight = std::min(kWeightCap, n->weight + kReinforce);
-        }
-    }
-    std::vector<std::uint64_t> live_thoughts;
-    beliefs_.for_each([&](const Node& n) {
-        if (n.type == "belief" && n.state == NodeState::Active)
-            live_thoughts.push_back(n.id);
-    }, false);
-    int culled = 0;
-    for (auto bid : live_thoughts) {
-        if (touched.count(bid)) continue;
-        Node* n = beliefs_.get_node(bid);
-        if (!n) continue;
-        n->weight *= kDecay;
-        // Decay alone never pruned: a faded Thought stayed Active forever,
-        // inflating the prior-gather scan and the rendered interior over a long
-        // scene.  Once pressure decays below the floor, retire it from the live
-        // pool (set_valid_until -- the same mechanism that consumes perceptions).
-        if (n->weight < kCullFloor) {
-            beliefs_.set_valid_until(bid, turn);
-            ++culled;
-            log() << "  [char_mem:" << char_name_ << "] culled #" << bid
-                  << " (w=" << n->weight << "): " << n->fact << "\n";
-        }
-    }
+    consolidate_perceptions(beliefs_, perceptions, turn);
+    int culled = apply_reinforce_decay(
+        beliefs_, turn, new_thought_ids, WeightTuning{}, char_name_);
 
     log() << "  [char_mem:" << char_name_ << "] reflected "
           << perceptions.size() << " perception(s) into "

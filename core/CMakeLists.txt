@@ -16,7 +16,6 @@ add_library(rhapsode STATIC
     include/rhapsode/scene_message.h
     include/rhapsode/str_util.h
     include/rhapsode/text_downsampler.h
-    include/rhapsode/validator.h
     include/rhapsode/weaver.h
     include/rhapsode/world_graph.h
     src/annotator.cpp
@@ -32,7 +31,6 @@ add_library(rhapsode STATIC
     src/node.cpp
     src/director.cpp
     src/memory_system.cpp
-    src/validator.cpp
     src/weaver.cpp
     src/world_graph.cpp
 )

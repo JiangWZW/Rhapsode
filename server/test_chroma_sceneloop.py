@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import chromadb
 from rhapsode._core import (
     Director, MemorySystem, Scene, SceneLoop,
-    Validator, Weaver,
+    Weaver,
 )
 from rhapsode.memory import (
     register_callbacks,
@@ -86,11 +86,6 @@ print("Character memories initialized")
 
 # --- Wire up SceneLoop exactly as _wire_loop does ---
 director = Director(scene.world_graph)
-validator = Validator(scene.world_graph)
-validator.set_llm_callback(make_local_llm_callback())
-validator.set_search_callback(lambda q, k: memory.search_nodes(q, k))
-validator.set_dead_check(lambda: [c.name for c in scene.characters if c.dead])
-director.set_validator(validator)
 
 weaver = Weaver(scene.world_graph)
 weaver.set_llm_callback(stub_llm)  # use stub for weaver too

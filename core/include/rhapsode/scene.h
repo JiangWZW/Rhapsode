@@ -44,16 +44,23 @@ public:
     std::vector<DeathCandidate> scan_death_candidates();
 
     /// Entity names/descriptions an on-stage NPC's mind may view this turn.
-    std::vector<std::string> thought_subjects_for(const Character& observer) const;
-
     /// Prompt text: `### Cast` section lines (header + per-NPC lines). Empty if none.
     std::vector<std::string> build_prompt__cast() const;
 
-    /// Prompt text: full `### Inner lives` section. Empty if none.
-    std::string build_prompt__inner_lives(int turn) const;
-
     /// Chronological merge of history + dialogue for UI replay (optional tail cap).
     std::vector<SceneMessage> display_timeline(std::optional<size_t> cap = std::nullopt) const;
+
+    // -- Narrator tool-use queries (called from Python during tool-use loop) --
+    /// Search world graph by entity name or free text. Returns entity-timeline
+    /// chains (for entity matches) or matching nodes with chain predecessors
+    /// (for text matches), as a JSON string.
+    std::string tool_query_graph(const std::string& query) const;
+
+    /// Get a character's thoughts, beliefs, and dialogue voice as JSON.
+    std::string tool_query_mind(const std::string& character) const;
+
+    /// Search raw history by keyword. Returns matching snippets as JSON.
+    std::string tool_query_history(const std::string& query) const;
 
     // -- Undo --
     int revert_turns(int n);

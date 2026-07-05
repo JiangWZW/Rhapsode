@@ -6,8 +6,8 @@ import os
 import pathlib
 import re
 import subprocess
-import sys
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -15,9 +15,9 @@ from fastapi.responses import Response
 
 from rhapsode._core import (
     Annotator, Director, MemorySystem, Scene, SceneLoop, SceneMessage,
-    Validator, Weaver, analyze_graph,
+    Weaver, analyze_graph,
 )
-from rhapsode.llm import complete
+from rhapsode.llm import complete, complete_with_tools
 from rhapsode.memory import register_callbacks, warmup_model
 from rhapsode.fable import make_ner_callback, warmup_fable
 from rhapsode.validator import make_local_llm_callback
@@ -91,11 +91,87 @@ def _call_llm(prompt: str) -> str:
     return complete([{"role": "user", "parts": [{"text": prompt}]}])
 
 
-def _call_narrator_llm(instructions: str, turn_state: str) -> str:
-    return complete([
-        {"role": "system", "parts": [{"text": instructions}]},
-        {"role": "user", "parts": [{"text": turn_state}]},
-    ])
+# -- Narrator tool-use infrastructure ------------------------------------------
+
+NARRATOR_TOOLS = [
+    {
+        "name": "query_graph",
+        "description": (
+            "Search the world graph by entity name or free text. For entity matches, "
+            "returns the full entity-timeline chain (chronologically ordered nodes with "
+            "valid_until annotations: -1 = still true, N = was true until turn N). "
+            "For text matches, returns matching nodes with their chain predecessors. "
+            "Use entity names like 'Player', 'Aqua' to trace an entity's history."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Entity name (exact match, e.g. 'Player') or free-text search",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "query_mind",
+        "description": (
+            "Get a character's current thoughts, beliefs, emotional state, "
+            "and dialogue voice."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "character": {
+                    "type": "string",
+                    "description": "Character name",
+                },
+            },
+            "required": ["character"],
+        },
+    },
+    {
+        "name": "query_history",
+        "description": "Search past conversation history for relevant events by keyword.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "What to search for",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+]
+
+
+def _make_tool_dispatcher(scene: Scene):
+    """Create a tool dispatcher that calls C++ Scene methods via pybind11."""
+    def dispatch(name: str, args: dict) -> str:
+        if name == "query_graph":
+            return scene.tool_query_graph(args.get("query", ""))
+        elif name == "query_mind":
+            return scene.tool_query_mind(args.get("character", ""))
+        elif name == "query_history":
+            return scene.tool_query_history(args.get("query", ""))
+        return json.dumps({"error": f"unknown tool: {name}"})
+    return dispatch
+
+
+def _make_narrator_callback(scene: Scene):
+    """Create a narrator callback that uses the tool-use loop."""
+    dispatcher = _make_tool_dispatcher(scene)
+
+    def _call_narrator_llm(instructions: str, turn_state: str) -> str:
+        messages = [
+            {"role": "system", "parts": [{"text": instructions}]},
+            {"role": "user", "parts": [{"text": turn_state}]},
+        ]
+        return complete_with_tools(messages, NARRATOR_TOOLS, dispatcher)
+    return _call_narrator_llm
 
 
 def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
@@ -106,7 +182,7 @@ def _wire_loop(scene: Scene, director: Director, memory: MemorySystem,
 
     scene.downsampler.set_llm_callback(make_local_llm_callback(repair_json=False))
 
-    loop.set_narrator_llm_callback(_call_narrator_llm)
+    loop.set_narrator_llm_callback(_make_narrator_callback(scene))
     loop.set_llm_callback(_call_llm)
     if weaver:
         loop.set_weaver(weaver)
@@ -152,7 +228,15 @@ def graph_svg():
     scene = _load_saved_scene()
     if scene is None:
         return Response("no active scene", media_type="text/plain", status_code=404)
-    dot = scene.world_graph.to_dot()
+    return _dot_to_svg_response(scene.world_graph.to_dot())
+
+
+def _dot_to_svg_string(dot: str) -> tuple[bool, str]:
+    """Render a Graphviz dot string to an SVG string.
+
+    Returns (success, result): on success result is the SVG string; on failure
+    result is an error message.
+    """
     try:
         proc = subprocess.run(
             ["dot", "-Tsvg"],
@@ -162,35 +246,18 @@ def graph_svg():
         )
         if proc.returncode != 0:
             detail = proc.stderr.decode(errors="replace")
-            return Response(f"dot failed: {detail}", media_type="text/plain", status_code=500)
-        return Response(proc.stdout, media_type="image/svg+xml")
+            return False, f"dot failed: {detail}"
+        return True, proc.stdout.decode("utf-8", errors="replace")
     except FileNotFoundError:
-        return Response(
-            "Graphviz 'dot' not found. Install: winget install Graphviz",
-            media_type="text/plain",
-            status_code=500,
-        )
+        return False, "Graphviz 'dot' not found. Install: winget install Graphviz"
 
 
 def _dot_to_svg_response(dot: str) -> Response:
     """Render a Graphviz dot string to an SVG Response (shared by graph endpoints)."""
-    try:
-        proc = subprocess.run(
-            ["dot", "-Tsvg"],
-            input=dot.encode("utf-8"),
-            capture_output=True,
-            timeout=10,
-        )
-        if proc.returncode != 0:
-            detail = proc.stderr.decode(errors="replace")
-            return Response(f"dot failed: {detail}", media_type="text/plain", status_code=500)
-        return Response(proc.stdout, media_type="image/svg+xml")
-    except FileNotFoundError:
-        return Response(
-            "Graphviz 'dot' not found. Install: winget install Graphviz",
-            media_type="text/plain",
-            status_code=500,
-        )
+    ok, result = _dot_to_svg_string(dot)
+    if not ok:
+        return Response(result, media_type="text/plain", status_code=500)
+    return Response(result.encode("utf-8"), media_type="image/svg+xml")
 
 
 def _safe_render_thoughts(mem) -> str:
@@ -283,18 +350,14 @@ def minds_endpoint():
             )
             continue
         try:
-            proc = subprocess.run(
-                ["dot", "-Tsvg"], input=dot.encode("utf-8"),
-                capture_output=True, timeout=10,
-            )
-            if proc.returncode == 0:
-                svg = proc.stdout.decode("utf-8", errors="replace")
+            ok, svg = _dot_to_svg_string(dot)
+            if ok:
                 idx = svg.find("<svg")
                 svg = svg[idx:] if idx >= 0 else svg
             else:
-                svg = f"<pre>dot failed: {html.escape(proc.stderr.decode(errors='replace'))}</pre>"
-        except FileNotFoundError:
-            svg = "<pre>Graphviz 'dot' not found. Install: winget install Graphviz</pre>"
+                svg = f"<pre>{html.escape(svg)}</pre>"
+        except Exception as exc:  # noqa: BLE001 -- one bad mind must not 500 the page
+            svg = f"<pre>belief graph unavailable: {html.escape(str(exc))}</pre>"
         state = _safe_render_thoughts(mem)
         parts.append(
             f"<div class='mind'><h2>{html.escape(name)}</h2>"
@@ -339,10 +402,18 @@ def weave_endpoint():
     }
 
 
-@app.websocket("/ws")
-async def ws_endpoint(ws: WebSocket):
-    await ws.accept()
+@dataclass
+class WsSession:
+    scene: Scene
+    memory: MemorySystem
+    director: Director
+    weaver: Weaver
+    annotator: Annotator
+    loop: SceneLoop
+    is_resuming: bool
 
+
+def _setup_ws_session() -> WsSession:
     scene = Scene.load_json(str(SCENARIO_PATH))
     memory = _init_memory(scene.scene_id)
     scene.set_memory(memory)
@@ -370,12 +441,6 @@ async def ws_endpoint(ws: WebSocket):
 
     director = Director(scene.world_graph)
 
-    validator = Validator(scene.world_graph)
-    validator.set_llm_callback(make_local_llm_callback())
-    validator.set_search_callback(lambda q, k: memory.search_nodes(q, k))
-    validator.set_dead_check(lambda: [c.name for c in scene.characters if c.dead])
-    director.set_validator(validator)
-
     weaver = Weaver(scene.world_graph)
     weaver.set_llm_callback(_call_llm)
     weaver.set_local_llm_callback(make_local_llm_callback())
@@ -387,7 +452,78 @@ async def ws_endpoint(ws: WebSocket):
     if is_resuming:
         loop.set_resuming(True)
 
-    await _send_seed_messages(ws, scene, is_resuming)
+    return WsSession(scene=scene, memory=memory, director=director,
+                     weaver=weaver, annotator=annotator, loop=loop,
+                     is_resuming=is_resuming)
+
+
+def _rewire_loop(session: WsSession, *, resuming: bool = False) -> None:
+    session.loop = _wire_loop(session.scene, session.director, session.memory,
+                              session.weaver)
+    if resuming:
+        session.loop.set_resuming(True)
+
+
+async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
+    loop = session.loop
+    scene = session.scene
+    await asyncio.get_event_loop().run_in_executor(None, loop.join_background)
+    reverted = scene.revert_turns(n)
+    log.info("/undo %d -> reverted %d turns, now at turn %d",
+             n, reverted, scene.turn_index)
+    scene.save(SAVES_DIR)
+    _rewire_loop(session, resuming=True)
+    await ws.send_json({"type": "undo", "turns_reverted": reverted,
+                        "turn_index": scene.turn_index})
+    await _send_seed_messages(ws, scene, is_resuming=True)
+    await ws.send_json({"type": "status", "state": "idle"})
+
+
+def _sync_post_turn(scene: Scene, memory: MemorySystem, loop: SceneLoop) -> None:
+    try:
+        expiry_ops = loop.take_completed_expiry_ops()
+        if expiry_ops:
+            nodes = [scene.world_graph.get_node(op.id) for op in expiry_ops]
+            nodes = [n for n in nodes if n is not None]
+            if nodes:
+                memory.sync_expired(nodes)
+                log.info("  [expiry] synced %d superseded fact(s)", len(nodes))
+    except Exception:
+        log.exception("Expiry sync failed")
+
+    try:
+        output = loop.last_director_output()
+        if output.new_nodes:
+            memory.process_new_nodes(output.new_nodes, scene.turn_index)
+        if output.newly_expired:
+            memory.sync_expired(output.newly_expired)
+    except Exception:
+        log.exception("Post-generation pipeline failed")
+
+
+async def _stream_turn_outputs(ws: WebSocket, annotator: Annotator,
+                               loop: SceneLoop) -> None:
+    for chunk in loop.take_last_turn_outputs():
+        payload = _scene_ws_payload(chunk)
+        if payload.get("scene_kind") == "narrator":
+            try:
+                spans = annotator.annotate(chunk.content)
+                payload["entities"] = [
+                    {"start": s.start, "end": s.end_,
+                     "text": s.text, "category": s.category}
+                    for s in spans
+                ]
+            except Exception:
+                log.exception("Entity annotation failed")
+        await ws.send_json(payload)
+
+
+@app.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    await ws.accept()
+
+    session = _setup_ws_session()
+    await _send_seed_messages(ws, session.scene, session.is_resuming)
 
     try:
         while True:
@@ -399,70 +535,26 @@ async def ws_endpoint(ws: WebSocket):
             undo_match = re.match(r"^/undo(?:\s+(\d+))?$", text.strip())
             if undo_match:
                 n = int(undo_match.group(1) or "1")
-                await asyncio.get_event_loop().run_in_executor(
-                    None, loop.join_background)
-                reverted = scene.revert_turns(n)
-                log.info("/undo %d -> reverted %d turns, now at turn %d",
-                         n, reverted, scene.turn_index)
-                scene.save(SAVES_DIR)
-                loop = _wire_loop(scene, director, memory, weaver)
-                loop.set_resuming(True)
-                await ws.send_json({"type": "undo", "turns_reverted": reverted,
-                                    "turn_index": scene.turn_index})
-                await _send_seed_messages(ws, scene, is_resuming=True)
-                await ws.send_json({"type": "status", "state": "idle"})
+                await _handle_undo(ws, session, n)
                 continue
 
             await ws.send_json({"type": "status", "state": "processing"})
 
             try:
-                await asyncio.get_event_loop().run_in_executor(None, loop.submit_input, text)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, session.loop.submit_input, text)
             except Exception as exc:
                 log.exception("Turn failed")
                 await ws.send_json({"type": "error", "detail": str(exc)})
                 await ws.send_json({"type": "status", "state": "idle"})
                 await asyncio.get_event_loop().run_in_executor(
-                    None, loop.join_background)
-                loop = _wire_loop(scene, director, memory, weaver)
+                    None, session.loop.join_background)
+                _rewire_loop(session)
                 continue
 
-            try:
-                expiry_ops = loop.take_completed_expiry_ops()
-                if expiry_ops:
-                    nodes = [scene.world_graph.get_node(op.id)
-                             for op in expiry_ops]
-                    nodes = [n for n in nodes if n is not None]
-                    if nodes:
-                        memory.sync_expired(nodes)
-                        log.info("  [expiry] synced %d superseded fact(s)",
-                                 len(nodes))
-            except Exception:
-                log.exception("Expiry sync failed")
-
-            try:
-                output = loop.last_director_output()
-                if output.new_nodes:
-                    memory.process_new_nodes(output.new_nodes, scene.turn_index)
-                if output.newly_expired:
-                    memory.sync_expired(output.newly_expired)
-            except Exception:
-                log.exception("Post-generation pipeline failed")
-
-            for chunk in loop.take_last_turn_outputs():
-                payload = _scene_ws_payload(chunk)
-                if payload.get("scene_kind") == "narrator":
-                    try:
-                        spans = annotator.annotate(chunk.content)
-                        payload["entities"] = [
-                            {"start": s.start, "end": s.end_,
-                             "text": s.text, "category": s.category}
-                            for s in spans
-                        ]
-                    except Exception:
-                        log.exception("Entity annotation failed")
-                await ws.send_json(payload)
-
+            _sync_post_turn(session.scene, session.memory, session.loop)
+            await _stream_turn_outputs(ws, session.annotator, session.loop)
             await ws.send_json({"type": "status", "state": "idle"})
 
     except WebSocketDisconnect:
-        loop.join_background()
+        session.loop.join_background()

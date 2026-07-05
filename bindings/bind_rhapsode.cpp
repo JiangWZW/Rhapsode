@@ -12,7 +12,6 @@
 #include "rhapsode/memory_system.h"
 #include "rhapsode/character_memory.h"
 #include "rhapsode/annotator.h"
-#include "rhapsode/validator.h"
 #include "rhapsode/weaver.h"
 #include "rhapsode/text_downsampler.h"
 
@@ -110,6 +109,9 @@ PYBIND11_MODULE(_core, m) {
         .def("revert_turns", &Scene::revert_turns, py::arg("n"))
         .def("display_timeline", &Scene::display_timeline, py::arg("cap") = std::nullopt,
              "Chronological merge of history + dialogue for UI replay.")
+        .def("tool_query_graph",  &Scene::tool_query_graph,  py::arg("query"))
+        .def("tool_query_mind",   &Scene::tool_query_mind,   py::arg("character"))
+        .def("tool_query_history",&Scene::tool_query_history, py::arg("query"))
         .def("delete_save", &Scene::delete_save, py::arg("saves_dir"))
         .def_static("load_json",  &Scene::load_json)
         .def("save_json",         &Scene::save_json)
@@ -194,7 +196,6 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<CharacterMemory>(m, "CharacterMemory")
         .def(py::init<std::string>(), py::arg("name"))
-        .def("set_persona",       &CharacterMemory::set_persona, py::arg("p"))
         .def("set_reflection_llm_callback",  &CharacterMemory::set_reflection_llm_callback)
         .def("seed_belief",       &CharacterMemory::seed_belief,
              py::arg("fact"), py::arg("entities"), py::arg("created_at"),
@@ -204,7 +205,7 @@ PYBIND11_MODULE(_core, m) {
         .def("view_of",           &CharacterMemory::view_of, py::arg("subjects"))
         .def("route_fact",        &CharacterMemory::route_fact,
              py::arg("fact"), py::arg("entities"), py::arg("turn"))
-        .def("reflect_perceptions", &CharacterMemory::reflect_perceptions, py::arg("turn"))
+        .def("reflect_perceptions", &CharacterMemory::reflect_perceptions, py::arg("turn"), py::arg("description"))
         .def("render_thoughts",   &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
         .def_property_readonly("beliefs", &CharacterMemory::beliefs,
@@ -234,30 +235,11 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<Director>(m, "Director")
         .def(py::init<WorldGraph&>(), py::arg("graph"))
-        .def("set_validator",    &Director::set_validator, py::arg("validator"))
-        .def("focus_payload_json", &Director::focus_payload_json, py::arg("turn_index"),
-             py::arg("scene_context"))
-        .def("build_text__world_graph_context", &Director::build_prompt__world_graph_context,
-             py::arg("turn_index"), py::arg("capped_prev_turns_text"))
         .def("apply_planned_turn",
              [](Director& self, int turn_idx, const std::string& json_txt) -> DirectorOutput {
                  return self.apply_planned_turn(turn_idx, nlohmann::json::parse(json_txt));
              },
              py::arg("turn_index"), py::arg("json_txt"));
-
-    // -- Validator --
-
-    py::class_<Verdict>(m, "Verdict")
-        .def(py::init<>())
-        .def_readwrite("accepted", &Verdict::accepted)
-        .def_readwrite("reason",   &Verdict::reason);
-
-    py::class_<Validator>(m, "Validator")
-        .def(py::init<const WorldGraph&>(), py::arg("graph"))
-        .def("set_llm_callback",    &Validator::set_llm_callback)
-        .def("set_search_callback", &Validator::set_search_callback)
-        .def("set_dead_check",      &Validator::set_dead_check)
-        .def("check", &Validator::check, py::arg("candidate"));
 
     // -- Annotator --
 

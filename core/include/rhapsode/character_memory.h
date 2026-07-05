@@ -21,12 +21,6 @@ public:
 
     explicit CharacterMemory(std::string name);
 
-    // Set the character's persona (their Character.description) -- the source of
-    // identity and pronouns for first-person prompts.  Not serialized; the Scene
-    // re-attaches it from Character.description on every load (single source of
-    // truth), so prompts never have to guess gender/role.
-    void set_persona(std::string p) { persona_ = std::move(p); }
-
     // -- Callback (set from Python, once at session start) --
     void set_reflection_llm_callback(LLMCallback cb); // prompt -> completion (cloud LLM)
 
@@ -63,11 +57,13 @@ public:
                     int turn);
 
     // Consolidate unreflected perceptions into beliefs (interpretation layer).
-    // One batched cloud LLM call per character folds (prior beliefs + persona +
+    // One batched cloud LLM call per character folds (prior beliefs + description +
     // new perceptions) into new first-person Thoughts, typed tension/evidence
     // against priors, then reinforces touched neighbors and decays/culls the
     // untouched.  No-op without a reflection LLM callback or new perceptions.
-    void reflect_perceptions(int turn);
+    // `description` is the character's Character.description, passed in so the
+    // memory does not duplicate it.
+    void reflect_perceptions(int turn, const std::string& description);
 
     const WorldGraph& beliefs() const { return beliefs_; }
 
@@ -78,10 +74,6 @@ public:
     // otherwise restrict to chains about a matching subject.  Chains are ordered
     // most-pressing first.  Used by view_of and the narrator inner-state context.
     std::string render_thoughts(const std::vector<std::string>& subjects = {}) const;
-
-    /// Prompt text: live thought chains for `subjects`, plus optional experiment lines.
-    std::string build_prompt__interior_thoughts(const std::vector<std::string>& subjects,
-                                              int turn) const;
 
     // -- Gated experiments (rendered as context for the narrator, never a
     //    command).  See the "Phase 3 experiments" section of the design. --
@@ -102,15 +94,6 @@ public:
 
 private:
     std::string char_name_;
-
-    // The character's description, used to ground first-person prompts in the
-    // right identity/pronouns.  Set via set_persona(); not serialized.
-    std::string persona_;
-
-    // Preamble line injected into first-person prompts ("" when no persona).
-    std::string persona_line() const {
-        return persona_.empty() ? std::string() : "Who I am: " + persona_ + "\n";
-    }
 
     // The subjective belief graph -- same structure as the narrator's WorldGraph,
     // owned per-character.  This is the whole persisted mind.

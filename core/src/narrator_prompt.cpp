@@ -1,25 +1,14 @@
 #include "rhapsode/narrator_prompt.h"
 
 #include "rhapsode/json_util.h"
-#include "rhapsode/log_util.h"
-#include "rhapsode/memory_system.h"
 #include "rhapsode/scene.h"
-#include "rhapsode/str_util.h"
-
-#include <cstdint>
-#include <exception>
-#include <unordered_set>
 
 namespace rhapsode {
 namespace {
 
-constexpr size_t kMemoryQueryTail = 4;
 constexpr size_t kVerbatimTail = 6;
 constexpr size_t kMaxMessageChars = 400;
-constexpr size_t kMaxEstablishedFacts = 8;
 constexpr size_t kMaxStoryChars = 1500;
-constexpr int kMemoryQueryHits = 6;
-constexpr int kEntityQueryHits = 4;
 
 const char* role_name(Role role) {
     switch (role) {
@@ -39,109 +28,10 @@ void append_part(std::vector<std::string>& parts, const std::string& text) {
     }
 }
 
-std::string build_memory_query(const std::vector<SceneMessage>& history,
-                               const Scene& scene,
-                               const DirectorOutput& director_out) {
-    std::string query = scene.title;
-    const size_t start = history.size() > kMemoryQueryTail ? history.size() - kMemoryQueryTail : 0;
-    for (size_t i = start; i < history.size(); ++i) {
-        query += '\n';
-        query += role_name(history[i].role);
-        query += ": ";
-        query += history[i].content;
-    }
-    for (const auto& block : director_out.context_blocks) {
-        query += '\n' + block;
-    }
-    return query;
-}
-
-std::vector<std::string> extract_entity_queries(const std::vector<SceneMessage>& history,
-                                                const Scene& scene) {
-    std::string last_user;
-    for (auto it = history.rbegin(); it != history.rend(); ++it) {
-        if (it->role == Role::User) {
-            last_user = it->content;
-            break;
-        }
-    }
-    if (last_user.empty()) {
-        return {};
-    }
-
-    const std::string text_lower = str::to_lower(last_user);
-    std::vector<std::string> queries;
-
-    for (const auto& c : scene.characters) {
-        if (!c.name.empty() && text_lower.find(str::to_lower(c.name)) != std::string::npos) {
-            queries.push_back(c.name);
-        }
-    }
-
-    std::unordered_set<std::string> seen;
-    for (const auto& node : scene.world_graph.all_nodes(true)) {
-        for (const auto& ent : node.entities) {
-            const std::string ent_lower = str::to_lower(ent);
-            if (seen.count(ent_lower)) {
-                continue;
-            }
-            if (text_lower.find(ent_lower) != std::string::npos) {
-                seen.insert(ent_lower);
-                queries.push_back(ent);
-            }
-        }
-    }
-    return queries;
-}
-
-std::vector<std::string> build_established_facts(MemorySystem* memory,
-                                                 const std::vector<SceneMessage>& history,
-                                                 const Scene& scene,
-                                                 const DirectorOutput& director_out) {
-    if (!memory) {
-        return {};
-    }
-
-    try {
-        std::unordered_set<std::uint64_t> seen_ids;
-        std::vector<std::string> facts;
-
-        auto collect = [&](const std::vector<std::uint64_t>& ids) {
-            for (auto nid : ids) {
-                if (!seen_ids.insert(nid).second) {
-                    continue;
-                }
-                const Node* node = scene.world_graph.get_node(nid);
-                if (node && !node->fact.empty() && node->valid_until != -1) {
-                    facts.push_back(node->fact);
-                }
-            }
-        };
-
-        collect(memory->search_nodes(build_memory_query(history, scene, director_out),
-                                     kMemoryQueryHits));
-        for (const auto& entity_q : extract_entity_queries(history, scene)) {
-            collect(memory->search_nodes(entity_q, kEntityQueryHits));
-        }
-
-        if (facts.size() > kMaxEstablishedFacts) {
-            facts.resize(kMaxEstablishedFacts);
-        }
-        return facts;
-    } catch (const std::exception& e) {
-        log() << "  [prompt] established facts retrieval failed: " << e.what() << "\n";
-        return {};
-    }
-}
-
 }  // namespace
 
 std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
-                                      const Scene& scene,
-                                      const DirectorOutput& director_out,
-                                      MemorySystem* memory,
-                                      const std::string& world_graph_context,
-                                      const std::string& inner_lives) {
+                                      const Scene& scene) {
     std::vector<std::string> parts;
 
     const auto cast_lines = scene.build_prompt__cast();
@@ -152,31 +42,11 @@ std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
         }
     }
 
-    if (!world_graph_context.empty()) {
-        append_part(parts, "");
-        parts.push_back("### Graph");
-        parts.push_back(world_graph_context);
-    }
-
-    const auto established = build_established_facts(memory, history, scene, director_out);
-    if (!established.empty()) {
-        append_part(parts, "");
-        parts.push_back("### Past");
-        for (const auto& fact : established) {
-            parts.push_back("- " + fact);
-        }
-    }
-
     const std::string story_so_far = scene.downsampler.render();
     if (!story_so_far.empty()) {
         append_part(parts, "");
         parts.push_back("### Story so far");
         parts.push_back(truncate_utf8(story_so_far, kMaxStoryChars));
-    }
-
-    if (!inner_lives.empty()) {
-        append_part(parts, "");
-        parts.push_back(str::trim(inner_lives));
     }
 
     const std::vector<SceneMessage> conv = story_so_far.empty()
@@ -223,6 +93,15 @@ No quotation marks, no character dialogue, and no *asterisks* / stage directions
 prose. Each character's spoken words go in speech_turns.line, written verbatim in that
 character's own voice; writing speech in the prose duplicates it and breaks the display.
 No markdown formatting in prose.
+Begin your response directly with the first paragraph of prose. Do NOT write any
+preamble, thinking, commentary, or meta-text before the prose -- not even a single
+sentence like "Now I have the context" or "Let me write the response."
+
+TOOLS: You have tools to query the world state before writing. Use them proactively:
+- query_graph(entity): trace an entity's timeline -- where they are, what happened to them, what's expired. Query key entities (Player, present NPCs) before narrating to avoid continuity errors.
+- query_mind(character): understand what a character is thinking/feeling before writing their speech.
+- query_history(query): recall specific past events when you need continuity.
+Query first, then write. Do NOT guess when you can query. A node with valid_until=-1 is still true; valid_until=N was true until turn N.
 
 Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>

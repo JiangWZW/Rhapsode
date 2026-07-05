@@ -1,5 +1,4 @@
 #include "rhapsode/scene_loop.h"
-#include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
@@ -209,8 +208,16 @@ void SceneLoop::dispatch_background() {
 
         // Consolidate this turn's routed perceptions into beliefs (no-op for
         // minds that perceived nothing).
-        for (auto& [name, mem] : scene_->character_memories)
-            mem.reflect_perceptions(turn);
+        for (auto& [name, mem] : scene_->character_memories) {
+            std::string desc;
+            for (const auto& ch : scene_->characters) {
+                if (ch.name == name) {
+                    desc = ch.description;
+                    break;
+                }
+            }
+            mem.reflect_perceptions(turn, desc);
+        }
 
         // Downsample history off the foreground (thinking-on, multi-call). Safe
         // here: the next turn's join_background() completes this before the
@@ -253,15 +260,12 @@ NarratorPrompt SceneLoop::build_turn_prompt(int turn) {
 
     const size_t win = resuming_ ? resume_window_size_ : window_size_;
     const std::vector<SceneMessage> history = scene_->history.snapshot(win);
-    const std::string graph_seeds = format_graph_seed(history, scene_->title);
     resuming_ = false;
 
     NarratorPrompt prompt;
     prompt.instructions = build_narrator_instructions();
     prompt.turn_state = build_narrator_turn_state(
-        history, *scene_, last_director_out_, scene_->memory(),
-        director_->build_prompt__world_graph_context(turn, graph_seeds),
-        scene_->build_prompt__inner_lives(turn));
+        history, *scene_);
 
     ++scene_->turn_index;
 

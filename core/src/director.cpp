@@ -2,19 +2,11 @@
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/str_util.h"
-#include <stdexcept>
 #include <algorithm>
-#include <set>
 
 namespace rhapsode {
 
 namespace {
-
-void log_node_line(const Node& n, const char* prefix = "    ") {
-    log() << prefix << "[" << n.id << "] "
-          << to_string(n.state) << " | " << n.type
-          << " | \"" << truncate_utf8_ellipsis(n.fact, 60) << "\"\n";
-}
 
 void log_response_summary(const nlohmann::json& response, const WorldGraph& graph) {
     log() << "\n  --- Director response summary ---\n";
@@ -55,81 +47,6 @@ void log_response_summary(const nlohmann::json& response, const WorldGraph& grap
 
 Director::Director(WorldGraph& graph) : graph_(graph) {}
 
-void Director::set_validator(Validator* v) {
-    validator_ = v;
-}
-
-std::string Director::focus_payload_json(int turn_index, const std::string& scene_context) const {
-    return build_prompt(turn_index, scene_context);
-}
-
-std::string Director::build_prompt__world_graph_context(int turn_index,
-                                                   const std::string& capped_prev_turns_text) const {
-    (void)turn_index;
-    auto all_nodes = graph_.all_nodes(false);
-
-    // BFS seeding: entity-match against recent transcript, fallback to recency
-    std::string scene_context_lower = str::to_lower(capped_prev_turns_text);
-    std::set<std::uint64_t> seed_ids;
-    for (const auto& node : all_nodes) {
-        bool matched = false;
-        for (const auto& e : node.entities) {
-            if (!e.empty() && scene_context_lower.find(str::to_lower(e)) != std::string::npos) {
-                matched = true;
-                break;
-            }
-        }
-        if (!matched && !node.fact.empty() &&
-            scene_context_lower.find(str::to_lower(node.fact)) != std::string::npos) {
-            matched = true;
-        }
-        if (matched) seed_ids.insert(node.id);
-    }
-
-    if (seed_ids.empty()) {
-        std::vector<Node> fallback = all_nodes;
-        std::sort(fallback.begin(), fallback.end(), [](const Node& a, const Node& b) {
-            return a.created_at > b.created_at;
-        });
-        for (size_t i = 0; i < std::min<size_t>(fallback.size(), 3); ++i)
-            seed_ids.insert(fallback[i].id);
-    }
-
-    std::set<std::uint64_t> bfs_ids = seed_ids;
-    for (auto id : seed_ids) {
-        auto nearby = graph_.neighbors_within(id, 2);
-        bfs_ids.insert(nearby.begin(), nearby.end());
-    }
-
-    // Build compact text output: Active + Foreshadowed only
-    std::string header = "[focus:";
-    for (auto id : seed_ids)
-        header += " " + std::to_string(id);
-    header += "]";
-
-    std::string body;
-    for (auto id : bfs_ids) {
-        const Node* n = graph_.get_node(id);
-        if (!n) continue;
-        if (n->state != NodeState::Active && n->state != NodeState::Foreshadowed)
-            continue;
-        if (n->valid_until != -1)
-            continue;
-
-        const std::string& ctx = (n->state == NodeState::Active)
-            ? n->active_ctx : n->foreshadow_ctx;
-
-        body += "[" + std::to_string(n->id) + "] "
-              + to_string(n->state) + " " + n->type
-              + " \"" + truncate_utf8_ellipsis(n->fact, 80) + "\"";
-        if (!ctx.empty())
-            body += " -- " + truncate_utf8_ellipsis(ctx, 100);
-        body += "\n";
-    }
-
-    return header + "\n" + body;
-}
-
 DirectorOutput Director::apply_planned_turn(int turn_index, const nlohmann::json& response) {
     log_response_summary(response, graph_);
 
@@ -162,73 +79,6 @@ DirectorOutput Director::apply_planned_turn(int turn_index, const nlohmann::json
     log() << std::flush;
 
     return output;
-}
-
-std::string Director::build_prompt(int turn_index, const std::string& scene_context) const {
-    nlohmann::json nodes_arr = nlohmann::json::array();
-    auto all_nodes = graph_.all_nodes(false);
-    for (const auto& node : all_nodes)
-        nodes_arr.push_back(node);
-
-    nlohmann::json prompt;
-    prompt["turn_index"]    = turn_index;
-    prompt["scene_context"] = scene_context;
-    prompt["nodes"]         = std::move(nodes_arr);
-
-    std::string scene_context_lower = str::to_lower(scene_context);
-    std::set<std::uint64_t> seed_ids;
-    for (const auto& node : all_nodes) {
-        bool matched = false;
-        for (const auto& e : node.entities) {
-            if (!e.empty() && scene_context_lower.find(str::to_lower(e)) != std::string::npos) {
-                matched = true;
-                break;
-            }
-        }
-        if (!matched && !node.fact.empty() &&
-            scene_context_lower.find(str::to_lower(node.fact)) != std::string::npos) {
-            matched = true;
-        }
-        if (matched) seed_ids.insert(node.id);
-    }
-
-    bool used_fallback = seed_ids.empty();
-    if (used_fallback) {
-        std::vector<Node> fallback = all_nodes;
-        std::sort(fallback.begin(), fallback.end(), [](const Node& a, const Node& b) {
-            return a.created_at > b.created_at;
-        });
-        for (size_t i = 0; i < std::min<size_t>(fallback.size(), 3); ++i)
-            seed_ids.insert(fallback[i].id);
-    }
-
-    std::set<std::uint64_t> bfs_ids = seed_ids;
-    for (auto id : seed_ids) {
-        auto nearby = graph_.neighbors_within(id, 2);
-        bfs_ids.insert(nearby.begin(), nearby.end());
-    }
-
-    log() << "  [director] BFS seeds (" << seed_ids.size()
-          << (used_fallback ? ", recency fallback" : ", entity-matched")
-          << ") -> " << bfs_ids.size() << " context nodes:\n";
-    for (auto id : seed_ids) {
-        const Node* n = graph_.get_node(id);
-        if (n) log_node_line(*n, "    seed ");
-    }
-
-    if (!bfs_ids.empty()) {
-        nlohmann::json bfs_context = nlohmann::json::array();
-        for (auto id : bfs_ids) {
-            const Node* node = graph_.get_node(id);
-            if (!node || node->valid_until != -1) continue;
-            bfs_context.push_back(*node);
-        }
-        if (!bfs_context.empty()) {
-            prompt["graph_context_2hop"] = std::move(bfs_context);
-        }
-    }
-
-    return prompt.dump();
 }
 
 std::vector<Node> Director::apply_transitions(const nlohmann::json& response, int turn_index) {
@@ -279,16 +129,6 @@ std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response, int 
             auto raw_state = str::to_lower(entry.value("state", ""));
             if (node_state_means_resolved(raw_state))
                 node.valid_until = turn_index;
-        }
-
-        if (validator_) {
-            auto verdict = validator_->check(node);
-            if (!verdict.accepted) {
-                log() << "  [validator] REJECTED: \"" << node.fact
-                      << "\" -- " << verdict.reason << "\n";
-                rejections.push_back({node.fact, verdict.reason});
-                continue;
-            }
         }
 
         Node& ref = graph_.add_node_chained(std::move(node), turn_index);
