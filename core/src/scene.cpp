@@ -1,25 +1,16 @@
 #include "rhapsode/scene.h"
+#include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
+#include "rhapsode/str_util.h"
 #include <algorithm>
-#include <cctype>
 #include <fstream>
 #include <filesystem>
-#include <iostream>
 #include <optional>
 #include <stdexcept>
 
 namespace rhapsode {
 
 namespace {
-
-bool iequals(const std::string& a, const std::string& b) {
-    if (a.size() != b.size()) return false;
-    return std::equal(a.begin(), a.end(), b.begin(),
-        [](char ca, char cb) {
-            return std::tolower(static_cast<unsigned char>(ca)) ==
-                   std::tolower(static_cast<unsigned char>(cb));
-        });
-}
 
 void migrate_character_lines_to_dialogue(History& history, History& dialogue) {
     std::vector<SceneMessage> kept;
@@ -43,10 +34,10 @@ void migrate_character_lines_to_dialogue(History& history, History& dialogue) {
 
 Character& Scene::enter_character(Character ch) {
     for (auto& existing : characters) {
-        if (iequals(existing.name, ch.name)) {
+        if (str::iequals(existing.name, ch.name)) {
             if (existing.dead) {
-                std::cerr << "  [cast] " << existing.name
-                          << " is dead -- ignoring re-entry\n";
+                log() << "  [cast] " << existing.name
+                      << " is dead -- ignoring re-entry\n";
                 return existing;
             }
             bool was_off = !existing.on_stage;
@@ -56,8 +47,8 @@ Character& Scene::enter_character(Character ch) {
             if (existing.dialogue_instructions.empty() && !ch.dialogue_instructions.empty())
                 existing.dialogue_instructions = std::move(ch.dialogue_instructions);
             if (was_off)
-                std::cerr << "  [cast] " << existing.name
-                          << " re-enters (was off-stage)\n";
+                log() << "  [cast] " << existing.name
+                      << " re-enters (was off-stage)\n";
             return existing;
         }
     }
@@ -65,9 +56,9 @@ Character& Scene::enter_character(Character ch) {
     characters.push_back(std::move(ch));
 
     auto& added = characters.back();
-    std::cerr << "  [cast] NEW " << added.name
-              << " | role=" << (added.role.empty() ? "?" : added.role)
-              << " | \"" << added.description.substr(0, 80) << "\"\n";
+    log() << "  [cast] NEW " << added.name
+          << " | role=" << (added.role.empty() ? "?" : added.role)
+          << " | \"" << added.description.substr(0, 80) << "\"\n";
 
     if (!added.is_player && character_memories.find(added.name) == character_memories.end()) {
         // A newly-entering character starts with an empty mind.  We do NOT copy
@@ -76,26 +67,26 @@ Character& Scene::enter_character(Character ch) {
         CharacterMemory mem(added.name);
         mem.set_persona(added.description);
         character_memories.emplace(added.name, std::move(mem));
-        std::cerr << "  [cast]   memory created (empty -- learns by perception)\n";
+        log() << "  [cast]   memory created (empty -- learns by perception)\n";
     }
     return added;
 }
 
 Character* Scene::find_on_stage(const std::string& name) {
     for (auto& c : characters)
-        if (c.on_stage && !c.dead && iequals(c.name, name)) return &c;
+        if (c.on_stage && !c.dead && str::iequals(c.name, name)) return &c;
     return nullptr;
 }
 
 const Character* Scene::find_on_stage(const std::string& name) const {
     for (const auto& c : characters)
-        if (c.on_stage && !c.dead && iequals(c.name, name)) return &c;
+        if (c.on_stage && !c.dead && str::iequals(c.name, name)) return &c;
     return nullptr;
 }
 
 bool Scene::exit_character(const std::string& name) {
     for (auto& c : characters) {
-        if (iequals(c.name, name) && c.on_stage) {
+        if (str::iequals(c.name, name) && c.on_stage) {
             c.on_stage = false;
             return true;
         }
@@ -113,13 +104,6 @@ std::vector<DeathCandidate> Scene::scan_death_candidates() {
         "succumbed", "fatal"
     };
 
-    auto to_lower_copy = [](const std::string& s) {
-        std::string out = s;
-        std::transform(out.begin(), out.end(), out.begin(),
-            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        return out;
-    };
-
     auto has_death_keyword = [&](const std::string& text_lower) {
         for (const auto& kw : death_keywords)
             if (text_lower.find(kw) != std::string::npos) return true;
@@ -129,25 +113,25 @@ std::vector<DeathCandidate> Scene::scan_death_candidates() {
     auto mentions_character = [&](const Node& n, const std::string& name,
                                   const std::string& name_lower) {
         for (const auto& ent : n.entities)
-            if (iequals(ent, name)) return true;
-        auto fl = to_lower_copy(n.fact);
+            if (str::iequals(ent, name)) return true;
+        auto fl = str::to_lower(n.fact);
         if (fl.find(name_lower) != std::string::npos) return true;
-        auto cl = to_lower_copy(n.active_ctx);
+        auto cl = str::to_lower(n.active_ctx);
         return cl.find(name_lower) != std::string::npos;
     };
 
     for (const auto& ch : characters) {
         if (ch.is_player || ch.dead) continue;
 
-        std::string name_lower = to_lower_copy(ch.name);
+        std::string name_lower = str::to_lower(ch.name);
         bool has_death_hit = false;
 
         for (const auto& n : all_nodes) {
             if (n.state != NodeState::Active) continue;
             if (!mentions_character(n, ch.name, name_lower)) continue;
 
-            std::string fact_lower = to_lower_copy(n.fact);
-            std::string ctx_lower  = to_lower_copy(n.active_ctx);
+            std::string fact_lower = str::to_lower(n.fact);
+            std::string ctx_lower  = str::to_lower(n.active_ctx);
             if (has_death_keyword(fact_lower) || has_death_keyword(ctx_lower))
                 has_death_hit = true;
         }
@@ -168,14 +152,6 @@ std::vector<DeathCandidate> Scene::scan_death_candidates() {
 }
 
 namespace {
-
-std::string trim_copy(std::string s) {
-    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
-        s.erase(s.begin());
-    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))
-        s.pop_back();
-    return s;
-}
 
 std::string join_sorted(const std::vector<std::string>& names) {
     std::vector<std::string> sorted = names;
@@ -202,7 +178,7 @@ std::vector<std::string> Scene::build_prompt__cast() const {
             std::string line = "- " + c.name;
             if (!c.role.empty())
                 line += " [" + c.role + "]";
-            const std::string desc = trim_copy(c.description);
+            const std::string desc = str::trim(c.description);
             if (!desc.empty())
                 line += " \xe2\x80\x94" + desc;
             lines.push_back(std::move(line));
@@ -221,15 +197,13 @@ std::vector<std::string> Scene::build_prompt__cast() const {
     return header;
 }
 
-std::vector<std::string> Scene::thought_subjects_for(const Character& observer) const
-{
+std::vector<std::string> Scene::thought_subjects_for(const Character& observer) const {
     std::vector<std::string> subjects;
-    for (const auto& c : characters) 
-    {
-        if (c.name == observer.name || c.dead || !c.on_stage) 
+    for (const auto& c : characters) {
+        if (c.name == observer.name || c.dead || !c.on_stage)
             continue;
 
-    	subjects.push_back(c.name);
+        subjects.push_back(c.name);
         if (c.is_player && !c.description.empty())
             subjects.push_back(c.description);
     }
@@ -237,16 +211,14 @@ std::vector<std::string> Scene::thought_subjects_for(const Character& observer) 
     return subjects;
 }
 
-std::string Scene::build_prompt__inner_lives(int turn) const
-{
+std::string Scene::build_prompt__inner_lives(int turn) const {
     std::string body;
-    for (const auto& ch : characters) 
-    {
-        if (ch.is_player || ch.dead || !ch.on_stage) 
+    for (const auto& ch : characters) {
+        if (ch.is_player || ch.dead || !ch.on_stage)
             continue;
 
-    	auto it = character_memories.find(ch.name);
-        if (it == character_memories.end()) 
+        auto it = character_memories.find(ch.name);
+        if (it == character_memories.end())
             continue;
 
         std::string block = ch.build_prompt__dialogue_voice();
@@ -326,8 +298,8 @@ int Scene::revert_turns(int n) {
     // 5. Turn index
     turn_index = target;
 
-    std::cerr << "  [undo] Reverted " << actual << " turn(s), now at turn "
-              << turn_index << "\n" << std::flush;
+    log() << "  [undo] Reverted " << actual << " turn(s), now at turn "
+          << turn_index << "\n" << std::flush;
     return actual;
 }
 

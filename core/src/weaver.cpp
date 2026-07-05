@@ -1,12 +1,13 @@
 #include "rhapsode/weaver.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/log_util.h"
+#include "rhapsode/str_util.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <numeric>
 #include <set>
 #include <sstream>
@@ -60,7 +61,7 @@ void write_weave_artifact(int turn_index, const char* label,
 
     std::ofstream out(path, std::ios::binary);
     if (!out) {
-        std::cerr << "  [weave] could not write artifact " << path.string() << "\n";
+        log() << "  [weave] could not write artifact " << path.string() << "\n";
         return;
     }
     out << "turn=" << turn_index << " label=" << label << "\n"
@@ -69,7 +70,7 @@ void write_weave_artifact(int turn_index, const char* label,
         << summary << "\n\n"
         << "=== PROMPT ===\n" << prompt << "\n\n"
         << "=== RESPONSE ===\n" << response << "\n";
-    std::cerr << "  [weave] artifact written: " << path.string() << "\n";
+    log() << "  [weave] artifact written: " << path.string() << "\n";
 }
 
 }  // namespace
@@ -167,14 +168,14 @@ std::string Weaver::build_prompt(int turn_index,
     }
 
     // -- Debug log --
-    std::cerr << "  [weave] subgraph: " << selected.size() << "/"
-              << all_nodes.size() << " nodes\n";
-    std::cerr << "  [weave] selected:";
+    log() << "  [weave] subgraph: " << selected.size() << "/"
+          << all_nodes.size() << " nodes\n";
+    log() << "  [weave] selected:";
     for (const auto* n : selected) {
         int d = graph_.active_degree(n->id);
-        std::cerr << " " << n->id << "(d" << d << ")";
+        log() << " " << n->id << "(d" << d << ")";
     }
-    std::cerr << "\n";
+    log() << "\n";
 
     // -- Build prompt --
     std::ostringstream os;
@@ -247,9 +248,9 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
         !llm_response.empty() && j.empty();
 
     if (parse_failed) {
-        std::cerr << "  [weave] parse FAILED: JSON extraction failed — "
-                  << "response preview: "
-                  << truncate_log(llm_response, 300) << "\n";
+        log() << "  [weave] parse FAILED: JSON extraction failed — "
+              << "response preview "
+              << truncate_log(llm_response, 300) << "\n";
     }
 
     auto parse_ops = [](const nlohmann::json& arr) {
@@ -272,48 +273,48 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
     auto disconnect_ops = parse_ops(j.value("disconnect", nlohmann::json::array()));
     auto reweight_ops   = parse_ops(j.value("reweight",   nlohmann::json::array()));
 
-    std::cerr << "  [weave] parse: connect=" << connect_ops.size()
-              << " disconnect=" << disconnect_ops.size()
-              << " reweight=" << reweight_ops.size()
-              << (parse_failed ? " (JSON salvage failed)" : "") << "\n";
+    log() << "  [weave] parse: connect=" << connect_ops.size()
+          << " disconnect=" << disconnect_ops.size()
+          << " reweight=" << reweight_ops.size()
+          << (parse_failed ? " (JSON salvage failed)" : "") << "\n";
 
-    std::cerr << "  [weave] LLM proposed: "
-              << connect_ops.size() << " connect, "
-              << disconnect_ops.size() << " disconnect, "
-              << reweight_ops.size() << " reweight\n";
+    log() << "  [weave] LLM proposed: "
+          << connect_ops.size() << " connect, "
+          << disconnect_ops.size() << " disconnect, "
+          << reweight_ops.size() << " reweight\n";
 
     for (auto& op : connect_ops) {
         bool ok = graph_.add_relation(op.from_id, op.to_id, op.weight, turn_index);
-        std::cerr << "  [weave]   + " << op.from_id << " -> " << op.to_id
-                  << "  w=" << op.weight
-                  << (ok ? "" : " (SKIP: already exists or bad id)")
-                  << "  \"" << op.reason << "\"\n";
+        log() << "  [weave]   + " << op.from_id << " -> " << op.to_id
+              << "  w=" << op.weight
+              << (ok ? "" : " (SKIP: already exists or bad id)")
+              << "  \"" << op.reason << "\"\n";
         if (ok) result.connected.push_back(std::move(op));
     }
 
     for (auto& op : disconnect_ops) {
         bool ok = graph_.set_edge_active(op.from_id, op.to_id, false);
-        std::cerr << "  [weave]   - " << op.from_id << " -> " << op.to_id
-                  << (ok ? "" : " (SKIP: edge not found)")
-                  << "  \"" << op.reason << "\"\n";
+        log() << "  [weave]   - " << op.from_id << " -> " << op.to_id
+              << (ok ? "" : " (SKIP: edge not found)")
+              << "  \"" << op.reason << "\"\n";
         if (ok) result.disconnected.push_back(std::move(op));
     }
 
     for (auto& op : reweight_ops) {
         bool ok = graph_.set_edge_weight(op.from_id, op.to_id, op.weight);
-        std::cerr << "  [weave]   ~ " << op.from_id << " -> " << op.to_id
-                  << "  w=" << op.weight
-                  << (ok ? "" : " (SKIP: edge not found)")
-                  << "  \"" << op.reason << "\"\n";
+        log() << "  [weave]   ~ " << op.from_id << " -> " << op.to_id
+              << "  w=" << op.weight
+              << (ok ? "" : " (SKIP: edge not found)")
+              << "  \"" << op.reason << "\"\n";
         if (ok) result.reweighted.push_back(std::move(op));
     }
 
     result.analysis = analyze(graph_);
 
-    std::cerr << "  [weave] after: "
-              << result.analysis.live_node_count << " nodes, "
-              << result.analysis.active_edge_count << " active edges, "
-              << result.analysis.orphan_count << " orphans\n";
+    log() << "  [weave] after: "
+          << result.analysis.live_node_count << " nodes, "
+          << result.analysis.active_edge_count << " active edges, "
+          << result.analysis.orphan_count << " orphans\n";
 
     return result;
 }
@@ -339,53 +340,53 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
     }
 
     if (!cb) {
-        std::cerr << "  [weave] no " << label << " LLM callback -- skipping\n";
+        log() << "  [weave] no " << label << " LLM callback -- skipping\n";
         return {{}, {}, {}, pre};
     }
 
-    std::cerr << "  [weave] turn=" << turn_index << " label=" << label << "\n";
-    std::cerr << "  [weave] before: "
-              << pre.live_node_count << " nodes, "
-              << pre.active_edge_count << " active edges, "
-              << pre.orphan_count << " orphans\n";
+    log() << "  [weave] turn=" << turn_index << " label=" << label << "\n";
+    log() << "  [weave] before: "
+          << pre.live_node_count << " nodes, "
+          << pre.active_edge_count << " active edges, "
+          << pre.orphan_count << " orphans\n";
 
     auto prompt = build_prompt(turn_index, scene_context);
-    std::cerr << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
-              << " prompt_chars=" << prompt.size()
-              << " — calling " << label << " LLM...\n"
-              << std::flush;
+    log() << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
+          << " prompt_chars=" << prompt.size()
+          << " — calling " << label << " LLM...\n"
+          << std::flush;
 
     if (weave_log_verbose()) {
-        std::cerr << "  [weave] --- PROMPT BEGIN ---\n"
-                  << prompt << "\n  [weave] --- PROMPT END ---\n"
-                  << std::flush;
+        log() << "  [weave] --- PROMPT BEGIN ---\n"
+              << prompt << "\n  [weave] --- PROMPT END ---\n"
+              << std::flush;
     }
 
     std::string response;
     try {
         response = cb(sanitize_utf8(prompt));
     } catch (const std::exception& e) {
-        std::cerr << "  [weave] " << label << " LLM call FAILED: " << e.what() << "\n";
+        log() << "  [weave] " << label << " LLM call FAILED: " << e.what() << "\n";
         write_weave_artifact(turn_index, label, prompt, "",
                              std::string("exception: ") + e.what());
         return {{}, {}, {}, pre};
     }
 
-    std::cerr << "  [weave] response_chars=" << response.size() << "\n";
+    log() << "  [weave] response_chars=" << response.size() << "\n";
 
     if (response.empty()) {
-        std::cerr << "  [weave] " << label
-                  << " LLM returned empty response "
-                  << "(see [local_llm:weave] lines above for HTTP details)\n";
+        log() << "  [weave] " << label
+              << " LLM returned empty response "
+              << "(see [local_llm:weave] lines above for HTTP details)\n";
         write_weave_artifact(turn_index, label, prompt, response,
                              "empty response from local LLM callback");
         return {{}, {}, {}, pre};
     }
 
     if (weave_log_verbose()) {
-        std::cerr << "  [weave] --- RESPONSE BEGIN ---\n"
-                  << response << "\n  [weave] --- RESPONSE END ---\n"
-                  << std::flush;
+        log() << "  [weave] --- RESPONSE BEGIN ---\n"
+              << response << "\n  [weave] --- RESPONSE END ---\n"
+              << std::flush;
     }
 
     auto result = parse_and_apply(response, turn_index);
@@ -411,10 +412,7 @@ void Weaver::rebuild_expiry_queue(
 
     std::set<std::string> prio_lower;
     for (const auto& e : priority_entities) {
-        std::string lower = e;
-        std::transform(lower.begin(), lower.end(), lower.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        prio_lower.insert(std::move(lower));
+        prio_lower.insert(str::to_lower(e));
     }
 
     // Partition into priority and non-priority groups; deduplicate.
@@ -426,10 +424,7 @@ void Weaver::rebuild_expiry_queue(
         std::sort(canonical.begin(), canonical.end());
         if (!seen.insert(std::move(canonical)).second) continue;
 
-        std::string lower = entity;
-        std::transform(lower.begin(), lower.end(), lower.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        if (prio_lower.count(lower))
+        if (prio_lower.count(str::to_lower(entity)))
             priority_groups.push_back(std::move(ids));
         else
             normal_groups.push_back(std::move(ids));
@@ -442,9 +437,9 @@ void Weaver::rebuild_expiry_queue(
                          std::make_move_iterator(priority_groups.end()));
 
     if (!expiry_queue_.empty())
-        std::cerr << "  [expiry] queue rebuilt: "
-                  << expiry_queue_.size() << " group(s), "
-                  << priority_groups.size() << " priority\n";
+        log() << "  [expiry] queue rebuilt: "
+              << expiry_queue_.size() << " group(s), "
+              << priority_groups.size() << " priority\n";
 }
 
 std::vector<ExpiryOp> Weaver::drain_expiry_queue(int turn_index) {
@@ -503,7 +498,7 @@ std::vector<ExpiryOp> Weaver::check_group(std::vector<const Node*> live,
           "If all are still true: {\"superseded\": [], \"reason\": \"all current\"}\n";
 
     if (!local_llm_cb_) {
-        std::cerr << "  [expiry] no local LLM callback -- skipping group\n";
+        log() << "  [expiry] no local LLM callback -- skipping group\n";
         return {};
     }
 
@@ -511,7 +506,7 @@ std::vector<ExpiryOp> Weaver::check_group(std::vector<const Node*> live,
     try {
         response = local_llm_cb_(sanitize_utf8(os.str()));
     } catch (const std::exception& e) {
-        std::cerr << "  [expiry] LLM call failed: " << e.what() << "\n";
+        log() << "  [expiry] LLM call failed: " << e.what() << "\n";
         return {};
     }
 
@@ -548,8 +543,8 @@ std::vector<ExpiryOp> Weaver::check_group(std::vector<const Node*> live,
     }
 
     if (!expired.empty())
-        std::cerr << "  [expiry] " << expired.size()
-                  << " fact(s) superseded: " << reason << "\n";
+        log() << "  [expiry] " << expired.size()
+              << " fact(s) superseded: " << reason << "\n";
 
     return expired;
 }

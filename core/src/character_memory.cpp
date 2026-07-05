@@ -1,12 +1,12 @@
 #include "rhapsode/character_memory.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/log_util.h"
+#include "rhapsode/str_util.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
-#include <iostream>
 #include <random>
 #include <sstream>
 #include <unordered_map>
@@ -30,9 +30,7 @@ void CharacterMemory::set_reflection_llm_callback(ReflectionLLMCallback cb) { re
 namespace {
 
 std::string lower_str(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return s;
+    return str::to_lower(s);
 }
 
 // Case-insensitive identity test for two entity strings.  Exact equality only.
@@ -294,8 +292,8 @@ void CharacterMemory::route_fact(const std::string& fact,
 
 void CharacterMemory::reflect_perceptions(int turn) {
     if (!reflection_llm_cb_) {
-        std::cerr << "  [char_mem:" << char_name_
-                  << "] reflect skip: no reflection LLM callback\n" << std::flush;
+        log() << "  [char_mem:" << char_name_
+              << "] reflect skip: no reflection LLM callback\n" << std::flush;
         return;
     }
 
@@ -307,8 +305,8 @@ void CharacterMemory::reflect_perceptions(int turn) {
             perceptions.push_back({n.id, n.fact, n.entities});
     }, false);
     if (perceptions.empty()) {
-        std::cerr << "  [char_mem:" << char_name_
-                  << "] reflect skip: no new perceptions\n" << std::flush;
+        log() << "  [char_mem:" << char_name_
+              << "] reflect skip: no new perceptions\n" << std::flush;
         return;
     }
 
@@ -402,8 +400,8 @@ void CharacterMemory::reflect_perceptions(int turn) {
     try {
         raw = reflection_llm_cb_(prompt);
     } catch (const std::exception& ex) {
-        std::cerr << "  [char_mem:" << char_name_
-                  << "] reflect_perceptions failed: " << ex.what() << "\n";
+        log() << "  [char_mem:" << char_name_
+              << "] reflect_perceptions failed: " << ex.what() << "\n";
         raw.clear();
     }
 
@@ -495,15 +493,15 @@ void CharacterMemory::reflect_perceptions(int turn) {
         if (n->weight < kCullFloor) {
             beliefs_.set_valid_until(bid, turn);
             ++culled;
-            std::cerr << "  [char_mem:" << char_name_ << "] culled #" << bid
-                      << " (w=" << n->weight << "): " << n->fact << "\n";
+            log() << "  [char_mem:" << char_name_ << "] culled #" << bid
+                  << " (w=" << n->weight << "): " << n->fact << "\n";
         }
     }
 
-    std::cerr << "  [char_mem:" << char_name_ << "] reflected "
-              << perceptions.size() << " perception(s) into "
-              << new_thought_ids.size() << " thought(s), culled "
-              << culled << " faded\n" << std::flush;
+    log() << "  [char_mem:" << char_name_ << "] reflected "
+          << perceptions.size() << " perception(s) into "
+          << new_thought_ids.size() << " thought(s), culled "
+          << culled << " faded\n" << std::flush;
 }
 
 

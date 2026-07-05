@@ -16,7 +16,9 @@ struct Character
     bool is_player = false;
     bool on_stage = false;
     bool dead = false;
-    int created_at = 0;
+    // Authored/bootstrap characters predate turn 0. Dynamic NPCs use the
+    // zero-based turn on which they entered, so undo/rollback can prune them.
+    int created_at = -1;
 
     Character() = default;
     Character(std::string n, std::string d, bool player = false)

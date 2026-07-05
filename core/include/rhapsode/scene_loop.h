@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include "rhapsode/scene_message.h"
 #include "rhapsode/director.h"
+#include "rhapsode/scene_loop_support.h"
 #include "rhapsode/weaver.h"
 
 namespace rhapsode {
@@ -70,6 +71,14 @@ private:
     enum class OutputBucket { Story, Dialogue };
 
     void advance();
+    NarratorPrompt build_turn_prompt(int turn);
+    std::string call_narrator(const std::string& instructions,
+                              const std::string& turn_state) const;
+    NarratorTurnResult run_narrator_with_retry(int turn, const NarratorPrompt& prompt);
+    void rollback_turn_attempt(int turn, const nlohmann::json& graph_snapshot);
+    void register_new_characters(int turn, const nlohmann::json& plan);
+    void emit_dialogue(int turn, const std::vector<SpeechCue>& cues);
+    void post_turn_cleanup(const std::string& narration);
     void emit_output(SceneMessage msg, OutputBucket bucket);
     void dispatch_background();
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,

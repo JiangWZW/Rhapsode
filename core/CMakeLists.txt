@@ -6,11 +6,15 @@ add_library(rhapsode STATIC
     include/rhapsode/history.h
     include/rhapsode/md5.h
     include/rhapsode/memory_system.h
+    include/rhapsode/log_util.h
+    include/rhapsode/narrator_prompt.h
     include/rhapsode/node.h
     include/rhapsode/scene.h
     include/rhapsode/json_util.h
     include/rhapsode/scene_loop.h
+    include/rhapsode/scene_loop_support.h
     include/rhapsode/scene_message.h
+    include/rhapsode/str_util.h
     include/rhapsode/text_downsampler.h
     include/rhapsode/validator.h
     include/rhapsode/weaver.h
@@ -20,8 +24,10 @@ add_library(rhapsode STATIC
     src/history.cpp
     src/character.cpp
     src/character_memory.cpp
+    src/narrator_prompt.cpp
     src/scene.cpp
     src/scene_loop.cpp
+    src/scene_loop_support.cpp
     src/text_downsampler.cpp
     src/node.cpp
     src/director.cpp

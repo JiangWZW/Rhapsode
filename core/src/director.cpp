@@ -1,21 +1,14 @@
 #include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/log_util.h"
+#include "rhapsode/str_util.h"
 #include <stdexcept>
-#include <iostream>
 #include <algorithm>
-#include <cctype>
 #include <set>
 
 namespace rhapsode {
 
 namespace {
-
-std::string to_lower_copy(const std::string& s) {
-    std::string out = s;
-    std::transform(out.begin(), out.end(), out.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return out;
-}
 
 std::string truncate(const std::string& s, size_t max_len = 60) {
     if (s.size() <= max_len) return s;
@@ -26,17 +19,17 @@ std::string truncate(const std::string& s, size_t max_len = 60) {
 }
 
 void log_node_line(const Node& n, const char* prefix = "    ") {
-    std::cerr << prefix << "[" << n.id << "] "
-              << to_string(n.state) << " | " << n.type
-              << " | \"" << truncate(n.fact) << "\"\n";
+    log() << prefix << "[" << n.id << "] "
+          << to_string(n.state) << " | " << n.type
+          << " | \"" << truncate(n.fact) << "\"\n";
 }
 
 void log_prompt_summary(const nlohmann::json& prompt) {
-    std::cerr << "\n  --- Director input summary ---\n";
-    std::cerr << "  turn:          " << prompt.value("turn_index", -1) << "\n";
+    log() << "\n  --- Director input summary ---\n";
+    log() << "  turn:          " << prompt.value("turn_index", -1) << "\n";
 
     auto sc = prompt.value("scene_context", "");
-    std::cerr << "  scene_context: \"" << truncate(sc, 120) << "\"\n";
+    log() << "  scene_context: \"" << truncate(sc, 120) << "\"\n";
 
     if (prompt.contains("nodes") && prompt["nodes"].is_array()) {
         int dormant = 0, foreshadowed = 0, active = 0;
@@ -46,30 +39,30 @@ void log_prompt_summary(const nlohmann::json& prompt) {
             else if (s == "foreshadowed") foreshadowed++;
             else if (s == "dormant")  dormant++;
         }
-        std::cerr << "  graph nodes:   " << prompt["nodes"].size()
-                  << " (active=" << active << " foreshadowed=" << foreshadowed
-                  << " dormant=" << dormant << ")\n";
+        log() << "  graph nodes:   " << prompt["nodes"].size()
+              << " (active=" << active << " foreshadowed=" << foreshadowed
+              << " dormant=" << dormant << ")\n";
     }
 
     if (prompt.contains("graph_context_2hop") && prompt["graph_context_2hop"].is_array()) {
-        std::cerr << "  2-hop context (" << prompt["graph_context_2hop"].size() << " nodes):\n";
+        log() << "  2-hop context (" << prompt["graph_context_2hop"].size() << " nodes):\n";
         for (const auto& n : prompt["graph_context_2hop"]) {
-            std::cerr << "    [" << n.value("id", 0) << "] "
-                      << n.value("state", "?") << " | " << n.value("type", "?")
-                      << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
+            log() << "    [" << n.value("id", 0) << "] "
+                  << n.value("state", "?") << " | " << n.value("type", "?")
+                  << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
         }
     }
 
-    std::cerr << "  prompt bytes:  " << prompt.dump().size() << "\n";
-    std::cerr << "  ---\n";
+    log() << "  prompt bytes:  " << prompt.dump().size() << "\n";
+    log() << "  ---\n";
 }
 
 void log_response_summary(const nlohmann::json& response, const WorldGraph& graph) {
-    std::cerr << "\n  --- Director response summary ---\n";
+    log() << "\n  --- Director response summary ---\n";
 
     auto tr_it = response.find("transitions");
     if (tr_it != response.end() && tr_it->is_array() && !tr_it->empty()) {
-        std::cerr << "  transitions (" << tr_it->size() << "):\n";
+        log() << "  transitions (" << tr_it->size() << "):\n";
         for (const auto& t : *tr_it) {
             auto id = json_number<std::uint64_t>(t, "id", 0);
             auto new_state = t.value("state", "?");
@@ -77,26 +70,26 @@ void log_response_summary(const nlohmann::json& response, const WorldGraph& grap
             std::string fact_str = n ? ("\"" + truncate(n->fact, 50) + "\"")
                                      : "(unknown)";
             std::string old_state = n ? to_string(n->state) : "?";
-            std::cerr << "    [" << id << "] " << old_state
-                      << " -> " << new_state << "  " << fact_str << "\n";
+            log() << "    [" << id << "] " << old_state
+                  << " -> " << new_state << "  " << fact_str << "\n";
         }
     } else {
-        std::cerr << "  transitions: (none)\n";
+        log() << "  transitions: (none)\n";
     }
 
     auto nn_it = response.find("new_nodes");
     if (nn_it != response.end() && nn_it->is_array() && !nn_it->empty()) {
-        std::cerr << "  new nodes (" << nn_it->size() << "):\n";
+        log() << "  new nodes (" << nn_it->size() << "):\n";
         for (const auto& n : *nn_it) {
-            std::cerr << "    + " << n.value("state", "?")
-                      << " | " << n.value("type", "?")
-                      << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
+            log() << "    + " << n.value("state", "?")
+                  << " | " << n.value("type", "?")
+                  << " | \"" << truncate(n.value("fact", ""), 50) << "\"\n";
         }
     } else {
-        std::cerr << "  new nodes: (none)\n";
+        log() << "  new nodes: (none)\n";
     }
 
-    std::cerr << "  ---\n";
+    log() << "  ---\n";
 }
 
 }  // namespace
@@ -115,7 +108,7 @@ DirectorOutput Director::tick(int turn_index, const std::string& scene_context) 
     if (!llm_cb_)
         throw std::runtime_error("No Director LLM callback registered");
 
-    std::cerr << "  [1/5.a] Building director prompt...\n" << std::flush;
+    log() << "  [1/5.a] Building director prompt...\n" << std::flush;
     auto prompt = build_prompt(turn_index, scene_context);
 
     {
@@ -123,10 +116,10 @@ DirectorOutput Director::tick(int turn_index, const std::string& scene_context) 
         log_prompt_summary(prompt_json);
     }
 
-    std::cerr << "  [1/5.b] Calling director LLM...\n" << std::flush;
+    log() << "  [1/5.b] Calling director LLM...\n" << std::flush;
     auto raw = llm_cb_(sanitize_utf8(prompt));
 
-    std::cerr << "  [1/5.c] Parsing director response (" << raw.size() << " chars)...\n" << std::flush;
+    log() << "  [1/5.c] Parsing director response (" << raw.size() << " chars)...\n" << std::flush;
     nlohmann::json response;
     try {
         response = nlohmann::json::parse(raw);
@@ -148,18 +141,18 @@ std::string Director::build_prompt__world_graph_context(int turn_index,
     auto all_nodes = graph_.all_nodes(false);
 
     // BFS seeding: entity-match against recent transcript, fallback to recency
-    std::string scene_context_lower = to_lower_copy(capped_prev_turns_text);
+    std::string scene_context_lower = str::to_lower(capped_prev_turns_text);
     std::set<std::uint64_t> seed_ids;
     for (const auto& node : all_nodes) {
         bool matched = false;
         for (const auto& e : node.entities) {
-            if (!e.empty() && scene_context_lower.find(to_lower_copy(e)) != std::string::npos) {
+            if (!e.empty() && scene_context_lower.find(str::to_lower(e)) != std::string::npos) {
                 matched = true;
                 break;
             }
         }
         if (!matched && !node.fact.empty() &&
-            scene_context_lower.find(to_lower_copy(node.fact)) != std::string::npos) {
+            scene_context_lower.find(str::to_lower(node.fact)) != std::string::npos) {
             matched = true;
         }
         if (matched) seed_ids.insert(node.id);
@@ -212,33 +205,33 @@ std::string Director::build_prompt__world_graph_context(int turn_index,
 DirectorOutput Director::apply_planned_turn(int turn_index, const nlohmann::json& response) {
     log_response_summary(response, graph_);
 
-    std::cerr << "  [graph] Applying transitions...\n" << std::flush;
+    log() << "  [graph] Applying transitions...\n" << std::flush;
     auto expired = apply_transitions(response, turn_index);
 
-    std::cerr << "  [graph] Applying new nodes...\n" << std::flush;
+    log() << "  [graph] Applying new nodes...\n" << std::flush;
     std::vector<Rejection> rejections;
     auto added    = apply_new_nodes(response, turn_index, rejections);
     auto output   = collect_context(std::move(expired));
     output.new_nodes = std::move(added);
     output.rejections = std::move(rejections);
 
-    std::cerr << "\n  ===== WorldGraph after apply " << turn_index << " =====\n";
+    log() << "\n  ===== WorldGraph after apply " << turn_index << " =====\n";
     auto all = graph_.all_nodes(false);
     std::sort(all.begin(), all.end(), [](const Node& a, const Node& b) {
         if (a.state != b.state) return a.state < b.state;
         return a.id < b.id;
     });
     for (const auto& n : all) {
-        std::cerr << "    [" << n.id << "] " << to_string(n.state)
-                  << " | " << n.type
-                  << " | " << n.fact << "\n";
+        log() << "    [" << n.id << "] " << to_string(n.state)
+              << " | " << n.type
+              << " | " << n.fact << "\n";
     }
     if (all.empty())
-        std::cerr << "    (empty)\n";
-    std::cerr << "  expired: " << output.newly_expired.size()
-              << ", added: " << output.new_nodes.size()
-              << ", graph total: " << graph_.size() << "\n";
-    std::cerr << std::flush;
+        log() << "    (empty)\n";
+    log() << "  expired: " << output.newly_expired.size()
+          << ", added: " << output.new_nodes.size()
+          << ", graph total: " << graph_.size() << "\n";
+    log() << std::flush;
 
     return output;
 }
@@ -254,18 +247,18 @@ std::string Director::build_prompt(int turn_index, const std::string& scene_cont
     prompt["scene_context"] = scene_context;
     prompt["nodes"]         = std::move(nodes_arr);
 
-    std::string scene_context_lower = to_lower_copy(scene_context);
+    std::string scene_context_lower = str::to_lower(scene_context);
     std::set<std::uint64_t> seed_ids;
     for (const auto& node : all_nodes) {
         bool matched = false;
         for (const auto& e : node.entities) {
-            if (!e.empty() && scene_context_lower.find(to_lower_copy(e)) != std::string::npos) {
+            if (!e.empty() && scene_context_lower.find(str::to_lower(e)) != std::string::npos) {
                 matched = true;
                 break;
             }
         }
         if (!matched && !node.fact.empty() &&
-            scene_context_lower.find(to_lower_copy(node.fact)) != std::string::npos) {
+            scene_context_lower.find(str::to_lower(node.fact)) != std::string::npos) {
             matched = true;
         }
         if (matched) seed_ids.insert(node.id);
@@ -287,9 +280,9 @@ std::string Director::build_prompt(int turn_index, const std::string& scene_cont
         bfs_ids.insert(nearby.begin(), nearby.end());
     }
 
-    std::cerr << "  [director] BFS seeds (" << seed_ids.size()
-              << (used_fallback ? ", recency fallback" : ", entity-matched")
-              << ") -> " << bfs_ids.size() << " context nodes:\n";
+    log() << "  [director] BFS seeds (" << seed_ids.size()
+          << (used_fallback ? ", recency fallback" : ", entity-matched")
+          << ") -> " << bfs_ids.size() << " context nodes:\n";
     for (auto id : seed_ids) {
         const Node* n = graph_.get_node(id);
         if (n) log_node_line(*n, "    seed ");
@@ -355,7 +348,7 @@ std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response, int 
         // If valid_until was set from the LLM's resolved_at, keep it.
         // If not provided (still -1), check the raw state string.
         if (node.valid_until < 0) {
-            auto raw_state = to_lower_copy(entry.value("state", ""));
+            auto raw_state = str::to_lower(entry.value("state", ""));
             if (node_state_means_resolved(raw_state))
                 node.valid_until = turn_index;
         }
@@ -363,8 +356,8 @@ std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response, int 
         if (validator_) {
             auto verdict = validator_->check(node);
             if (!verdict.accepted) {
-                std::cerr << "  [validator] REJECTED: \"" << node.fact
-                          << "\" -- " << verdict.reason << "\n";
+                log() << "  [validator] REJECTED: \"" << node.fact
+                      << "\" -- " << verdict.reason << "\n";
                 rejections.push_back({node.fact, verdict.reason});
                 continue;
             }

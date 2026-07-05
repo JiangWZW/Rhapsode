@@ -2,6 +2,22 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-06-24] plan | Parallel scenes — practical design (rewrite of the 06-20 episode)
+
+- Rewrote `wiki/episodes/2026-06-20-parallel-scenes-lifecycle-as-authored-judgment.md` after reading the
+  actual substrate (`scene.h`, `scene_loop.cpp`, `world_graph.h`, `node.h`, `character_memory.h`,
+  `director.cpp`). The rewrite **closes the three breaks** the prior draft left open after its *War and
+  Peace* test, by removing machinery rather than adding it.
+- **Key correction from source:** cross-mind propagation is already gated by `audience` /
+  `route_perception` (`scene_loop.cpp:242-266`) and the narrator's graph context is entity-scoped
+  (`director.cpp:145-210`) — so the "instant shared-state" break is mostly already prevented.
+- **Resolved design:** binary LOD (player scene fine / off-scene coarse, drops the importance metric);
+  a **mechanical scheduler** = cadence + budget + staleness round-robin, no LLM call (kills charge
+  saturation / "second axis"); sequential ticking keeps the existing whole-graph rollback valid (drops
+  the per-plan transactional gate); cross-scene latency modeled as a **carrier scene** + authored
+  reconciliation at convergence (drops the global story-clock / transmission-as-thread).
+- Re-ran the soirée / wolf hunt / Borodino chapters to verify all three breaks dissolve.
+
 ## [2026-06-11] research | Subplot lifecycle — craft research (WHEN and HOW to start/end threads)
 
 - Created and expanded `wiki/research/subplot-lifecycle-craft-research.md` — comprehensive research

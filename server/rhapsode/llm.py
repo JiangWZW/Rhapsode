@@ -81,6 +81,8 @@ class _GeminiProvider:
         self.model = os.environ.get("RHAPSODE_MODEL", "gemini-2.0-flash")
 
     def complete(self, messages: list[dict]) -> str:
+        from google.genai.types import GenerateContentConfig
+
         system_parts = []
         contents = []
         for msg in messages:
@@ -88,9 +90,12 @@ class _GeminiProvider:
                 system_parts.extend(p.get("text", "") for p in msg.get("parts", []))
             else:
                 contents.append(msg)
-        config = {"maxOutputTokens": _MAX_OUTPUT_TOKENS}
-        if system_parts:
-            config["systemInstruction"] = "\n".join(system_parts)
+
+        config = GenerateContentConfig(
+            maxOutputTokens=_MAX_OUTPUT_TOKENS,
+            temperature=1.0,
+            systemInstruction="\n".join(system_parts) if system_parts else None,
+        )
         kwargs = {"model": self.model, "contents": contents, "config": config}
 
         def _call():

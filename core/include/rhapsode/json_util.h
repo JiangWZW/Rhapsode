@@ -1,10 +1,11 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 #include <string_view>
 
 #include <nlohmann/json.hpp>
+
+#include "rhapsode/log_util.h"
 
 namespace rhapsode {
 
@@ -128,7 +129,7 @@ inline nlohmann::json try_parse_json(const std::string& text) {
     try { return nlohmann::json::parse(norm); }
     catch (...) {}
 
-    std::cerr << "  [parse] JSON extraction failed -- using empty object\n";
+    log() << "  [parse] JSON extraction failed -- using empty object\n";
     return nlohmann::json::object();
 }
 

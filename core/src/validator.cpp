@@ -1,23 +1,13 @@
 #include "rhapsode/validator.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/log_util.h"
+#include "rhapsode/str_util.h"
 
 #include <algorithm>
-#include <cctype>
-#include <iostream>
 #include <sstream>
 #include <unordered_set>
 
 namespace rhapsode {
-
-namespace {
-
-std::string to_lower(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return s;
-}
-
-}  // namespace
 
 Validator::Validator(const WorldGraph& graph) : graph_(graph) {}
 
@@ -42,7 +32,7 @@ std::vector<const Node*> Validator::gather_context(const Node& candidate) const 
 
     std::unordered_set<std::string> target_entities;
     for (const auto& e : candidate.entities)
-        target_entities.insert(to_lower(e));
+        target_entities.insert(str::to_lower(e));
 
     int chain_total = 0;
     for (const auto& entity : target_entities) {
@@ -51,7 +41,7 @@ std::vector<const Node*> Validator::gather_context(const Node& candidate) const 
             if (n.state == NodeState::Dormant) return;  // live = active or foreshadowed
             if (dominated(&n)) return;
             for (const auto& ne : n.entities) {
-                if (to_lower(ne) == entity) {
+                if (str::to_lower(ne) == entity) {
                     matches.push_back(&n);
                     return;
                 }
@@ -70,9 +60,9 @@ std::vector<const Node*> Validator::gather_context(const Node& candidate) const 
             }
         }
         chain_total += added;
-        std::cerr << "  [validator] context: entity \"" << entity
-                  << "\" -> " << matches.size() << " match(es), "
-                  << added << " added\n";
+        log() << "  [validator] context: entity \"" << entity
+              << "\" -> " << matches.size() << " match(es), "
+              << added << " added\n";
     }
 
     int chroma_added = 0;
@@ -86,16 +76,16 @@ std::vector<const Node*> Validator::gather_context(const Node& candidate) const 
                 ++chroma_added;
             }
         }
-        std::cerr << "  [validator] context: ChromaDB -> "
-                  << hits.size() << " hit(s), " << chroma_added << " new\n";
+        log() << "  [validator] context: ChromaDB -> "
+              << hits.size() << " hit(s), " << chroma_added << " new\n";
     }
 
     std::sort(context.begin(), context.end(),
         [](const Node* a, const Node* b) { return a->created_at < b->created_at; });
 
-    std::cerr << "  [validator] context: " << context.size()
-              << " total (" << chain_total << " chain + "
-              << chroma_added << " chroma)\n";
+    log() << "  [validator] context: " << context.size()
+          << " total (" << chain_total << " chain + "
+          << chroma_added << " chroma)\n";
 
     return context;
 }
@@ -204,8 +194,8 @@ std::string Validator::try_llm_call(const std::string& prompt) const {
     try {
         return llm_cb_(sanitize_utf8(prompt));
     } catch (const std::exception& e) {
-        std::cerr << "  [validator] LLM call failed: " << e.what()
-                  << " -- accepting by default\n";
+        log() << "  [validator] LLM call failed: " << e.what()
+              << " -- accepting by default\n";
         return "";
     }
 }
@@ -217,12 +207,12 @@ std::string Validator::try_llm_call(const std::string& prompt) const {
 Verdict Validator::check(const Node& candidate) const {
     if (!llm_cb_) return {true, ""};
 
-    std::cerr << "  [validator] checking \"" << candidate.fact << "\"\n";
+    log() << "  [validator] checking \"" << candidate.fact << "\"\n";
 
     auto dead = dead_check_cb_ ? dead_check_cb_() : std::vector<std::string>{};
     auto context = gather_context(candidate);
     if (context.empty()) {
-        std::cerr << "  [validator] no context -- auto-accept\n";
+        log() << "  [validator] no context -- auto-accept\n";
         return {true, ""};
     }
 
@@ -235,16 +225,16 @@ Verdict Validator::check(const Node& candidate) const {
         ? kHeader + data + kFooter
         : kHeader + kExamples + data + kFooter;
 
-    std::cerr << "  [validator] prompt: " << prompt.size() << " chars ("
-              << (compact ? "compact" : "full") << ")\n" << std::flush;
+    log() << "  [validator] prompt: " << prompt.size() << " chars ("
+          << (compact ? "compact" : "full") << ")\n" << std::flush;
 
     auto response = try_llm_call(prompt);
     if (response.empty()) {
-        std::cerr << "  [validator] empty response -- accepting by default\n";
+        log() << "  [validator] empty response -- accepting by default\n";
         return {true, ""};
     }
 
-    std::cerr << "  [validator] raw response: " << response << "\n";
+    log() << "  [validator] raw response: " << response << "\n";
 
     // Parse with status logging
     nlohmann::json j;
@@ -252,19 +242,19 @@ Verdict Validator::check(const Node& candidate) const {
     try {
         j = nlohmann::json::parse(response);
         parsed = true;
-        std::cerr << "  [validator] parse: OK (direct)\n";
+        log() << "  [validator] parse: OK (direct)\n";
     } catch (...) {
         std::string salvaged;
         if (extract_balanced_json(response, salvaged)) {
             try {
                 j = nlohmann::json::parse(salvaged);
                 parsed = true;
-                std::cerr << "  [validator] parse: OK (extracted from \""
-                          << salvaged.substr(0, 100) << "\")\n";
+                log() << "  [validator] parse: OK (extracted from \""
+                      << salvaged.substr(0, 100) << "\")\n";
             } catch (...) {}
         }
         if (!parsed) {
-            std::cerr << "  [validator] parse: FAILED -- defaulting to accept\n";
+            log() << "  [validator] parse: FAILED -- defaulting to accept\n";
             return {true, ""};
         }
     }
@@ -272,16 +262,16 @@ Verdict Validator::check(const Node& candidate) const {
     bool contradicts = j.value("contradicts", false);
     std::string reason = j.value("reason", j.value("reasoning", ""));
 
-    std::cerr << "  [validator] verdict: contradicts="
-              << (contradicts ? "true" : "false")
-              << " reasoning=\"" << reason << "\"\n";
+    log() << "  [validator] verdict: contradicts="
+          << (contradicts ? "true" : "false")
+          << " reasoning=\"" << reason << "\"\n";
 
     if (contradicts) {
-        std::cerr << "  [validator] REJECTED\n";
+        log() << "  [validator] REJECTED\n";
         return {false, reason};
     }
 
-    std::cerr << "  [validator] accepted\n";
+    log() << "  [validator] accepted\n";
     return {true, ""};
 }
 

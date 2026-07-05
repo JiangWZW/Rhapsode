@@ -1,6 +1,6 @@
 #include "rhapsode/memory_system.h"
+#include "rhapsode/log_util.h"
 #include <nlohmann/json.hpp>
-#include <iostream>
 #include <stdexcept>
 
 namespace rhapsode {
@@ -27,7 +27,7 @@ void MemorySystem::delete_nodes(const std::vector<std::uint64_t>& node_ids) {
     nlohmann::json ids = nlohmann::json::array();
     for (auto id : node_ids) ids.push_back("node_" + std::to_string(id));
     delete_cb_(collection_, ids.dump());
-    std::cerr << "  [memory] Deleted " << node_ids.size() << " nodes from ChromaDB\n" << std::flush;
+    log() << "  [memory] Deleted " << node_ids.size() << " nodes from ChromaDB\n" << std::flush;
 }
 
 // -- Write --
@@ -90,7 +90,7 @@ void MemorySystem::process_new_nodes(const std::vector<Node>& nodes, int turn) {
     }
 
     if (stored > 0)
-        std::cerr << "  [memory] Indexed " << stored << " nodes in ChromaDB\n" << std::flush;
+        log() << "  [memory] Indexed " << stored << " nodes in ChromaDB\n" << std::flush;
 }
 
 void MemorySystem::sync_expired(const std::vector<Node>& expired_nodes) {
@@ -107,7 +107,7 @@ void MemorySystem::sync_expired(const std::vector<Node>& expired_nodes) {
     }
 
     if (synced > 0)
-        std::cerr << "  [memory] Synced " << synced << " expired nodes in ChromaDB\n" << std::flush;
+        log() << "  [memory] Synced " << synced << " expired nodes in ChromaDB\n" << std::flush;
 }
 
 } // namespace rhapsode

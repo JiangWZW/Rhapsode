@@ -6,6 +6,7 @@
 #include "rhapsode/scene.h"
 #include "rhapsode/director.h"
 #include "rhapsode/scene_loop.h"
+#include "rhapsode/scene_loop_support.h"
 
 using namespace rhapsode;
 using json = nlohmann::json;
@@ -246,6 +247,135 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     REQUIRE(captured_instructions.find("<<<RHAPSODE_JSON>>>") != std::string::npos);
     REQUIRE(captured_turn_state.find("I enter the tavern.") != std::string::npos);
     REQUIRE(captured_result.content == "The tavern is warm.");
+}
+
+TEST_CASE("split_merged_response parses sentinel and fallback plans", "[scene_loop]") {
+    SECTION("sentinel split") {
+        auto [prose, plan] = split_merged_response(R"(You step forward.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})");
+
+        REQUIRE(prose == "You step forward.");
+        REQUIRE(plan["transitions"].is_array());
+        REQUIRE(plan["active_cast"].is_array());
+    }
+
+    SECTION("fallback takes the outermost plan object") {
+        auto [prose, plan] = split_merged_response(
+            R"(A stray { brace } appears before the actual plan.
+{"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"Hold."}],"new_characters":[],"active_cast":["Guard"]})");
+
+        REQUIRE(prose == "A stray { brace } appears before the actual plan.");
+        REQUIRE(plan["speech_turns"].size() == 1);
+        REQUIRE(plan["speech_turns"][0]["character"] == "Guard");
+    }
+
+    SECTION("normalizes smart quotes before parsing") {
+        const std::string lq = "\xE2\x80\x9C";
+        const std::string rq = "\xE2\x80\x9D";
+        const std::string raw =
+            "Narration.\n<<<RHAPSODE_JSON>>>\n{" +
+            lq + "transitions" + rq + ":[]," +
+            lq + "new_nodes" + rq + ":[]," +
+            lq + "speech_turns" + rq + ":[]," +
+            lq + "new_characters" + rq + ":[]," +
+            lq + "active_cast" + rq + ":[]}";
+        auto [prose, plan] = split_merged_response(raw);
+
+        REQUIRE(prose == "Narration.");
+        REQUIRE(plan["new_nodes"].is_array());
+    }
+}
+
+TEST_CASE("active_cast applies resolved living NPCs only", "[scene_loop]") {
+    Scene scene;
+    Character alice{"Alice", "A guard", false};
+    alice.on_stage = true;
+    Character bob{"Bob", "A scout", false};
+    bob.on_stage = true;
+    scene.enter_character(std::move(alice));
+    scene.enter_character(std::move(bob));
+
+    nlohmann::json plan = {
+        {"active_cast", {"Alice"}},
+        {"speech_turns", nlohmann::json::array()},
+    };
+
+    apply_active_cast(plan, {}, scene);
+
+    REQUIRE(scene.find_on_stage("Alice") != nullptr);
+    REQUIRE(scene.find_on_stage("Bob") == nullptr);
+}
+
+TEST_CASE("active_cast does not resolve arbitrary substrings", "[scene_loop]") {
+    Scene scene;
+    Character alice{"Alice", "A guard", false};
+    alice.on_stage = true;
+    Character albert{"Albert", "A scout", false};
+    albert.on_stage = true;
+    scene.enter_character(std::move(alice));
+    scene.enter_character(std::move(albert));
+
+    REQUIRE(resolve_cast_name("Al", scene.characters) == nullptr);
+    REQUIRE(resolve_cast_name("Alice", scene.characters)->name == "Alice");
+}
+
+TEST_CASE("route_perception respects audience and public beats", "[scene_loop]") {
+    Scene scene;
+    Character alice{"Alice", "A guard", false};
+    alice.on_stage = true;
+    Character bob{"Bob", "A scout", false};
+    bob.on_stage = true;
+    scene.enter_character(std::move(alice));
+    scene.enter_character(std::move(bob));
+
+    Node private_node;
+    private_node.fact = "Alice notices the hidden switch";
+    private_node.entities = {"Switch"};
+    private_node.audience = {"Alice"};
+
+    route_perception(scene, {private_node}, 2);
+
+    int alice_perceptions = 0;
+    scene.character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
+        if (n.type == "perception") ++alice_perceptions;
+    }, false);
+    int bob_perceptions = 0;
+    scene.character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
+        if (n.type == "perception") ++bob_perceptions;
+    }, false);
+
+    REQUIRE(alice_perceptions == 1);
+    REQUIRE(bob_perceptions == 0);
+
+    Node public_node;
+    public_node.fact = "The gate opens";
+    public_node.entities = {"Gate"};
+
+    route_perception(scene, {public_node}, 3);
+
+    alice_perceptions = 0;
+    scene.character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
+        if (n.type == "perception") ++alice_perceptions;
+    }, false);
+    bob_perceptions = 0;
+    scene.character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
+        if (n.type == "perception") ++bob_perceptions;
+    }, false);
+
+    REQUIRE(alice_perceptions == 2);
+    REQUIRE(bob_perceptions == 1);
+}
+
+TEST_CASE("death confirmation accepts only a yes token", "[scene_loop]") {
+    REQUIRE(is_affirmative_yes_response("yes"));
+    REQUIRE(is_affirmative_yes_response("Yes."));
+    REQUIRE(is_affirmative_yes_response("YES - confirmed"));
+
+    REQUIRE_FALSE(is_affirmative_yes_response("no"));
+    REQUIRE_FALSE(is_affirmative_yes_response("yesterday he seemed dead"));
+    REQUIRE_FALSE(is_affirmative_yes_response("not yes"));
 }
 
 TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {

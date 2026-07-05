@@ -1,9 +1,9 @@
 #include "rhapsode/text_downsampler.h"
 #include "rhapsode/json_util.h"
+#include "rhapsode/log_util.h"
 
 #include <algorithm>
 #include <chrono>
-#include <iostream>
 #include <sstream>
 
 namespace rhapsode {
@@ -117,7 +117,7 @@ std::string TextDownsampler::summarize(const std::string& passage, int level) {
         auto end = result.find_last_not_of(" \t\n\r");
         return sanitize_utf8(result.substr(start, end - start + 1));
     } catch (const std::exception& e) {
-        std::cerr << "  [downsampler] summarize failed: " << e.what() << "\n";
+        log() << "  [downsampler] summarize failed: " << e.what() << "\n";
         return {};
     }
 }
@@ -143,8 +143,8 @@ void TextDownsampler::cascade(int source_level) {
     if (dest_level >= MAX_MIPS) {
         // Deepest level: circular buffer -- drop oldest
         while (static_cast<int>(src.snippets.size()) > src.max_snippets) {
-            std::cerr << "  [downsampler] dropping oldest snippet from mip"
-                      << source_level << "\n";
+            log() << "  [downsampler] dropping oldest snippet from mip"
+                  << source_level << "\n";
             src.snippets.erase(src.snippets.begin());
         }
         return;
@@ -159,8 +159,8 @@ void TextDownsampler::cascade(int source_level) {
         seed.promoted = true;
         seed.source_mip = source_level;
         dest.snippets.push_back(std::move(seed));
-        std::cerr << "  [downsampler] seed promotion mip" << source_level
-                  << " -> mip" << dest_level << "\n";
+        log() << "  [downsampler] seed promotion mip" << source_level
+              << " -> mip" << dest_level << "\n";
     } else {
         // Merge oldest SNIPPETS_PER_PROMOTION snippets via LLM
         int count = std::min(SNIPPETS_PER_PROMOTION,
@@ -182,7 +182,7 @@ void TextDownsampler::cascade(int source_level) {
             src.snippets.insert(src.snippets.begin(),
                                 std::make_move_iterator(to_merge.begin()),
                                 std::make_move_iterator(to_merge.end()));
-            std::cerr << "  [downsampler] cascade failed, rolled back\n";
+            log() << "  [downsampler] cascade failed, rolled back\n";
             return;
         }
 

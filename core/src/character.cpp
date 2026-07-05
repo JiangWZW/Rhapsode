@@ -30,7 +30,7 @@ void from_json(const nlohmann::json& j, Character& c)
     c.role = j.value("role", "");
     c.on_stage = j.value("on_stage", c.is_player);
     c.dead = j.value("dead", false);
-    c.created_at = j.value("created_at", 0);
+    c.created_at = j.value("created_at", -1);
 }
 
 std::string Character::build_prompt__dialogue_voice() const {
