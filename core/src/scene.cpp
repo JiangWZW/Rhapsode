@@ -32,9 +32,42 @@ void migrate_character_lines_to_dialogue(History& history, History& dialogue) {
 
 }  // namespace
 
+// -- Storyline lifecycle --
+
+Scene Scene::fork(const std::string& new_scene_id,
+                  const std::vector<std::string>& cast) const {
+    Scene child;
+    child.set_world(world_);        // co-own the same durable substrate
+    child.scene_id      = new_scene_id;
+    child.title         = title;    // inherited; caller may override
+    child.system_prompt = system_prompt;
+    child.turn_index    = 0;        // fresh clock; child has its own prose threads
+
+    // A fork MOVES its cast: they join the child and leave this parent, so a
+    // character is never in both storylines at once. The player never moves.
+    for (const auto& name : cast)
+        if (Character* ch = world_->find_character(name); ch && !ch->is_player) {
+            ch->join_scene(new_scene_id);
+            ch->leave_scene(scene_id);
+        }
+
+    log() << "  [fork] scene '" << scene_id << "' -> '" << new_scene_id
+          << "' with cast [" << [&] {
+                 std::string s;
+                 for (size_t i = 0; i < cast.size(); ++i) {
+                     if (i) s += ", ";
+                     s += cast[i];
+                 }
+                 return s;
+             }() << "]\n";
+    return child;
+}
+
 // -- Character lifecycle (theatre model) --
 
 Character& Scene::enter_character(Character ch) {
+    auto& characters = world_->characters;
+    auto& character_memories = world_->character_memories;
     for (auto& existing : characters) {
         if (str::iequals(existing.name, ch.name)) {
             if (existing.dead) {
@@ -42,8 +75,8 @@ Character& Scene::enter_character(Character ch) {
                       << " is dead -- ignoring re-entry\n";
                 return existing;
             }
-            bool was_off = !existing.on_stage;
-            existing.on_stage = true;
+            bool was_off = !existing.in_scene(scene_id);
+            existing.join_scene(scene_id);
             if (existing.description.empty() && !ch.description.empty())
                 existing.description = std::move(ch.description);
             if (existing.dialogue_instructions.empty() && !ch.dialogue_instructions.empty())
@@ -54,7 +87,7 @@ Character& Scene::enter_character(Character ch) {
             return existing;
         }
     }
-    ch.on_stage = true;
+    ch.join_scene(scene_id);
     characters.push_back(std::move(ch));
 
     auto& added = characters.back();
@@ -74,82 +107,25 @@ Character& Scene::enter_character(Character ch) {
 }
 
 Character* Scene::find_on_stage(const std::string& name) {
-    for (auto& c : characters)
-        if (c.on_stage && !c.dead && str::iequals(c.name, name)) return &c;
+    for (auto& c : world_->characters)
+        if (c.in_scene(scene_id) && !c.dead && str::iequals(c.name, name)) return &c;
     return nullptr;
 }
 
 const Character* Scene::find_on_stage(const std::string& name) const {
-    for (const auto& c : characters)
-        if (c.on_stage && !c.dead && str::iequals(c.name, name)) return &c;
+    for (const auto& c : world_->characters)
+        if (c.in_scene(scene_id) && !c.dead && str::iequals(c.name, name)) return &c;
     return nullptr;
 }
 
 bool Scene::exit_character(const std::string& name) {
-    for (auto& c : characters) {
-        if (str::iequals(c.name, name) && c.on_stage) {
-            c.on_stage = false;
+    for (auto& c : world_->characters) {
+        if (str::iequals(c.name, name) && c.in_scene(scene_id)) {
+            c.leave_scene(scene_id);
             return true;
         }
     }
     return false;
-}
-
-std::vector<DeathCandidate> Scene::scan_death_candidates() {
-    std::vector<DeathCandidate> candidates;
-    auto all_nodes = world_graph.all_nodes(true);
-
-    static const std::vector<std::string> death_keywords = {
-        "dead", "dies", "died", "kills", "killed", "killing",
-        "corpse", "slain", "perished", "executed", "murdered",
-        "succumbed", "fatal"
-    };
-
-    auto has_death_keyword = [&](const std::string& text_lower) {
-        for (const auto& kw : death_keywords)
-            if (text_lower.find(kw) != std::string::npos) return true;
-        return false;
-    };
-
-    auto mentions_character = [&](const Node& n, const std::string& name,
-                                  const std::string& name_lower) {
-        for (const auto& ent : n.entities)
-            if (str::iequals(ent, name)) return true;
-        auto fl = str::to_lower(n.fact);
-        if (fl.find(name_lower) != std::string::npos) return true;
-        auto cl = str::to_lower(n.active_ctx);
-        return cl.find(name_lower) != std::string::npos;
-    };
-
-    for (const auto& ch : characters) {
-        if (ch.is_player || ch.dead) continue;
-
-        std::string name_lower = str::to_lower(ch.name);
-        bool has_death_hit = false;
-
-        for (const auto& n : all_nodes) {
-            if (n.state != NodeState::Active) continue;
-            if (!mentions_character(n, ch.name, name_lower)) continue;
-
-            std::string fact_lower = str::to_lower(n.fact);
-            std::string ctx_lower  = str::to_lower(n.active_ctx);
-            if (has_death_keyword(fact_lower) || has_death_keyword(ctx_lower))
-                has_death_hit = true;
-        }
-
-        if (!has_death_hit) continue;
-
-        DeathCandidate dc;
-        dc.character_name = ch.name;
-        for (const auto& n : all_nodes) {
-            if (n.state != NodeState::Active) continue;
-            if (!mentions_character(n, ch.name, name_lower)) continue;
-            dc.evidence.push_back(n.fact);
-        }
-        candidates.push_back(std::move(dc));
-    }
-
-    return candidates;
 }
 
 namespace {
@@ -172,9 +148,9 @@ std::vector<std::string> Scene::build_prompt__cast() const {
     std::vector<std::string> on_stage_names;
     std::vector<std::string> off_stage_names;
 
-    for (const auto& c : characters) {
+    for (const auto& c : world_->characters) {
         if (c.is_player || c.dead) continue;
-        if (c.on_stage) {
+        if (c.in_scene(scene_id)) {
             on_stage_names.push_back(c.name);
             std::string line = "- " + c.name;
             if (!c.role.empty())
@@ -235,9 +211,13 @@ int Scene::revert_turns(int n) {
     history.truncate(cut);
     dialogue.drop_from_turn(target);
 
+    auto& world_graph = world_->world_graph;
+    auto& characters = world_->characters;
+    auto& character_memories = world_->character_memories;
+
     // 2. Graph rollback + ChromaDB cleanup
     auto removed_ids = world_graph.revert_to_turn(target);
-    if (memory_) memory_->delete_nodes(removed_ids);
+    if (MemorySystem* mem = world_->memory()) mem->delete_nodes(removed_ids);
 
     // 3. Characters: remove spawned-during-reverted-turns, reset + re-evaluate rest
     characters.erase(
@@ -271,7 +251,7 @@ nlohmann::json Scene::to_json() const {
     nlohmann::json j;
     j["title"] = title;
     j["system_prompt"] = system_prompt;
-    j["characters"] = characters;
+    j["characters"] = world_->characters;
     j["history"] = history;
     return j;
 }
@@ -280,7 +260,7 @@ Scene Scene::from_json(const nlohmann::json& j) {
     Scene s;
     j.at("title").get_to(s.title);
     j.at("system_prompt").get_to(s.system_prompt);
-    j.at("characters").get_to(s.characters);
+    j.at("characters").get_to(s.world().characters);
     if (j.contains("history")) {
         s.history = j.at("history").get<History>();
     }
@@ -304,65 +284,19 @@ Scene Scene::load_json(const std::string& path) {
 
     s.scene_id = std::filesystem::path(path).stem().string();
 
-    nlohmann::json graph_j;
-    graph_j["next_id"] = 1;
-    graph_j["nodes"] = j.value("nodes", nlohmann::json::array());
-    graph_j["edges"] = j.value("edges", nlohmann::json::array());
-    s.world_graph = WorldGraph::from_json(graph_j);
+    // Populate the shared substrate (graph + authored minds) from the scenario.
+    s.world().seed_from_scenario(j);
 
-    // Bootstrap CharacterMemory from initial_memory in character definitions
+    // Authored scenarios express initial presence with an `on_stage` bool (a
+    // per-scene convenience). Now that the scene id is known, resolve that hint
+    // into explicit membership so the character sits in this storyline.
     for (const auto& ch_j : j.value("characters", nlohmann::json::array())) {
         std::string name = ch_j.value("name", "");
-        if (name.empty() || ch_j.value("is_player", false)) continue;
-        if (!ch_j.contains("initial_memory")) continue;
-
-        CharacterMemory mem(name);
-        const auto& im = ch_j["initial_memory"];
-
-        // Authored beliefs are the character's t=0 view, seeded into the
-        // subjective belief graph as Active, charged nodes tagged with their
-        // subject (the optional `about` field -- a name or list of names).  Each
-        // node's id is kept by array index so an authored contradiction
-        // ("tension_with": <index>) can be cross-linked as a live tension.
-        const auto& beliefs_j = im.value("beliefs", nlohmann::json::array());
-        std::vector<std::uint64_t> seeded_ids(beliefs_j.size(), 0);
-        for (std::size_t bi = 0; bi < beliefs_j.size(); ++bi) {
-            const auto& bj = beliefs_j[bi];
-            std::vector<std::string> about;
-            if (bj.contains("about")) {
-                const auto& aj = bj["about"];
-                if (aj.is_string())     about.push_back(aj.get<std::string>());
-                else if (aj.is_array()) for (const auto& a : aj) about.push_back(a.get<std::string>());
-            }
-            float w = CharacterMemory::kAuthoredSeedWeight;
-            if (bj.contains("weight")) w = bj["weight"].get<float>();
-            seeded_ids[bi] = mem.seed_belief(bj.value("content", ""), about, 0, w);
-        }
-
-        // Authored contradictions: a belief may declare it sits in tension with
-        // an earlier belief (by its index in this array).  Cross-link the pair so
-        // it surfaces in the rendered Tensions section instead of silently
-        // chaining.  Both Thoughts stay live.
-        for (std::size_t bi = 0; bi < beliefs_j.size(); ++bi) {
-            if (!beliefs_j[bi].contains("tension_with")) continue;
-            const auto& tw = beliefs_j[bi]["tension_with"];
-            auto link = [&](long long other) {
-                if (other >= 0 && static_cast<std::size_t>(other) < seeded_ids.size())
-                    mem.link_tension(seeded_ids[bi],
-                                     seeded_ids[static_cast<std::size_t>(other)], 0);
-            };
-            if (tw.is_number())     link(tw.get<long long>());
-            else if (tw.is_array()) for (const auto& o : tw) if (o.is_number()) link(o.get<long long>());
-        }
-
-        // The authored `context` entries are first-person interiority: seed them
-        // as charged self-beliefs (subject = the character itself) so they enter
-        // the live mind and surface via render_thoughts, rather than a separate
-        // self_state field that the narrator no longer reads.
-        for (const auto& ctx : im.value("context", nlohmann::json::array()))
-            mem.seed_belief(ctx.get<std::string>(), {name}, 0);
-
-        s.character_memories.emplace(name, std::move(mem));
+        if (name.empty()) continue;
+        bool authored_on = ch_j.value("on_stage", ch_j.value("is_player", false));
+        if (!authored_on) continue;
+        for (auto& c : s.world().characters)
+            if (str::iequals(c.name, name)) { c.join_scene(s.scene_id); break; }
     }
 
     return s;
@@ -381,11 +315,17 @@ std::string Scene::save_path(const std::string& saves_dir) const {
     return saves_dir + "/" + scene_id + ".json";
 }
 
-bool Scene::has_save(const std::string& saves_dir) const {
+bool Scene::has_ephemeral_save(const std::string& saves_dir) const {
     return std::filesystem::exists(save_path(saves_dir));
 }
 
-void Scene::load_save(const std::string& saves_dir) {
+bool Scene::has_save(const std::string& saves_dir) const {
+    // Require both blobs: a legacy single-file save (no world.json) is treated
+    // as absent so the session starts fresh instead of failing to load.
+    return world_->has_save(saves_dir) && has_ephemeral_save(saves_dir);
+}
+
+void Scene::load_ephemeral(const std::string& saves_dir) {
     std::ifstream in(save_path(saves_dir));
     if (!in.is_open())
         throw std::runtime_error("No save for scene: " + scene_id);
@@ -393,52 +333,37 @@ void Scene::load_save(const std::string& saves_dir) {
     nlohmann::json j;
     in >> j;
 
-    turn_index = j.value("turn_index", 0);
-    if (j.contains("world_graph")) {
-        world_graph = WorldGraph::from_json(j.at("world_graph"));
-    } else if (j.contains("node_pool")) {
-        world_graph = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
-    } else {
-        throw std::runtime_error("Save is missing world_graph/node_pool data");
-    }
-    history    = j.at("history").get<History>();
+    turn_index        = j.value("turn_index", 0);
+    driving_intention = j.value("driving_intention", std::string{});
+    charge            = j.value("charge", 0.0f);
+    last_advanced     = j.value("last_advanced", 0);
+    if (title.empty())         title = j.value("title", std::string{});
+    if (system_prompt.empty()) system_prompt = j.value("system_prompt", std::string{});
+
+    history = j.at("history").get<History>();
     if (j.contains("dialogue"))
         dialogue = j.at("dialogue").get<History>();
     else
         migrate_character_lines_to_dialogue(history, dialogue);
 
-    if (j.contains("characters") && j["characters"].is_array())
-        characters = j["characters"].get<std::vector<Character>>();
-
-    if (memory_)
-        memory_->set_next_id(j.value("memory_next_id", 0));
-
-    if (j.contains("character_memories") && j["character_memories"].is_object()) {
-        for (auto& [name, cm_j] : j["character_memories"].items())
-            character_memories.insert_or_assign(name, CharacterMemory::from_json(cm_j));
-    }
-
     if (j.contains("downsampler"))
         downsampler = TextDownsampler::from_json(j["downsampler"]);
 }
 
-void Scene::save(const std::string& saves_dir) const {
+void Scene::save_ephemeral(const std::string& saves_dir) const {
     std::filesystem::create_directories(saves_dir);
 
     nlohmann::json j;
-    j["scene_id"]       = scene_id;
-    j["turn_index"]     = turn_index;
-    j["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
-    j["world_graph"]    = world_graph.to_json();
-    j["history"]        = history;
-    j["dialogue"]       = dialogue;
-    j["characters"]     = characters;
-
-    nlohmann::json cm_j;
-    for (const auto& [name, mem] : character_memories)
-        cm_j[name] = mem.to_json();
-    j["character_memories"] = std::move(cm_j);
-    j["downsampler"] = downsampler.to_json();
+    j["scene_id"]          = scene_id;
+    j["title"]             = title;
+    j["system_prompt"]     = system_prompt;
+    j["turn_index"]        = turn_index;
+    j["driving_intention"] = driving_intention;
+    j["charge"]            = charge;
+    j["last_advanced"]     = last_advanced;
+    j["history"]           = history;
+    j["dialogue"]          = dialogue;
+    j["downsampler"]       = downsampler.to_json();
 
     std::ofstream out(save_path(saves_dir));
     if (!out.is_open())
@@ -446,174 +371,27 @@ void Scene::save(const std::string& saves_dir) const {
     out << j.dump(2);
 }
 
+void Scene::load_save(const std::string& saves_dir) {
+    // Durable substrate first (graph, roster, minds, memory id), then this
+    // scene's ephemeral blob.
+    world_->load_save(saves_dir);
+    load_ephemeral(saves_dir);
+}
+
+void Scene::save(const std::string& saves_dir) const {
+    // Durable substrate -> world.json (shared), then this scene's blob.
+    world_->save(saves_dir);
+    save_ephemeral(saves_dir);
+}
+
 void Scene::delete_save(const std::string& saves_dir) const {
+    world_->delete_save(saves_dir);
     std::filesystem::remove(save_path(saves_dir));
 }
 
 // -- Narrator tool-use queries -----------------------------------------------
-
-namespace {
-
-nlohmann::json node_to_json(const Node& n) {
-    nlohmann::json j;
-    j["id"]          = n.id;
-    j["fact"]        = n.fact;
-    j["state"]       = to_string(n.state);
-    j["type"]        = n.type;
-    j["valid_until"] = n.valid_until;
-    j["weight"]      = n.weight;
-    j["created_at"]  = n.created_at;
-    j["entities"]    = n.entities;
-    j["chain_to"]    = n.related_to;
-    return j;
-}
-
-// Discover entities that case-insensitively match the query string.
-std::unordered_set<std::string> find_matching_entities(const std::vector<Node>& all,
-                                                       const std::string& query)
-{
-    std::unordered_set<std::string> matched;
-    for (const auto& node : all) {
-        for (const auto& ent : node.entities) {
-            if (str::iequals(ent, query))
-                matched.insert(str::to_lower(ent));
-        }
-    }
-    return matched;
-}
-
-// Collect all nodes carrying the given (lowercased) entity, sorted ascending by
-// created_at, capped at max_count.
-std::vector<const Node*> collect_entity_timeline(const std::vector<Node>& all,
-                                                 const std::string& entity_lower,
-                                                 std::size_t max_count = 20)
-{
-    std::vector<const Node*> timeline;
-    for (const auto& node : all) {
-        for (const auto& e : node.entities) {
-            if (str::to_lower(e) == entity_lower) {
-                timeline.push_back(&node);
-                break;
-            }
-        }
-    }
-    std::sort(timeline.begin(), timeline.end(),
-        [](const Node* a, const Node* b) { return a->created_at < b->created_at; });
-    if (timeline.size() > max_count)
-        timeline.resize(max_count);
-    return timeline;
-}
-
-// Substring search on node facts, sorted descending by created_at, capped.
-std::vector<const Node*> find_fact_substring_matches(const std::vector<Node>& all,
-                                                     const std::string& query_lower,
-                                                     std::size_t max_count = 15)
-{
-    std::vector<const Node*> matches;
-    for (const auto& node : all) {
-        if (str::to_lower(node.fact).find(query_lower) != std::string::npos)
-            matches.push_back(&node);
-    }
-    std::sort(matches.begin(), matches.end(),
-        [](const Node* a, const Node* b) { return a->created_at > b->created_at; });
-    if (matches.size() > max_count)
-        matches.resize(max_count);
-    return matches;
-}
-
-}  // namespace
-
-std::string Scene::tool_query_graph(const std::string& query) const {
-    const std::string query_lower = str::to_lower(query);
-    // Own the all_nodes snapshot so pointers into it stay valid through the
-    // whole function — all_nodes() returns by value, so a temporary would leave
-    // dangling pointers after its loop ended.
-    auto all = world_graph.all_nodes(true);
-
-    // Try entity match first: if any node has an entity matching the query
-    // case-insensitively, build the entity-timeline chain for that entity.
-    auto matched_entities = find_matching_entities(all, query);
-    if (!matched_entities.empty()) {
-        nlohmann::json chains = nlohmann::json::array();
-        for (const auto& ent_lower : matched_entities) {
-            auto timeline = collect_entity_timeline(all, ent_lower);
-
-            nlohmann::json chain;
-            // Find the original-cased entity name from the first matching node
-            std::string entity_name = query;
-            for (const auto* n : timeline) {
-                for (const auto& e : n->entities) {
-                    if (str::to_lower(e) == ent_lower) {
-                        entity_name = e;
-                        break;
-                    }
-                }
-            }
-            chain["entity"] = entity_name;
-            nlohmann::json tl = nlohmann::json::array();
-            for (const auto* n : timeline)
-                tl.push_back(node_to_json(*n));
-            chain["timeline"] = std::move(tl);
-            chains.push_back(std::move(chain));
-        }
-
-        nlohmann::json result;
-        result["chains"] = std::move(chains);
-        result["matches"] = nlohmann::json::array();
-        return result.dump();
-    }
-
-    // Fall back to text match: substring search on node facts
-    auto matches = find_fact_substring_matches(all, query_lower);
-    nlohmann::json ms = nlohmann::json::array();
-    for (const auto* n : matches)
-        ms.push_back(node_to_json(*n));
-
-    nlohmann::json result;
-    result["chains"] = nlohmann::json::array();
-    result["matches"] = std::move(ms);
-    return result.dump();
-}
-
-std::string Scene::tool_query_mind(const std::string& character) const {
-    // Find character by case-insensitive name
-    const Character* ch = nullptr;
-    for (const auto& c : characters) {
-        if (str::iequals(c.name, character)) {
-            ch = &c;
-            break;
-        }
-    }
-
-    auto it = character_memories.end();
-    if (ch) {
-        it = character_memories.find(ch->name);
-    }
-    // Fallback: try case-insensitive key match
-    if (it == character_memories.end()) {
-        for (auto mem_it = character_memories.begin();
-             mem_it != character_memories.end(); ++mem_it) {
-            if (str::iequals(mem_it->first, character)) {
-                it = mem_it;
-                break;
-            }
-        }
-    }
-
-    if (it == character_memories.end()) {
-        nlohmann::json err;
-        err["error"] = "character not found";
-        return err.dump();
-    }
-
-    nlohmann::json result;
-    result["character"] = it->first;
-    if (ch) {
-        result["voice"] = ch->build_prompt__dialogue_voice();
-    }
-    result["thoughts"] = it->second.render_thoughts({});
-    return result.dump();
-}
+// query_graph / query_mind live on World (shared substrate). query_history is
+// per-scene: it searches this storyline's prose thread.
 
 std::string Scene::tool_query_history(const std::string& query) const {
     const std::string query_lower = str::to_lower(query);

@@ -163,8 +163,8 @@ TEST_CASE("Scene JSON round-trip", "[scene]") {
     Scene scene;
     scene.title = "Test Scene";
     scene.system_prompt = "You are a narrator.";
-    scene.characters.push_back({"Player", "An adventurer", true});
-    scene.characters.push_back({"NPC", "A villager", false});
+    scene.world().characters.push_back({"Player", "An adventurer", true});
+    scene.world().characters.push_back({"NPC", "A villager", false});
 
     SceneMessage seed;
     seed.role = Role::Assistant;
@@ -180,8 +180,8 @@ TEST_CASE("Scene JSON round-trip", "[scene]") {
     Scene restored = Scene::from_json(j);
     REQUIRE(restored.title == "Test Scene");
     REQUIRE(restored.system_prompt == "You are a narrator.");
-    REQUIRE(restored.characters.size() == 2);
-    REQUIRE(restored.characters[0].is_player == true);
+    REQUIRE(restored.world().characters.size() == 2);
+    REQUIRE(restored.world().characters[0].is_player == true);
     REQUIRE(restored.history.size() == 1);
     REQUIRE(restored.history.messages()[0].content == "Welcome!");
 }
@@ -215,10 +215,11 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     std::string captured_turn_state;
     SceneMessage captured_result;
 
-    Director director(scene.world_graph);
+    Director director(scene.world().world_graph);
     loop.set_director(&director);
 
-    loop.set_narrator_llm_callback([&](const std::string& instructions,
+    loop.set_narrator_llm_callback([&](const std::string& /*scene_id*/,
+                                       const std::string& instructions,
                                        const std::string& turn_state) {
         captured_instructions = instructions;
         captured_turn_state = turn_state;
@@ -288,45 +289,43 @@ TEST_CASE("split_merged_response parses sentinel and fallback plans", "[scene_lo
     }
 }
 
-TEST_CASE("active_cast applies resolved living NPCs only", "[scene_loop]") {
+TEST_CASE("active_cast is presence-only: brings NPCs on-stage, never ejects", "[scene_loop]") {
     Scene scene;
     Character alice{"Alice", "A guard", false};
-    alice.on_stage = true;
     Character bob{"Bob", "A scout", false};
-    bob.on_stage = true;
     scene.enter_character(std::move(alice));
     scene.enter_character(std::move(bob));
 
-    nlohmann::json plan = {
-        {"active_cast", {"Alice"}},
-        {"speech_turns", nlohmann::json::array()},
-    };
-
-    apply_active_cast(plan, {}, scene);
-
+    // Bob omitted from active_cast is NOT ejected -- removing a character from a
+    // storyline is the lifecycle verdict's job, not active_cast's.
+    apply_active_cast({{"active_cast", {"Alice"}},
+                       {"speech_turns", nlohmann::json::array()}}, {}, scene);
     REQUIRE(scene.find_on_stage("Alice") != nullptr);
+    REQUIRE(scene.find_on_stage("Bob") != nullptr);
+
+    // A roster character currently off this scene is brought on when named.
+    scene.exit_character("Bob");
     REQUIRE(scene.find_on_stage("Bob") == nullptr);
+    apply_active_cast({{"active_cast", {"Alice", "Bob"}},
+                       {"speech_turns", nlohmann::json::array()}}, {}, scene);
+    REQUIRE(scene.find_on_stage("Bob") != nullptr);
 }
 
 TEST_CASE("active_cast does not resolve arbitrary substrings", "[scene_loop]") {
     Scene scene;
     Character alice{"Alice", "A guard", false};
-    alice.on_stage = true;
     Character albert{"Albert", "A scout", false};
-    albert.on_stage = true;
     scene.enter_character(std::move(alice));
     scene.enter_character(std::move(albert));
 
-    REQUIRE(resolve_cast_name("Al", scene.characters) == nullptr);
-    REQUIRE(resolve_cast_name("Alice", scene.characters)->name == "Alice");
+    REQUIRE(resolve_cast_name("Al", scene.world().characters) == nullptr);
+    REQUIRE(resolve_cast_name("Alice", scene.world().characters)->name == "Alice");
 }
 
 TEST_CASE("route_perception respects audience and public beats", "[scene_loop]") {
     Scene scene;
     Character alice{"Alice", "A guard", false};
-    alice.on_stage = true;
     Character bob{"Bob", "A scout", false};
-    bob.on_stage = true;
     scene.enter_character(std::move(alice));
     scene.enter_character(std::move(bob));
 
@@ -338,11 +337,11 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     route_perception(scene, {private_node}, 2);
 
     int alice_perceptions = 0;
-    scene.character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
+    scene.world().character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
         if (n.type == "perception") ++alice_perceptions;
     }, false);
     int bob_perceptions = 0;
-    scene.character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
+    scene.world().character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
         if (n.type == "perception") ++bob_perceptions;
     }, false);
 
@@ -356,11 +355,11 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     route_perception(scene, {public_node}, 3);
 
     alice_perceptions = 0;
-    scene.character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
+    scene.world().character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
         if (n.type == "perception") ++alice_perceptions;
     }, false);
     bob_perceptions = 0;
-    scene.character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
+    scene.world().character_memories.at("Bob").beliefs().for_each([&](const Node& n) {
         if (n.type == "perception") ++bob_perceptions;
     }, false);
 
@@ -384,16 +383,16 @@ TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
     scene.system_prompt = "Narrate.";
 
     Character npc{"Barkeep", "A gruff dwarf", false};
-    npc.on_stage = true;
     scene.enter_character(std::move(npc));
 
     SceneLoop loop;
     loop.load_scene(scene);
 
-    Director director(scene.world_graph);
+    Director director(scene.world().world_graph);
     loop.set_director(&director);
 
-    loop.set_narrator_llm_callback([&](const std::string& instructions,
+    loop.set_narrator_llm_callback([&](const std::string& /*scene_id*/,
+                                       const std::string& instructions,
                                        const std::string& turn_state) {
         (void)instructions;
         (void)turn_state;
@@ -415,7 +414,7 @@ TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
     REQUIRE(scene.dialogue.messages()[0].metadata["scene_kind"] == "character");
     REQUIRE(scene.dialogue.messages()[0].content.find("What'll it be?") != std::string::npos);
 
-    const auto& barkeep_mem = scene.character_memories.at("Barkeep");
+    const auto& barkeep_mem = scene.world().character_memories.at("Barkeep");
     int perceptions = 0;
     barkeep_mem.beliefs().for_each([&](const Node& n) {
         if (n.type == "perception") ++perceptions;
@@ -432,17 +431,17 @@ TEST_CASE("SceneLoop retries Player-only speech_turns", "[scene_loop]") {
     scene.system_prompt = "Narrate.";
 
     Character npc{"Barkeep", "A gruff dwarf", false};
-    npc.on_stage = true;
     scene.enter_character(std::move(npc));
 
     SceneLoop loop;
     loop.load_scene(scene);
 
-    Director director(scene.world_graph);
+    Director director(scene.world().world_graph);
     loop.set_director(&director);
 
     int narrator_calls = 0;
-    loop.set_narrator_llm_callback([&](const std::string& instructions,
+    loop.set_narrator_llm_callback([&](const std::string& /*scene_id*/,
+                                       const std::string& instructions,
                                        const std::string& turn_state) {
         (void)instructions;
         ++narrator_calls;
@@ -476,16 +475,15 @@ TEST_CASE("SceneLoop allows empty speech_turns with NPCs on stage", "[scene_loop
     scene.system_prompt = "Narrate.";
 
     Character npc{"Barkeep", "A gruff dwarf", false};
-    npc.on_stage = true;
     scene.enter_character(std::move(npc));
 
     SceneLoop loop;
     loop.load_scene(scene);
 
-    Director director(scene.world_graph);
+    Director director(scene.world().world_graph);
     loop.set_director(&director);
 
-    loop.set_narrator_llm_callback([](const std::string&, const std::string&) {
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&, const std::string&) {
         return R"(You sit in silence.
 
 <<<RHAPSODE_JSON>>>

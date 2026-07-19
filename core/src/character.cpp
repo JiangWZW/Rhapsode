@@ -15,7 +15,7 @@ void to_json(nlohmann::json& j, const Character& c)
         j["example_dialogue"] = c.example_dialogue;
     if (!c.role.empty())
         j["role"] = c.role;
-    j["on_stage"] = c.on_stage;
+    j["scene_ids"] = c.scene_ids;
     j["dead"] = c.dead;
     j["created_at"] = c.created_at;
 }
@@ -28,7 +28,10 @@ void from_json(const nlohmann::json& j, Character& c)
     c.dialogue_instructions = j.value("dialogue_instructions", "");
     c.example_dialogue = j.value("example_dialogue", std::vector<std::string>{});
     c.role = j.value("role", "");
-    c.on_stage = j.value("on_stage", c.is_player);
+    // New format stores explicit scene membership. The legacy authored/save
+    // `on_stage` bool carries no scene id here; Scene::load_json resolves that
+    // hint into membership once the scene id is known.
+    c.scene_ids = j.value("scene_ids", std::vector<std::string>{});
     c.dead = j.value("dead", false);
     c.created_at = j.value("created_at", -1);
 }

@@ -11,6 +11,11 @@ set "SERVER_DIR=%~dp0server"
 set "SAVES_DIR=%SERVER_DIR%\saves"
 set "CHROMA_DIR=%SERVER_DIR%\chroma"
 
+rem A Story save is a set of files in SAVES_DIR: story.json (manifest),
+rem world.json (shared durable state), and one <scene_id>.json blob per live
+rem storyline (the root plus any forks, e.g. konosuba_f0_0.json). A saves dir
+rem holds a single playthrough, so a scenario reset clears all of them.
+
 if "%~1"=="" (
     echo Clearing ALL saves and embedding data...
     echo.
@@ -32,17 +37,17 @@ if "%~1"=="" (
     echo Clearing scenario: %~1
     echo.
 
-    set "SAVE_FILE=%SAVES_DIR%\%~1.json"
-    if exist "!SAVE_FILE!" (
-        del "!SAVE_FILE!"
-        echo   Deleted save: !SAVE_FILE!
+    if exist "%SAVES_DIR%" (
+        del /q "%SAVES_DIR%\story.json" 2>nul
+        del /q "%SAVES_DIR%\world.json" 2>nul
+        del /q "%SAVES_DIR%\%~1*.json" 2>nul
+        echo   Deleted saves for %~1 -- manifest, world, and scene blobs
     ) else (
-        echo   No save found: !SAVE_FILE!
+        echo   No saves directory found.
     )
 
-    rem Delete matching ChromaDB collections via Python
     if exist "%CHROMA_DIR%" (
-        "%SERVER_DIR%\.venv\Scripts\python.exe" -c "import chromadb, sys; c=chromadb.PersistentClient(path=r'%CHROMA_DIR%'); scene_id=sys.argv[1]; deleted=[]; [deleted.append(col.name) or c.delete_collection(col.name) for col in c.list_collections() if col.name.startswith(scene_id)]; print(f'  Deleted {len(deleted)} collection(s): {deleted}' if deleted else '  No matching collections found.')" "%~1"
+        "%SERVER_DIR%\.venv\Scripts\python.exe" "%SERVER_DIR%\reset_chroma.py" "%CHROMA_DIR%" "%~1"
     ) else (
         echo   No chroma directory found.
     )

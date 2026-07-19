@@ -29,7 +29,8 @@ enum class LoopState {
     AppendingResult
 };
 
-using NarratorLLMCallback  = std::function<std::string(const std::string& instructions,
+using NarratorLLMCallback  = std::function<std::string(const std::string& scene_id,
+                                                        const std::string& instructions,
                                                         const std::string& turn_state)>;
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
 
@@ -37,6 +38,10 @@ class SceneLoop {
 public:
     void load_scene(Scene& scene);
     void submit_input(const std::string& text);
+    /// Advance the loaded scene as a player-less (off-stage) beat. `focus` is the
+    /// director cue that drives it -- typically the scene's driving intention and
+    /// recent facts -- appended to this scene's thread instead of a user turn.
+    void submit_autonomous(const std::string& focus);
     LoopState state() const;
 
     void set_llm_callback(LLMCallback cb);

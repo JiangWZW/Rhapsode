@@ -120,7 +120,7 @@ RULES:
 - audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
 - speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
-- active_cast: all living NPCs physically present this scene. [] if player alone.)RHAPSODE";
+- active_cast: the living NPCs on-screen in this beat. [] if the player is alone. This is presence for THIS beat only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.)RHAPSODE";
 }
 
 }  // namespace rhapsode

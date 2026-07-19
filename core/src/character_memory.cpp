@@ -64,11 +64,12 @@ std::string strip_echoed_label(std::string s) {
 std::uint64_t CharacterMemory::seed_belief(const std::string& fact,
                                            const std::vector<std::string>& entities,
                                            int created_at,
-                                           float weight) {
+                                           float weight,
+                                           const std::string& type) {
     if (fact.empty()) return 0;
     Node n;
     n.fact       = sanitize_utf8(fact);
-    n.type       = "belief";
+    n.type       = type;
     n.state      = NodeState::Active;
     n.entities   = entities;
     n.created_at = created_at;

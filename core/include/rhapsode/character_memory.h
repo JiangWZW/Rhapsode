@@ -31,11 +31,14 @@ public:
 
     // Seed an authored belief as an Active node tagged with its subject entities.
     // `weight` is its starting charge (how much it presses on the character).
-    // Returns the new node id so callers can cross-link authored contradictions.
+    // `type` is the node type: "belief" (a memory/view) or "intention" (a forward
+    // goal that gives a storyline its drive). Returns the new node id so callers
+    // can cross-link authored contradictions.
     std::uint64_t seed_belief(const std::string& fact,
                               const std::vector<std::string>& entities,
                               int created_at,
-                              float weight = kAuthoredSeedWeight);
+                              float weight = kAuthoredSeedWeight,
+                              const std::string& type = "belief");
 
     // Cross-link two of my Thoughts as a held contradiction (a "tension" edge),
     // so the pair surfaces in the rendered Tensions section.  Both stay live.

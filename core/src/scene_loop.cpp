@@ -44,15 +44,15 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 
 bool is_player_speech_name(const std::string& name, const Scene& scene) {
     if (str::to_lower(name) == "player") return true;
-    for (const auto& ch : scene.characters) {
-        if (ch.is_player && resolve_cast_name(name, scene.characters) == &ch) return true;
+    for (const auto& ch : scene.world().characters) {
+        if (ch.is_player && resolve_cast_name(name, scene.world().characters) == &ch) return true;
     }
     return false;
 }
 
 bool is_npc_speech_cue(const std::string& name, const Scene& scene) {
     if (is_player_speech_name(name, scene)) return false;
-    const Character* ch = resolve_cast_name(name, scene.characters);
+    const Character* ch = resolve_cast_name(name, scene.world().characters);
     return ch && !ch->dead;
 }
 
@@ -61,7 +61,7 @@ int count_speakable_npcs_in_cast(const nlohmann::json& plan, const Scene& scene)
     int count = 0;
     for (const auto& elem : plan["active_cast"]) {
         if (!elem.is_string()) continue;
-        const Character* ch = resolve_cast_name(elem.get<std::string>(), scene.characters);
+        const Character* ch = resolve_cast_name(elem.get<std::string>(), scene.world().characters);
         if (ch && !ch->dead) ++count;
     }
     return count;
@@ -107,6 +107,10 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
 // -- SceneLoop -- public interface ------------------------------------
 
 void SceneLoop::load_scene(Scene& scene) {
+    // Any in-flight background work belongs to the previously loaded scene and
+    // touches the shared World; finish it before we re-point at another scene so
+    // its async lambda never reads the wrong scene_.
+    join_background();
     scene_ = &scene;
     state_ = LoopState::WaitingForInput;
 }
@@ -120,6 +124,22 @@ void SceneLoop::submit_input(const std::string& text) {
     user_msg.role    = Role::User;
     user_msg.content = text;
     scene_->history.append(std::move(user_msg));
+    advance();
+}
+
+void SceneLoop::submit_autonomous(const std::string& focus) {
+    if (state_ != LoopState::WaitingForInput)
+        throw std::runtime_error("Cannot submit autonomous beat: loop is not waiting for input");
+    state_ = LoopState::ProcessingInput;
+
+    log() << "\n[off-stage beat] advancing scene '" << scene_->scene_id
+          << "' player-lessly\n" << std::flush;
+
+    SceneMessage cue;
+    cue.role    = Role::User;
+    cue.content = focus;
+    cue.metadata["scene_kind"] = "director_cue";
+    scene_->history.append(std::move(cue));
     advance();
 }
 
@@ -208,9 +228,9 @@ void SceneLoop::dispatch_background() {
 
         // Consolidate this turn's routed perceptions into beliefs (no-op for
         // minds that perceived nothing).
-        for (auto& [name, mem] : scene_->character_memories) {
+        for (auto& [name, mem] : scene_->world().character_memories) {
             std::string desc;
-            for (const auto& ch : scene_->characters) {
+            for (const auto& ch : scene_->world().characters) {
                 if (ch.name == name) {
                     desc = ch.description;
                     break;
@@ -284,15 +304,15 @@ std::string SceneLoop::call_narrator(const std::string& instructions,
     const std::string safe_instructions = sanitize_utf8(instructions);
     const std::string safe_turn_state   = sanitize_utf8(turn_state);
     if (narrator_llm_cb_) {
-        return sanitize_utf8(narrator_llm_cb_(safe_instructions, safe_turn_state));
+        return sanitize_utf8(narrator_llm_cb_(scene_->scene_id, safe_instructions, safe_turn_state));
     }
     return sanitize_utf8(llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
 }
 
 void SceneLoop::rollback_turn_attempt(int turn, const nlohmann::json& graph_snapshot) {
-    scene_->world_graph = WorldGraph::from_json(graph_snapshot);
+    scene_->world().world_graph = WorldGraph::from_json(graph_snapshot);
 
-    auto& chars = scene_->characters;
+    auto& chars = scene_->world().characters;
     chars.erase(std::remove_if(chars.begin(), chars.end(),
                                [turn](const Character& c) {
                                    return !c.is_player && c.created_at >= turn;
@@ -311,7 +331,6 @@ void SceneLoop::register_new_characters(int turn, const nlohmann::json& plan) {
         ch.description = ch_j.value("description", "");
         ch.dialogue_instructions = ch_j.value("dialogue_instructions", "");
         ch.role = ch_j.value("role", "minor_npc");
-        ch.on_stage = true;
         ch.created_at = turn;
 
         if (!ch.name.empty() && !scene_->find_on_stage(ch.name)) {
@@ -326,6 +345,9 @@ NarratorTurnResult SceneLoop::run_narrator_with_retry(int turn,
     state_ = LoopState::RunningLLM;
     log() << "[2/4] Calling narrative LLM...\n" << std::flush;
 
+    // Discard any lifecycle ops a prior attempt staged; only the accepted
+    // attempt's decision-tool calls survive to be applied after the beat.
+    scene_->world().clear_pending_ops();
     auto raw_response = call_narrator(prompt.instructions, prompt.turn_state);
     log() << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
     if (verbose_logging_enabled()) {
@@ -340,7 +362,7 @@ NarratorTurnResult SceneLoop::run_narrator_with_retry(int turn,
     log() << "[3/4] Applying graph...\n" << std::flush;
 
     std::vector<Rejection> all_rejections;
-    const nlohmann::json graph_snapshot = scene_->world_graph.to_json();
+    const nlohmann::json graph_snapshot = scene_->world().world_graph.to_json();
 
     for (int attempt = 0; attempt < kMaxNarratorAttempts; ++attempt) {
         if (attempt > 0) {
@@ -355,6 +377,7 @@ NarratorTurnResult SceneLoop::run_narrator_with_retry(int turn,
             rewrite_turn_state += "\nRewrite your narrative and plan to fix these issues.\n";
 
             state_ = LoopState::RunningLLM;
+            scene_->world().clear_pending_ops();
             auto [new_prose, new_plan] =
                 split_merged_response(call_narrator(prompt.instructions, rewrite_turn_state));
             result.prose = std::move(new_prose);
@@ -437,7 +460,7 @@ void SceneLoop::advance() {
     join_background();
 
     const int turn = scene_->turn_index;
-    log() << "\n====== Turn " << turn << " ======\n";
+    log() << "\n====== Turn " << turn << " [" << scene_->scene_id << "] ======\n";
     last_turn_outputs_.clear();
 
     const NarratorPrompt prompt = build_turn_prompt(turn);
@@ -479,10 +502,10 @@ void SceneLoop::confirm_deaths(const std::vector<DeathCandidate>& candidates,
         try {
             auto response = llm(sanitize_utf8(prompt));
             if (is_affirmative_yes_response(response)) {
-                for (auto& ch : scene_->characters) {
+                for (auto& ch : scene_->world().characters) {
                     if (ch.name == dc.character_name) {
                         ch.dead = true;
-                        ch.on_stage = false;
+                        ch.scene_ids.clear();
                         log() << "  [dead] " << ch.name
                               << " (confirmed by LLM)\n";
                         break;

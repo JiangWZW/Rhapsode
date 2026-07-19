@@ -64,7 +64,9 @@ def _get_provider():
     else:
         raise ValueError(f"Unknown RHAPSODE_PROVIDER: {name!r}. Use 'gemini' or 'deepseek'.")
 
-    log.info("LLM provider: %s (model=%s)", name, _provider.model)
+    tool_model = getattr(_provider, "tool_model", _provider.model)
+    log.info("LLM provider: %s (model=%s, tool_model=%s)",
+             name, _provider.model, tool_model)
     return _provider
 
 
@@ -172,8 +174,9 @@ class _GeminiProvider:
             http_options=http_options,
         )
         self.model = os.environ.get("RHAPSODE_MODEL", "gemini-2.0-flash")
+        self.tool_model = os.environ.get("RHAPSODE_NARRATOR_MODEL") or self.model
 
-    def complete(self, messages: list[dict]) -> str:
+    def complete(self, messages: list[dict], model: str | None = None) -> str:
         from google.genai.types import GenerateContentConfig
 
         system_parts, contents = _split_gemini_messages(messages)
@@ -183,7 +186,7 @@ class _GeminiProvider:
             temperature=1.0,
             systemInstruction="\n".join(system_parts) if system_parts else None,
         )
-        kwargs = {"model": self.model, "contents": contents, "config": config}
+        kwargs = {"model": model or self.model, "contents": contents, "config": config}
 
         def _call():
             response = self.client.models.generate_content(**kwargs)
@@ -217,7 +220,7 @@ class _GeminiProvider:
         )
 
         return _gemini_tool_use_loop(
-            self.client, self.model, contents, config, tool_dispatcher)
+            self.client, self.tool_model, contents, config, tool_dispatcher)
 
 
 class _DeepSeekProvider:
@@ -228,13 +231,17 @@ class _DeepSeekProvider:
             base_url=os.environ.get("DEEPSEEK_API_BASE", "https://api.deepseek.com"),
         )
         self.model = os.environ.get("RHAPSODE_MODEL", "deepseek-chat")
+        # The tool-use callers (narrator + scheduler) drive all lifecycle
+        # decisions, so they run on the stronger reasoning model when configured;
+        # plain completions stay on the base model.
+        self.tool_model = os.environ.get("RHAPSODE_NARRATOR_MODEL") or self.model
 
-    def complete(self, messages: list[dict]) -> str:
+    def complete(self, messages: list[dict], model: str | None = None) -> str:
         converted = _to_openai_messages(messages)
 
         def _call():
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=model or self.model,
                 messages=converted,
                 temperature=1.0,
                 max_tokens=_MAX_OUTPUT_TOKENS,
@@ -266,7 +273,7 @@ class _DeepSeekProvider:
         max_rounds = 10
         for _ in range(max_rounds):
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=self.tool_model,
                 messages=openai_messages,
                 tools=openai_tools,
                 temperature=1.0,
@@ -325,9 +332,17 @@ def _to_openai_messages(gemini_messages: list[dict]) -> list[dict]:
     return result
 
 
-def complete(messages: list[dict]) -> str:
-    """Call the configured LLM provider."""
-    return _get_provider().complete(messages)
+def complete(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured LLM provider (optionally on a specific model)."""
+    return _get_provider().complete(messages, model)
+
+
+def complete_reasoning(messages: list[dict]) -> str:
+    """Plain completion on the stronger tool/reasoning model (the narrator model
+    when configured). Used for focused judgment calls like the lifecycle verdict,
+    which need consistent rule-following rather than the base chat model."""
+    provider = _get_provider()
+    return provider.complete(messages, getattr(provider, "tool_model", provider.model))
 
 
 def complete_with_tools(messages: list[dict], tools: list[dict],

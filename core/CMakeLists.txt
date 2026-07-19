@@ -17,6 +17,8 @@ add_library(rhapsode STATIC
     include/rhapsode/str_util.h
     include/rhapsode/text_downsampler.h
     include/rhapsode/weaver.h
+    include/rhapsode/story.h
+    include/rhapsode/world.h
     include/rhapsode/world_graph.h
     src/annotator.cpp
     src/scene_message.cpp
@@ -25,6 +27,7 @@ add_library(rhapsode STATIC
     src/character_memory.cpp
     src/narrator_prompt.cpp
     src/scene.cpp
+    src/story.cpp
     src/scene_loop.cpp
     src/scene_loop_support.cpp
     src/text_downsampler.cpp
@@ -32,6 +35,7 @@ add_library(rhapsode STATIC
     src/director.cpp
     src/memory_system.cpp
     src/weaver.cpp
+    src/world.cpp
     src/world_graph.cpp
 )
 
@@ -50,7 +54,10 @@ target_include_directories(rhapsode PUBLIC
 target_link_libraries(rhapsode PUBLIC nlohmann_json::nlohmann_json)
 
 # Tests
-add_executable(test_scene EXCLUDE_FROM_ALL tests/test_scene.cpp)
+add_executable(test_scene EXCLUDE_FROM_ALL
+    tests/test_scene.cpp
+    tests/test_substrate_golden.cpp
+)
 target_link_libraries(test_scene PRIVATE rhapsode Catch2::Catch2WithMain)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)

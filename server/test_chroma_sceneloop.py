@@ -37,7 +37,7 @@ def stub_llm(prompt: str) -> str:
     """Minimal LLM response for actor synthesis."""
     return '"I have nothing to say right now."'
 
-def stub_narrator_llm(instructions: str, turn_state: str) -> str:
+def stub_narrator_llm(scene_id: str, instructions: str, turn_state: str) -> str:
     """Minimal narrator response with valid JSON plan."""
     global TURN_COUNT
     TURN_COUNT += 1
