@@ -2,6 +2,33 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] plan | Runtime dependency plan consistency review
+
+- Reviewed the runtime dependency plan against current C++ ownership, async behavior, compatibility
+  APIs, binding lifetimes, and the broader Phase 2 roadmap.
+- Restricted Phase 0 to tests that characterize current behavior and moved future acceptance tests
+  to the phases that make them pass.
+- Defined scoped Scene detachment and single-consumer turn-result ownership, required reflection
+  callback reapplication after load, narrowed the narrator implementation boundary, and made binding
+  mutation hardening a completion requirement.
+- Standardized terminology: SceneLoop executes scene turns; Story coordinates a Story advance that
+  may contain a player scene turn and one off-stage scene turn. The planned file is
+  `story_advance.cpp`; Story save/load implementation will live in `story_serialization.cpp`.
+- Marked the older roadmap's immediate Story/World/Scene split order as superseded by the audited
+  dependency migration.
+
+## [2026-07-20] plan | Runtime dependency and ownership refactor
+
+- Audited Story, SceneLoop, Scene, World, Director, Weaver, Annotator, pybind11, and server session
+  wiring as one runtime dependency graph.
+- Recorded a behavior-preserving, test-gated migration in
+  `episodes/2026-07-20-runtime-dependency-refactor-plan.md`.
+- The plan introduces explicit per-scene turn results, removes background dependence on mutable loop
+  configuration, restores World/Scene mutation boundaries, validates graph/lifetime contracts, and
+  establishes Story as the Story-backed persistence and undo boundary before implementation files
+  are split.
+- Known behavior questions remain separate, and the repository must never be pushed.
+
 ## [2026-07-20] implementation | Phase 2 Weaver work queue split
 
 - Characterized priority ordering, supersession timing, missing-callback behavior, and cooperative

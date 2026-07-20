@@ -180,9 +180,11 @@ Perform one extraction per commit, running the full verification command after e
    core implementation.
 4. **Complete (2026-07-20):** Extract Weaver's existing queued maintenance implementation into
    `weaver_work_queue.cpp`, retaining all existing expiry API and field names.
-5. Split Story into lifecycle/tools, runtime sequencing, and persistence files.
-6. Split World and Scene query/persistence implementations only where the same separation is already
-   visible in their public headers.
+5. **Superseded by the runtime dependency plan:** establish explicit Story/SceneLoop result,
+   ownership, lifetime, and persistence boundaries before splitting Story implementation files. See
+   [[2026-07-20-runtime-dependency-refactor-plan]].
+6. **Deferred behind the same plan:** split World and Scene implementation only after their mutation
+   invariants and binding boundaries are explicit.
 
 Exit criterion: public headers and serialized formats remain unchanged; each commit is mechanical and
 passes all characterization tests.

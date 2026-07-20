@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-05-19
+last_updated: 2026-07-20
 ---
 
 # Rhapsode wiki — index
@@ -32,6 +32,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
+- [Runtime dependency refactor plan](episodes/2026-07-20-runtime-dependency-refactor-plan.md) — audited ownership, turn-result, background, persistence, and binding migration plan
 - [Code structure and quality plan](episodes/2026-07-20-code-structure-quality-plan.md) — verified baseline, correctness risks, and phased cross-layer cleanup plan
 - [Freedom, tension, and the two axes](episodes/2026-06-08-freedom-tension-and-the-two-axes.md) — design session: coherence vs tension axes, freedom as the complement of the live constraint set, validator `supersede`, the Director-as-tension-layer
 - [Pull vs. push, and the three growth directions](episodes/2026-06-09-pull-vs-push-and-three-growth-directions.md) — the engine is 100% pull; adding push via parallel scenes / backfill / ingestion as fact producers through one coherence gate
