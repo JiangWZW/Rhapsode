@@ -1176,11 +1176,25 @@ TEST_CASE("Story persists lifecycle changes after the completed player beat",
     root.title = "Root";
     root.system_prompt = "Narrate.";
     root.enter_character(Character{"Scout", "A careful scout", false});
+    Node first;
+    first.fact = "The ridge is visible";
+    const auto first_id = root.world().world_graph.add_node(std::move(first)).id;
+    Node second;
+    second.fact = "The scout carries a spyglass";
+    const auto second_id = root.world().world_graph.add_node(std::move(second)).id;
 
     Story story = Story::from_scene(std::move(root));
     Director director(story.world().world_graph);
+    Weaver weaver(story.world().world_graph);
+    weaver.set_interval(1);
+    weaver.set_llm_callback([&](const std::string&) {
+        return std::string{"{\"connect\":[{\"from\":"} + std::to_string(first_id) +
+               ",\"to\":" + std::to_string(second_id) +
+               R"(,"weight":0.8,"reason":"spyglass"}],"disconnect":[],"reweight":[]})";
+    });
     SceneLoop loop;
     loop.set_director(&director);
+    loop.set_weaver(&weaver);
     loop.set_llm_callback([](const std::string&) { return "fallback"; });
     loop.set_narrator_llm_callback(
         [](const std::string&, const std::string&, const std::string&) {
@@ -1218,6 +1232,7 @@ TEST_CASE("Story persists lifecycle changes after the completed player beat",
     REQUIRE(scout != nullptr);
     REQUIRE(scout->in_scene("root_f0_0"));
     REQUIRE_FALSE(scout->in_scene("root"));
+    REQUIRE(restored.world_graph.all_edges().size() == 1);
 
     manifest_file.close();
     world_file.close();

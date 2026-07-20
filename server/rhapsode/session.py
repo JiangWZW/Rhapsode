@@ -67,7 +67,6 @@ def _build_loop(story: Story, director: Director, weaver: Weaver,
     loop.set_director(director)
     loop.set_weaver(weaver)
     loop.set_llm_callback(call_llm)
-    loop.set_saves_dir(SAVES_DIR)
     loop.set_narrator_llm_callback(make_narrator_callback(story))
     if resuming:
         loop.set_resuming(True)
