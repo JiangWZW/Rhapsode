@@ -799,6 +799,123 @@ TEST_CASE("Rejected narrator attempts do not leak temporary minds",
     REQUIRE(scene.world().character_memories.count("Temp") == 0);
 }
 
+TEST_CASE("Weaver work queue preserves priority and supersession behavior",
+          "[weaver][work_queue]") {
+    auto add_fact = [](WorldGraph& graph, const std::string& fact,
+                       const std::string& entity, int turn) {
+        Node node;
+        node.fact = fact;
+        node.entities = {entity};
+        node.state = NodeState::Active;
+        node.created_at = turn;
+        return graph.add_node(std::move(node)).id;
+    };
+
+    SECTION("priority entity groups drain first") {
+        WorldGraph graph;
+        add_fact(graph, "A old", "A", 1);
+        add_fact(graph, "A new", "A", 2);
+        add_fact(graph, "B old", "B", 1);
+        add_fact(graph, "B new", "B", 2);
+        Weaver weaver(graph);
+        std::vector<std::string> prompts;
+        weaver.set_local_llm_callback([&](const std::string& prompt) {
+            prompts.push_back(prompt);
+            return std::string{R"({"superseded":[],"reason":"all current"})"};
+        });
+
+        weaver.rebuild_expiry_queue({"B"});
+        REQUIRE_FALSE(weaver.expiry_queue_empty());
+        REQUIRE(weaver.drain_expiry_queue(8).empty());
+
+        REQUIRE(weaver.expiry_queue_empty());
+        REQUIRE(prompts.size() == 2);
+        REQUIRE(prompts[0].find("B old") != std::string::npos);
+        REQUIRE(prompts[0].find("A old") == std::string::npos);
+        REQUIRE(prompts[1].find("A old") != std::string::npos);
+    }
+
+    SECTION("supersession expires the old fact at the newer fact turn") {
+        WorldGraph graph;
+        const auto old_id = add_fact(graph, "The gate is closed", "Gate", 1);
+        const auto new_id = add_fact(graph, "The gate is open", "Gate", 5);
+        Weaver weaver(graph);
+        std::string prompt;
+        weaver.set_local_llm_callback([&](const std::string& value) {
+            prompt = value;
+            return std::string{"{\"superseded\":[{\"id\":"} +
+                   std::to_string(old_id) + ",\"by\":" +
+                   std::to_string(new_id) +
+                   R"(}],"reason":"newer state"})";
+        });
+
+        weaver.rebuild_expiry_queue();
+        const auto expired = weaver.drain_expiry_queue(9);
+
+        REQUIRE(expired.size() == 1);
+        REQUIRE(expired[0].id == old_id);
+        REQUIRE(expired[0].reason == "newer state");
+        REQUIRE(graph.get_node(old_id)->valid_until == 5);
+        REQUIRE(graph.get_node(new_id)->valid_until == -1);
+        REQUIRE(prompt.find("The gate is open") < prompt.find("The gate is closed"));
+    }
+
+    SECTION("missing callback consumes queued groups without graph mutations") {
+        WorldGraph graph;
+        const auto old_id = add_fact(graph, "The gate is closed", "Gate", 1);
+        const auto new_id = add_fact(graph, "The gate is open", "Gate", 5);
+        Weaver weaver(graph);
+
+        weaver.rebuild_expiry_queue();
+        REQUIRE_FALSE(weaver.expiry_queue_empty());
+        REQUIRE(weaver.drain_expiry_queue(9).empty());
+
+        REQUIRE(weaver.expiry_queue_empty());
+        REQUIRE(graph.get_node(old_id)->valid_until == -1);
+        REQUIRE(graph.get_node(new_id)->valid_until == -1);
+    }
+}
+
+TEST_CASE("Weaver work queue stop leaves remaining groups queued",
+          "[weaver][work_queue]") {
+    using namespace std::chrono_literals;
+    WorldGraph graph;
+    auto add_fact = [&](const std::string& fact, const std::string& entity, int turn) {
+        Node node;
+        node.fact = fact;
+        node.entities = {entity};
+        node.state = NodeState::Active;
+        node.created_at = turn;
+        graph.add_node(std::move(node));
+    };
+    add_fact("A old", "A", 1);
+    add_fact("A new", "A", 2);
+    add_fact("B old", "B", 1);
+    add_fact("B new", "B", 2);
+
+    Weaver weaver(graph);
+    std::promise<void> started;
+    std::promise<void> release;
+    auto release_future = release.get_future().share();
+    weaver.set_local_llm_callback([&](const std::string&) {
+        started.set_value();
+        release_future.wait();
+        return std::string{R"({"superseded":[],"reason":"all current"})"};
+    });
+    weaver.rebuild_expiry_queue();
+
+    auto draining = std::async(std::launch::async, [&] {
+        return weaver.drain_expiry_queue(8);
+    });
+    started.get_future().wait();
+    weaver.stop_expiry_drain();
+    REQUIRE(draining.wait_for(20ms) == std::future_status::timeout);
+    release.set_value();
+    REQUIRE(draining.wait_for(2s) == std::future_status::ready);
+    REQUIRE(draining.get().empty());
+    REQUIRE_FALSE(weaver.expiry_queue_empty());
+}
+
 TEST_CASE("load_scene waits for background work on the previous scene",
           "[scene_loop][background]") {
     using namespace std::chrono_literals;
