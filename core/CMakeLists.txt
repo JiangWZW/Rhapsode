@@ -12,7 +12,6 @@ add_library(rhapsode STATIC
     include/rhapsode/scene.h
     include/rhapsode/json_util.h
     include/rhapsode/scene_loop.h
-    include/rhapsode/scene_loop_support.h
     include/rhapsode/scene_message.h
     include/rhapsode/str_util.h
     include/rhapsode/text_downsampler.h
@@ -31,7 +30,7 @@ add_library(rhapsode STATIC
     src/story.cpp
     src/scene_loop.cpp
     src/scene_loop_background.cpp
-    src/scene_loop_support.cpp
+    src/scene_loop_narrator.cpp
     src/text_downsampler.cpp
     src/node.cpp
     src/director.cpp

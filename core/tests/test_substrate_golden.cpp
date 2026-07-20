@@ -21,7 +21,6 @@
 #include "rhapsode/character_memory.h"
 #include "rhapsode/node.h"
 #include "rhapsode/scene.h"
-#include "rhapsode/scene_loop_support.h"
 #include "rhapsode/story.h"
 
 using namespace rhapsode;
@@ -86,7 +85,7 @@ Scene build_fixture() {
     seen.fact = "Alice spots a loosened hinge";
     seen.entities = {"Gate"};
     seen.audience = {"Alice"};
-    route_perception(scene, {seen}, 3);
+    scene.world().route_perceptions(scene.scene_id, {seen}, 3);
 
     scene.history.append(stamped(Role::User, "I approach the gate.",
                                  "2026-01-01T00:00:00Z"));

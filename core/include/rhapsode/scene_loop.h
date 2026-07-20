@@ -3,10 +3,10 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <nlohmann/json.hpp>
 #include "rhapsode/llm_callback.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/director.h"
-#include "rhapsode/scene_loop_support.h"
 #include "rhapsode/weaver.h"
 
 namespace rhapsode {
@@ -14,11 +14,6 @@ namespace rhapsode {
 class Scene;
 class World;
 struct DeathCandidate;
-
-struct NarratorPrompt {
-    std::string instructions;
-    std::string turn_state;
-};
 
 struct SceneTurnResult {
     std::string scene_id;
@@ -93,6 +88,24 @@ public:
 private:
     enum class OutputBucket { Story, Dialogue };
 
+    struct NarratorPrompt {
+        std::string instructions;
+        std::string turn_state;
+    };
+
+    struct SpeechCue {
+        std::string character;
+        nlohmann::json direction;
+
+        std::string field(const char* key) const { return direction.value(key, ""); }
+    };
+
+    struct NarratorTurnResult {
+        std::string prose;
+        nlohmann::json plan;
+        std::vector<SpeechCue> cues;
+    };
+
     struct BackgroundResult {
         WeaveResult weave;
         std::vector<ExpiryOp> expiry;
@@ -109,6 +122,7 @@ private:
     NarratorTurnResult run_narrator_with_retry(int turn, const NarratorPrompt& prompt);
     void rollback_turn_attempt(const World& world_snapshot);
     void register_new_characters(int turn, const nlohmann::json& plan);
+    void apply_narrator_cast(const NarratorTurnResult& result);
     void emit_dialogue(int turn, const std::vector<SpeechCue>& cues);
     void post_turn_cleanup(const std::string& narration);
     void emit_output(SceneMessage msg, OutputBucket bucket);

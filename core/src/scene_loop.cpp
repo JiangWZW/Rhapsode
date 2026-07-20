@@ -2,81 +2,35 @@
 #include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
-#include "rhapsode/narrator_prompt.h"
 #include "rhapsode/scene.h"
-#include "rhapsode/scene_loop_support.h"
 #include "rhapsode/str_util.h"
 
-#include <algorithm>
 #include <exception>
 #include <utility>
-
-#include <nlohmann/json.hpp>
 
 namespace rhapsode {
 
 namespace {
 
-constexpr int kMaxNarratorAttempts = 3;
-
-bool is_player_speech_name(const std::string& name, const Scene& scene) {
-    if (str::to_lower(name) == "player") return true;
-    for (const auto& ch : scene.world().characters) {
-        if (ch.is_player && resolve_cast_name(name, scene.world().characters) == &ch) return true;
+SceneMessage make_scene_loop_message(const std::string& kind,
+                                     std::string content,
+                                     const std::string& speaker = {}) {
+    SceneMessage msg;
+    msg.role = Role::Assistant;
+    msg.content = std::move(content);
+    msg.metadata = {{"scene_kind", kind}};
+    if (!speaker.empty()) {
+        msg.metadata["speaker"] = speaker;
     }
-    return false;
+    return msg;
 }
 
-bool is_npc_speech_cue(const std::string& name, const Scene& scene) {
-    if (is_player_speech_name(name, scene)) return false;
-    const Character* ch = resolve_cast_name(name, scene.world().characters);
-    return ch && !ch->dead;
-}
-
-int count_speakable_npcs_in_cast(const nlohmann::json& plan, const Scene& scene) {
-    if (!plan.contains("active_cast") || !plan["active_cast"].is_array()) return 0;
-    int count = 0;
-    for (const auto& elem : plan["active_cast"]) {
-        if (!elem.is_string()) continue;
-        const Character* ch = resolve_cast_name(elem.get<std::string>(), scene.world().characters);
-        if (ch && !ch->dead) ++count;
+bool is_affirmative_yes_response(const std::string& response) {
+    const std::string lower = str::to_lower(str::trim(response));
+    if (lower.size() < 3 || lower.compare(0, 3, "yes") != 0) {
+        return false;
     }
-    return count;
-}
-
-std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
-                                             const Scene& scene) {
-    std::vector<Rejection> rejections;
-    if (!plan.contains("speech_turns") || !plan["speech_turns"].is_array())
-        return rejections;
-
-    const auto& turns = plan["speech_turns"];
-    int npc_cues = 0;
-    for (const auto& el : turns) {
-        if (!el.is_object()) continue;
-        const auto name = el.value("character", "");
-        if (name.empty()) continue;
-        if (is_player_speech_name(name, scene)) {
-            rejections.push_back({
-                "speech_turns includes \"" + name + "\"",
-                "Player must not appear in speech_turns; the user message is the "
-                "player's speech -- give responding NPCs their own speech_turn entries"
-            });
-            continue;
-        }
-        if (is_npc_speech_cue(name, scene)) ++npc_cues;
-    }
-
-    if (turns.empty()) return rejections;
-
-    if (count_speakable_npcs_in_cast(plan, scene) > 0 && npc_cues == 0) {
-        rejections.push_back({
-            "speech_turns",
-            "NPCs are present in active_cast but no NPC speech_turns were authored "
-            "(speech_turns must contain each speaking NPC's line, not the Player's)"
-        });
-    }
-    return rejections;
+    return lower.size() == 3 || str::is_word_boundary(lower, 3);
 }
 
 }  // anonymous namespace
@@ -252,137 +206,6 @@ void SceneLoop::emit_output(SceneMessage msg, OutputBucket bucket) {
         turn_complete_cb_(target.messages().back());
 }
 
-// -- SceneLoop::advance -- the four-phase turn pipeline --------------
-
-NarratorPrompt SceneLoop::build_turn_prompt(int turn) {
-    state_ = LoopState::BuildingPrompt;
-    log() << "[1/4] Building merged prompt...\n" << std::flush;
-
-    const size_t win = resuming_ ? resume_window_size_ : window_size_;
-    const std::vector<SceneMessage> history = scene_->history.snapshot(win);
-    resuming_ = false;
-
-    NarratorPrompt prompt;
-    prompt.instructions = build_narrator_instructions();
-    prompt.turn_state = build_narrator_turn_state(
-        history, *scene_);
-
-    ++scene_->turn_index;
-
-    log() << "  [prompt] instructions=" << prompt.instructions.size()
-          << " turn_state=" << prompt.turn_state.size() << " chars\n" << std::flush;
-    if (verbose_logging_enabled()) {
-        log() << "--- NARRATOR INSTRUCTIONS ---\n" << prompt.instructions << "\n"
-              << "--- NARRATOR TURN STATE ---\n" << prompt.turn_state << "\n"
-              << "--- END NARRATOR PROMPT ---\n" << std::flush;
-    }
-    return prompt;
-}
-
-std::string SceneLoop::call_narrator(const std::string& instructions,
-                                     const std::string& turn_state) const {
-    const std::string safe_instructions = sanitize_utf8(instructions);
-    const std::string safe_turn_state   = sanitize_utf8(turn_state);
-    if (narrator_llm_cb_) {
-        return sanitize_utf8(narrator_llm_cb_(scene_->scene_id, safe_instructions, safe_turn_state));
-    }
-    return sanitize_utf8(llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
-}
-
-void SceneLoop::rollback_turn_attempt(const World& world_snapshot) {
-    scene_->world() = world_snapshot;
-}
-
-void SceneLoop::register_new_characters(int turn, const nlohmann::json& plan) {
-    if (!plan.contains("new_characters") || !plan["new_characters"].is_array()) {
-        return;
-    }
-
-    for (const auto& ch_j : plan["new_characters"]) {
-        Character ch;
-        ch.name = ch_j.value("name", "");
-        ch.description = ch_j.value("description", "");
-        ch.dialogue_instructions = ch_j.value("dialogue_instructions", "");
-        ch.role = ch_j.value("role", "minor_npc");
-        ch.created_at = turn;
-
-        if (!ch.name.empty() && !scene_->find_on_stage(ch.name)) {
-            log() << "  [enter] " << ch.name << " enters the stage\n";
-            scene_->enter_character(std::move(ch));
-        }
-    }
-}
-
-NarratorTurnResult SceneLoop::run_narrator_with_retry(int turn,
-                                                      const NarratorPrompt& prompt) {
-    state_ = LoopState::RunningLLM;
-    log() << "[2/4] Calling narrative LLM...\n" << std::flush;
-
-    // Discard any lifecycle ops a prior attempt staged; only the accepted
-    // attempt's decision-tool calls survive to be applied after the beat.
-    scene_->world().clear_pending_ops();
-    auto raw_response = call_narrator(prompt.instructions, prompt.turn_state);
-    log() << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
-    if (verbose_logging_enabled()) {
-        log() << "--- NARRATOR RESPONSE ---\n" << raw_response
-              << "\n--- END NARRATOR RESPONSE ---\n" << std::flush;
-    }
-
-    NarratorTurnResult result;
-    std::tie(result.prose, result.plan) = split_merged_response(std::move(raw_response));
-
-    state_ = LoopState::AppendingResult;
-    log() << "[3/4] Applying graph...\n" << std::flush;
-
-    std::vector<Rejection> all_rejections;
-    const World world_snapshot = scene_->world();
-
-    for (int attempt = 0; attempt < kMaxNarratorAttempts; ++attempt) {
-        if (attempt > 0) {
-            rollback_turn_attempt(world_snapshot);
-
-            std::string rewrite_turn_state = prompt.turn_state;
-            rewrite_turn_state += "\n\n### REVISION REQUIRED\n"
-                                  "The following issues were found in your plan:\n";
-            for (const auto& r : all_rejections) {
-                rewrite_turn_state += "- " + r.fact + " -- " + r.reason + "\n";
-            }
-            rewrite_turn_state += "\nRewrite your narrative and plan to fix these issues.\n";
-
-            state_ = LoopState::RunningLLM;
-            scene_->world().clear_pending_ops();
-            auto [new_prose, new_plan] =
-                split_merged_response(call_narrator(prompt.instructions, rewrite_turn_state));
-            result.prose = std::move(new_prose);
-            result.plan = std::move(new_plan);
-            state_ = LoopState::AppendingResult;
-        }
-
-        last_director_out_ = director_->apply_planned_turn(turn, result.plan);
-        register_new_characters(turn, result.plan);
-
-        const auto cast_rejections = validate_active_cast(result.plan, *scene_);
-        const auto speech_rejections = validate_speech_turns(result.plan, *scene_);
-        all_rejections = last_director_out_.rejections;
-        all_rejections.insert(all_rejections.end(), cast_rejections.begin(), cast_rejections.end());
-        all_rejections.insert(all_rejections.end(), speech_rejections.begin(), speech_rejections.end());
-
-        if (all_rejections.empty()) {
-            break;
-        }
-
-        log() << "  [retry] attempt " << (attempt + 1) << "/" << kMaxNarratorAttempts
-              << ": " << all_rejections.size() << " issue(s)\n";
-        for (const auto& r : all_rejections) {
-            log() << "    - " << r.fact << " -- " << r.reason << "\n";
-        }
-        log() << std::flush;
-    }
-
-    result.cues = extract_speech_cues(result.plan);
-    return result;
-}
-
 void SceneLoop::emit_dialogue(int turn, const std::vector<SpeechCue>& cues) {
     log() << "[4/4] Emit authored dialogue...\n" << std::flush;
 
@@ -435,11 +258,12 @@ void SceneLoop::advance() {
     const NarratorPrompt prompt = build_turn_prompt(turn);
     NarratorTurnResult result = run_narrator_with_retry(turn, prompt);
 
-    apply_active_cast(result.plan, result.cues, *scene_);
+    apply_narrator_cast(result);
 
     const std::string narration = result.prose;
     emit_output(make_scene_loop_message("narrator", std::move(result.prose)), OutputBucket::Story);
-    route_perception(*scene_, last_director_out_.new_nodes, turn);
+    scene_->world().route_perceptions(
+        scene_->scene_id, last_director_out_.new_nodes, turn);
 
     emit_dialogue(turn, result.cues);
     post_turn_cleanup(narration);

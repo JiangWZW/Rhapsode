@@ -12,7 +12,6 @@
 #include "rhapsode/scene.h"
 #include "rhapsode/director.h"
 #include "rhapsode/scene_loop.h"
-#include "rhapsode/scene_loop_support.h"
 #include "rhapsode/story.h"
 #include "rhapsode/weaver.h"
 
@@ -319,26 +318,45 @@ TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     REQUIRE(captured_result.content == "The tavern is warm.");
 }
 
-TEST_CASE("split_merged_response parses sentinel and fallback plans", "[scene_loop]") {
+TEST_CASE("SceneLoop parses sentinel and fallback narrator plans", "[scene_loop]") {
+    auto run_response = [](Scene& scene, std::string response) {
+        scene.scene_id = "root";
+        scene.title = "Root";
+        scene.system_prompt = "Narrate.";
+        Director director(scene.world().world_graph);
+        SceneLoop loop;
+        loop.set_director(&director);
+        loop.set_llm_callback([](const std::string&) { return "fallback"; });
+        loop.set_narrator_llm_callback(
+            [response = std::move(response)](
+                const std::string&, const std::string&, const std::string&) {
+                return response;
+            });
+        return loop.run_player_turn(scene, "Continue.");
+    };
+
     SECTION("sentinel split") {
-        auto [prose, plan] = split_merged_response(R"(You step forward.
+        Scene scene;
+        const auto result = run_response(scene, R"(You step forward.
 
 <<<RHAPSODE_JSON>>>
 {"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})");
 
-        REQUIRE(prose == "You step forward.");
-        REQUIRE(plan["transitions"].is_array());
-        REQUIRE(plan["active_cast"].is_array());
+        REQUIRE(result.outputs.size() == 1);
+        REQUIRE(result.outputs[0].content == "You step forward.");
     }
 
     SECTION("fallback takes the outermost plan object") {
-        auto [prose, plan] = split_merged_response(
+        Scene scene;
+        scene.enter_character(Character{"Guard", "A guard", false});
+        const auto result = run_response(
+            scene,
             R"(A stray { brace } appears before the actual plan.
 {"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"Hold."}],"new_characters":[],"active_cast":["Guard"]})");
 
-        REQUIRE(prose == "A stray { brace } appears before the actual plan.");
-        REQUIRE(plan["speech_turns"].size() == 1);
-        REQUIRE(plan["speech_turns"][0]["character"] == "Guard");
+        REQUIRE(result.outputs.size() == 2);
+        REQUIRE(result.outputs[0].content == "A stray { brace } appears before the actual plan.");
+        REQUIRE(result.outputs[1].content == "Hold.");
     }
 
     SECTION("normalizes smart quotes before parsing") {
@@ -347,48 +365,96 @@ TEST_CASE("split_merged_response parses sentinel and fallback plans", "[scene_lo
         const std::string raw =
             "Narration.\n<<<RHAPSODE_JSON>>>\n{" +
             lq + "transitions" + rq + ":[]," +
-            lq + "new_nodes" + rq + ":[]," +
+            lq + "new_nodes" + rq + ":[{" +
+            lq + "fact" + rq + ":" + lq + "A bell rings" + rq + "," +
+            lq + "entities" + rq + ":[]}]," +
             lq + "speech_turns" + rq + ":[]," +
             lq + "new_characters" + rq + ":[]," +
             lq + "active_cast" + rq + ":[]}";
-        auto [prose, plan] = split_merged_response(raw);
+        Scene scene;
+        const auto result = run_response(scene, raw);
 
-        REQUIRE(prose == "Narration.");
-        REQUIRE(plan["new_nodes"].is_array());
+        REQUIRE(result.outputs[0].content == "Narration.");
+        REQUIRE(result.director.new_nodes.size() == 1);
+        REQUIRE(result.director.new_nodes[0].fact == "A bell rings");
     }
 }
 
 TEST_CASE("active_cast is presence-only: brings NPCs on-stage, never ejects", "[scene_loop]") {
     Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Root";
+    scene.system_prompt = "Narrate.";
     Character alice{"Alice", "A guard", false};
     Character bob{"Bob", "A scout", false};
     scene.enter_character(std::move(alice));
     scene.enter_character(std::move(bob));
 
+    Director director(scene.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+
     // Bob omitted from active_cast is NOT ejected -- removing a character from a
     // storyline is the lifecycle verdict's job, not active_cast's.
-    apply_active_cast({{"active_cast", {"Alice"}},
-                       {"speech_turns", nlohmann::json::array()}}, {}, scene);
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Narration.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Alice"]})"};
+        });
+    loop.run_player_turn(scene, "Continue.");
     REQUIRE(scene.find_on_stage("Alice") != nullptr);
     REQUIRE(scene.find_on_stage("Bob") != nullptr);
 
     // A roster character currently off this scene is brought on when named.
     scene.exit_character("Bob");
     REQUIRE(scene.find_on_stage("Bob") == nullptr);
-    apply_active_cast({{"active_cast", {"Alice", "Bob"}},
-                       {"speech_turns", nlohmann::json::array()}}, {}, scene);
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Narration.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Alice","Bob"]})"};
+        });
+    loop.run_player_turn(scene, "Continue.");
     REQUIRE(scene.find_on_stage("Bob") != nullptr);
 }
 
 TEST_CASE("active_cast does not resolve arbitrary substrings", "[scene_loop]") {
     Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Root";
+    scene.system_prompt = "Narrate.";
     Character alice{"Alice", "A guard", false};
     Character albert{"Albert", "A scout", false};
     scene.enter_character(std::move(alice));
     scene.enter_character(std::move(albert));
+    scene.exit_character("Alice");
+    scene.exit_character("Albert");
 
-    REQUIRE(resolve_cast_name("Al", scene.world().characters) == nullptr);
-    REQUIRE(resolve_cast_name("Alice", scene.world().characters)->name == "Alice");
+    Director director(scene.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Narration.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Al"]})"};
+        });
+    loop.run_player_turn(scene, "Continue.");
+    REQUIRE(scene.find_on_stage("Alice") == nullptr);
+    REQUIRE(scene.find_on_stage("Albert") == nullptr);
+
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Narration.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Alice"]})"};
+        });
+    loop.run_player_turn(scene, "Continue.");
+    REQUIRE(scene.find_on_stage("Alice") != nullptr);
+    REQUIRE(scene.find_on_stage("Albert") == nullptr);
 }
 
 TEST_CASE("route_perception respects audience and public beats", "[scene_loop]") {
@@ -403,7 +469,7 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     private_node.entities = {"Switch"};
     private_node.audience = {"Alice"};
 
-    route_perception(scene, {private_node}, 2);
+    scene.world().route_perceptions(scene.scene_id, {private_node}, 2);
 
     int alice_perceptions = 0;
     scene.world().character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
@@ -421,7 +487,7 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     public_node.fact = "The gate opens";
     public_node.entities = {"Gate"};
 
-    route_perception(scene, {public_node}, 3);
+    scene.world().route_perceptions(scene.scene_id, {public_node}, 3);
 
     alice_perceptions = 0;
     scene.world().character_memories.at("Alice").beliefs().for_each([&](const Node& n) {
@@ -589,13 +655,39 @@ TEST_CASE("CharacterMemory reflection preserves its current graph contract",
 }
 
 TEST_CASE("death confirmation accepts only a yes token", "[scene_loop]") {
-    REQUIRE(is_affirmative_yes_response("yes"));
-    REQUIRE(is_affirmative_yes_response("Yes."));
-    REQUIRE(is_affirmative_yes_response("YES - confirmed"));
+    auto confirmed_dead = [](const std::string& response) {
+        Scene scene;
+        scene.scene_id = "root";
+        scene.title = "Root";
+        scene.system_prompt = "Narrate.";
+        scene.enter_character(Character{"Guard", "A guard", false});
+        Node evidence;
+        evidence.fact = "Guard is dead";
+        evidence.entities = {"Guard"};
+        evidence.state = NodeState::Active;
+        scene.world().world_graph.add_node(std::move(evidence));
 
-    REQUIRE_FALSE(is_affirmative_yes_response("no"));
-    REQUIRE_FALSE(is_affirmative_yes_response("yesterday he seemed dead"));
-    REQUIRE_FALSE(is_affirmative_yes_response("not yes"));
+        Director director(scene.world().world_graph);
+        SceneLoop loop;
+        loop.set_director(&director);
+        loop.set_llm_callback([&](const std::string&) { return response; });
+        loop.set_narrator_llm_callback(
+            [](const std::string&, const std::string&, const std::string&) {
+                return std::string{R"(The guard lies still.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+            });
+        loop.run_player_turn(scene, "Look at the guard.");
+        return scene.world().find_character("Guard")->dead;
+    };
+
+    REQUIRE(confirmed_dead("yes"));
+    REQUIRE(confirmed_dead("Yes."));
+    REQUIRE(confirmed_dead("YES - confirmed"));
+
+    REQUIRE_FALSE(confirmed_dead("no"));
+    REQUIRE_FALSE(confirmed_dead("yesterday he seemed dead"));
+    REQUIRE_FALSE(confirmed_dead("not yes"));
 }
 
 TEST_CASE("SceneLoop keeps NPC speech out of history", "[scene_loop]") {
