@@ -2,7 +2,7 @@
 title: Runtime dependency refactor plan
 date: 2026-07-20
 last_updated: 2026-07-20
-status: proposed
+status: complete
 confidence: verified
 tier: episodic
 tags:
@@ -19,8 +19,11 @@ sources:
   - core/include/rhapsode/weaver.h
   - core/include/rhapsode/annotator.h
   - core/src/story.cpp
+  - core/src/story_advance.cpp
+  - core/src/story_serialization.cpp
   - core/src/scene_loop.cpp
-  - core/src/scene_loop_support.cpp
+  - core/src/scene_loop_narrator.cpp
+  - core/src/scene_loop_background.cpp
   - core/src/scene.cpp
   - core/src/world.cpp
   - bindings/bind_story.cpp
@@ -638,7 +641,34 @@ unvalidated full-container replacement.
 - Character roster and mind-map replacement cannot bypass World invariants.
 - Binding compatibility changes are documented independently from the structural refactor.
 
-## Proposed commit sequence
+## Implementation record
+
+Completed locally on 2026-07-20 without pushing. The behavior fence now contains 52 C++ tests,
+23 Python tests, and 7 frontend tests; Ruff, ESLint, native builds, Python byte-compilation, and the
+frontend production build pass.
+
+The rewritten `architecture/scene-loop.md` and `architecture/cpp-data-model.md` pages produce no
+page-specific lint findings. The repository-wide wiki-lint baseline remains 50 errors and 129
+warnings in unrelated existing pages.
+
+| Commit | Result |
+|---|---|
+| `ed35957` | Characterized Story scene-turn boundaries |
+| `431031e` | Added explicit scene-turn results and scoped Scene detachment |
+| `5919369` | Made background work return a self-contained result |
+| `f9bcc41` | Moved perception, reflection, and death invariants into World |
+| `3f688b8` | Moved resolved cast membership into Scene |
+| `4fbefd9`, `a8570f6` | Enforced graph affinity and runtime lifetimes |
+| `7955a0f` | Moved reflection callback configuration to World |
+| `9ca94a7`, `96d2002` | Made Story the persistence, load, and undo boundary |
+| `edd93ac`, `75f56f2` | Split SceneLoop and removed the support module |
+| `e05193a` | Split Story into ownership, advance, and serialization files |
+| `c46a8f1` | Made invariant-bearing container properties read-only in Python |
+
+No prompt text, retry count, serialized schema, foreground/off-stage ordering, or output payload
+was intentionally changed. The known behavioral follow-ups below remain separate.
+
+## Executed commit sequence
 
 | Commit | Change | Required verification |
 |---|---|---|

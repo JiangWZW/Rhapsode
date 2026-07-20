@@ -2,6 +2,23 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Runtime dependency refactor complete
+
+- Executed the audited Story/SceneLoop dependency plan as local, verified commits; nothing was
+  pushed.
+- Added explicit scene-turn results, self-contained background results, World/Scene mutation
+  boundaries, graph-affinity checks, binding lifetime policies, and World-owned reflection setup.
+- Made Story the sole Story-backed persistence, load, and undo boundary without rebuilding
+  SceneLoop.
+- Split SceneLoop into foreground, narrator, and background implementations; removed
+  `scene_loop_support`; split Story into ownership, advance, and serialization implementations.
+- Made Python World/Scene graph, roster, and memory-map properties read-only against whole-container
+  replacement while preserving their read API.
+- Rewrote the SceneLoop and C++ runtime data-model architecture pages. Final verification: 52 C++
+  tests, 23 Python tests, 7 frontend tests, both linters, and all production builds pass.
+- The two rewritten pages have no page-specific wiki-lint findings; the existing repository-wide
+  baseline remains 50 errors and 129 warnings elsewhere.
+
 ## [2026-07-20] plan | Runtime dependency plan consistency review
 
 - Reviewed the runtime dependency plan against current C++ ownership, async behavior, compatibility

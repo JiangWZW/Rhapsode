@@ -136,6 +136,14 @@ Weaver's queued background maintenance now lives in `weaver_work_queue.cpp`. Its
 private expiry names remain unchanged; focused ordering, supersession, missing-callback, and stop
 tests raise the C++ total to 43 tests.
 
+The runtime dependency plan is complete. Story now consumes explicit `SceneTurnResult` values;
+background work does not capture SceneLoop; World and Scene own their cross-container invariants;
+runtime graph identity and Python lifetimes are checked; and Story owns Story-backed persistence,
+load, and undo. SceneLoop is split into foreground, narrator, and background implementations, while
+Story is split into `story.cpp`, `story_advance.cpp`, and `story_serialization.cpp`. Full-container
+World/Scene replacement is read-only in Python. Verification now passes 52 C++ tests, 23 Python
+tests, and 7 frontend tests. See [[2026-07-20-runtime-dependency-refactor-plan]].
+
 ## Plan
 
 ### Phase 0: establish one reliable verification command — complete
@@ -180,8 +188,8 @@ Perform one extraction per commit, running the full verification command after e
    core implementation.
 4. **Complete (2026-07-20):** Extract Weaver's existing queued maintenance implementation into
    `weaver_work_queue.cpp`, retaining all existing expiry API and field names.
-5. **Superseded by the runtime dependency plan:** establish explicit Story/SceneLoop result,
-   ownership, lifetime, and persistence boundaries before splitting Story implementation files. See
+5. **Complete (2026-07-20):** establish explicit Story/SceneLoop result, ownership, lifetime, and
+   persistence boundaries, then split SceneLoop and Story by settled responsibility. See
    [[2026-07-20-runtime-dependency-refactor-plan]].
 6. **Deferred behind the same plan:** split World and Scene implementation only after their mutation
    invariants and binding boundaries are explicit.
@@ -205,10 +213,10 @@ Exit criterion: provider conversion and the WebSocket contract are covered witho
 
 ### Phase 4: narrow mutable APIs and ownership contracts
 
-1. Audit pybind11 forwarding setters that replace complete World containers. Replace them with
-   read-only properties or explicit mutation methods only after Python callers and tests are known.
-2. Document and enforce the lifetimes of `Story::loop_`, `SceneLoop::scene_`, `director_`, `weaver_`,
-   and `World::memory_`. Prefer small RAII changes over a new dependency-injection framework.
+1. **Complete (2026-07-20):** audited whole-container setters and made World/Scene graph, roster,
+   and memory-map properties read-only while preserving their names and read access.
+2. **Complete (2026-07-20):** documented and enforced the lifetimes of `Story::loop_`,
+   `SceneLoop::scene_`, `director_`, `weaver_`, Annotator's World, and `World::memory_`.
 3. Raise project warnings in stages and fix findings locally. Avoid enabling warnings globally for
    fetched dependencies.
 
@@ -216,7 +224,7 @@ Exit criterion: native pointers and Python reference policies have an explicit, 
 
 ### Phase 5: documentation and repository hygiene
 
-1. Rewrite `scene-loop.md` from source; its health score requires a rewrite rather than another note.
+1. **Complete (2026-07-20):** rewrote `scene-loop.md` from the implemented runtime boundaries.
 2. Rewrite the current-state sections of `system-overview.md` and `python-server.md` around
    `World`, `Story`, split server modules, and authored `speech_turns`.
 3. Bring the wiki linter to zero structural errors before treating readability warnings as a gate.
