@@ -215,8 +215,6 @@ void SceneLoop::submit_message(const std::string& text, bool autonomous) {
         last_director_out_ = director_snapshot;
         last_weave_result_ = weave_snapshot;
         completed_expiry_ops_ = expiry_snapshot;
-        bg_weave_result_ = {};
-        bg_expiry_ops_.clear();
         bg_stop_ = {};
         background_save_pending_ = false;
         state_ = LoopState::WaitingForInput;
@@ -261,8 +259,9 @@ void SceneLoop::join_background() {
         bg_stop_ = {};
     }
 
+    BackgroundResult completed;
     if (bg_future_.valid()) {
-        try { bg_future_.get(); }
+        try { completed = bg_future_.get(); }
         catch (const std::exception& e) {
             log() << "  [bg] background work failed: " << e.what() << "\n";
         }
@@ -271,10 +270,8 @@ void SceneLoop::join_background() {
         }
     }
 
-    last_weave_result_ = std::move(bg_weave_result_);
-    bg_weave_result_ = {};
-    completed_expiry_ops_ = std::move(bg_expiry_ops_);
-    bg_expiry_ops_.clear();
+    last_weave_result_ = std::move(completed.weave);
+    completed_expiry_ops_ = std::move(completed.expiry);
 
     if (!last_weave_result_.connected.empty()
         || !last_weave_result_.disconnected.empty()
@@ -296,39 +293,43 @@ std::vector<ExpiryOp> SceneLoop::take_completed_expiry_ops() {
 }
 
 void SceneLoop::dispatch_background() {
-    const auto history = scene_->history.snapshot(window_size_);
+    Scene* const scene = scene_;
+    Weaver* const weaver = weaver_;
+    const auto history = scene->history.snapshot(window_size_);
     const std::string ctx =
-        format_graph_seed(history, scene_->title, kGraphSeedMaxMessageChars);
-    int turn = scene_->turn_index;
+        format_graph_seed(history, scene->title, kGraphSeedMaxMessageChars);
+    int turn = scene->turn_index;
 
-    bool has_weaver = weaver_ != nullptr;
-    bool full_weave = has_weaver && weaver_->should_weave(turn);
+    bool has_weaver = weaver != nullptr;
+    bool full_weave = has_weaver && weaver->should_weave(turn);
 
     bg_stop_ = has_weaver
-        ? std::function<void()>([this]() { weaver_->stop_expiry_drain(); })
+        ? std::function<void()>([weaver]() { weaver->stop_expiry_drain(); })
         : std::function<void()>{};
 
     bg_future_ = std::async(std::launch::async,
-        [this, turn, ctx = std::move(ctx), has_weaver, full_weave]()
+        [scene, weaver, turn, ctx = std::move(ctx), has_weaver, full_weave]()
+            -> BackgroundResult
     {
+        BackgroundResult result;
         if (has_weaver) {
             if (full_weave) {
                 log() << "  [bg] full graph weave (cloud)...\n" << std::flush;
-                bg_weave_result_ = weaver_->weave(turn, ctx);
+                result.weave = weaver->weave(turn, ctx);
             } else {
                 log() << "  [bg] quick graph weave (local)...\n" << std::flush;
-                bg_weave_result_ = weaver_->weave_local(turn, ctx);
+                result.weave = weaver->weave_local(turn, ctx);
             }
 
-            if (!weaver_->expiry_queue_empty())
-                bg_expiry_ops_ = weaver_->drain_expiry_queue(turn);
+            if (!weaver->expiry_queue_empty())
+                result.expiry = weaver->drain_expiry_queue(turn);
         }
 
         // Consolidate this turn's routed perceptions into beliefs (no-op for
         // minds that perceived nothing).
-        for (auto& [name, mem] : scene_->world().character_memories) {
+        for (auto& [name, mem] : scene->world().character_memories) {
             std::string desc;
-            for (const auto& ch : scene_->world().characters) {
+            for (const auto& ch : scene->world().characters) {
                 if (ch.name == name) {
                     desc = ch.description;
                     break;
@@ -341,14 +342,14 @@ void SceneLoop::dispatch_background() {
         // here: the next turn's join_background() completes this before the
         // prompt callback reads downsampler.render(), and history is not mutated
         // while the main thread waits for player input.
-        if (scene_->downsampler.has_llm_callback()) {
+        if (scene->downsampler.has_llm_callback()) {
             try {
-                int before = scene_->downsampler.summarized_up_to();
-                scene_->downsampler.process_turn(scene_->history.messages());
-                int after = scene_->downsampler.summarized_up_to();
+                int before = scene->downsampler.summarized_up_to();
+                scene->downsampler.process_turn(scene->history.messages());
+                int after = scene->downsampler.summarized_up_to();
                 log() << "  [downsampler] summarized_up_to " << before
                       << " -> " << after << "\n";
-                auto rendered = scene_->downsampler.render();
+                auto rendered = scene->downsampler.render();
                 if (!rendered.empty())
                     log() << "  [downsampler] story_so_far (" << rendered.size()
                           << " chars): " << rendered.substr(0, 200)
@@ -357,6 +358,7 @@ void SceneLoop::dispatch_background() {
                 log() << "  [downsampler] process_turn failed: " << e.what() << "\n";
             }
         }
+        return result;
     });
 }
 

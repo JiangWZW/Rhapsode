@@ -93,6 +93,11 @@ public:
 private:
     enum class OutputBucket { Story, Dialogue };
 
+    struct BackgroundResult {
+        WeaveResult weave;
+        std::vector<ExpiryOp> expiry;
+    };
+
     void advance();
     SceneTurnResult run_turn(Scene& scene, const std::string& text, bool autonomous);
     SceneTurnResult take_scene_turn_result();
@@ -126,11 +131,9 @@ private:
     bool resuming_ = false;
 
     // Background work (single thread: weave -> expiry -> reflections)
-    std::future<void> bg_future_;
+    std::future<BackgroundResult> bg_future_;
     std::function<void()> bg_stop_;
     std::string saves_dir_;
-    WeaveResult bg_weave_result_;
-    std::vector<ExpiryOp> bg_expiry_ops_;
     std::vector<ExpiryOp> completed_expiry_ops_;
     bool background_save_pending_ = false;
 };
