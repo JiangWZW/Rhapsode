@@ -234,6 +234,41 @@ TEST_CASE("WorldGraph DOT renders escaped nodes, states, and edge activity", "[w
     REQUIRE(dot.find("n1 -> n2 [color=\"#a6adc8\", style=dashed]") != std::string::npos);
 }
 
+TEST_CASE("WorldGraph serialization preserves edge metadata and legacy inputs", "[world_graph]") {
+    const json serialized = {
+        {"next_id", 3},
+        {"nodes", json::array({
+            {{"id", 1}, {"fact", "First"}, {"created_at", 1}},
+            {{"id", 2}, {"fact", "Second"}, {"created_at", 2}},
+        })},
+        {"edges", json::array({
+            {{"from", 1}, {"to", 2}, {"confidence", 0.4f},
+             {"created_at", 7}, {"active", false}, {"kind", "evidence"}},
+        })},
+    };
+
+    WorldGraph restored = WorldGraph::from_json(serialized);
+    REQUIRE(restored.size() == 2);
+    REQUIRE(restored.all_edges().size() == 1);
+    const EdgeInfo edge = restored.all_edges().front();
+    REQUIRE(edge.from_id == 1);
+    REQUIRE(edge.to_id == 2);
+    REQUIRE(edge.data.weight == 0.4f);
+    REQUIRE(edge.data.created_at == 7);
+    REQUIRE_FALSE(edge.data.active);
+    REQUIRE(edge.data.kind == "evidence");
+    REQUIRE(restored.to_json()["edges"][0]["weight"] == 0.4f);
+
+    WorldGraph legacy = WorldGraph::from_legacy_node_pool_json({
+        {"next_id", 9},
+        {"nodes", serialized["nodes"]},
+    });
+    Node next;
+    next.fact = "Legacy next";
+    REQUIRE(legacy.add_node(std::move(next)).id == 9);
+    REQUIRE(legacy.all_edges().empty());
+}
+
 TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     Scene scene;
     scene.title = "Test";

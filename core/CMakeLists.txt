@@ -38,6 +38,7 @@ add_library(rhapsode STATIC
     src/world.cpp
     src/world_graph.cpp
     src/world_graph_dot.cpp
+    src/world_graph_serialization.cpp
 )
 
 set(RHAPSODE_LOCAL_BOOST_DIR "${CMAKE_SOURCE_DIR}/third_party/boost")
