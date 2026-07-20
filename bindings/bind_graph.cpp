@@ -133,7 +133,7 @@ void bind_graph(py::module_& m) {
         .def_readwrite("rejections",      &DirectorOutput::rejections);
 
     py::class_<Director>(m, "Director")
-        .def(py::init<WorldGraph&>(), py::arg("graph"))
+        .def(py::init<WorldGraph&>(), py::arg("graph"), py::keep_alive<1, 2>())
         .def("apply_planned_turn",
              [](Director& self, int turn_idx, const std::string& json_txt) -> DirectorOutput {
                  return self.apply_planned_turn(turn_idx, nlohmann::json::parse(json_txt));
@@ -149,7 +149,7 @@ void bind_graph(py::module_& m) {
         .def_readonly("category", &EntitySpan::category);
 
     py::class_<Annotator>(m, "Annotator")
-        .def(py::init<const Scene&>(), py::arg("scene"))
+        .def(py::init<const World&>(), py::arg("world"), py::keep_alive<1, 2>())
         .def("set_ner_callback", &Annotator::set_ner_callback)
         .def("annotate", &Annotator::annotate, py::arg("text"));
 }

@@ -135,7 +135,7 @@ def _setup_ws_session() -> WsSession:
     weaver.set_llm_callback(call_llm)
     weaver.set_local_llm_callback(make_local_llm_callback())
 
-    annotator = Annotator(scene)
+    annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())
 
     loop = _build_loop(story, director, weaver, resuming=is_resuming)

@@ -36,7 +36,7 @@ void bind_runtime(py::module_& m) {
         .def_readonly("reason", &ExpiryOp::reason);
 
     py::class_<Weaver>(m, "Weaver")
-        .def(py::init<WorldGraph&>(), py::arg("graph"))
+        .def(py::init<WorldGraph&>(), py::arg("graph"), py::keep_alive<1, 2>())
         .def("set_llm_callback",       &Weaver::set_llm_callback)
         .def("set_local_llm_callback", &Weaver::set_local_llm_callback)
         .def("set_interval",           &Weaver::set_interval, py::arg("turns"))
@@ -95,7 +95,8 @@ void bind_runtime(py::module_& m) {
 
     py::class_<SceneLoop>(m, "SceneLoop")
         .def(py::init<>())
-        .def("load_scene",                   &SceneLoop::load_scene)
+        .def("load_scene",                   &SceneLoop::load_scene,
+             py::keep_alive<1, 2>())
         .def("submit_input",                 &SceneLoop::submit_input,
              py::call_guard<py::gil_scoped_release>())
         .def("submit_autonomous",            &SceneLoop::submit_autonomous,
@@ -105,9 +106,11 @@ void bind_runtime(py::module_& m) {
         .def("set_narrator_llm_callback",    &SceneLoop::set_narrator_llm_callback)
         .def("set_turn_complete_callback",   &SceneLoop::set_turn_complete_callback)
         .def("take_last_turn_outputs",       &SceneLoop::take_last_turn_outputs)
-        .def("set_director",                 &SceneLoop::set_director, py::arg("director"))
+        .def("set_director",                 &SceneLoop::set_director, py::arg("director"),
+             py::keep_alive<1, 2>())
         .def("last_director_output",         &SceneLoop::last_director_output)
-        .def("set_weaver",                   &SceneLoop::set_weaver, py::arg("weaver"))
+        .def("set_weaver",                   &SceneLoop::set_weaver, py::arg("weaver"),
+             py::keep_alive<1, 2>())
         .def("last_weave_result",            &SceneLoop::last_weave_result)
         .def("set_history_window",           &SceneLoop::set_history_window,
              py::arg("normal") = 3, py::arg("resume") = 10)

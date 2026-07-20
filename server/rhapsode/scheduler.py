@@ -7,6 +7,7 @@ tool-use loop, forwarding read tools to the engine and reporting the chosen
 scene back to it."""
 
 import json
+import weakref
 
 from rhapsode.llm import complete_with_tools
 from rhapsode.llm_tools import NARRATOR_TOOLS
@@ -44,6 +45,8 @@ def make_scheduler_callback(story):
     read tools to `Story.dispatch_tool`, capture the `advance_scene` decision, and
     return the chosen scene_id ("" for none) for the engine to validate.
     """
+    story_ref = weakref.proxy(story)
+
     def scheduler(instructions: str, user: str) -> str:
         picked = {"id": ""}
 
@@ -51,7 +54,7 @@ def make_scheduler_callback(story):
             if name == "advance_scene":
                 picked["id"] = (args.get("scene_id") or "").strip()
                 return json.dumps({"ok": True, "picked": picked["id"]})
-            return story.dispatch_tool("", name, json.dumps(args or {}))
+            return story_ref.dispatch_tool("", name, json.dumps(args or {}))
 
         messages = [
             {"role": "system", "parts": [{"text": instructions}]},

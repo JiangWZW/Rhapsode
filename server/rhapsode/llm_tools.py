@@ -4,6 +4,7 @@ that runs the tool-use loop for a narrator beat."""
 
 import json
 import logging
+import weakref
 
 from rhapsode.llm import complete, complete_with_tools
 
@@ -91,11 +92,13 @@ def make_narrator_callback(story):
     decisions -- live in C++, not here. This module only adapts the LLM's
     tool-use protocol to that dispatcher.
     """
+    story_ref = weakref.proxy(story)
+
     def narrator(scene_id: str, instructions: str, turn_state: str) -> str:
         def dispatch(name: str, args: dict) -> str:
             log.info("[narrator %s] tool: %s %s", scene_id, name,
                      json.dumps(args or {}, ensure_ascii=False))
-            return story.dispatch_tool(scene_id, name, json.dumps(args or {}))
+            return story_ref.dispatch_tool(scene_id, name, json.dumps(args or {}))
 
         messages = [
             {"role": "system", "parts": [{"text": instructions}]},
