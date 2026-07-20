@@ -132,6 +132,9 @@ Focused output and migration tests raise the C++ total to 40 tests without chang
 The `CharacterMemory` step was deliberately narrowed after review: only the LLM reflection pipeline
 was extracted. Query/rendering behavior remains with the core class rather than being grouped into an
 inconsistent "rendering" module. Reflection characterization raises the C++ total to 41 tests.
+Weaver's queued background maintenance now lives in `weaver_work_queue.cpp`. Its existing public and
+private expiry names remain unchanged; focused ordering, supersession, missing-callback, and stop
+tests raise the C++ total to 43 tests.
 
 ## Plan
 
@@ -175,7 +178,8 @@ Perform one extraction per commit, running the full verification command after e
 3. **Complete (2026-07-20):** Extract only `CharacterMemory` reflection parsing/application into a
    dedicated translation unit. Keep queries, rendering, mutation, and serialization together in the
    core implementation.
-4. Split Weaver prompt/application logic from expiry-queue management.
+4. **Complete (2026-07-20):** Extract Weaver's existing queued maintenance implementation into
+   `weaver_work_queue.cpp`, retaining all existing expiry API and field names.
 5. Split Story into lifecycle/tools, runtime sequencing, and persistence files.
 6. Split World and Scene query/persistence implementations only where the same separation is already
    visible in their public headers.

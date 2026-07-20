@@ -2,6 +2,14 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Phase 2 Weaver work queue split
+
+- Characterized priority ordering, supersession timing, missing-callback behavior, and cooperative
+  stop behavior before moving code.
+- Extracted the existing 147-line queue block text-identically into `weaver_work_queue.cpp`, without
+  renaming the expiry API or changing `weaver.h`.
+- Verified 43 C++ tests, 12 Python tests, 7 frontend tests, both linters, and the production build.
+
 ## [2026-07-20] implementation | Phase 2 CharacterMemory reflection split
 
 - Added characterization coverage for successful, missing, throwing, and malformed reflection
