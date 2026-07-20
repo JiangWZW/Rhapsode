@@ -2,6 +2,13 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Phase 2 WorldGraph split
+
+- Extracted DOT rendering and JSON/legacy serialization into separate implementation files and
+  separate commits, without changing the `WorldGraph` header or serialized schema.
+- Added characterization tests for DOT escaping/state styling and serialized edge/legacy metadata.
+- Verified 40 C++ tests, 12 Python tests, 7 frontend tests, both linters, and the production build.
+
 ## [2026-07-20] implementation | Phase 2 pybind11 split
 
 - Replaced the monolithic binding translation unit with a single module entry point and story,

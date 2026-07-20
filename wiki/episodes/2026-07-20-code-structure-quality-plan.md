@@ -127,6 +127,8 @@ vulnerabilities.
 Phase 2 began on 2026-07-20. The monolithic pybind11 translation unit is now a small module entry
 point plus story, graph, runtime, and memory registration units. Registration order and the public
 module surface remain unchanged; an exact public-symbol test raises the Python total to 12 tests.
+`WorldGraph` DOT rendering and JSON/legacy serialization now live in dedicated implementation files.
+Focused output and migration tests raise the C++ total to 40 tests without changing its public API.
 
 ## Plan
 
@@ -165,7 +167,8 @@ Perform one extraction per commit, running the full verification command after e
 
 1. **Complete (2026-07-20):** Split `bind_rhapsode.cpp` into domain registration functions while
    retaining one `PYBIND11_MODULE` and the existing Python API.
-2. Move `WorldGraph` JSON/legacy migration and DOT rendering into separate translation units.
+2. **Complete (2026-07-20):** Move `WorldGraph` JSON/legacy migration and DOT rendering into
+   separate translation units, with focused characterization tests.
 3. Split `CharacterMemory` rendering from reflection parsing/application.
 4. Split Weaver prompt/application logic from expiry-queue management.
 5. Split Story into lifecycle/tools, runtime sequencing, and persistence files.
