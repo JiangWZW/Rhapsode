@@ -1122,11 +1122,9 @@ TEST_CASE("Story keeps player outputs separate from a scheduled off-stage turn",
     REQUIRE(player_scene->history.messages().back().content == "The player scene advances.");
     REQUIRE(off_stage->history.messages().back().content == "The distant patrol advances.");
 
-    // The mutable compatibility cache now belongs to the later off-stage turn,
-    // while Story has already preserved the player-facing result above.
-    const auto& last_director = loop.last_director_output();
-    REQUIRE(last_director.new_nodes.size() == 1);
-    REQUIRE(last_director.new_nodes[0].fact == "The patrol reaches the ridge");
+    // Story consumes each explicit result, so its later off-stage turn cannot
+    // leak through the legacy SceneLoop result cache.
+    REQUIRE(loop.last_director_output().new_nodes.empty());
     REQUIRE(loop.take_completed_expiry_ops().empty());
 }
 
@@ -1183,4 +1181,78 @@ TEST_CASE("Story persists lifecycle changes after the completed player beat",
     manifest_file.close();
     world_file.close();
     std::filesystem::remove_all(save_dir);
+}
+
+TEST_CASE("SceneLoop returns one complete result and detaches the Scene",
+          "[scene_loop][result]") {
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+
+    Scene second = root.fork("second", {});
+    Director director(root.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string& scene_id, const std::string&, const std::string&) {
+            return std::string{"Narration for "} + scene_id + R"(.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[{"fact":"Fact for )" + scene_id +
+                   R"(","entities":[]}],"speech_turns":[],"new_characters":[],"active_cast":[]})";
+        });
+
+    SceneTurnResult first = loop.run_player_turn(root, "Act.");
+    REQUIRE(loop.state() == LoopState::Idle);
+    REQUIRE(first.scene_id == "root");
+    REQUIRE(first.completed_turn == 1);
+    REQUIRE(first.outputs.size() == 1);
+    REQUIRE(first.outputs[0].content == "Narration for root.");
+    REQUIRE(first.director.new_nodes.size() == 1);
+    REQUIRE(first.director.new_nodes[0].fact == "Fact for root");
+    REQUIRE(first.expiry.empty());
+    REQUIRE(loop.take_last_turn_outputs().empty());
+    REQUIRE(loop.take_completed_expiry_ops().empty());
+    REQUIRE(loop.last_director_output().new_nodes.empty());
+
+    SceneTurnResult next = loop.run_autonomous_turn(second, "Continue.");
+    REQUIRE(loop.state() == LoopState::Idle);
+    REQUIRE(next.scene_id == "second");
+    REQUIRE(next.completed_turn == 1);
+    REQUIRE(next.outputs.size() == 1);
+    REQUIRE(next.outputs[0].content == "Narration for second.");
+}
+
+TEST_CASE("SceneLoop detaches the Scene when synchronous turn execution fails",
+          "[scene_loop][result][transaction]") {
+    Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Root";
+    scene.system_prompt = "Narrate.";
+
+    Director director(scene.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) -> std::string {
+            throw std::runtime_error("narrator unavailable");
+        });
+
+    REQUIRE_THROWS_AS(loop.run_player_turn(scene, "Act."), std::runtime_error);
+    REQUIRE(loop.state() == LoopState::Idle);
+    REQUIRE(scene.turn_index == 0);
+    REQUIRE(scene.history.size() == 0);
+
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Recovered.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+        });
+    const SceneTurnResult recovered = loop.run_player_turn(scene, "Try again.");
+    REQUIRE(recovered.outputs.size() == 1);
+    REQUIRE(recovered.outputs[0].content == "Recovered.");
+    REQUIRE(loop.state() == LoopState::Idle);
 }

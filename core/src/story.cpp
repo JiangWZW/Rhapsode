@@ -309,11 +309,6 @@ std::string Story::dispatch_tool(const std::string& scene_id,
 
 // -- The turn ----------------------------------------------------------------
 
-void Story::point_loop_at(Scene* s) {
-    loop_->load_scene(*s);
-    if (downsampler_cb_) s->downsampler.set_llm_callback(downsampler_cb_);
-}
-
 std::string Story::pick_off_stage_scene() {
     if (!scheduler_cb_) return "";
 
@@ -496,16 +491,16 @@ std::string Story::autonomous_cue(const std::string& scene_id) const {
     return cue;
 }
 
-void Story::sync_beat(Scene* s) {
+void Story::sync_beat(const SceneTurnResult& result) {
     MemorySystem* mem = world_->memory();
-    if (!mem || !loop_ || !s) return;
+    Scene* s = get_scene(result.scene_id);
+    if (!mem || !s) return;
 
     try {
-        const auto expiry = loop_->take_completed_expiry_ops();
-        if (!expiry.empty()) {
+        if (!result.expiry.empty()) {
             std::vector<Node> nodes;
-            nodes.reserve(expiry.size());
-            for (const auto& op : expiry)
+            nodes.reserve(result.expiry.size());
+            for (const auto& op : result.expiry)
                 if (const Node* n = world_->world_graph.get_node(op.id))
                     nodes.push_back(*n);
             if (!nodes.empty()) {
@@ -518,7 +513,7 @@ void Story::sync_beat(Scene* s) {
     }
 
     try {
-        const DirectorOutput& out = loop_->last_director_output();
+        const DirectorOutput& out = result.director;
         if (!out.new_nodes.empty())    mem->process_new_nodes(out.new_nodes, s->turn_index);
         if (!out.newly_expired.empty()) mem->sync_expired(out.newly_expired);
     } catch (const std::exception& e) {
@@ -542,29 +537,26 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     };
 
     // --- Player beat -------------------------------------------------------
-    point_loop_at(active);
-    loop_->submit_input(player_input);
-    loop_->join_background();
-    sync_beat(active);
+    if (downsampler_cb_) active->downsampler.set_llm_callback(downsampler_cb_);
+    SceneTurnResult player_result = loop_->run_player_turn(*active, player_input);
+    sync_beat(player_result);
     decide_lifecycle(active_scene_id_, player_input);
     apply_and_log("player beat");
     note_advanced(active_scene_id_);
 
-    // Capture player-facing outputs before an off-stage beat repoints the loop
-    // (take_last_turn_outputs clears on read).
-    std::vector<SceneMessage> outputs = loop_->take_last_turn_outputs();
+    std::vector<SceneMessage> outputs = std::move(player_result.outputs);
 
     // --- One off-stage beat ------------------------------------------------
     if (scene_count() > 1) {
         const std::string pick = pick_off_stage_scene();
         if (!pick.empty()) {
             if (Scene* s = get_scene(pick)) {
-                point_loop_at(s);
                 try {
-                    loop_->submit_autonomous(autonomous_cue(pick));
-                    loop_->join_background();
-                    const int completed_turn = s->turn_index;
-                    sync_beat(s);
+                    if (downsampler_cb_) s->downsampler.set_llm_callback(downsampler_cb_);
+                    SceneTurnResult off_stage_result =
+                        loop_->run_autonomous_turn(*s, autonomous_cue(pick));
+                    const int completed_turn = off_stage_result.completed_turn;
+                    sync_beat(off_stage_result);
                     decide_lifecycle(pick, "");
                     apply_and_log("off-stage beat");
                     note_advanced(pick);
@@ -573,17 +565,12 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
                 } catch (const std::exception& e) {
                     log() << "  [scheduler] off-stage beat failed for '" << pick
                           << "': " << e.what() << "\n";
-                    loop_->join_background();
                 }
             }
         }
     }
 
     // --- Persist -----------------------------------------------------------
-    // Lifecycle may have retired the off-stage scene the loop just advanced.
-    // Repoint before leaving so the loop never retains a dangling Scene pointer.
-    if (Scene* current = active_scene()) point_loop_at(current);
-    loop_->join_background();
     if (!saves_dir_.empty()) save(saves_dir_);
 
     if (scene_count() > 1) {

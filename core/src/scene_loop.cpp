@@ -131,6 +131,43 @@ void SceneLoop::submit_autonomous(const std::string& focus) {
     submit_message(focus, true);
 }
 
+SceneTurnResult SceneLoop::run_player_turn(Scene& scene, const std::string& text) {
+    return run_turn(scene, text, false);
+}
+
+SceneTurnResult SceneLoop::run_autonomous_turn(Scene& scene, const std::string& focus) {
+    return run_turn(scene, focus, true);
+}
+
+SceneTurnResult SceneLoop::run_turn(Scene& scene,
+                                    const std::string& text,
+                                    bool autonomous) {
+    load_scene(scene);
+
+    struct DetachScene {
+        SceneLoop& loop;
+        ~DetachScene() {
+            loop.scene_ = nullptr;
+            loop.state_ = LoopState::Idle;
+        }
+    } detach{*this};
+
+    submit_message(text, autonomous);
+    join_background();
+    return take_scene_turn_result();
+}
+
+SceneTurnResult SceneLoop::take_scene_turn_result() {
+    SceneTurnResult result;
+    result.scene_id = scene_->scene_id;
+    result.completed_turn = scene_->turn_index;
+    result.outputs = std::exchange(last_turn_outputs_, {});
+    result.director = std::exchange(last_director_out_, {});
+    result.weave = std::exchange(last_weave_result_, {});
+    result.expiry = std::exchange(completed_expiry_ops_, {});
+    return result;
+}
+
 void SceneLoop::submit_message(const std::string& text, bool autonomous) {
     if (state_ != LoopState::WaitingForInput)
         throw std::runtime_error("Cannot submit message: loop is not waiting for input");

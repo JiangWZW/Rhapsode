@@ -10,6 +10,7 @@
 namespace rhapsode {
 
 class SceneLoop;
+struct SceneTurnResult;
 
 // Picks the next off-stage scene to advance. The engine supplies the scheduler
 // instructions and the user prompt; the Python side runs the tool-use loop and
@@ -141,8 +142,6 @@ private:
     Scene* adopt(Scene s);
     std::string derive_intention(const Scene& s, float* charge_out) const;
 
-    // Point the bound loop at `s`, wiring that scene's downsampler callback.
-    void point_loop_at(Scene* s);
     // Ask the scheduler which off-stage scene to advance; "" for none.
     std::string pick_off_stage_scene();
     // Run the lifecycle verdict for the beat just authored on `scene_id` and stage
@@ -151,8 +150,9 @@ private:
     void decide_lifecycle(const std::string& scene_id, const std::string& player_input);
     // The director cue that drives an off-stage (player-less) beat on `scene_id`.
     std::string autonomous_cue(const std::string& scene_id) const;
-    // Push a beat's new/expired facts into the shared MemorySystem (ChromaDB).
-    void sync_beat(Scene* s);
+    // Push a completed scene turn's new/expired facts into the shared
+    // MemorySystem (ChromaDB).
+    void sync_beat(const SceneTurnResult& result);
 
     std::shared_ptr<World> world_;
     std::vector<std::unique_ptr<Scene>> scenes_;

@@ -20,6 +20,15 @@ struct NarratorPrompt {
     std::string turn_state;
 };
 
+struct SceneTurnResult {
+    std::string scene_id;
+    int completed_turn = 0;
+    std::vector<SceneMessage> outputs;
+    DirectorOutput director;
+    WeaveResult weave;
+    std::vector<ExpiryOp> expiry;
+};
+
 enum class LoopState {
     Idle,
     WaitingForInput,
@@ -45,6 +54,13 @@ public:
     /// director cue that drives it -- typically the scene's driving intention and
     /// recent facts -- appended to this scene's thread instead of a user turn.
     void submit_autonomous(const std::string& focus);
+
+    /// Run one complete player scene turn and return its foreground/background
+    /// result. The supplied Scene is borrowed only for this call.
+    SceneTurnResult run_player_turn(Scene& scene, const std::string& text);
+    /// Run one complete autonomous scene turn. The supplied Scene is borrowed
+    /// only for this call.
+    SceneTurnResult run_autonomous_turn(Scene& scene, const std::string& focus);
     LoopState state() const;
 
     void set_llm_callback(LLMCallback cb);
@@ -78,6 +94,8 @@ private:
     enum class OutputBucket { Story, Dialogue };
 
     void advance();
+    SceneTurnResult run_turn(Scene& scene, const std::string& text, bool autonomous);
+    SceneTurnResult take_scene_turn_result();
     void submit_message(const std::string& text, bool autonomous);
     NarratorPrompt build_turn_prompt(int turn);
     std::string call_narrator(const std::string& instructions,
