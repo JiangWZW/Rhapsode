@@ -128,6 +128,26 @@ bool Scene::exit_character(const std::string& name) {
     return false;
 }
 
+void Scene::ensure_characters_present(
+    const std::vector<std::string>& canonical_names) {
+    std::unordered_set<std::string> resolved_names;
+    resolved_names.reserve(canonical_names.size());
+    for (const auto& name : canonical_names) {
+        resolved_names.insert(str::to_lower(name));
+    }
+
+    for (auto& character : world_->characters) {
+        if (character.is_player || character.dead) {
+            continue;
+        }
+        const bool present = resolved_names.count(str::to_lower(character.name)) > 0;
+        if (present && !character.in_scene(scene_id)) {
+            character.join_scene(scene_id);
+            log() << "  [cast] " << character.name << " enters (in active_cast)\n";
+        }
+    }
+}
+
 namespace {
 
 std::string join_sorted(const std::vector<std::string>& names) {

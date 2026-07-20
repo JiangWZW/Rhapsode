@@ -64,6 +64,9 @@ public:
     Character* find_on_stage(const std::string& name);
     const Character* find_on_stage(const std::string& name) const;
     bool exit_character(const std::string& name);
+    /// Bring already-resolved, living roster characters into this scene.
+    /// Presence-only: names omitted from the list are never removed.
+    void ensure_characters_present(const std::vector<std::string>& canonical_names);
     std::vector<DeathCandidate> scan_death_candidates() { return world_->scan_death_candidates(); }
 
     /// Entity names/descriptions an on-stage NPC's mind may view this turn.

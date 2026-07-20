@@ -136,24 +136,26 @@ void apply_active_cast(const nlohmann::json& plan,
         return;
     }
 
-    std::unordered_set<std::string> resolved_names;
+    std::unordered_set<std::string> resolved_keys;
+    std::vector<std::string> resolved_names;
+    auto add_resolved = [&](const Character* character) {
+        if (!character || character->dead) return;
+        const std::string key = str::to_lower(character->name);
+        if (resolved_keys.insert(key).second) {
+            resolved_names.push_back(character->name);
+        }
+    };
 
     for (const auto& elem : plan["active_cast"]) {
         if (!elem.is_string()) {
             continue;
         }
         auto name = elem.get<std::string>();
-        const Character* ch = resolve_cast_name(name, scene.world().characters);
-        if (ch && !ch->dead) {
-            resolved_names.insert(str::to_lower(ch->name));
-        }
+        add_resolved(resolve_cast_name(name, scene.world().characters));
     }
 
     for (const auto& cue : cues) {
-        const Character* ch = resolve_cast_name(cue.character, scene.world().characters);
-        if (ch && !ch->dead) {
-            resolved_names.insert(str::to_lower(ch->name));
-        }
+        add_resolved(resolve_cast_name(cue.character, scene.world().characters));
     }
 
     if (resolved_names.empty() && !cues.empty()) {
@@ -162,52 +164,11 @@ void apply_active_cast(const nlohmann::json& plan,
         return;
     }
 
-    // active_cast is per-beat presence, NOT storyline membership. It can only
-    // bring a character on-stage; it never removes one. Removing a character from
-    // a storyline (fork / exit / merge / conclude) is decided solely by the
-    // lifecycle verdict (Story::decide_lifecycle) -- so a character dropped from
-    // active_cast can never be silently frozen out of every scene.
-    for (auto& ch : scene.world().characters) {
-        if (ch.is_player || ch.dead) {
-            continue;
-        }
-        const bool in_cast = resolved_names.count(str::to_lower(ch.name)) > 0;
-        if (in_cast && !ch.in_scene(scene.scene_id)) {
-            ch.join_scene(scene.scene_id);
-            log() << "  [cast] " << ch.name << " enters (in active_cast)\n";
-        }
-    }
+    scene.ensure_characters_present(resolved_names);
 }
 
 void route_perception(Scene& scene, const std::vector<Node>& new_nodes, int turn) {
-    int deliveries = 0;
-    std::unordered_set<std::string> minds;
-    auto route_to = [&](const std::string& name, const Node& n) {
-        auto it = scene.world().character_memories.find(name);
-        if (it != scene.world().character_memories.end()) {
-            it->second.route_fact(n.fact, n.entities, turn);
-            ++deliveries;
-            minds.insert(it->first);
-        }
-    };
-
-    for (const auto& n : new_nodes) {
-        if (!n.audience.empty()) {
-            for (const auto& a : n.audience) {
-                route_to(a, n);
-            }
-        } else {
-            for (const auto& c : scene.world().characters) {
-                if (c.is_player || c.dead || !c.in_scene(scene.scene_id)) {
-                    continue;
-                }
-                route_to(c.name, n);
-            }
-        }
-    }
-
-    log() << "  [perceive] " << new_nodes.size() << " new_node(s) -> " << deliveries
-          << " perception(s) routed to " << minds.size() << " mind(s)\n" << std::flush;
+    scene.world().route_perceptions(scene.scene_id, new_nodes, turn);
 }
 
 SceneMessage make_scene_loop_message(const std::string& kind,
