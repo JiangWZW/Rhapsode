@@ -53,12 +53,24 @@ target_include_directories(rhapsode PUBLIC
 
 target_link_libraries(rhapsode PUBLIC nlohmann_json::nlohmann_json)
 
+if(MSVC)
+    target_compile_options(rhapsode PRIVATE /W4)
+else()
+    target_compile_options(rhapsode PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 # Tests
 add_executable(test_scene EXCLUDE_FROM_ALL
     tests/test_scene.cpp
     tests/test_substrate_golden.cpp
 )
 target_link_libraries(test_scene PRIVATE rhapsode Catch2::Catch2WithMain)
+
+if(MSVC)
+    target_compile_options(test_scene PRIVATE /W4)
+else()
+    target_compile_options(test_scene PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)

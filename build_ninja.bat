@@ -31,6 +31,10 @@ set "LIB=!MSVC_ROOT!\lib\x64;!WINSDK!\lib\!WINSDK_VER!\ucrt\x64;!WINSDK!\lib\!WI
 
 set "NEED_CONFIGURE=0"
 if not exist build\CMakeCache.txt (
+    if exist build (
+        echo Removing incomplete build tree...
+        rmdir /s /q build
+    )
     set "NEED_CONFIGURE=1"
 ) else (
     findstr /C:"CMAKE_GENERATOR:INTERNAL=Ninja" build\CMakeCache.txt >nul 2>&1
@@ -39,6 +43,14 @@ if not exist build\CMakeCache.txt (
         rmdir /s /q build
         set "NEED_CONFIGURE=1"
     )
+)
+
+rem A cache alone does not make a usable Ninja build tree. This can happen
+rem after an interrupted configure or when FetchContent leaves partial sources.
+if !NEED_CONFIGURE!==0 if not exist build\build.ninja (
+    echo Removing incomplete Ninja build tree...
+    rmdir /s /q build
+    set "NEED_CONFIGURE=1"
 )
 
 if !NEED_CONFIGURE!==1 (

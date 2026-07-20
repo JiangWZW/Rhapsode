@@ -7,6 +7,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+set(PYBIND11_FINDPYTHON ON)
+
 FetchContent_Declare(
     nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git

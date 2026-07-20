@@ -20,4 +20,5 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo === Running test_scene ===
-build\core\Release\test_scene.exe %*
+ctest --test-dir build --build-config Release --output-on-failure %*
+if errorlevel 1 exit /b 1
