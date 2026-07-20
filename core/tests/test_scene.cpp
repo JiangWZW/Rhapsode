@@ -436,6 +436,117 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     REQUIRE(bob_perceptions == 1);
 }
 
+TEST_CASE("CharacterMemory reflection preserves its current graph contract",
+          "[character_memory][reflection]") {
+    auto find_fact = [](const std::vector<Node>& nodes,
+                        const std::string& fact) -> const Node* {
+        for (const auto& node : nodes)
+            if (node.fact == fact) return &node;
+        return nullptr;
+    };
+
+    SECTION("no callback leaves perceptions live") {
+        CharacterMemory memory("Maren");
+        memory.route_fact("Ash hid the key", {"Ash"}, 5);
+
+        memory.reflect_perceptions(6, "A wary guard");
+
+        const auto nodes = memory.beliefs().all_nodes(true);
+        const Node* perception = find_fact(nodes, "Ash hid the key");
+        REQUIRE(perception != nullptr);
+        REQUIRE(perception->type == "perception");
+        REQUIRE(perception->valid_until == -1);
+    }
+
+    SECTION("successful response preserves prompt, parsing, edges, and weights") {
+        CharacterMemory memory("Maren");
+        memory.seed_belief("I trust Ash", {"Ash"}, 0, 4.0f);
+        memory.seed_belief("The gate is safe", {"Gate"}, 0, 4.0f);
+        memory.route_fact("Ash hid the key", {"Ash"}, 5);
+
+        std::string captured_prompt;
+        memory.set_reflection_llm_callback([&](const std::string& prompt) {
+            captured_prompt = prompt;
+            return std::string{R"({"thoughts":[{"id":0,"thought":"My belief: I cannot trust Ash now","weight":12,"relation":"contradicts"}]})"};
+        });
+
+        memory.reflect_perceptions(6, "A wary guard");
+
+        REQUIRE(captured_prompt.find("You are Maren.") != std::string::npos);
+        REQUIRE(captured_prompt.find("Who I am: A wary guard") != std::string::npos);
+        REQUIRE(captured_prompt.find("I trust Ash") != std::string::npos);
+        REQUIRE(captured_prompt.find("Ash hid the key") != std::string::npos);
+
+        const auto nodes = memory.beliefs().all_nodes(true);
+        const Node* prior = find_fact(nodes, "I trust Ash");
+        const Node* unrelated = find_fact(nodes, "The gate is safe");
+        const Node* perception = find_fact(nodes, "Ash hid the key");
+        const Node* reflected = find_fact(nodes, "I cannot trust Ash now");
+        REQUIRE(prior != nullptr);
+        REQUIRE(unrelated != nullptr);
+        REQUIRE(perception != nullptr);
+        REQUIRE(reflected != nullptr);
+        REQUIRE(reflected->type == "belief");
+        REQUIRE(reflected->weight == 10.0f);
+        REQUIRE(reflected->entities == std::vector<std::string>{"Ash"});
+        REQUIRE(perception->valid_until == 6);
+        REQUIRE(prior->weight > 3.59f);
+        REQUIRE(prior->weight < 3.61f);
+        REQUIRE(unrelated->weight > 3.59f);
+        REQUIRE(unrelated->weight < 3.61f);
+
+        bool tension_to_prior = false;
+        bool evidence_to_perception = false;
+        for (const auto& edge : memory.beliefs().all_edges()) {
+            if (edge.from_id == prior->id && edge.to_id == reflected->id &&
+                edge.data.kind == "tension")
+                tension_to_prior = true;
+            if (edge.from_id == perception->id && edge.to_id == reflected->id &&
+                edge.data.kind == "evidence")
+                evidence_to_perception = true;
+        }
+        REQUIRE(tension_to_prior);
+        REQUIRE(evidence_to_perception);
+    }
+
+    SECTION("throwing callback consolidates perception and decays prior") {
+        CharacterMemory memory("Maren");
+        memory.seed_belief("I trust Ash", {"Ash"}, 0, 4.0f);
+        memory.route_fact("Ash hid the key", {"Ash"}, 5);
+        memory.set_reflection_llm_callback([](const std::string&) -> std::string {
+            throw std::runtime_error("reflection unavailable");
+        });
+
+        memory.reflect_perceptions(6, "A wary guard");
+
+        const auto nodes = memory.beliefs().all_nodes(true);
+        const Node* prior = find_fact(nodes, "I trust Ash");
+        const Node* perception = find_fact(nodes, "Ash hid the key");
+        REQUIRE(prior != nullptr);
+        REQUIRE(perception != nullptr);
+        REQUIRE(perception->valid_until == 6);
+        REQUIRE(prior->weight > 3.59f);
+        REQUIRE(prior->weight < 3.61f);
+        REQUIRE(nodes.size() == 2);
+    }
+
+    SECTION("malformed response consolidates perception without adding a belief") {
+        CharacterMemory memory("Maren");
+        memory.route_fact("Ash hid the key", {"Ash"}, 5);
+        memory.set_reflection_llm_callback([](const std::string&) {
+            return std::string{"not json"};
+        });
+
+        memory.reflect_perceptions(6, "A wary guard");
+
+        const auto nodes = memory.beliefs().all_nodes(true);
+        const Node* perception = find_fact(nodes, "Ash hid the key");
+        REQUIRE(perception != nullptr);
+        REQUIRE(perception->valid_until == 6);
+        REQUIRE(nodes.size() == 1);
+    }
+}
+
 TEST_CASE("death confirmation accepts only a yes token", "[scene_loop]") {
     REQUIRE(is_affirmative_yes_response("yes"));
     REQUIRE(is_affirmative_yes_response("Yes."));
