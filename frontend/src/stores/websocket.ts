@@ -1,21 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { ChatMessage, EntitySpan } from '../types/protocol'
 
-export interface EntitySpan {
-  start: number
-  end: number
-  text: string
-  category: string
-}
-
-export interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-  /** Present for assistant rows from merged flow; omission means narrator prose. */
-  scene_kind?: 'narrator' | 'character'
-  speaker?: string
-  entities?: EntitySpan[]
-}
+export type { ChatMessage, EntitySpan } from '../types/protocol'
 
 export const useWebSocket = defineStore('websocket', () => {
   const messages = ref<ChatMessage[]>([])
@@ -25,6 +12,9 @@ export const useWebSocket = defineStore('websocket', () => {
   let ws: WebSocket | null = null
 
   function connect() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+      return
+    }
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     ws = new WebSocket(`${proto}://${location.host}/ws`)
 
@@ -36,7 +26,18 @@ export const useWebSocket = defineStore('websocket', () => {
     }
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(event.data) as Record<string, unknown>
+      } catch {
+        messages.value.push({
+          role: 'assistant',
+          content: '[Error] Invalid server message',
+          scene_kind: 'narrator',
+        })
+        processing.value = false
+        return
+      }
 
       function pushAssistant(
         content: string,
@@ -60,15 +61,17 @@ export const useWebSocket = defineStore('websocket', () => {
           data.scene_kind === 'character'
             ? 'character'
             : 'narrator'
-        pushAssistant(data.content ?? '', kind, data.speaker, data.entities)
+        pushAssistant(String(data.content ?? ''), kind,
+          typeof data.speaker === 'string' ? data.speaker : undefined,
+          Array.isArray(data.entities) ? data.entities as EntitySpan[] : undefined)
       } else if (data.type === 'assistant_message') {
-        pushAssistant(data.content ?? '', 'narrator')
+        pushAssistant(String(data.content ?? ''), 'narrator')
       } else if (data.type === 'user_message') {
-        messages.value.push({ role: 'user', content: data.content ?? '' })
+        messages.value.push({ role: 'user', content: String(data.content ?? '') })
       } else if (data.type === 'error') {
         messages.value.push({
           role: 'assistant',
-          content: `[Error] ${data.detail}`,
+          content: `[Error] ${String(data.detail ?? 'Unknown server error')}`,
           scene_kind: 'narrator',
         })
         processing.value = false

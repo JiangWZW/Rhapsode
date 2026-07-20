@@ -22,6 +22,7 @@
 
 import MarkdownIt from 'markdown-it'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
+import type { EntitySpan } from '../types/protocol'
 
 const md = new MarkdownIt({
   typographer: true,
@@ -50,7 +51,8 @@ function parenRule(state: StateInline, silent: boolean): boolean {
   if (close < start + 1) return false
   if (!silent) {
     const token = state.push('html_inline', '', 0)
-    token.content = `<span class="paren">(${state.src.slice(start, close)})</span>`
+    const content = md.utils.escapeHtml(state.src.slice(start, close))
+    token.content = `<span class="paren">(${content})</span>`
   }
   state.pos = close + 1
   return true
@@ -63,26 +65,21 @@ function bracketRule(state: StateInline, silent: boolean): boolean {
   if (close < start + 1) return false
   if (!silent) {
     const token = state.push('html_inline', '', 0)
-    token.content = `<span class="bk">[${state.src.slice(start, close)}]</span>`
+    const content = md.utils.escapeHtml(state.src.slice(start, close))
+    token.content = `<span class="bk">[${content}]</span>`
   }
   state.pos = close + 1
   return true
 }
 
-// Push after all built-in rules so Markdown links ([text](url)) are handled first.
-md.inline.ruler.push('rhapsode_paren',    parenRule)
+// Run parentheses before the catch-all text rule. Brackets stay after built-in
+// link handling so [text](url) retains Markdown semantics.
+md.inline.ruler.before('text', 'rhapsode_paren', parenRule)
 md.inline.ruler.push('rhapsode_bracket',  bracketRule)
 
 export function parseScene(raw: string): string {
   if (!raw) return ''
   return md.render(raw)
-}
-
-export interface EntitySpan {
-  start: number
-  end: number
-  text: string
-  category: string
 }
 
 function escapeRegex(s: string): string {
@@ -101,11 +98,12 @@ export function applyAnnotations(html: string, entities: EntitySpan[]): string {
     seen.add(key)
 
     const escaped = escapeRegex(ent.text)
+    const category = ent.category.toLowerCase().replace(/[^a-z0-9_-]+/g, '-') || 'unknown'
     const re = new RegExp(`\\b${escaped}\\b`, 'gi')
     html = html.replace(/([^<]+)|(<[^>]+>)/g, (_match, text, tag) => {
       if (tag) return tag
       return text.replace(re, (m: string) =>
-        `<span class="ent ent-${ent.category}">${m}</span>`)
+        `<span class="ent ent-${category}">${m}</span>`)
     })
   }
   return html
