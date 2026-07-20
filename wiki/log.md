@@ -2,6 +2,13 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Phase 2 pybind11 split
+
+- Replaced the monolithic binding translation unit with a single module entry point and story,
+  graph, runtime, and memory registration units.
+- Preserved registration order and added an exact public-module-symbol characterization test.
+- Verified 38 C++ tests, 12 Python tests, 7 frontend tests, both linters, and the production build.
+
 ## [2026-07-20] implementation | Code quality phases 0 and 1
 
 - Audited the synchronized `origin/main` tree across C++, pybind11, Python, Vue, build scripts, tests,

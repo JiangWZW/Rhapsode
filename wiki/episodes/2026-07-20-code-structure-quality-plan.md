@@ -19,7 +19,7 @@ sources:
   - frontend/src/utils/sceneTextParser.ts
 last_updated: 2026-07-20
 confidence: verified
-status: phases-0-and-1-complete
+status: phase-2-in-progress
 tier: episodic
 related:
   - "[[decisions/coding-guidelines]]"
@@ -124,6 +124,10 @@ Verification result: 38 C++ tests, 11 Python tests, and 7 frontend tests pass; R
 clean, the frontend production build succeeds, and the production npm audit reports zero known
 vulnerabilities.
 
+Phase 2 began on 2026-07-20. The monolithic pybind11 translation unit is now a small module entry
+point plus story, graph, runtime, and memory registration units. Registration order and the public
+module surface remain unchanged; an exact public-symbol test raises the Python total to 12 tests.
+
 ## Plan
 
 ### Phase 0: establish one reliable verification command — complete
@@ -159,7 +163,8 @@ Exit criterion: error recovery, save ordering, and rendered model text have dete
 
 Perform one extraction per commit, running the full verification command after each:
 
-1. Split `bind_rhapsode.cpp` into domain registration functions while retaining one `PYBIND11_MODULE`.
+1. **Complete (2026-07-20):** Split `bind_rhapsode.cpp` into domain registration functions while
+   retaining one `PYBIND11_MODULE` and the existing Python API.
 2. Move `WorldGraph` JSON/legacy migration and DOT rendering into separate translation units.
 3. Split `CharacterMemory` rendering from reflection parsing/application.
 4. Split Weaver prompt/application logic from expiry-queue management.
