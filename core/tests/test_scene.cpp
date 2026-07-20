@@ -1271,3 +1271,47 @@ TEST_CASE("SceneLoop detaches the Scene when synchronous turn execution fails",
     REQUIRE(recovered.outputs[0].content == "Recovered.");
     REQUIRE(loop.state() == LoopState::Idle);
 }
+
+TEST_CASE("SceneLoop rejects runtime services bound to another WorldGraph",
+          "[scene_loop][ownership]") {
+    Scene configured;
+    configured.scene_id = "configured";
+    Scene other;
+    other.scene_id = "other";
+
+    SECTION("Director mismatch") {
+        Director director(configured.world().world_graph);
+        SceneLoop loop;
+        loop.set_director(&director);
+
+        try {
+            loop.run_player_turn(other, "Act.");
+            FAIL("Expected mismatched Director graph to be rejected");
+        } catch (const std::runtime_error& error) {
+            REQUIRE(std::string{error.what()} ==
+                    "Director is bound to a different WorldGraph");
+        }
+        REQUIRE(loop.state() == LoopState::Idle);
+        REQUIRE(other.history.size() == 0);
+        REQUIRE(other.turn_index == 0);
+    }
+
+    SECTION("Weaver mismatch") {
+        Director director(configured.world().world_graph);
+        Weaver weaver(other.world().world_graph);
+        SceneLoop loop;
+        loop.set_director(&director);
+        loop.set_weaver(&weaver);
+
+        try {
+            loop.run_player_turn(configured, "Act.");
+            FAIL("Expected mismatched Weaver graph to be rejected");
+        } catch (const std::runtime_error& error) {
+            REQUIRE(std::string{error.what()} ==
+                    "Weaver is bound to a different WorldGraph");
+        }
+        REQUIRE(loop.state() == LoopState::Idle);
+        REQUIRE(configured.history.size() == 0);
+        REQUIRE(configured.turn_index == 0);
+    }
+}

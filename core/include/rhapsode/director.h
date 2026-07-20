@@ -27,6 +27,8 @@ public:
     /// Extra keys such as `speech_turns` are ignored by the graph engine.
     DirectorOutput apply_planned_turn(int turn_index, const nlohmann::json& response);
 
+    bool uses_graph(const WorldGraph& graph) const noexcept { return &graph_ == &graph; }
+
 private:
     WorldGraph& graph_;
 

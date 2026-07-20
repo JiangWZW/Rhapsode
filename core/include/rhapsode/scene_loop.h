@@ -101,6 +101,7 @@ private:
     void advance();
     SceneTurnResult run_turn(Scene& scene, const std::string& text, bool autonomous);
     SceneTurnResult take_scene_turn_result();
+    void validate_runtime_graph() const;
     void submit_message(const std::string& text, bool autonomous);
     NarratorPrompt build_turn_prompt(int turn);
     std::string call_narrator(const std::string& instructions,

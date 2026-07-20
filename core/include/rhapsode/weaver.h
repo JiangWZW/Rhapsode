@@ -42,6 +42,8 @@ class Weaver {
 public:
     explicit Weaver(WorldGraph& graph);
 
+    bool uses_graph(const WorldGraph& graph) const noexcept { return &graph_ == &graph; }
+
     void set_llm_callback(LLMCallback cb);
     void set_local_llm_callback(LLMCallback cb);
     void set_interval(int turns);

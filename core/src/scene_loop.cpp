@@ -168,9 +168,21 @@ SceneTurnResult SceneLoop::take_scene_turn_result() {
     return result;
 }
 
+void SceneLoop::validate_runtime_graph() const {
+    if (!director_)
+        throw std::runtime_error("Null director in scene");
+    const WorldGraph& graph = scene_->world().world_graph;
+    if (!director_->uses_graph(graph))
+        throw std::runtime_error("Director is bound to a different WorldGraph");
+    if (weaver_ && !weaver_->uses_graph(graph))
+        throw std::runtime_error("Weaver is bound to a different WorldGraph");
+}
+
 void SceneLoop::submit_message(const std::string& text, bool autonomous) {
     if (state_ != LoopState::WaitingForInput)
         throw std::runtime_error("Cannot submit message: loop is not waiting for input");
+
+    validate_runtime_graph();
 
     // The previous beat is part of the state being snapshotted. Finish it first
     // so rollback never races a background writer.
@@ -536,7 +548,6 @@ void SceneLoop::post_turn_cleanup(const std::string& narration) {
 
 void SceneLoop::advance() {
     if (!llm_cb_)    throw std::runtime_error("No LLM callback registered");
-    if (!director_)  throw std::runtime_error("Null director in scene");
 
     join_background();
 
