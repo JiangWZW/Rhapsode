@@ -132,6 +132,10 @@ public:
     /// turn outputs (narrator prose + NPC lines) for the caller to stream.
     std::vector<SceneMessage> advance_scene(const std::string& player_input);
 
+    /// Revert turns on the active scene using the existing scene-local undo
+    /// behavior, mark the next prompt as resumed, and persist the Story.
+    int revert_active_turns(int count);
+
     // -- Persistence (world.json + per-scene blobs + story.json manifest) --
     bool has_save(const std::string& saves_dir) const;
     void load_save(const std::string& saves_dir);

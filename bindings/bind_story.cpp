@@ -200,6 +200,7 @@ void bind_story(py::module_& m) {
         .def("set_saves_dir", &Story::set_saves_dir, py::arg("dir"))
         .def("advance_scene", &Story::advance_scene, py::arg("player_input"),
             py::call_guard<py::gil_scoped_release>())
+        .def("revert_active_turns", &Story::revert_active_turns, py::arg("count"))
         .def("has_save",   &Story::has_save,   py::arg("saves_dir"))
         .def("load_save",  &Story::load_save,  py::arg("saves_dir"))
         .def("save",       &Story::save,       py::arg("saves_dir"))

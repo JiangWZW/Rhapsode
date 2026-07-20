@@ -137,12 +137,6 @@ def _setup_ws_session() -> WsSession:
                      is_resuming=is_resuming)
 
 
-def _rebuild_loop(session: WsSession, *, resuming: bool = False) -> None:
-    """Rebuild the loop after undo, re-binding it to the restored Story."""
-    session.loop = _build_loop(session.story, session.director, session.weaver,
-                               resuming=resuming)
-
-
 # -- Transport -----------------------------------------------------------------
 
 def _scene_ws_payload(msg: SceneMessage) -> dict:
@@ -193,14 +187,11 @@ async def _stream_outputs(ws: WebSocket, annotator: Annotator,
 
 
 async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
-    loop = session.loop
+    reverted = await asyncio.get_event_loop().run_in_executor(
+        None, session.story.revert_active_turns, n)
     scene = session.scene
-    await asyncio.get_event_loop().run_in_executor(None, loop.join_background)
-    reverted = scene.revert_turns(n)
     log.info("/undo %d -> reverted %d turns, now at turn %d",
              n, reverted, scene.turn_index)
-    session.story.save(SAVES_DIR)
-    _rebuild_loop(session, resuming=True)
     await ws.send_json({"type": "undo", "turns_reverted": reverted,
                         "turn_index": scene.turn_index})
     await _send_seed_messages(ws, scene, is_resuming=True)

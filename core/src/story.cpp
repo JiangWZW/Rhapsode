@@ -582,6 +582,18 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     return outputs;
 }
 
+int Story::revert_active_turns(int count) {
+    if (!loop_) throw std::runtime_error("Story::revert_active_turns: runtime not bound");
+    Scene* active = active_scene();
+    if (!active) throw std::runtime_error("Story::revert_active_turns: no active scene");
+
+    loop_->join_background();
+    const int reverted = active->revert_turns(count);
+    loop_->set_resuming(true);
+    if (!saves_dir_.empty()) save(saves_dir_);
+    return reverted;
+}
+
 // -- Persistence -------------------------------------------------------------
 
 namespace {
@@ -601,6 +613,7 @@ bool Story::has_save(const std::string& saves_dir) const {
 }
 
 void Story::load_save(const std::string& saves_dir) {
+    if (loop_) loop_->join_background();
     world_->load_save(saves_dir);
 
     const std::string mpath = manifest_path(saves_dir);

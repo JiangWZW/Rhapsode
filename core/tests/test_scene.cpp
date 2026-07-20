@@ -1239,6 +1239,106 @@ TEST_CASE("Story persists lifecycle changes after the completed player beat",
     std::filesystem::remove_all(save_dir);
 }
 
+TEST_CASE("Story undo persists and reuses the bound SceneLoop",
+          "[story][undo][persistence]") {
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+
+    Story story = Story::from_scene(std::move(root));
+    Director director(story.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(The moment advances.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+        });
+
+    const auto save_dir = std::filesystem::temp_directory_path() /
+        ("rhapsode-story-undo-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    story.bind_runtime(loop);
+    story.set_saves_dir(save_dir.string());
+
+    story.advance_scene("Go forward.");
+    REQUIRE(story.active_scene()->turn_index == 1);
+    REQUIRE(story.revert_active_turns(1) == 1);
+    REQUIRE(story.active_scene()->turn_index == 0);
+
+    std::ifstream reverted_file(save_dir / "root.json");
+    json reverted_json;
+    reverted_file >> reverted_json;
+    REQUIRE(reverted_json["turn_index"] == 0);
+    reverted_file.close();
+
+    story.advance_scene("Try again.");
+    REQUIRE(story.active_scene()->turn_index == 1);
+    std::filesystem::remove_all(save_dir);
+}
+
+TEST_CASE("Story load waits for bound runtime work before rebuilding scenes",
+          "[story][background][persistence]") {
+    using namespace std::chrono_literals;
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+    for (const char* fact : {"The gate is shut", "The guard has a key"}) {
+        Node node;
+        node.fact = fact;
+        root.world().world_graph.add_node(std::move(node));
+    }
+
+    Story story = Story::from_scene(std::move(root));
+    const auto save_dir = std::filesystem::temp_directory_path() /
+        ("rhapsode-story-load-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    story.save(save_dir.string());
+
+    Director director(story.world().world_graph);
+    Weaver weaver(story.world().world_graph);
+    weaver.set_interval(1);
+    std::promise<void> started;
+    std::promise<void> release;
+    auto release_future = release.get_future().share();
+    weaver.set_llm_callback([&](const std::string&) {
+        started.set_value();
+        release_future.wait();
+        return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
+    });
+
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_weaver(&weaver);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(Time passes.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+        });
+    story.bind_runtime(loop);
+    loop.load_scene(*story.active_scene());
+    loop.submit_input("Wait.");
+    started.get_future().wait();
+
+    auto loading = std::async(std::launch::async, [&] {
+        story.load_save(save_dir.string());
+    });
+    REQUIRE(loading.wait_for(20ms) == std::future_status::timeout);
+    release.set_value();
+    REQUIRE(loading.wait_for(2s) == std::future_status::ready);
+    loading.get();
+
+    REQUIRE(story.active_scene() != nullptr);
+    REQUIRE(story.active_scene()->turn_index == 0);
+    std::filesystem::remove_all(save_dir);
+}
+
 TEST_CASE("SceneLoop returns one complete result and detaches the Scene",
           "[scene_loop][result]") {
     Scene root;

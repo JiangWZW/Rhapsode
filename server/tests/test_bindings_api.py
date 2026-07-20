@@ -76,6 +76,7 @@ def test_runtime_class_method_surfaces_are_stable():
             "load_save",
             "merge_scene",
             "note_advanced",
+            "revert_active_turns",
             "save",
             "scene_count",
             "scene_ids",
