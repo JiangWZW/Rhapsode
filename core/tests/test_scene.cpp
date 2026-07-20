@@ -1,5 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <atomic>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <future>
+#include <memory>
 #include "rhapsode/scene_message.h"
 #include "rhapsode/history.h"
 #include "rhapsode/character.h"
@@ -7,6 +13,8 @@
 #include "rhapsode/director.h"
 #include "rhapsode/scene_loop.h"
 #include "rhapsode/scene_loop_support.h"
+#include "rhapsode/story.h"
+#include "rhapsode/weaver.h"
 
 using namespace rhapsode;
 using json = nlohmann::json;
@@ -522,4 +530,262 @@ TEST_CASE("SceneLoop throws without callbacks", "[scene_loop]") {
     loop.load_scene(scene);
 
     REQUIRE_THROWS_AS(loop.submit_input("test"), std::runtime_error);
+}
+
+TEST_CASE("SceneLoop rolls back a failed player turn", "[scene_loop][transaction]") {
+    Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Test";
+    scene.system_prompt = "Narrate.";
+    scene.world().stage_exit("root", {"Existing"});
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+    Director director(scene.world().world_graph);
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&,
+                                      const std::string&) {
+        return R"(A stranger arrives.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[{"fact":"A bell rings","type":"scene","state":"active","entities":["Bell"],"audience":[]}],"speech_turns":[],"new_characters":[{"name":"Temp","description":"A stranger"}],"active_cast":["Temp"]})";
+    });
+    loop.set_turn_complete_callback([](const SceneMessage&) {
+        throw std::runtime_error("output failed");
+    });
+
+    REQUIRE_THROWS_AS(loop.submit_input("I listen."), std::runtime_error);
+    REQUIRE(loop.state() == LoopState::WaitingForInput);
+    REQUIRE(scene.turn_index == 0);
+    REQUIRE(scene.history.size() == 0);
+    REQUIRE(scene.dialogue.size() == 0);
+    REQUIRE(scene.world().world_graph.size() == 0);
+    REQUIRE(scene.world().characters.empty());
+    REQUIRE(scene.world().character_memories.empty());
+    REQUIRE(scene.world().pending_ops().size() == 1);
+    REQUIRE(scene.world().pending_ops()[0].kind == LifecycleKind::Exit);
+    REQUIRE(loop.take_last_turn_outputs().empty());
+}
+
+TEST_CASE("SceneLoop rolls back a failed autonomous cue", "[scene_loop][transaction]") {
+    Scene scene;
+    scene.scene_id = "away";
+    scene.title = "Away";
+    scene.system_prompt = "Narrate.";
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+    Director director(scene.world().world_graph);
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&,
+                                      const std::string&) -> std::string {
+        throw std::runtime_error("narrator unavailable");
+    });
+
+    REQUIRE_THROWS_AS(loop.submit_autonomous("Advance the patrol."), std::runtime_error);
+    REQUIRE(loop.state() == LoopState::WaitingForInput);
+    REQUIRE(scene.turn_index == 0);
+    REQUIRE(scene.history.size() == 0);
+}
+
+TEST_CASE("Rejected narrator attempts do not leak temporary minds",
+          "[scene_loop][transaction]") {
+    Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Test";
+    scene.system_prompt = "Narrate.";
+
+    SceneLoop loop;
+    loop.load_scene(scene);
+    Director director(scene.world().world_graph);
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+
+    int calls = 0;
+    loop.set_narrator_llm_callback([&](const std::string&, const std::string&,
+                                       const std::string&) {
+        ++calls;
+        if (calls == 1) {
+            return std::string{R"(A stranger appears.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Player","line":"No"}],"new_characters":[{"name":"Temp","description":"A stranger"}],"active_cast":["Temp"]})"};
+        }
+        return std::string{R"(The road stays empty.
+
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+    });
+
+    loop.submit_input("I wait.");
+    loop.join_background();
+
+    REQUIRE(calls == 2);
+    REQUIRE(scene.world().find_character("Temp") == nullptr);
+    REQUIRE(scene.world().character_memories.count("Temp") == 0);
+}
+
+TEST_CASE("load_scene waits for background work on the previous scene",
+          "[scene_loop][background]") {
+    using namespace std::chrono_literals;
+    Scene first;
+    first.scene_id = "first";
+    first.title = "First";
+    first.system_prompt = "Narrate.";
+    for (const char* fact : {"The gate is shut", "The torch is lit"}) {
+        Node node;
+        node.fact = fact;
+        first.world().world_graph.add_node(std::move(node));
+    }
+    Scene second;
+    second.scene_id = "second";
+
+    Weaver weaver(first.world().world_graph);
+    weaver.set_interval(1);
+    std::promise<void> started;
+    std::promise<void> release;
+    auto release_future = release.get_future().share();
+    weaver.set_llm_callback([&](const std::string&) {
+        started.set_value();
+        release_future.wait();
+        return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
+    });
+
+    SceneLoop loop;
+    loop.load_scene(first);
+    Director director(first.world().world_graph);
+    loop.set_director(&director);
+    loop.set_weaver(&weaver);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&,
+                                      const std::string&) {
+        return std::string{R"(Time passes.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+    });
+    loop.submit_input("Wait.");
+    started.get_future().wait();
+
+    auto switching = std::async(std::launch::async, [&] { loop.load_scene(second); });
+    REQUIRE(switching.wait_for(20ms) == std::future_status::timeout);
+    release.set_value();
+    REQUIRE(switching.wait_for(2s) == std::future_status::ready);
+    switching.get();
+    REQUIRE(loop.state() == LoopState::WaitingForInput);
+}
+
+TEST_CASE("SceneLoop destruction waits for active background work",
+          "[scene_loop][background]") {
+    using namespace std::chrono_literals;
+    Scene scene;
+    scene.scene_id = "root";
+    scene.title = "Root";
+    scene.system_prompt = "Narrate.";
+    for (const char* fact : {"The gate is shut", "The torch is lit"}) {
+        Node node;
+        node.fact = fact;
+        scene.world().world_graph.add_node(std::move(node));
+    }
+
+    Weaver weaver(scene.world().world_graph);
+    weaver.set_interval(1);
+    std::promise<void> started;
+    std::promise<void> release;
+    auto release_future = release.get_future().share();
+    weaver.set_llm_callback([&](const std::string&) {
+        started.set_value();
+        release_future.wait();
+        return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
+    });
+    Director director(scene.world().world_graph);
+    auto loop = std::make_unique<SceneLoop>();
+    loop->load_scene(scene);
+    loop->set_director(&director);
+    loop->set_weaver(&weaver);
+    loop->set_llm_callback([](const std::string&) { return "fallback"; });
+    loop->set_narrator_llm_callback([](const std::string&, const std::string&,
+                                       const std::string&) {
+        return std::string{R"(Time passes.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+    });
+    loop->submit_input("Wait.");
+    started.get_future().wait();
+
+    auto destroying = std::async(std::launch::async, [&] { loop.reset(); });
+    REQUIRE(destroying.wait_for(20ms) == std::future_status::timeout);
+    release.set_value();
+    REQUIRE(destroying.wait_for(2s) == std::future_status::ready);
+    destroying.get();
+}
+
+TEST_CASE("Story waits for background mutations before returning and saving",
+          "[story][background]") {
+    using namespace std::chrono_literals;
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+    Node first;
+    first.fact = "The gate is shut";
+    const auto first_id = root.world().world_graph.add_node(std::move(first)).id;
+    Node second;
+    second.fact = "The guard has a key";
+    const auto second_id = root.world().world_graph.add_node(std::move(second)).id;
+
+    Story story = Story::from_scene(std::move(root));
+    Director director(story.world().world_graph);
+    Weaver weaver(story.world().world_graph);
+    weaver.set_interval(1);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_weaver(&weaver);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback([](const std::string&, const std::string&,
+                                      const std::string&) {
+        return std::string{R"(The guard approaches.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":[]})"};
+    });
+
+    std::promise<void> started;
+    std::promise<void> release;
+    auto release_future = release.get_future().share();
+    std::string weave_prompt;
+    weaver.set_llm_callback([&](const std::string& prompt) {
+        weave_prompt = prompt;
+        started.set_value();
+        release_future.wait();
+        return std::string{"{\"connect\":[{\"from\":"} + std::to_string(first_id) +
+               ",\"to\":" + std::to_string(second_id) +
+               R"(,"weight":0.8,"reason":"key"}],"disconnect":[],"reweight":[]})";
+    });
+
+    const auto save_dir = std::filesystem::temp_directory_path() /
+        ("rhapsode-phase1-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    story.bind_runtime(loop);
+    story.set_saves_dir(save_dir.string());
+
+    auto advancing = std::async(std::launch::async, [&] {
+        return story.advance_scene("I watch.");
+    });
+    started.get_future().wait();
+    REQUIRE(advancing.wait_for(20ms) == std::future_status::timeout);
+    release.set_value();
+    REQUIRE(advancing.wait_for(2s) == std::future_status::ready);
+    advancing.get();
+
+    REQUIRE(weave_prompt.find("[1]") != std::string::npos);
+    REQUIRE(weave_prompt.find("[2]") != std::string::npos);
+    REQUIRE(story.world().world_graph.all_edges().size() == 1);
+    std::ifstream saved(save_dir / "world.json");
+    json saved_json;
+    saved >> saved_json;
+    World restored = World::from_json(saved_json);
+    REQUIRE(restored.world_graph.all_edges().size() == 1);
+    saved.close();
+    std::filesystem::remove_all(save_dir);
 }

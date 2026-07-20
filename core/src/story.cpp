@@ -544,10 +544,11 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     // --- Player beat -------------------------------------------------------
     point_loop_at(active);
     loop_->submit_input(player_input);
+    loop_->join_background();
+    sync_beat(active);
     decide_lifecycle(active_scene_id_, player_input);
     apply_and_log("player beat");
     note_advanced(active_scene_id_);
-    sync_beat(active);
 
     // Capture player-facing outputs before an off-stage beat repoints the loop
     // (take_last_turn_outputs clears on read).
@@ -561,12 +562,14 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
                 point_loop_at(s);
                 try {
                     loop_->submit_autonomous(autonomous_cue(pick));
+                    loop_->join_background();
+                    const int completed_turn = s->turn_index;
+                    sync_beat(s);
                     decide_lifecycle(pick, "");
                     apply_and_log("off-stage beat");
                     note_advanced(pick);
-                    sync_beat(s);
                     log() << "[scheduler] advanced off-stage scene '" << pick
-                          << "' (turn " << s->turn_index << ")\n";
+                          << "' (turn " << completed_turn << ")\n";
                 } catch (const std::exception& e) {
                     log() << "  [scheduler] off-stage beat failed for '" << pick
                           << "': " << e.what() << "\n";
@@ -577,6 +580,10 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     }
 
     // --- Persist -----------------------------------------------------------
+    // Lifecycle may have retired the off-stage scene the loop just advanced.
+    // Repoint before leaving so the loop never retains a dangling Scene pointer.
+    if (Scene* current = active_scene()) point_loop_at(current);
+    loop_->join_background();
     if (!saves_dir_.empty()) save(saves_dir_);
 
     if (scene_count() > 1) {

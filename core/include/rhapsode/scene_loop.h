@@ -12,6 +12,7 @@
 namespace rhapsode {
 
 class Scene;
+class World;
 struct DeathCandidate;
 
 struct NarratorPrompt {
@@ -36,6 +37,8 @@ using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_ms
 
 class SceneLoop {
 public:
+    ~SceneLoop() noexcept;
+
     void load_scene(Scene& scene);
     void submit_input(const std::string& text);
     /// Advance the loaded scene as a player-less (off-stage) beat. `focus` is the
@@ -75,11 +78,12 @@ private:
     enum class OutputBucket { Story, Dialogue };
 
     void advance();
+    void submit_message(const std::string& text, bool autonomous);
     NarratorPrompt build_turn_prompt(int turn);
     std::string call_narrator(const std::string& instructions,
                               const std::string& turn_state) const;
     NarratorTurnResult run_narrator_with_retry(int turn, const NarratorPrompt& prompt);
-    void rollback_turn_attempt(int turn, const nlohmann::json& graph_snapshot);
+    void rollback_turn_attempt(const World& world_snapshot);
     void register_new_characters(int turn, const nlohmann::json& plan);
     void emit_dialogue(int turn, const std::vector<SpeechCue>& cues);
     void post_turn_cleanup(const std::string& narration);
@@ -110,6 +114,7 @@ private:
     WeaveResult bg_weave_result_;
     std::vector<ExpiryOp> bg_expiry_ops_;
     std::vector<ExpiryOp> completed_expiry_ops_;
+    bool background_save_pending_ = false;
 };
 
 } // namespace rhapsode

@@ -106,6 +106,14 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
 
 // -- SceneLoop -- public interface ------------------------------------
 
+SceneLoop::~SceneLoop() noexcept {
+    try {
+        join_background();
+    } catch (...) {
+        log() << "  [bg] failed to finish background work during shutdown\n";
+    }
+}
+
 void SceneLoop::load_scene(Scene& scene) {
     // Any in-flight background work belongs to the previously loaded scene and
     // touches the shared World; finish it before we re-point at another scene so
@@ -116,31 +124,76 @@ void SceneLoop::load_scene(Scene& scene) {
 }
 
 void SceneLoop::submit_input(const std::string& text) {
-    if (state_ != LoopState::WaitingForInput)
-        throw std::runtime_error("Cannot submit input: loop is not waiting for input");
-    state_ = LoopState::ProcessingInput;
-
-    SceneMessage user_msg;
-    user_msg.role    = Role::User;
-    user_msg.content = text;
-    scene_->history.append(std::move(user_msg));
-    advance();
+    submit_message(text, false);
 }
 
 void SceneLoop::submit_autonomous(const std::string& focus) {
+    submit_message(focus, true);
+}
+
+void SceneLoop::submit_message(const std::string& text, bool autonomous) {
     if (state_ != LoopState::WaitingForInput)
-        throw std::runtime_error("Cannot submit autonomous beat: loop is not waiting for input");
+        throw std::runtime_error("Cannot submit message: loop is not waiting for input");
+
+    // The previous beat is part of the state being snapshotted. Finish it first
+    // so rollback never races a background writer.
+    join_background();
+
+    const History history_snapshot = scene_->history;
+    const History dialogue_snapshot = scene_->dialogue;
+    const TextDownsampler downsampler_snapshot = scene_->downsampler;
+    const int turn_snapshot = scene_->turn_index;
+    const World world_snapshot = scene_->world();
+    const bool resuming_snapshot = resuming_;
+    const auto outputs_snapshot = last_turn_outputs_;
+    const auto director_snapshot = last_director_out_;
+    const auto weave_snapshot = last_weave_result_;
+    const auto expiry_snapshot = completed_expiry_ops_;
+
     state_ = LoopState::ProcessingInput;
 
-    log() << "\n[off-stage beat] advancing scene '" << scene_->scene_id
-          << "' player-lessly\n" << std::flush;
+    try {
+        if (autonomous) {
+            log() << "\n[off-stage beat] advancing scene '" << scene_->scene_id
+                  << "' player-lessly\n" << std::flush;
+        }
 
-    SceneMessage cue;
-    cue.role    = Role::User;
-    cue.content = focus;
-    cue.metadata["scene_kind"] = "director_cue";
-    scene_->history.append(std::move(cue));
-    advance();
+        SceneMessage message;
+        message.role = Role::User;
+        message.content = text;
+        if (autonomous) message.metadata["scene_kind"] = "director_cue";
+        scene_->history.append(std::move(message));
+        advance();
+    } catch (...) {
+        const auto original = std::current_exception();
+        try { join_background(); } catch (...) {}
+
+        scene_->history = history_snapshot;
+        scene_->dialogue = dialogue_snapshot;
+        scene_->downsampler = downsampler_snapshot;
+        scene_->turn_index = turn_snapshot;
+        scene_->world() = world_snapshot;
+        resuming_ = resuming_snapshot;
+        last_turn_outputs_ = outputs_snapshot;
+        last_director_out_ = director_snapshot;
+        last_weave_result_ = weave_snapshot;
+        completed_expiry_ops_ = expiry_snapshot;
+        bg_weave_result_ = {};
+        bg_expiry_ops_.clear();
+        bg_stop_ = {};
+        background_save_pending_ = false;
+        state_ = LoopState::WaitingForInput;
+
+        if (!saves_dir_.empty()) {
+            try { scene_->save(saves_dir_); }
+            catch (const std::exception& e) {
+                log() << "  [rollback] failed to restore save: " << e.what() << "\n";
+            } catch (...) {
+                log() << "  [rollback] failed to restore save\n";
+            }
+        }
+        std::rethrow_exception(original);
+    }
 }
 
 LoopState SceneLoop::state() const { return state_; }
@@ -176,6 +229,9 @@ void SceneLoop::join_background() {
         catch (const std::exception& e) {
             log() << "  [bg] background work failed: " << e.what() << "\n";
         }
+        catch (...) {
+            log() << "  [bg] background work failed with an unknown exception\n";
+        }
     }
 
     last_weave_result_ = std::move(bg_weave_result_);
@@ -190,6 +246,11 @@ void SceneLoop::join_background() {
               << last_weave_result_.connected.size()
               << " -" << last_weave_result_.disconnected.size()
               << " ~" << last_weave_result_.reweighted.size() << "\n";
+    }
+
+    if (background_save_pending_) {
+        background_save_pending_ = false;
+        if (!saves_dir_.empty() && scene_) scene_->save(saves_dir_);
     }
 }
 
@@ -309,15 +370,8 @@ std::string SceneLoop::call_narrator(const std::string& instructions,
     return sanitize_utf8(llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
 }
 
-void SceneLoop::rollback_turn_attempt(int turn, const nlohmann::json& graph_snapshot) {
-    scene_->world().world_graph = WorldGraph::from_json(graph_snapshot);
-
-    auto& chars = scene_->world().characters;
-    chars.erase(std::remove_if(chars.begin(), chars.end(),
-                               [turn](const Character& c) {
-                                   return !c.is_player && c.created_at >= turn;
-                               }),
-                chars.end());
+void SceneLoop::rollback_turn_attempt(const World& world_snapshot) {
+    scene_->world() = world_snapshot;
 }
 
 void SceneLoop::register_new_characters(int turn, const nlohmann::json& plan) {
@@ -362,11 +416,11 @@ NarratorTurnResult SceneLoop::run_narrator_with_retry(int turn,
     log() << "[3/4] Applying graph...\n" << std::flush;
 
     std::vector<Rejection> all_rejections;
-    const nlohmann::json graph_snapshot = scene_->world().world_graph.to_json();
+    const World world_snapshot = scene_->world();
 
     for (int attempt = 0; attempt < kMaxNarratorAttempts; ++attempt) {
         if (attempt > 0) {
-            rollback_turn_attempt(turn, graph_snapshot);
+            rollback_turn_attempt(world_snapshot);
 
             std::string rewrite_turn_state = prompt.turn_state;
             rewrite_turn_state += "\n\n### REVISION REQUIRED\n"
@@ -446,11 +500,8 @@ void SceneLoop::post_turn_cleanup(const std::string& narration) {
         weaver_->rebuild_expiry_queue(prio);
     }
 
-    if (!saves_dir_.empty()) {
-        scene_->save(saves_dir_);
-    }
-
     dispatch_background();
+    background_save_pending_ = !saves_dir_.empty();
 }
 
 void SceneLoop::advance() {

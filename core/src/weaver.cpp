@@ -70,7 +70,9 @@ void write_weave_artifact(int turn_index, const char* label,
 // -- Weaver::build_prompt helpers ---------------------------------------------
 
 struct SubgraphSelection {
-    std::vector<const Node*> nodes;
+    // Own the sampled nodes. WorldGraph::all_nodes() returns a temporary vector,
+    // so retaining pointers into it would leave every selection dangling.
+    std::vector<Node> nodes;
     std::unordered_set<std::uint64_t> node_ids;
 };
 
@@ -89,7 +91,7 @@ SubgraphSelection sample_degree_biased_subgraph(const WorldGraph& graph,
 
     if (all_nodes.size() <= kMaxNodes) {
         for (const auto& n : all_nodes) {
-            sel.nodes.push_back(&n);
+            sel.nodes.push_back(n);
             sel.node_ids.insert(n.id);
         }
         return sel;
@@ -108,7 +110,7 @@ SubgraphSelection sample_degree_biased_subgraph(const WorldGraph& graph,
     auto try_add = [&](size_t idx) {
         if (sel.nodes.size() >= kMaxNodes) return;
         if (sel.node_ids.insert(all_nodes[idx].id).second)
-            sel.nodes.push_back(&all_nodes[idx]);
+            sel.nodes.push_back(all_nodes[idx]);
     };
 
     for (size_t i = 0; i < std::min(nd.size(), kLowSlots); ++i)
@@ -143,14 +145,14 @@ std::string assemble_weave_prompt(const WorldGraph& graph,
         os << "### Scene context\n" << scene_context << "\n\n";
 
     os << "### Live nodes (current facts in the story world)\n";
-    for (const auto* n : sel.nodes) {
-        os << "[" << n->id << "] (" << to_string(n->state) << ") \""
-           << n->fact << "\"";
-        if (!n->entities.empty()) {
+    for (const auto& n : sel.nodes) {
+        os << "[" << n.id << "] (" << to_string(n.state) << ") \""
+           << n.fact << "\"";
+        if (!n.entities.empty()) {
             os << "  entities={";
-            for (size_t i = 0; i < n->entities.size(); ++i) {
+            for (size_t i = 0; i < n.entities.size(); ++i) {
                 if (i) os << ", ";
-                os << n->entities[i];
+                os << n.entities[i];
             }
             os << "}";
         }
@@ -242,9 +244,9 @@ std::string Weaver::build_prompt(int turn_index,
     log() << "  [weave] subgraph: " << sel.nodes.size() << "/"
           << graph_.all_nodes(false).size() << " nodes\n";
     log() << "  [weave] selected:";
-    for (const auto* n : sel.nodes) {
-        int d = graph_.active_degree(n->id);
-        log() << " " << n->id << "(d" << d << ")";
+    for (const auto& n : sel.nodes) {
+        int d = graph_.active_degree(n.id);
+        log() << " " << n.id << "(d" << d << ")";
     }
     log() << "\n";
 

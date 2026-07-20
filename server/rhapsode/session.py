@@ -146,7 +146,7 @@ def _setup_ws_session() -> WsSession:
 
 
 def _rebuild_loop(session: WsSession, *, resuming: bool = False) -> None:
-    """Rebuild the loop after an error or undo, re-binding it to the Story."""
+    """Rebuild the loop after undo, re-binding it to the restored Story."""
     session.loop = _build_loop(session.story, session.director, session.weaver,
                                resuming=resuming)
 
@@ -251,7 +251,6 @@ async def run_session(ws: WebSocket) -> None:
                 await ws.send_json({"type": "status", "state": "idle"})
                 await asyncio.get_event_loop().run_in_executor(
                     None, session.loop.join_background)
-                _rebuild_loop(session)
                 continue
 
             await _stream_outputs(ws, session.annotator, outputs)
