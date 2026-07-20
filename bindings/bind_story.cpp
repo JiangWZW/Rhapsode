@@ -103,6 +103,8 @@ void bind_story(py::module_& m) {
             py::arg("source_scene_id"), py::arg("cast"))
         .def("clear_pending_ops", &World::clear_pending_ops)
         .def("scan_death_candidates", &World::scan_death_candidates)
+        .def("set_reflection_llm_callback", &World::set_reflection_llm_callback,
+             py::arg("cb"))
         .def("set_memory", &World::set_memory, py::arg("mem"), py::keep_alive<1, 2>())
         .def("has_save",   &World::has_save,   py::arg("saves_dir"))
         .def("load_save",  &World::load_save,  py::arg("saves_dir"))

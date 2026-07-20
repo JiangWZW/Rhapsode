@@ -132,6 +132,14 @@ void World::reflect_perceptions(int turn) {
     }
 }
 
+void World::set_reflection_llm_callback(LLMCallback cb) {
+    reflection_llm_cb_ = std::move(cb);
+    for (auto& [name, memory] : character_memories) {
+        (void)name;
+        memory.set_reflection_llm_callback(reflection_llm_cb_);
+    }
+}
+
 bool World::mark_character_dead(const std::string& name) {
     for (auto& character : characters) {
         if (character.name == name) {
@@ -481,8 +489,12 @@ void World::load_save(const std::string& saves_dir) {
 
     if (j.contains("character_memories") && j["character_memories"].is_object()) {
         character_memories.clear();
-        for (auto& [name, cm_j] : j["character_memories"].items())
-            character_memories.insert_or_assign(name, CharacterMemory::from_json(cm_j));
+        for (auto& [name, cm_j] : j["character_memories"].items()) {
+            auto memory = CharacterMemory::from_json(cm_j);
+            if (reflection_llm_cb_)
+                memory.set_reflection_llm_callback(reflection_llm_cb_);
+            character_memories.insert_or_assign(name, std::move(memory));
+        }
     }
 }
 

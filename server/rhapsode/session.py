@@ -34,15 +34,6 @@ def _init_memory(scene_id: str) -> MemorySystem:
     return memory
 
 
-def _init_character_memories(scene: Scene):
-    """Wire the reflection LLM callback on all CharacterMemory instances."""
-    for name, mem in scene.character_memories.items():
-        # Background reflection (contradict-vs-extend + weight judgments) runs on
-        # the cloud provider (DeepSeek when RHAPSODE_PROVIDER=deepseek); it is
-        # async/off the turn's critical path so the latency hides.
-        mem.set_reflection_llm_callback(call_llm)
-
-
 def _sync_graph_to_memory(scene: Scene, memory: MemorySystem) -> None:
     """Ensure all graph nodes are indexed in ChromaDB (catches seed nodes from scenario load).
 
@@ -127,7 +118,9 @@ def _setup_ws_session() -> WsSession:
         )
 
     _sync_graph_to_memory(scene, memory)
-    _init_character_memories(scene)
+    # Reflection runs off the foreground path. World owns the callback because
+    # it owns the complete character-memory map and reconstructs it on load.
+    story.world().set_reflection_llm_callback(call_llm)
 
     director = Director(scene.world_graph)
 

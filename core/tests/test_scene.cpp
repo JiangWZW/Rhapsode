@@ -451,6 +451,32 @@ TEST_CASE("World death mutation clears every scene membership", "[world]") {
     REQUIRE_FALSE(world.mark_character_dead("Unknown"));
 }
 
+TEST_CASE("World reapplies reflection configuration after loading memories",
+          "[world][character_memory][persistence]") {
+    World world;
+    world.characters.push_back(Character{"Scout", "A careful scout", false});
+    world.character_memories.emplace("Scout", CharacterMemory{"Scout"});
+
+    int reflection_calls = 0;
+    world.set_reflection_llm_callback([&](const std::string&) {
+        ++reflection_calls;
+        return std::string{"not json"};
+    });
+
+    const auto save_dir = std::filesystem::temp_directory_path() /
+        ("rhapsode-world-reflection-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    world.save(save_dir.string());
+    world.load_save(save_dir.string());
+
+    world.character_memories.at("Scout").route_fact(
+        "The ridge is empty", {"Ridge"}, 1);
+    world.reflect_perceptions(2);
+
+    REQUIRE(reflection_calls == 1);
+    std::filesystem::remove_all(save_dir);
+}
+
 TEST_CASE("CharacterMemory reflection preserves its current graph contract",
           "[character_memory][reflection]") {
     auto find_fact = [](const std::vector<Node>& nodes,

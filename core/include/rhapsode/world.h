@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/world_graph.h"
 
 namespace rhapsode {
@@ -64,6 +65,9 @@ public:
                            int turn);
     /// Reflect every mind that has pending perceptions. Minds with none are a no-op.
     void reflect_perceptions(int turn);
+    /// Configure reflection for the memories currently owned by this World.
+    /// Runtime-only: the callback is never serialized.
+    void set_reflection_llm_callback(LLMCallback cb);
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
 
@@ -108,6 +112,7 @@ public:
 
 private:
     MemorySystem* memory_ = nullptr;
+    LLMCallback reflection_llm_cb_;
     std::vector<LifecycleOp> pending_ops_;  // transient; never serialized
     static std::string save_path(const std::string& saves_dir);
 };

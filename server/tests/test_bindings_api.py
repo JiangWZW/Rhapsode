@@ -95,6 +95,7 @@ def test_runtime_class_method_surfaces_are_stable():
             "load_save",
             "save",
             "scan_death_candidates",
+            "set_reflection_llm_callback",
             "set_memory",
             "stage_conclude",
             "stage_exit",
