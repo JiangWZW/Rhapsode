@@ -9,7 +9,6 @@ from rhapsode._core import (
     SceneLoop,
     Story,
     Weaver,
-    World,
     WorldGraph,
 )
 from rhapsode.llm_tools import make_narrator_callback
@@ -56,12 +55,13 @@ def test_loop_and_annotator_keep_borrowed_runtime_objects_alive():
     assert director_ref() is not None
     assert weaver_ref() is not None
 
-    world = World()
+    owner_scene = Scene()
     scout = Character("Scout", "A careful scout", False)
-    world.characters = [scout]
+    owner_scene.enter_character(scout)
+    world = owner_scene.world()
     world_ref = weakref.ref(world)
     annotator = Annotator(world)
-    del world
+    del owner_scene, world
     gc.collect()
 
     assert world_ref() is not None

@@ -82,12 +82,16 @@ void bind_story(py::module_& m) {
 
     py::class_<World>(m, "World")
         .def(py::init<>())
-        .def_property("world_graph",
+        .def_property_readonly("world_graph",
             [](World& w) -> WorldGraph& { return w.world_graph; },
-            [](World& w, const WorldGraph& g) { w.world_graph = g; },
             py::return_value_policy::reference_internal)
-        .def_readwrite("characters",         &World::characters)
-        .def_readwrite("character_memories", &World::character_memories)
+        .def_property_readonly("characters",
+            [](World& w) -> std::vector<Character>& { return w.characters; },
+            py::return_value_policy::reference_internal)
+        .def_property_readonly("character_memories",
+            [](World& w) -> std::unordered_map<std::string, CharacterMemory>& {
+                return w.character_memories;
+            }, py::return_value_policy::reference_internal)
         .def("find_character", [](World& w, const std::string& name) -> Character* {
                 return w.find_character(name);
              }, py::arg("name"), py::return_value_policy::reference_internal)
@@ -114,11 +118,10 @@ void bind_story(py::module_& m) {
         .def(py::init<>())
         .def_readwrite("title",              &Scene::title)
         .def_readwrite("system_prompt",      &Scene::system_prompt)
-        // Roster/graph/minds now live on the shared World; expose them on Scene
-        // as forwarding properties so existing Python code is unchanged.
-        .def_property("characters",
+        // Roster/graph/minds live on the shared World. Scene keeps read-only
+        // forwarding properties for existing Python read paths.
+        .def_property_readonly("characters",
             [](Scene& s) -> std::vector<Character>& { return s.world().characters; },
-            [](Scene& s, const std::vector<Character>& v) { s.world().characters = v; },
             py::return_value_policy::reference_internal)
         .def_readwrite("history",            &Scene::history)
         .def_readwrite("dialogue",           &Scene::dialogue)
@@ -127,16 +130,13 @@ void bind_story(py::module_& m) {
         .def_readwrite("driving_intention",  &Scene::driving_intention)
         .def_readwrite("charge",             &Scene::charge)
         .def_readwrite("last_advanced",      &Scene::last_advanced)
-        .def_property("character_memories",
+        .def_property_readonly("character_memories",
             [](Scene& s) -> std::unordered_map<std::string, CharacterMemory>& {
                 return s.world().character_memories; },
-            [](Scene& s, const std::unordered_map<std::string, CharacterMemory>& memories) {
-                s.world().character_memories = memories; },
             py::return_value_policy::reference_internal)
         .def_readwrite("downsampler",        &Scene::downsampler)
-        .def_property("world_graph",
+        .def_property_readonly("world_graph",
             [](Scene& s) -> WorldGraph& { return s.world().world_graph; },
-            [](Scene& s, const WorldGraph& g) { s.world().world_graph = g; },
             py::return_value_policy::reference_internal)
         .def("world", [](Scene& s) -> World& { return s.world(); },
              py::return_value_policy::reference_internal)

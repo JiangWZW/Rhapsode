@@ -1,3 +1,5 @@
+import pytest
+
 from rhapsode import _core
 
 
@@ -146,3 +148,18 @@ def test_runtime_class_method_surfaces_are_stable():
     for class_name, methods in expected.items():
         cls = getattr(_core, class_name)
         assert {name for name in dir(cls) if not name.startswith("_")} == methods
+
+
+@pytest.mark.parametrize("owner", [_core.World(), _core.Scene()])
+@pytest.mark.parametrize(
+    ("attribute", "replacement"),
+    [
+        ("world_graph", _core.WorldGraph()),
+        ("characters", []),
+        ("character_memories", {}),
+    ],
+)
+def test_invariant_bearing_containers_cannot_be_replaced(owner, attribute, replacement):
+    assert getattr(owner, attribute) is not None
+    with pytest.raises(AttributeError):
+        setattr(owner, attribute, replacement)
