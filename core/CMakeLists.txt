@@ -37,6 +37,7 @@ add_library(rhapsode STATIC
     src/weaver.cpp
     src/world.cpp
     src/world_graph.cpp
+    src/world_graph_dot.cpp
 )
 
 set(RHAPSODE_LOCAL_BOOST_DIR "${CMAKE_SOURCE_DIR}/third_party/boost")

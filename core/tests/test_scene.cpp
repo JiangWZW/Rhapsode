@@ -208,6 +208,32 @@ TEST_CASE("Scene loads seed_messages from scenario JSON", "[scene]") {
     REQUIRE(scene.history.messages()[0].content == "You enter...");
 }
 
+TEST_CASE("WorldGraph DOT renders escaped nodes, states, and edge activity", "[world_graph]") {
+    WorldGraph graph;
+
+    Node active;
+    active.fact = "The \"gate\" opens.\nGuards react.";
+    active.state = NodeState::Active;
+    active.created_at = 1;
+    const auto active_id = graph.add_node(std::move(active)).id;
+
+    Node foreshadowed;
+    foreshadowed.fact = "A shadow waits";
+    foreshadowed.state = NodeState::Foreshadowed;
+    foreshadowed.created_at = 2;
+    const auto foreshadowed_id = graph.add_node(std::move(foreshadowed)).id;
+
+    REQUIRE(graph.add_relation(active_id, foreshadowed_id));
+    REQUIRE(graph.set_edge_active(active_id, foreshadowed_id, false));
+
+    const std::string dot = graph.to_dot();
+    REQUIRE(dot.find("digraph WorldGraph") != std::string::npos);
+    REQUIRE(dot.find("The \\\"gate\\\" opens.\\nGuards react.") != std::string::npos);
+    REQUIRE(dot.find("fillcolor=\"#a6e3a1\"") != std::string::npos);
+    REQUIRE(dot.find("fillcolor=\"#f9e2af\"") != std::string::npos);
+    REQUIRE(dot.find("n1 -> n2 [color=\"#a6adc8\", style=dashed]") != std::string::npos);
+}
+
 TEST_CASE("SceneLoop state transitions", "[scene_loop]") {
     Scene scene;
     scene.title = "Test";
