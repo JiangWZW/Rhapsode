@@ -1,4 +1,5 @@
 #include "rhapsode/world.h"
+#include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/str_util.h"
 
@@ -83,6 +84,63 @@ std::vector<DeathCandidate> World::scan_death_candidates() const {
     }
 
     return candidates;
+}
+
+void World::route_perceptions(const std::string& scene_id,
+                              const std::vector<Node>& nodes,
+                              int turn) {
+    int deliveries = 0;
+    std::unordered_set<std::string> minds;
+    auto route_to = [&](const std::string& name, const Node& node) {
+        auto it = character_memories.find(name);
+        if (it != character_memories.end()) {
+            it->second.route_fact(node.fact, node.entities, turn);
+            ++deliveries;
+            minds.insert(it->first);
+        }
+    };
+
+    for (const auto& node : nodes) {
+        if (!node.audience.empty()) {
+            for (const auto& name : node.audience) {
+                route_to(name, node);
+            }
+        } else {
+            for (const auto& character : characters) {
+                if (character.is_player || character.dead || !character.in_scene(scene_id)) {
+                    continue;
+                }
+                route_to(character.name, node);
+            }
+        }
+    }
+
+    log() << "  [perceive] " << nodes.size() << " new_node(s) -> " << deliveries
+          << " perception(s) routed to " << minds.size() << " mind(s)\n" << std::flush;
+}
+
+void World::reflect_perceptions(int turn) {
+    for (auto& [name, memory] : character_memories) {
+        std::string description;
+        for (const auto& character : characters) {
+            if (character.name == name) {
+                description = character.description;
+                break;
+            }
+        }
+        memory.reflect_perceptions(turn, description);
+    }
+}
+
+bool World::mark_character_dead(const std::string& name) {
+    for (auto& character : characters) {
+        if (character.name == name) {
+            character.dead = true;
+            character.scene_ids.clear();
+            return true;
+        }
+    }
+    return false;
 }
 
 // -- Staged lifecycle decisions ----------------------------------------------

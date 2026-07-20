@@ -327,16 +327,7 @@ void SceneLoop::dispatch_background() {
 
         // Consolidate this turn's routed perceptions into beliefs (no-op for
         // minds that perceived nothing).
-        for (auto& [name, mem] : scene->world().character_memories) {
-            std::string desc;
-            for (const auto& ch : scene->world().characters) {
-                if (ch.name == name) {
-                    desc = ch.description;
-                    break;
-                }
-            }
-            mem.reflect_perceptions(turn, desc);
-        }
+        scene->world().reflect_perceptions(turn);
 
         // Downsample history off the foreground (thinking-on, multi-call). Safe
         // here: the next turn's join_background() completes this before the
@@ -592,14 +583,9 @@ void SceneLoop::confirm_deaths(const std::vector<DeathCandidate>& candidates,
         try {
             auto response = llm(sanitize_utf8(prompt));
             if (is_affirmative_yes_response(response)) {
-                for (auto& ch : scene_->world().characters) {
-                    if (ch.name == dc.character_name) {
-                        ch.dead = true;
-                        ch.scene_ids.clear();
-                        log() << "  [dead] " << ch.name
-                              << " (confirmed by LLM)\n";
-                        break;
-                    }
+                if (scene_->world().mark_character_dead(dc.character_name)) {
+                    log() << "  [dead] " << dc.character_name
+                          << " (confirmed by LLM)\n";
                 }
             } else {
                 log() << "  [death-scan] " << dc.character_name

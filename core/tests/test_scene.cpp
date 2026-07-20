@@ -436,6 +436,21 @@ TEST_CASE("route_perception respects audience and public beats", "[scene_loop]")
     REQUIRE(bob_perceptions == 1);
 }
 
+TEST_CASE("World death mutation clears every scene membership", "[world]") {
+    World world;
+    Character scout{"Scout", "A careful scout", false};
+    scout.join_scene("root");
+    scout.join_scene("ridge");
+    world.characters.push_back(std::move(scout));
+
+    REQUIRE(world.mark_character_dead("Scout"));
+    const Character* marked = world.find_character("Scout");
+    REQUIRE(marked != nullptr);
+    REQUIRE(marked->dead);
+    REQUIRE(marked->scene_ids.empty());
+    REQUIRE_FALSE(world.mark_character_dead("Unknown"));
+}
+
 TEST_CASE("CharacterMemory reflection preserves its current graph contract",
           "[character_memory][reflection]") {
     auto find_fact = [](const std::vector<Node>& nodes,

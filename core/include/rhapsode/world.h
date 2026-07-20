@@ -58,6 +58,15 @@ public:
     /// Keyword-scan the graph for characters that may have died this run.
     std::vector<DeathCandidate> scan_death_candidates() const;
 
+    /// Route objective nodes into the minds that perceived them in one scene.
+    void route_perceptions(const std::string& scene_id,
+                           const std::vector<Node>& nodes,
+                           int turn);
+    /// Reflect every mind that has pending perceptions. Minds with none are a no-op.
+    void reflect_perceptions(int turn);
+    /// Mark a roster character dead and remove all scene memberships.
+    bool mark_character_dead(const std::string& name);
+
     // -- Staged lifecycle decisions (narrator decision tools) --------------
     // Each stage_* appends a LifecycleOp and returns a JSON ack string for the
     // tool caller. Ops accumulate across one beat's tool loop; the SceneLoop
