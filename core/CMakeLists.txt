@@ -36,6 +36,7 @@ add_library(rhapsode STATIC
     src/director.cpp
     src/memory_system.cpp
     src/weaver.cpp
+    src/weaver_work_queue.cpp
     src/world.cpp
     src/world_graph.cpp
     src/world_graph_dot.cpp
