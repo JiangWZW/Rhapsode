@@ -129,6 +129,9 @@ point plus story, graph, runtime, and memory registration units. Registration or
 module surface remain unchanged; an exact public-symbol test raises the Python total to 12 tests.
 `WorldGraph` DOT rendering and JSON/legacy serialization now live in dedicated implementation files.
 Focused output and migration tests raise the C++ total to 40 tests without changing its public API.
+The `CharacterMemory` step was deliberately narrowed after review: only the LLM reflection pipeline
+was extracted. Query/rendering behavior remains with the core class rather than being grouped into an
+inconsistent "rendering" module. Reflection characterization raises the C++ total to 41 tests.
 
 ## Plan
 
@@ -169,7 +172,9 @@ Perform one extraction per commit, running the full verification command after e
    retaining one `PYBIND11_MODULE` and the existing Python API.
 2. **Complete (2026-07-20):** Move `WorldGraph` JSON/legacy migration and DOT rendering into
    separate translation units, with focused characterization tests.
-3. Split `CharacterMemory` rendering from reflection parsing/application.
+3. **Complete (2026-07-20):** Extract only `CharacterMemory` reflection parsing/application into a
+   dedicated translation unit. Keep queries, rendering, mutation, and serialization together in the
+   core implementation.
 4. Split Weaver prompt/application logic from expiry-queue management.
 5. Split Story into lifecycle/tools, runtime sequencing, and persistence files.
 6. Split World and Scene query/persistence implementations only where the same separation is already

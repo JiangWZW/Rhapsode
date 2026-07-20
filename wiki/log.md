@@ -2,6 +2,15 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Phase 2 CharacterMemory reflection split
+
+- Added characterization coverage for successful, missing, throwing, and malformed reflection
+  callbacks before moving implementation.
+- Extracted only the existing reflection pipeline into `character_memory_reflection.cpp`; the moved
+  279-line pipeline and 19-line label helper were text-identical to the original implementation.
+- Kept queries/rendering in `character_memory.cpp`, preserved the public header and serialized format,
+  and verified 41 C++ tests, 12 Python tests, 7 frontend tests, both linters, and the production build.
+
 ## [2026-07-20] implementation | Phase 2 WorldGraph split
 
 - Extracted DOT rendering and JSON/legacy serialization into separate implementation files and
