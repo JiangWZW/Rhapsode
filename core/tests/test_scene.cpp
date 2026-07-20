@@ -1078,3 +1078,109 @@ TEST_CASE("Story waits for background mutations before returning and saving",
     saved.close();
     std::filesystem::remove_all(save_dir);
 }
+
+TEST_CASE("Story keeps player outputs separate from a scheduled off-stage turn",
+          "[story][scene_loop][characterization]") {
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+
+    Story story = Story::from_scene(std::move(root));
+    Scene* player_scene = story.get_scene("root");
+    Scene* off_stage = story.fork_scene("root", "away", {}, "Advance the patrol");
+    REQUIRE(player_scene != nullptr);
+    REQUIRE(off_stage != nullptr);
+    REQUIRE(&player_scene->world().world_graph == &off_stage->world().world_graph);
+
+    Director director(story.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string& scene_id, const std::string&, const std::string&) {
+            const std::string narration = scene_id == "root"
+                ? "The player scene advances."
+                : "The distant patrol advances.";
+            const std::string fact = scene_id == "root"
+                ? "The player opens the gate"
+                : "The patrol reaches the ridge";
+            return narration + R"(
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[{"fact":")" + fact +
+                   R"(","entities":[]}],"speech_turns":[],"new_characters":[],"active_cast":[]})";
+        });
+    story.bind_runtime(loop);
+    story.set_scheduler_callback([](const std::string&, const std::string&) {
+        return std::string{"away"};
+    });
+
+    const auto outputs = story.advance_scene("Open the gate.");
+
+    REQUIRE(outputs.size() == 1);
+    REQUIRE(outputs[0].content == "The player scene advances.");
+    REQUIRE(player_scene->history.messages().back().content == "The player scene advances.");
+    REQUIRE(off_stage->history.messages().back().content == "The distant patrol advances.");
+
+    // The mutable compatibility cache now belongs to the later off-stage turn,
+    // while Story has already preserved the player-facing result above.
+    const auto& last_director = loop.last_director_output();
+    REQUIRE(last_director.new_nodes.size() == 1);
+    REQUIRE(last_director.new_nodes[0].fact == "The patrol reaches the ridge");
+    REQUIRE(loop.take_completed_expiry_ops().empty());
+}
+
+TEST_CASE("Story persists lifecycle changes after the completed player beat",
+          "[story][persistence][characterization]") {
+    Scene root;
+    root.scene_id = "root";
+    root.title = "Root";
+    root.system_prompt = "Narrate.";
+    root.enter_character(Character{"Scout", "A careful scout", false});
+
+    Story story = Story::from_scene(std::move(root));
+    Director director(story.world().world_graph);
+    SceneLoop loop;
+    loop.set_director(&director);
+    loop.set_llm_callback([](const std::string&) { return "fallback"; });
+    loop.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&) {
+            return std::string{R"(The scout prepares to leave.
+<<<RHAPSODE_JSON>>>
+{"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Scout"]})"};
+        });
+    story.bind_runtime(loop);
+    story.set_lifecycle_callback([](const std::string&, const std::string&) {
+        return std::string{R"({"fork":{"cast":["Scout"],"driving_intention":"Scout the ridge"},"merge_into":null,"conclude":null,"exited":[]})"};
+    });
+
+    const auto save_dir = std::filesystem::temp_directory_path() /
+        ("rhapsode-story-lifecycle-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    story.set_saves_dir(save_dir.string());
+
+    story.advance_scene("Send the scout ahead.");
+
+    REQUIRE(story.scene_count() == 2);
+    REQUIRE(story.get_scene("root_f0_0") != nullptr);
+    REQUIRE(std::filesystem::exists(save_dir / "story.json"));
+    REQUIRE(std::filesystem::exists(save_dir / "root_f0_0.json"));
+
+    std::ifstream manifest_file(save_dir / "story.json");
+    json manifest;
+    manifest_file >> manifest;
+    REQUIRE(manifest["scene_ids"] == json::array({"root", "root_f0_0"}));
+
+    std::ifstream world_file(save_dir / "world.json");
+    json world_json;
+    world_file >> world_json;
+    World restored = World::from_json(world_json);
+    const Character* scout = restored.find_character("Scout");
+    REQUIRE(scout != nullptr);
+    REQUIRE(scout->in_scene("root_f0_0"));
+    REQUIRE_FALSE(scout->in_scene("root"));
+
+    manifest_file.close();
+    world_file.close();
+    std::filesystem::remove_all(save_dir);
+}
