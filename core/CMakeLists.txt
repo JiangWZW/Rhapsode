@@ -30,6 +30,7 @@ add_library(rhapsode STATIC
     src/scene.cpp
     src/story.cpp
     src/scene_loop.cpp
+    src/scene_loop_background.cpp
     src/scene_loop_support.cpp
     src/text_downsampler.cpp
     src/node.cpp
