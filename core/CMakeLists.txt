@@ -25,6 +25,7 @@ add_library(rhapsode STATIC
     src/history.cpp
     src/character.cpp
     src/character_memory.cpp
+    src/character_memory_reflection.cpp
     src/narrator_prompt.cpp
     src/scene.cpp
     src/story.cpp
