@@ -2,6 +2,11 @@
 # Maps concepts to wiki pages for query routing.
 # See SCHEMA.md section 5 for format and maintenance rules.
 
+- name: code-quality
+  aliases: [cleanup plan, refactor plan, maintainability, CI, lint, structural cleanup]
+  desc: Verification-first plan for correctness, structure, ownership, tests, and documentation
+  pages: [2026-07-20-code-structure-quality-plan]
+
 - name: memory-retrieval
   aliases: [ChromaDB, vector search, embedding, ResolvedMemory, RAG, semantic search]
   desc: How resolved plot nodes are stored and retrieved via semantic similarity

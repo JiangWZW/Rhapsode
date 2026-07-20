@@ -2,6 +2,25 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] implementation | Code quality phases 0 and 1
+
+- Audited the synchronized `origin/main` tree across C++, pybind11, Python, Vue, build scripts, tests,
+  and wiki health.
+- Recorded the verified baseline and phased cleanup plan in
+  `episodes/2026-07-20-code-structure-quality-plan.md`.
+- Prioritized background/persistence ordering, failed-turn transaction semantics, and rendered-model
+  text safety before mechanical file splitting.
+- Defined responsibility-based extraction seams for Story, CharacterMemory, Weaver, WorldGraph,
+  World, Scene, and the pybind11 module.
+- Completed the verification foundation: repaired Windows scripts, CMake/CTest presets, explicit
+  Python discovery, scoped compiler warnings, Windows CI, and one `verify.bat` entry point.
+- Made SceneLoop submissions transactional and background mutation join before scene switching,
+  lifecycle/memory sync, shutdown, and persistence; fixed Weaver's dangling sampled-node pointers.
+- Added collected Python tests and Ruff, Vitest/ESLint frontend coverage, escaped model-supplied
+  inline markup, sanitized annotation categories, and hardened WebSocket connection/message handling.
+- Verified 38 C++ tests, 11 Python tests, 7 frontend tests, both linters, the production build, and a
+  zero-vulnerability production npm audit.
+
 ## [2026-06-24] plan | Parallel scenes — practical design (rewrite of the 06-20 episode)
 
 - Rewrote `wiki/episodes/2026-06-20-parallel-scenes-lifecycle-as-authored-judgment.md` after reading the

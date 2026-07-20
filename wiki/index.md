@@ -32,6 +32,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
+- [Code structure and quality plan](episodes/2026-07-20-code-structure-quality-plan.md) — verified baseline, correctness risks, and phased cross-layer cleanup plan
 - [Freedom, tension, and the two axes](episodes/2026-06-08-freedom-tension-and-the-two-axes.md) — design session: coherence vs tension axes, freedom as the complement of the live constraint set, validator `supersede`, the Director-as-tension-layer
 - [Pull vs. push, and the three growth directions](episodes/2026-06-09-pull-vs-push-and-three-growth-directions.md) — the engine is 100% pull; adding push via parallel scenes / backfill / ingestion as fact producers through one coherence gate
 - [Parallel scenes — shared pool, LOD, lifecycle](episodes/2026-06-10-parallel-scenes-shared-pool-lod-lifecycle.md) — implementation plan: shared pool of facts+minds, scenes as loops, LOD by player-anchored character importance, scene-thread spawn/destroy lifecycle, phased build (0—)
