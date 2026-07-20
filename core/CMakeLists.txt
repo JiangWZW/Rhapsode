@@ -28,6 +28,8 @@ add_library(rhapsode STATIC
     src/narrator_prompt.cpp
     src/scene.cpp
     src/story.cpp
+    src/story_advance.cpp
+    src/story_serialization.cpp
     src/scene_loop.cpp
     src/scene_loop_background.cpp
     src/scene_loop_narrator.cpp
