@@ -74,6 +74,7 @@ endif()
 
 # Tests
 add_executable(test_scene EXCLUDE_FROM_ALL
+    tests/test_class_internals.cpp
     tests/test_scene.cpp
     tests/test_substrate_golden.cpp
 )
