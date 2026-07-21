@@ -176,7 +176,7 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
 
 }  // namespace
 
-TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene, int turn) {
+TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene) {
     log() << "[1/4] Building merged prompt...\n" << std::flush;
 
     const size_t win = resuming_ ? resume_window_size_ : window_size_;

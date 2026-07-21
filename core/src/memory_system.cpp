@@ -6,8 +6,7 @@
 namespace rhapsode {
 
 MemorySystem::MemorySystem(const std::string& scene_id)
-    : scene_id_(scene_id)
-    , collection_(scene_id + "_nodes")
+    : collection_(scene_id + "_nodes")
 {}
 
 // -- Callback setters --

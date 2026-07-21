@@ -79,8 +79,7 @@ private:
     int interval_ = 3;
     bool active_ = false;
 
-    std::string build_prompt(int turn_index,
-                             const std::string& scene_context) const;
+    std::string build_prompt(const std::string& scene_context) const;
     WeaveResult parse_and_apply(const std::string& llm_response,
                                 int turn_index);
     WeaveResult weave_impl(int turn_index, const std::string& scene_context,

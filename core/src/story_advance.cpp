@@ -84,8 +84,8 @@ std::string Story::pick_off_stage_scene() {
     return pick;
 }
 
-int Story::decide_lifecycle(const std::string& scene_id,
-                            const std::string& player_input) {
+int Story::apply_lifecycle(const std::string& scene_id,
+                           const std::string& player_input) {
     if (!lifecycle_cb_) return 0;
     SceneData* scene = get_scene(scene_id);
     if (!scene) return 0;
@@ -177,14 +177,14 @@ int Story::decide_lifecycle(const std::string& scene_id,
     return applied;
 }
 
-std::string Story::autonomous_cue(const std::string& scene_id) const {
+std::string Story::make_autonomous_cue(const std::string& scene_id) const {
     for (const auto& summary : summarize_scenes()) {
         if (summary.scene_id == scene_id) return build_autonomous_cue(summary);
     }
     return build_autonomous_cue({});
 }
 
-void Story::sync_beat(const TurnResult& result) {
+void Story::sync_memory(const TurnResult& result) {
     MemorySystem* memory = memory_.get();
     SceneData* scene = get_scene(result.scene_id);
     if (!memory || !scene) return;
@@ -209,8 +209,8 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
         return executor_->run_player_turn(
             *active, player_input, read_tools.callback);
     }();
-    sync_beat(player_result);
-    const int player_lifecycle = decide_lifecycle(player_scene_id, player_input);
+    sync_memory(player_result);
+    const int player_lifecycle = apply_lifecycle(player_scene_id, player_input);
     if (player_lifecycle)
         log() << "  [lifecycle] applied " << player_lifecycle
               << " op(s) from player beat\n";
@@ -226,11 +226,11 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
                         ReadToolLease read_tools(
                             make_read_tool_context(*this, pick));
                         return executor_->run_autonomous_turn(
-                            *scene, autonomous_cue(pick), read_tools.callback);
+                            *scene, make_autonomous_cue(pick), read_tools.callback);
                     }();
                     const int completed_turn = result.completed_turn;
-                    sync_beat(result);
-                    const int lifecycle = decide_lifecycle(pick, "");
+                    sync_memory(result);
+                    const int lifecycle = apply_lifecycle(pick, "");
                     if (lifecycle)
                         log() << "  [lifecycle] applied " << lifecycle
                               << " op(s) from off-stage beat\n";

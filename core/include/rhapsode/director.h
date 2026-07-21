@@ -33,8 +33,8 @@ private:
     WorldGraph& graph_;
 
     std::vector<Node> apply_transitions(const nlohmann::json& response, int turn_index);
-    std::vector<Node> apply_new_nodes(const nlohmann::json& response, int turn_index,
-                                      std::vector<Rejection>& rejections);
+    std::vector<Node> apply_new_nodes(const nlohmann::json& response,
+                                      int turn_index);
     DirectorOutput collect_context(std::vector<Node> expired) const;
 };
 

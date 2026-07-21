@@ -54,11 +54,9 @@ DirectorOutput Director::apply_planned_turn(int turn_index, const nlohmann::json
     auto expired = apply_transitions(response, turn_index);
 
     log() << "  [graph] Applying new nodes...\n" << std::flush;
-    std::vector<Rejection> rejections;
-    auto added    = apply_new_nodes(response, turn_index, rejections);
+    auto added    = apply_new_nodes(response, turn_index);
     auto output   = collect_context(std::move(expired));
     output.new_nodes = std::move(added);
-    output.rejections = std::move(rejections);
 
     log() << "\n  ===== WorldGraph after apply " << turn_index << " =====\n";
     auto all = graph_.all_nodes(false);
@@ -110,8 +108,8 @@ std::vector<Node> Director::apply_transitions(const nlohmann::json& response, in
     return expired;
 }
 
-std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response, int turn_index,
-                                             std::vector<Rejection>& rejections) {
+std::vector<Node> Director::apply_new_nodes(const nlohmann::json& response,
+                                            int turn_index) {
     std::vector<Node> added;
     auto it = response.find("new_nodes");
     if (it == response.end() || !it->is_array())

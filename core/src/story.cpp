@@ -63,7 +63,7 @@ Story Story::from_data(SceneData root, World world) {
     Story story;
     *story.world_ = std::move(world);
     story.active_scene_id_ = root.scene_id;
-    story.adopt(std::move(root));
+    story.adopt_scene(std::move(root));
     return story;
 }
 
@@ -73,7 +73,7 @@ nlohmann::json Story::to_scenario_json(const std::string& scene_id) const {
     return serialize_scenario(*scene, *world_);
 }
 
-SceneData* Story::adopt(SceneData scene) {
+SceneData* Story::adopt_scene(SceneData scene) {
     scenes_.push_back(std::make_unique<SceneData>(std::move(scene)));
     return scenes_.back().get();
 }
@@ -122,7 +122,7 @@ SceneData* Story::fork_scene(const std::string& parent_id,
     child.system_prompt = parent->system_prompt;
     child.driving_intention = driving_intention;
     child.last_advanced = beat_clock_;
-    SceneData* adopted = adopt(std::move(child));
+    SceneData* adopted = adopt_scene(std::move(child));
 
     world_->move_scene_members(parent_id, new_id, cast);
     log() << "  [fork] scene '" << parent_id << "' -> '" << new_id << "' with cast [";

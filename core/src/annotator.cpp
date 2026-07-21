@@ -1,5 +1,6 @@
 #include "rhapsode/annotator.h"
 #include "rhapsode/str_util.h"
+#include "rhapsode/world.h"
 
 #include <algorithm>
 #include <nlohmann/json.hpp>
@@ -32,7 +33,7 @@ std::vector<EntitySpan> Annotator::match_characters(const std::string& text) con
 }
 
 std::vector<EntitySpan> Annotator::annotate(const std::string& text) const {
-    auto gamestate = match_characters(text);
+    auto roster = match_characters(text);
 
     std::vector<EntitySpan> ner_spans;
     if (ner_cb_) {
@@ -48,25 +49,28 @@ std::vector<EntitySpan> Annotator::annotate(const std::string& text) const {
         }
     }
 
-    return merge(std::move(gamestate), std::move(ner_spans));
+    return merge(std::move(roster), std::move(ner_spans));
 }
 
-std::vector<EntitySpan> Annotator::merge(std::vector<EntitySpan> gs,
-                                          std::vector<EntitySpan> ner) {
+std::vector<EntitySpan> Annotator::merge(std::vector<EntitySpan> roster,
+                                         std::vector<EntitySpan> ner) {
     for (auto it = ner.begin(); it != ner.end(); ) {
         bool overlaps = false;
-        for (const auto& g : gs) {
-            if (it->start < g.end && g.start < it->end) { overlaps = true; break; }
+        for (const auto& span : roster) {
+            if (it->start < span.end && span.start < it->end) {
+                overlaps = true;
+                break;
+            }
         }
         it = overlaps ? ner.erase(it) : std::next(it);
     }
 
-    gs.insert(gs.end(), std::make_move_iterator(ner.begin()),
-                        std::make_move_iterator(ner.end()));
-    std::sort(gs.begin(), gs.end(), [](const EntitySpan& a, const EntitySpan& b) {
+    roster.insert(roster.end(), std::make_move_iterator(ner.begin()),
+                                std::make_move_iterator(ner.end()));
+    std::sort(roster.begin(), roster.end(), [](const EntitySpan& a, const EntitySpan& b) {
         return a.start < b.start;
     });
-    return gs;
+    return roster;
 }
 
 }  // namespace rhapsode

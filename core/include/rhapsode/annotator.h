@@ -3,9 +3,10 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include "rhapsode/world.h"
 
 namespace rhapsode {
+
+class World;
 
 struct EntitySpan {
     int start;
@@ -27,7 +28,7 @@ private:
     NERCallback ner_cb_;
 
     std::vector<EntitySpan> match_characters(const std::string& text) const;
-    static std::vector<EntitySpan> merge(std::vector<EntitySpan> gamestate,
+    static std::vector<EntitySpan> merge(std::vector<EntitySpan> roster,
                                          std::vector<EntitySpan> ner);
 };
 

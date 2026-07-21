@@ -31,6 +31,23 @@ bool is_affirmative_yes_response(const std::string& response) {
     return lower.size() == 3 || str::is_word_boundary(lower, 3);
 }
 
+class TurnRunGuard {
+public:
+    explicit TurnRunGuard(bool& running) : running_(running) {
+        if (running_)
+            throw std::runtime_error("Cannot run turn: loop is already active");
+        running_ = true;
+    }
+
+    ~TurnRunGuard() { running_ = false; }
+
+    TurnRunGuard(const TurnRunGuard&) = delete;
+    TurnRunGuard& operator=(const TurnRunGuard&) = delete;
+
+private:
+    bool& running_;
+};
+
 }  // namespace
 
 TurnExecutor::TurnExecutor(World& world, Director& director, Weaver& weaver)
@@ -63,10 +80,7 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
                                   const std::string& text,
                                   bool autonomous,
                                   ReadToolCallback read_tool) {
-    if (running_)
-        throw std::runtime_error("Cannot run turn: loop is already active");
-
-    running_ = true;
+    TurnRunGuard run_guard(running_);
 
     const SceneData scene_snapshot = scene;
     const World world_snapshot = world_;
@@ -75,15 +89,15 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
     work.read_tool = std::move(read_tool);
 
     try {
-        submit_message(scene, text, autonomous, work);
-        PostTurnResult completed = advance(scene, work);
+        append_input_message(scene, text, autonomous);
+        PostTurnResult completed = execute_turn(scene, work);
 
         TurnResult result;
         result.scene_id = scene.scene_id;
         result.completed_turn = scene.turn_index;
         result.outputs = std::move(work.outputs);
-        result.effects.created_nodes = std::move(work.director.new_nodes);
-        result.effects.expired_nodes = std::move(work.director.newly_expired);
+        result.effects.created_nodes = std::move(work.director_output.new_nodes);
+        result.effects.expired_nodes = std::move(work.director_output.newly_expired);
         for (auto& node : completed.expired_nodes) {
             const auto duplicate = std::find_if(
                 result.effects.expired_nodes.begin(),
@@ -92,22 +106,19 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
             if (duplicate == result.effects.expired_nodes.end())
                 result.effects.expired_nodes.push_back(std::move(node));
         }
-        running_ = false;
         return result;
     } catch (...) {
         const auto original = std::current_exception();
         scene = scene_snapshot;
         world_ = world_snapshot;
         resuming_ = resuming_snapshot;
-        running_ = false;
         std::rethrow_exception(original);
     }
 }
 
-void TurnExecutor::submit_message(SceneData& scene,
-                                  const std::string& text,
-                                  bool autonomous,
-                                  TurnWork&) {
+void TurnExecutor::append_input_message(SceneData& scene,
+                                        const std::string& text,
+                                        bool autonomous) {
     if (autonomous) {
         log() << "\n[off-stage beat] advancing scene '" << scene.scene_id
               << "' player-lessly\n" << std::flush;
@@ -120,24 +131,24 @@ void TurnExecutor::submit_message(SceneData& scene,
     append_history_message(scene.history, std::move(message));
 }
 
-TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
-                                                   TurnWork& work) {
+TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
+                                                        TurnWork& work) {
     if (!llm_cb_) throw std::runtime_error("No LLM callback registered");
 
     const int turn = scene.turn_index;
     log() << "\n====== Turn " << turn << " [" << scene.scene_id << "] ======\n";
 
-    const NarratorPrompt prompt = build_turn_prompt(scene, turn);
+    const NarratorPrompt prompt = build_turn_prompt(scene);
     NarratorTurnResult result =
         run_narrator_with_retry(
-            scene, turn, prompt, work.director, work.read_tool);
+            scene, turn, prompt, work.director_output, work.read_tool);
     apply_narrator_cast(scene, result);
 
     const std::string narration = result.prose;
     emit_output(scene,
                 make_turn_message("narrator", std::move(result.prose)),
-                OutputBucket::Story, work);
-    world_.route_perceptions(scene.scene_id, work.director.new_nodes, turn);
+                OutputBucket::Narration, work);
+    world_.route_perceptions(scene.scene_id, work.director_output.new_nodes, turn);
     emit_dialogue(scene, turn, result.cues, work);
 
     const auto death_candidates = find_death_candidates(world_);
@@ -145,20 +156,20 @@ TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
 
     if (weaver_.active()) {
         std::vector<std::string> priority;
-        for (const auto& node : work.director.new_nodes)
+        for (const auto& node : work.director_output.new_nodes)
             priority.insert(priority.end(), node.entities.begin(), node.entities.end());
         weaver_.rebuild_expiry_queue(priority);
     }
 
     log() << "====== Turn " << turn << " done ======\n" << std::flush;
-    return run_post_turn(scene, turn, work.director);
+    return run_post_turn(scene, turn);
 }
 
 void TurnExecutor::emit_output(SceneData& scene,
                                SceneMessage message,
                                OutputBucket bucket,
                                TurnWork& work) {
-    auto& target = bucket == OutputBucket::Story ? scene.history : scene.dialogue;
+    auto& target = bucket == OutputBucket::Narration ? scene.history : scene.dialogue;
     append_history_message(target, std::move(message));
     work.outputs.push_back(target.back());
     if (turn_complete_cb_) turn_complete_cb_(target.back());

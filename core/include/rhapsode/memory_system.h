@@ -52,7 +52,6 @@ public:
     void set_next_id(int id) { next_id_ = id; }
 
 private:
-    std::string scene_id_;
     std::string collection_;
     int next_id_ = 0;
 

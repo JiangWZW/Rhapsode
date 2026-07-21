@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -56,7 +54,7 @@ public:
     void set_resuming(bool value) { resuming_ = value; }
 
 private:
-    enum class OutputBucket { Story, Dialogue };
+    enum class OutputBucket { Narration, Dialogue };
 
     struct NarratorPrompt {
         std::string instructions;
@@ -82,16 +80,16 @@ private:
 
     struct TurnWork {
         std::vector<SceneMessage> outputs;
-        DirectorOutput director;
+        DirectorOutput director_output;
         ReadToolCallback read_tool;
     };
 
     TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous,
                         ReadToolCallback read_tool);
-    void submit_message(SceneData& scene, const std::string& text, bool autonomous,
-                        TurnWork& work);
-    PostTurnResult advance(SceneData& scene, TurnWork& work);
-    NarratorPrompt build_turn_prompt(SceneData& scene, int turn);
+    void append_input_message(SceneData& scene, const std::string& text,
+                              bool autonomous);
+    PostTurnResult execute_turn(SceneData& scene, TurnWork& work);
+    NarratorPrompt build_turn_prompt(SceneData& scene);
     std::string call_narrator(const SceneData& scene,
                               const std::string& instructions,
                               const std::string& turn_state,
@@ -109,8 +107,7 @@ private:
                      OutputBucket bucket, TurnWork& work);
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,
                         const std::string& narration);
-    PostTurnResult run_post_turn(SceneData& scene, int turn,
-                                 const DirectorOutput& director_output) noexcept;
+    PostTurnResult run_post_turn(SceneData& scene, int turn) noexcept;
     World& world_;
     Director& director_;
     Weaver& weaver_;

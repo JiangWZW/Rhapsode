@@ -35,7 +35,7 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 }  // namespace
 
 TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
-    SceneData& scene, int turn, const DirectorOutput&) noexcept {
+    SceneData& scene, int turn) noexcept {
     PostTurnResult result;
     const auto history = snapshot_history(scene.history, window_size_);
     const std::string context =

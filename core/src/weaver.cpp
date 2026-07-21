@@ -247,8 +247,7 @@ bool Weaver::should_weave(int turn_index) const {
 // Prompt builder
 // ---------------------------------------------------------------------------
 
-std::string Weaver::build_prompt(int turn_index,
-                                 const std::string& scene_context) const {
+std::string Weaver::build_prompt(const std::string& scene_context) const {
     auto sel = sample_degree_biased_subgraph(graph_, rng_);
 
     // -- Debug log --
@@ -379,7 +378,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
           << pre.active_edge_count << " active edges, "
           << pre.orphan_count << " orphans\n";
 
-    auto prompt = build_prompt(turn_index, scene_context);
+    auto prompt = build_prompt(scene_context);
     log() << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
           << " prompt_chars=" << prompt.size()
           << " — calling " << label << " LLM...\n"

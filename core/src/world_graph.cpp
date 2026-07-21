@@ -10,10 +10,6 @@
 
 namespace rhapsode {
 
-namespace {
-
-}  // namespace
-
 Node& WorldGraph::add_node(Node node) {
     if (node.id == 0) {
         node.id = next_id_++;
