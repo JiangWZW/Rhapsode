@@ -280,24 +280,49 @@ TEST_CASE("Perceptions respect private and public audiences", "[world][memory]")
     REQUIRE(count("Bob") == 1);
 }
 
+TEST_CASE("SceneLoop rejects graph-mismatched injected services",
+          "[scene_loop][ownership]") {
+    World world;
+    WorldGraph other;
+    Director wrong_director(other);
+    Director director(world.graph());
+    Weaver wrong_weaver(other);
+    Weaver weaver(world.graph());
+    REQUIRE_THROWS_AS(SceneLoop(world, wrong_director, weaver),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(SceneLoop(world, director, wrong_weaver),
+                      std::invalid_argument);
+}
+
+TEST_CASE("Weaver activation preserves optional runtime semantics",
+          "[weaver][ownership]") {
+    WorldGraph graph;
+    Weaver weaver(graph);
+    REQUIRE_FALSE(weaver.active());
+    weaver.set_interval(3);
+    REQUIRE(weaver.active());
+}
+
 TEST_CASE("SceneLoop returns associated Director, Weaver, and expiry results",
           "[scene_loop][result][background]") {
     World world;
     SceneData scene = basic_scene("root");
     const auto old_id = add_fact(world.graph(), "The gate is closed", "Gate", 1);
     const auto new_id = add_fact(world.graph(), "The gate is open", "Gate", 5);
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [](const std::string&, const std::string&, const std::string&) {
         return response("The gate groans.",
             R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":[]})");
     });
-    loop.set_weaver_interval(1);
-    loop.set_weaver_llm_callback([&](const std::string&) {
+    weaver.set_interval(1);
+    weaver.set_llm_callback([&](const std::string&) {
         return std::string{"{\"connect\":[{\"from\":"} +
             std::to_string(old_id) + ",\"to\":" + std::to_string(new_id) +
             R"(,"weight":0.8,"reason":"state"}],"disconnect":[],"reweight":[]})";
     });
-    loop.set_weaver_local_llm_callback([&](const std::string&) {
+    weaver.set_local_llm_callback([&](const std::string&) {
         return std::string{"{\"superseded\":[{\"id\":"} +
             std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
             R"(}],"reason":"newer state"})";
@@ -317,7 +342,9 @@ TEST_CASE("SceneLoop keeps narrator and dialogue histories separate", "[scene_lo
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Guard", "Alert", false});
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [](const std::string&, const std::string&, const std::string&) {
         return response("The guard raises a hand.",
             R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"Stop.","action":"blocks the door"}],"new_characters":[],"active_cast":["Guard"]})");
@@ -334,7 +361,9 @@ TEST_CASE("SceneLoop active_cast adds presence without ejecting cast", "[scene_l
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Alice", "A", false});
     world.enter_character("elsewhere", Character{"Bob", "B", false});
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [](const std::string&, const std::string&, const std::string&) {
         return response("Bob arrives.",
             R"({"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Bob"]})");
@@ -349,7 +378,9 @@ TEST_CASE("SceneLoop retries invalid Player speech without leaking state",
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Guard", "Alert", false});
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     int calls = 0;
     configure_loop(loop, [&](const std::string&, const std::string&, const std::string&) {
         ++calls;
@@ -368,7 +399,9 @@ TEST_CASE("SceneLoop rolls back failed turns and can be reused",
           "[scene_loop][transaction]") {
     World world;
     SceneData scene = basic_scene();
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop,
         [](const std::string&, const std::string&, const std::string&) -> std::string {
             throw std::runtime_error("narrator unavailable");
@@ -391,7 +424,9 @@ TEST_CASE("SceneLoop autonomous turns remain associated with their SceneData",
     World world;
     SceneData first = basic_scene("first");
     SceneData second = basic_scene("second");
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop,
         [](const std::string& id, const std::string&, const std::string&) {
             return response("Narration for " + id + ".");
@@ -408,15 +443,17 @@ TEST_CASE("SceneLoop joins background work before returning", "[scene_loop][back
     SceneData scene = basic_scene();
     add_fact(world.graph(), "Gate shut", "Gate", 1);
     add_fact(world.graph(), "Torch lit", "Torch", 1);
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [](const std::string&, const std::string&, const std::string&) {
         return response("Time passes.");
     });
-    loop.set_weaver_interval(1);
+    weaver.set_interval(1);
     std::promise<void> started;
     std::promise<void> release;
     auto release_future = release.get_future().share();
-    loop.set_weaver_llm_callback([&](const std::string&) {
+    weaver.set_llm_callback([&](const std::string&) {
         started.set_value();
         release_future.wait();
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
@@ -447,19 +484,21 @@ TEST_CASE("SceneLoop preserves post-turn callback order",
     }
 
     std::vector<std::string> events;
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [&](const std::string&, const std::string&,
                              const std::string&) {
         events.push_back("narrator");
         return response("Wind crosses the gate.",
             R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":["Scout"]})");
     });
-    loop.set_weaver_interval(1);
-    loop.set_weaver_llm_callback([&](const std::string&) {
+    weaver.set_interval(1);
+    weaver.set_llm_callback([&](const std::string&) {
         events.push_back("weave");
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
     });
-    loop.set_weaver_local_llm_callback([&](const std::string&) {
+    weaver.set_local_llm_callback([&](const std::string&) {
         events.push_back("expiry");
         return std::string{R"({"superseded":[],"reason":"current"})"};
     });
@@ -483,13 +522,15 @@ TEST_CASE("SceneLoop post-turn failures remain non-fatal",
     SceneData scene = basic_scene();
     add_fact(world.graph(), "Gate shut", "Gate", 1);
     add_fact(world.graph(), "Torch lit", "Torch", 1);
-    SceneLoop loop(world);
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    SceneLoop loop(world, director, weaver);
     configure_loop(loop, [](const std::string&, const std::string&,
                             const std::string&) {
         return response("Time passes.");
     });
-    loop.set_weaver_interval(1);
-    loop.set_weaver_llm_callback(
+    weaver.set_interval(1);
+    weaver.set_llm_callback(
         [](const std::string&) -> std::string {
             throw std::runtime_error("weaver unavailable");
         });

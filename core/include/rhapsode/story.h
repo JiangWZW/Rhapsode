@@ -16,6 +16,8 @@
 namespace rhapsode {
 
 class SceneLoop;
+class Director;
+class Weaver;
 struct SceneTurnResult;
 
 using SchedulerCallback = std::function<std::string(const std::string& instructions,
@@ -115,8 +117,10 @@ private:
     LifecycleCallback lifecycle_cb_;
     std::string saves_dir_;
 
-    // Declared last so it is destroyed first and joins background work before
-    // World or SceneData storage is released.
+    // Stable allocations keep graph-service references valid through Story moves.
+    // Declaration order destroys the loop before its injected services and World.
+    std::unique_ptr<Director> director_;
+    std::unique_ptr<Weaver> weaver_;
     std::unique_ptr<SceneLoop> loop_;
 };
 

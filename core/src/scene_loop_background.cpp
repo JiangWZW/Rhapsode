@@ -6,7 +6,6 @@
 
 #include <future>
 #include <functional>
-#include <optional>
 #include <utility>
 
 namespace rhapsode {
@@ -39,23 +38,22 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::dispatch_background(
     SceneData& scene,
     int turn,
     const DirectorOutput&) {
-    const std::optional<std::reference_wrapper<Weaver>> weaver = weaver_
-        ? std::optional<std::reference_wrapper<Weaver>>{std::ref(*weaver_)}
-        : std::nullopt;
+    const auto weaver = std::ref(weaver_);
+    const bool weaver_active = weaver_.active();
     const auto world = std::ref(world_);
     const auto scene_data = std::ref(scene);
     const auto history = scene.history.snapshot(window_size_);
     const std::string context =
         format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
-    const bool full_weave = weaver && weaver->get().should_weave(turn);
+    const bool full_weave = weaver_active && weaver_.should_weave(turn);
     const LLMCallback downsampler_callback = downsampler_cb_;
 
     return std::async(std::launch::async,
-        [world, scene_data, weaver, turn, context, full_weave,
+        [world, scene_data, weaver, weaver_active, turn, context, full_weave,
          downsampler_callback]() {
             BackgroundResult result;
-            if (weaver) {
-                Weaver& service = weaver->get();
+            if (weaver_active) {
+                Weaver& service = weaver.get();
                 if (full_weave) {
                     log() << "  [bg] full graph weave (cloud)...\n" << std::flush;
                     result.weave = service.weave(turn, context);

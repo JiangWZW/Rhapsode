@@ -7,16 +7,20 @@
 #include <stdexcept>
 
 #include "rhapsode/character_memory.h"
+#include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/scene_loop.h"
 #include "rhapsode/str_util.h"
+#include "rhapsode/weaver.h"
 
 namespace rhapsode {
 
 Story::Story()
     : world_(std::make_unique<World>()),
-      loop_(std::make_unique<SceneLoop>(*world_)) {}
+      director_(std::make_unique<Director>(world_->graph())),
+      weaver_(std::make_unique<Weaver>(world_->graph())),
+      loop_(std::make_unique<SceneLoop>(*world_, *director_, *weaver_)) {}
 
 Story::~Story() = default;
 Story::Story(Story&&) noexcept = default;
@@ -344,14 +348,14 @@ void Story::set_narrator_llm_callback(NarratorLLMCallback cb) {
 }
 
 void Story::set_weaver_llm_callback(LLMCallback cb) {
-    loop_->set_weaver_llm_callback(std::move(cb));
+    weaver_->set_llm_callback(std::move(cb));
 }
 
 void Story::set_weaver_local_llm_callback(LLMCallback cb) {
-    loop_->set_weaver_local_llm_callback(std::move(cb));
+    weaver_->set_local_llm_callback(std::move(cb));
 }
 
-void Story::set_weaver_interval(int turns) { loop_->set_weaver_interval(turns); }
+void Story::set_weaver_interval(int turns) { weaver_->set_interval(turns); }
 void Story::set_history_window(size_t normal, size_t resume) {
     loop_->set_history_window(normal, resume);
 }

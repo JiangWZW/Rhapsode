@@ -42,7 +42,7 @@ using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_ms
 // services, borrows World for its lifetime, and retains no SceneData between calls.
 class SceneLoop {
 public:
-    explicit SceneLoop(World& world);
+    SceneLoop(World& world, Director& director, Weaver& weaver);
 
     SceneTurnResult run_player_turn(SceneData& scene, const std::string& text);
     SceneTurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
@@ -55,9 +55,6 @@ public:
     void set_turn_complete_callback(TurnCompleteCallback cb) {
         turn_complete_cb_ = std::move(cb);
     }
-    void set_weaver_llm_callback(LLMCallback cb);
-    void set_weaver_local_llm_callback(LLMCallback cb);
-    void set_weaver_interval(int turns);
     void set_downsampler_callback(LLMCallback cb) { downsampler_cb_ = std::move(cb); }
     void set_history_window(size_t normal, size_t resume);
     void set_resuming(bool value) { resuming_ = value; }
@@ -116,11 +113,9 @@ private:
     std::future<BackgroundResult> dispatch_background(SceneData& scene, int turn,
                                                        const DirectorOutput& director_output);
     BackgroundResult finish_background(std::future<BackgroundResult>& future) noexcept;
-    Weaver& ensure_weaver();
-
     World& world_;
-    Director director_;
-    std::unique_ptr<Weaver> weaver_;
+    Director& director_;
+    Weaver& weaver_;
 
     LoopState state_ = LoopState::Idle;
     LLMCallback llm_cb_;

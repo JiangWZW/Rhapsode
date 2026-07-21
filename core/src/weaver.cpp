@@ -224,9 +224,20 @@ GraphAnalysis analyze(const WorldGraph& graph) {
 
 Weaver::Weaver(WorldGraph& graph) : graph_(graph) {}
 
-void Weaver::set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
-void Weaver::set_local_llm_callback(LLMCallback cb) { local_llm_cb_ = std::move(cb); }
-void Weaver::set_interval(int turns) { interval_ = turns > 0 ? turns : 1; }
+void Weaver::set_llm_callback(LLMCallback cb) {
+    llm_cb_ = std::move(cb);
+    active_ = true;
+}
+
+void Weaver::set_local_llm_callback(LLMCallback cb) {
+    local_llm_cb_ = std::move(cb);
+    active_ = true;
+}
+
+void Weaver::set_interval(int turns) {
+    interval_ = turns > 0 ? turns : 1;
+    active_ = true;
+}
 
 bool Weaver::should_weave(int turn_index) const {
     return turn_index % interval_ == 0;

@@ -30,24 +30,13 @@ bool is_affirmative_yes_response(const std::string& response) {
 
 }  // namespace
 
-SceneLoop::SceneLoop(World& world)
-    : world_(world), director_(world.graph()) {}
-
-Weaver& SceneLoop::ensure_weaver() {
-    if (!weaver_) weaver_ = std::make_unique<Weaver>(world_.graph());
-    return *weaver_;
-}
-
-void SceneLoop::set_weaver_llm_callback(LLMCallback cb) {
-    ensure_weaver().set_llm_callback(std::move(cb));
-}
-
-void SceneLoop::set_weaver_local_llm_callback(LLMCallback cb) {
-    ensure_weaver().set_local_llm_callback(std::move(cb));
-}
-
-void SceneLoop::set_weaver_interval(int turns) {
-    ensure_weaver().set_interval(turns);
+SceneLoop::SceneLoop(World& world, Director& director, Weaver& weaver)
+    : world_(world), director_(director), weaver_(weaver) {
+    if (!director_.uses_graph(world_.graph()) ||
+        !weaver_.uses_graph(world_.graph())) {
+        throw std::invalid_argument(
+            "SceneLoop services must use the injected World's graph");
+    }
 }
 
 void SceneLoop::set_history_window(size_t normal, size_t resume) {
@@ -93,7 +82,7 @@ SceneTurnResult SceneLoop::run_turn(SceneData& scene,
         return result;
     } catch (...) {
         const auto original = std::current_exception();
-        if (weaver_) weaver_->stop_expiry_drain();
+        if (weaver_.active()) weaver_.stop_expiry_drain();
         if (background.valid()) (void)finish_background(background);
         scene = scene_snapshot;
         world_ = world_snapshot;
@@ -142,11 +131,11 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::advance(SceneData& scene,
     const auto death_candidates = world_.scan_death_candidates();
     if (!death_candidates.empty()) confirm_deaths(death_candidates, narration);
 
-    if (weaver_) {
+    if (weaver_.active()) {
         std::vector<std::string> priority;
         for (const auto& node : work.director.new_nodes)
             priority.insert(priority.end(), node.entities.begin(), node.entities.end());
-        weaver_->rebuild_expiry_queue(priority);
+        weaver_.rebuild_expiry_queue(priority);
     }
 
     log() << "====== Turn " << turn << " done ======\n" << std::flush;

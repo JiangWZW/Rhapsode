@@ -47,6 +47,7 @@ public:
     void set_llm_callback(LLMCallback cb);
     void set_local_llm_callback(LLMCallback cb);
     void set_interval(int turns);
+    bool active() const noexcept { return active_; }
     bool should_weave(int turn_index) const;
 
     /// Full weave using the cloud LLM (called on should_weave turns).
@@ -76,6 +77,7 @@ private:
     LLMCallback llm_cb_;
     LLMCallback local_llm_cb_;
     int interval_ = 3;
+    bool active_ = false;
 
     std::string build_prompt(int turn_index,
                              const std::string& scene_context) const;
