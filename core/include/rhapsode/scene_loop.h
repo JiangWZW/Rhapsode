@@ -1,17 +1,21 @@
 #pragma once
+
 #include <future>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
+
 #include <nlohmann/json.hpp>
-#include "rhapsode/llm_callback.h"
-#include "rhapsode/scene_message.h"
+
 #include "rhapsode/director.h"
+#include "rhapsode/llm_callback.h"
+#include "rhapsode/scene_data.h"
+#include "rhapsode/scene_message.h"
 #include "rhapsode/weaver.h"
 
 namespace rhapsode {
 
-class Scene;
 class World;
 struct DeathCandidate;
 
@@ -26,7 +30,6 @@ struct SceneTurnResult {
 
 enum class LoopState {
     Idle,
-    WaitingForInput,
     ProcessingInput,
     Weaving,
     BuildingPrompt,
@@ -34,56 +37,31 @@ enum class LoopState {
     AppendingResult
 };
 
-using NarratorLLMCallback  = std::function<std::string(const std::string& scene_id,
-                                                        const std::string& instructions,
-                                                        const std::string& turn_state)>;
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
 
+// Executes one complete turn against Story-owned state. SceneLoop owns its graph
+// services, borrows World for its lifetime, and retains no SceneData between calls.
 class SceneLoop {
 public:
-    ~SceneLoop() noexcept;
+    explicit SceneLoop(World& world);
 
-    void load_scene(Scene& scene);
-    void submit_input(const std::string& text);
-    /// Advance the loaded scene as a player-less (off-stage) beat. `focus` is the
-    /// director cue that drives it -- typically the scene's driving intention and
-    /// recent facts -- appended to this scene's thread instead of a user turn.
-    void submit_autonomous(const std::string& focus);
+    SceneTurnResult run_player_turn(SceneData& scene, const std::string& text);
+    SceneTurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
+    LoopState state() const { return state_; }
 
-    /// Run one complete player scene turn and return its foreground/background
-    /// result. The supplied Scene is borrowed only for this call.
-    SceneTurnResult run_player_turn(Scene& scene, const std::string& text);
-    /// Run one complete autonomous scene turn. The supplied Scene is borrowed
-    /// only for this call.
-    SceneTurnResult run_autonomous_turn(Scene& scene, const std::string& focus);
-    LoopState state() const;
-
-    void set_llm_callback(LLMCallback cb);
-    /// Narrator LLM: instructions (rules + contract) and turn_state (per-turn context).
-    /// Falls back to single-string llm_cb_ with concatenation if unset.
-    void set_narrator_llm_callback(NarratorLLMCallback cb);
-    void set_turn_complete_callback(TurnCompleteCallback cb);
-    void set_director(Director* director);
-    const DirectorOutput& last_director_output() const;
-
-    void set_weaver(Weaver* weaver);
-    const WeaveResult& last_weave_result() const;
-
-    /** Messages produced by the previous turn's submit_input (narrator + character lines).
-     *  Cleared on consume -- typical pattern: call submit_input(), then drain(). */
-    std::vector<SceneMessage> take_last_turn_outputs();
-
+    void set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
+    void set_narrator_llm_callback(NarratorLLMCallback cb) {
+        narrator_llm_cb_ = std::move(cb);
+    }
+    void set_turn_complete_callback(TurnCompleteCallback cb) {
+        turn_complete_cb_ = std::move(cb);
+    }
+    void set_weaver_llm_callback(LLMCallback cb);
+    void set_weaver_local_llm_callback(LLMCallback cb);
+    void set_weaver_interval(int turns);
+    void set_downsampler_callback(LLMCallback cb) { downsampler_cb_ = std::move(cb); }
     void set_history_window(size_t normal, size_t resume);
-    void set_resuming(bool v) { resuming_ = v; }
-
-    void set_saves_dir(const std::string& dir);
-
-    /// Block until the background thread finishes.  Must be called before
-    /// dropping a SceneLoop reference (undo, error recovery, disconnect).
-    void join_background();
-
-    /// Return expiry ops produced by the previous turn's background drain.
-    std::vector<ExpiryOp> take_completed_expiry_ops();
+    void set_resuming(bool value) { resuming_ = value; }
 
 private:
     enum class OutputBucket { Story, Dialogue };
@@ -111,46 +89,49 @@ private:
         std::vector<ExpiryOp> expiry;
     };
 
-    void advance();
-    SceneTurnResult run_turn(Scene& scene, const std::string& text, bool autonomous);
-    SceneTurnResult take_scene_turn_result();
-    void validate_runtime_graph() const;
-    void submit_message(const std::string& text, bool autonomous);
-    NarratorPrompt build_turn_prompt(int turn);
-    std::string call_narrator(const std::string& instructions,
+    struct TurnWork {
+        std::vector<SceneMessage> outputs;
+        DirectorOutput director;
+    };
+
+    SceneTurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous);
+    void submit_message(SceneData& scene, const std::string& text, bool autonomous,
+                        TurnWork& work);
+    std::future<BackgroundResult> advance(SceneData& scene, TurnWork& work);
+    NarratorPrompt build_turn_prompt(SceneData& scene, int turn);
+    std::string call_narrator(const SceneData& scene,
+                              const std::string& instructions,
                               const std::string& turn_state) const;
-    NarratorTurnResult run_narrator_with_retry(int turn, const NarratorPrompt& prompt);
-    void rollback_turn_attempt(const World& world_snapshot);
-    void register_new_characters(int turn, const nlohmann::json& plan);
-    void apply_narrator_cast(const NarratorTurnResult& result);
-    void emit_dialogue(int turn, const std::vector<SpeechCue>& cues);
-    void post_turn_cleanup(const std::string& narration);
-    void emit_output(SceneMessage msg, OutputBucket bucket);
-    void dispatch_background();
+    NarratorTurnResult run_narrator_with_retry(SceneData& scene, int turn,
+                                                const NarratorPrompt& prompt,
+                                                DirectorOutput& director_output);
+    void register_new_characters(SceneData& scene, int turn,
+                                 const nlohmann::json& plan);
+    void apply_narrator_cast(SceneData& scene, const NarratorTurnResult& result);
+    void emit_dialogue(SceneData& scene, int turn,
+                       const std::vector<SpeechCue>& cues, TurnWork& work);
+    void emit_output(SceneData& scene, SceneMessage message,
+                     OutputBucket bucket, TurnWork& work);
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,
                         const std::string& narration);
+    std::future<BackgroundResult> dispatch_background(SceneData& scene, int turn,
+                                                       const DirectorOutput& director_output);
+    BackgroundResult finish_background(std::future<BackgroundResult>& future) noexcept;
+    Weaver& ensure_weaver();
+
+    World& world_;
+    Director director_;
+    std::unique_ptr<Weaver> weaver_;
 
     LoopState state_ = LoopState::Idle;
-    Scene* scene_ = nullptr;
     LLMCallback llm_cb_;
     NarratorLLMCallback narrator_llm_cb_;
     TurnCompleteCallback turn_complete_cb_;
-    Director* director_ = nullptr;
-    DirectorOutput last_director_out_;
-    Weaver* weaver_ = nullptr;
-    WeaveResult last_weave_result_;
-    std::vector<SceneMessage> last_turn_outputs_;
+    LLMCallback downsampler_cb_;
 
     size_t window_size_ = 8;
     size_t resume_window_size_ = 12;
     bool resuming_ = false;
-
-    // Background work (single thread: weave -> expiry -> reflections)
-    std::future<BackgroundResult> bg_future_;
-    std::function<void()> bg_stop_;
-    std::string saves_dir_;
-    std::vector<ExpiryOp> completed_expiry_ops_;
-    bool background_save_pending_ = false;
 };
 
-} // namespace rhapsode
+}  // namespace rhapsode

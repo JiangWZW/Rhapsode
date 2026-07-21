@@ -1,7 +1,11 @@
 #include "rhapsode/narrator_prompt.h"
 
 #include "rhapsode/json_util.h"
-#include "rhapsode/scene.h"
+#include "rhapsode/scene_data.h"
+#include "rhapsode/str_util.h"
+#include "rhapsode/world.h"
+
+#include <algorithm>
 
 namespace rhapsode {
 namespace {
@@ -12,62 +16,75 @@ constexpr size_t kMaxStoryChars = 1500;
 
 const char* role_name(Role role) {
     switch (role) {
-        case Role::User:
-            return "user";
-        case Role::Assistant:
-            return "assistant";
-        case Role::System:
-            return "system";
+        case Role::User: return "user";
+        case Role::Assistant: return "assistant";
+        case Role::System: return "system";
     }
     return "user";
 }
 
-void append_part(std::vector<std::string>& parts, const std::string& text) {
-    if (!text.empty()) {
-        parts.push_back(text);
+std::string join_sorted(std::vector<std::string> names) {
+    std::sort(names.begin(), names.end());
+    std::string result;
+    for (size_t i = 0; i < names.size(); ++i) {
+        if (i) result += ", ";
+        result += names[i];
     }
+    return result;
 }
 
 }  // namespace
 
 std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
-                                      const Scene& scene) {
+                                      const SceneData& scene,
+                                      const World& world) {
     std::vector<std::string> parts;
-
-    const auto cast_lines = scene.build_prompt__cast();
-    if (!cast_lines.empty()) {
-        parts.push_back("### Cast");
-        for (const auto& line : cast_lines) {
-            parts.push_back(line);
+    std::vector<std::string> cast_lines;
+    std::vector<std::string> on_stage_names;
+    std::vector<std::string> off_stage_names;
+    for (const auto& character : world.characters()) {
+        if (character.is_player || character.dead) continue;
+        if (character.in_scene(scene.scene_id)) {
+            on_stage_names.push_back(character.name);
+            std::string line = "- " + character.name;
+            if (!character.role.empty()) line += " [" + character.role + "]";
+            const std::string description = str::trim(character.description);
+            if (!description.empty()) line += " \xe2\x80\x94" + description;
+            cast_lines.push_back(std::move(line));
+        } else {
+            off_stage_names.push_back(character.name);
         }
+    }
+    std::vector<std::string> cast_header;
+    if (!on_stage_names.empty())
+        cast_header.push_back("On-stage: " + join_sorted(on_stage_names));
+    if (!off_stage_names.empty())
+        cast_header.push_back("Off-stage: " + join_sorted(off_stage_names));
+    cast_header.insert(cast_header.end(), cast_lines.begin(), cast_lines.end());
+    if (!cast_header.empty()) {
+        parts.push_back("### Cast");
+        parts.insert(parts.end(), cast_header.begin(), cast_header.end());
     }
 
     const std::string story_so_far = scene.downsampler.render();
     if (!story_so_far.empty()) {
-        append_part(parts, "");
         parts.push_back("### Story so far");
         parts.push_back(truncate_utf8(story_so_far, kMaxStoryChars));
     }
 
-    const std::vector<SceneMessage> conv = story_so_far.empty()
-                                               ? history
-                                               : [&]() {
-                                                     const size_t start =
-                                                         history.size() > kVerbatimTail
-                                                             ? history.size() - kVerbatimTail
-                                                             : 0;
-                                                     return std::vector<SceneMessage>(
-                                                         history.begin() + start, history.end());
-                                                 }();
+    const std::vector<SceneMessage> conversation = story_so_far.empty()
+        ? history
+        : [&]() {
+            const size_t start = history.size() > kVerbatimTail
+                ? history.size() - kVerbatimTail : 0;
+            return std::vector<SceneMessage>(history.begin() + start, history.end());
+        }();
 
-    append_part(parts, "");
     parts.push_back("### Turn transcript");
-    for (const auto& msg : conv) {
-        parts.push_back(std::string(role_name(msg.role)) + ": " +
-                        truncate_utf8(msg.content, kMaxMessageChars));
-    }
+    for (const auto& message : conversation)
+        parts.push_back(std::string(role_name(message.role)) + ": " +
+                        truncate_utf8(message.content, kMaxMessageChars));
 
-    append_part(parts, "");
     parts.push_back("### Remember");
     parts.push_back(
         "- Prose is narration only: never a character's spoken words or *actions* -- "
@@ -76,14 +93,12 @@ std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
         "- Give a speech_turn only to a character who can speak right now "
         "(not asleep, unconscious, incapacitated, dead, or absent).");
 
-    std::string out;
+    std::string output;
     for (size_t i = 0; i < parts.size(); ++i) {
-        if (i) {
-            out += '\n';
-        }
-        out += parts[i];
+        if (i) output += '\n';
+        output += parts[i];
     }
-    return out;
+    return output;
 }
 
 std::string build_narrator_instructions() {
@@ -106,7 +121,9 @@ Query first, then write. Do NOT guess when you can query. A node with valid_unti
 Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>
 Then raw JSON (no fences). Use ONLY straight ASCII double quotes (") for all keys
-and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
+and strings -- never smart/curly quotes ()RHAPSODE"
+        "\xe2\x80\x9c \xe2\x80\x9d \xe2\x80\x98 \xe2\x80\x99"
+        R"RHAPSODE(), or the JSON will not parse:
 {"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
  "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
  "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],

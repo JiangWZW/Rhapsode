@@ -15,23 +15,145 @@ namespace rhapsode {
 
 // -- Roster ------------------------------------------------------------------
 
-Character* World::find_character(const std::string& name) {
-    for (auto& c : characters)
+Character* World::find_character_mutable(const std::string& name) {
+    for (auto& c : characters_)
         if (str::iequals(c.name, name)) return &c;
     return nullptr;
 }
 
 const Character* World::find_character(const std::string& name) const {
-    for (const auto& c : characters)
+    for (const auto& c : characters_)
         if (str::iequals(c.name, name)) return &c;
     return nullptr;
+}
+
+const Character* World::find_in_scene(const std::string& scene_id,
+                                      const std::string& name) const {
+    const Character* character = find_character(name);
+    return character && !character->dead && character->in_scene(scene_id)
+        ? character : nullptr;
+}
+
+Character& World::enter_character(const std::string& scene_id, Character character) {
+    if (Character* existing = find_character_mutable(character.name)) {
+        if (existing->dead) {
+            log() << "  [cast] " << existing->name
+                  << " is dead -- ignoring re-entry\n";
+            return *existing;
+        }
+        const bool was_off = !existing->in_scene(scene_id);
+        existing->join_scene(scene_id);
+        if (existing->description.empty() && !character.description.empty())
+            existing->description = std::move(character.description);
+        if (existing->dialogue_instructions.empty() &&
+            !character.dialogue_instructions.empty())
+            existing->dialogue_instructions = std::move(character.dialogue_instructions);
+        if (was_off)
+            log() << "  [cast] " << existing->name
+                  << " re-enters (was off-stage)\n";
+        return *existing;
+    }
+
+    if (!scene_id.empty()) character.join_scene(scene_id);
+    characters_.push_back(std::move(character));
+    Character& added = characters_.back();
+    log() << "  [cast] NEW " << added.name
+          << " | role=" << (added.role.empty() ? "?" : added.role)
+          << " | \"" << added.description.substr(0, 80) << "\"\n";
+
+    if (!added.is_player && character_memories_.find(added.name) == character_memories_.end()) {
+        CharacterMemory memory(added.name);
+        memory.set_reflection_llm_callback(reflection_llm_cb_);
+        character_memories_.emplace(added.name, std::move(memory));
+        log() << "  [cast]   memory created (empty -- learns by perception)\n";
+    }
+    return added;
+}
+
+bool World::leave_character(const std::string& scene_id, const std::string& name) {
+    Character* character = find_character_mutable(name);
+    if (!character || !character->in_scene(scene_id)) return false;
+    character->leave_scene(scene_id);
+    return true;
+}
+
+void World::ensure_characters_present(
+    const std::string& scene_id,
+    const std::vector<std::string>& canonical_names) {
+    std::unordered_set<std::string> resolved_names;
+    resolved_names.reserve(canonical_names.size());
+    for (const auto& name : canonical_names)
+        resolved_names.insert(str::to_lower(name));
+
+    for (auto& character : characters_) {
+        if (character.is_player || character.dead) continue;
+        if (resolved_names.count(str::to_lower(character.name)) > 0 &&
+            !character.in_scene(scene_id)) {
+            character.join_scene(scene_id);
+            log() << "  [cast] " << character.name << " enters (in active_cast)\n";
+        }
+    }
+}
+
+void World::move_scene_members(const std::string& from_scene_id,
+                               const std::string& into_scene_id,
+                               const std::vector<std::string>& names) {
+    std::unordered_set<std::string> selected;
+    for (const auto& name : names) selected.insert(str::to_lower(name));
+    for (auto& character : characters_) {
+        if (!character.in_scene(from_scene_id)) continue;
+        if (!selected.empty() && selected.count(str::to_lower(character.name)) == 0) continue;
+        if (!names.empty() && character.is_player) continue;
+        character.join_scene(into_scene_id);
+        character.leave_scene(from_scene_id);
+    }
+}
+
+void World::clear_scene_membership(const std::string& scene_id) {
+    for (auto& character : characters_) character.leave_scene(scene_id);
+}
+
+void World::set_character_memory(CharacterMemory memory) {
+    memory.set_reflection_llm_callback(reflection_llm_cb_);
+    character_memories_.insert_or_assign(memory.name(), std::move(memory));
+}
+
+bool World::seed_character_intention(const std::string& character,
+                                     const std::string& intention,
+                                     const std::vector<std::string>& subjects,
+                                     int created_at) {
+    const Character* canonical = find_character(character);
+    if (!canonical) return false;
+    auto it = character_memories_.find(canonical->name);
+    if (it == character_memories_.end()) return false;
+    it->second.seed_belief(intention, subjects, created_at,
+                           CharacterMemory::kAuthoredSeedWeight, "intention");
+    return true;
+}
+
+void World::revert_to_turn(int target_turn) {
+    const auto removed_ids = world_graph_.revert_to_turn(target_turn);
+    if (memory_) memory_->delete_nodes(removed_ids);
+
+    characters_.erase(
+        std::remove_if(characters_.begin(), characters_.end(),
+            [target_turn](const Character& c) { return c.created_at >= target_turn; }),
+        characters_.end());
+    for (auto& character : characters_)
+        if (!character.is_player) character.dead = false;
+
+    for (auto it = character_memories_.begin(); it != character_memories_.end();) {
+        const bool exists = std::any_of(characters_.begin(), characters_.end(),
+            [&](const Character& c) { return c.name == it->first; });
+        it = exists ? std::next(it) : character_memories_.erase(it);
+    }
 }
 
 // -- Death scan --------------------------------------------------------------
 
 std::vector<DeathCandidate> World::scan_death_candidates() const {
     std::vector<DeathCandidate> candidates;
-    auto all_nodes = world_graph.all_nodes(true);
+    auto all_nodes = world_graph_.all_nodes(true);
 
     static const std::vector<std::string> death_keywords = {
         "dead", "dies", "died", "kills", "killed", "killing",
@@ -55,7 +177,7 @@ std::vector<DeathCandidate> World::scan_death_candidates() const {
         return cl.find(name_lower) != std::string::npos;
     };
 
-    for (const auto& ch : characters) {
+    for (const auto& ch : characters_) {
         if (ch.is_player || ch.dead) continue;
 
         std::string name_lower = str::to_lower(ch.name);
@@ -92,8 +214,8 @@ void World::route_perceptions(const std::string& scene_id,
     int deliveries = 0;
     std::unordered_set<std::string> minds;
     auto route_to = [&](const std::string& name, const Node& node) {
-        auto it = character_memories.find(name);
-        if (it != character_memories.end()) {
+        auto it = character_memories_.find(name);
+        if (it != character_memories_.end()) {
             it->second.route_fact(node.fact, node.entities, turn);
             ++deliveries;
             minds.insert(it->first);
@@ -106,7 +228,7 @@ void World::route_perceptions(const std::string& scene_id,
                 route_to(name, node);
             }
         } else {
-            for (const auto& character : characters) {
+            for (const auto& character : characters_) {
                 if (character.is_player || character.dead || !character.in_scene(scene_id)) {
                     continue;
                 }
@@ -120,9 +242,9 @@ void World::route_perceptions(const std::string& scene_id,
 }
 
 void World::reflect_perceptions(int turn) {
-    for (auto& [name, memory] : character_memories) {
+    for (auto& [name, memory] : character_memories_) {
         std::string description;
-        for (const auto& character : characters) {
+        for (const auto& character : characters_) {
             if (character.name == name) {
                 description = character.description;
                 break;
@@ -134,14 +256,14 @@ void World::reflect_perceptions(int turn) {
 
 void World::set_reflection_llm_callback(LLMCallback cb) {
     reflection_llm_cb_ = std::move(cb);
-    for (auto& [name, memory] : character_memories) {
+    for (auto& [name, memory] : character_memories_) {
         (void)name;
         memory.set_reflection_llm_callback(reflection_llm_cb_);
     }
 }
 
 bool World::mark_character_dead(const std::string& name) {
-    for (auto& character : characters) {
+    for (auto& character : characters_) {
         if (character.name == name) {
             character.dead = true;
             character.scene_ids.clear();
@@ -149,78 +271,6 @@ bool World::mark_character_dead(const std::string& name) {
         }
     }
     return false;
-}
-
-// -- Staged lifecycle decisions ----------------------------------------------
-
-std::string World::stage_fork(const std::string& source_scene_id,
-                              const std::string& driving_intention,
-                              const std::vector<std::string>& cast) {
-    LifecycleOp op;
-    op.kind = LifecycleKind::Fork;
-    op.source_scene_id = source_scene_id;
-    op.driving_intention = driving_intention;
-    op.cast = cast;
-    pending_ops_.push_back(std::move(op));
-
-    nlohmann::json ack;
-    ack["ok"] = true;
-    ack["staged"] = "fork_scene";
-    ack["driving_intention"] = driving_intention;
-    ack["cast"] = cast;
-    ack["note"] = "The new storyline will begin after this beat is accepted.";
-    return ack.dump();
-}
-
-std::string World::stage_conclude(const std::string& source_scene_id,
-                                  const std::string& reason) {
-    LifecycleOp op;
-    op.kind = LifecycleKind::Conclude;
-    op.source_scene_id = source_scene_id;
-    op.reason = reason;
-    pending_ops_.push_back(std::move(op));
-
-    nlohmann::json ack;
-    ack["ok"] = true;
-    ack["staged"] = "conclude_scene";
-    ack["scene_id"] = source_scene_id;
-    ack["reason"] = reason;
-    return ack.dump();
-}
-
-std::string World::stage_merge(const std::string& source_scene_id,
-                               const std::string& into_scene_id) {
-    LifecycleOp op;
-    op.kind = LifecycleKind::Merge;
-    op.source_scene_id = source_scene_id;
-    op.target_scene_id = into_scene_id;
-    pending_ops_.push_back(std::move(op));
-
-    nlohmann::json ack;
-    ack["ok"] = true;
-    ack["staged"] = "merge_scene";
-    ack["from"] = source_scene_id;
-    ack["into"] = into_scene_id;
-    return ack.dump();
-}
-
-std::string World::stage_exit(const std::string& source_scene_id,
-                              const std::vector<std::string>& cast) {
-    LifecycleOp op;
-    op.kind = LifecycleKind::Exit;
-    op.source_scene_id = source_scene_id;
-    op.cast = cast;
-    pending_ops_.push_back(std::move(op));
-
-    nlohmann::json ack;
-    ack["ok"] = true;
-    ack["staged"] = "exit";
-    ack["cast"] = cast;
-    return ack.dump();
-}
-
-std::vector<LifecycleOp> World::take_pending_ops() {
-    return std::exchange(pending_ops_, {});
 }
 
 // -- Narrator tool-use queries -----------------------------------------------
@@ -294,7 +344,7 @@ std::vector<const Node*> find_fact_substring_matches(const std::vector<Node>& al
 
 std::string World::tool_query_graph(const std::string& query) const {
     const std::string query_lower = str::to_lower(query);
-    auto all = world_graph.all_nodes(true);
+    auto all = world_graph_.all_nodes(true);
 
     auto matched_entities = find_matching_entities(all, query);
     if (!matched_entities.empty()) {
@@ -340,13 +390,13 @@ std::string World::tool_query_graph(const std::string& query) const {
 std::string World::tool_query_mind(const std::string& character) const {
     const Character* ch = find_character(character);
 
-    auto it = character_memories.end();
+    auto it = character_memories_.end();
     if (ch) {
-        it = character_memories.find(ch->name);
+        it = character_memories_.find(ch->name);
     }
-    if (it == character_memories.end()) {
-        for (auto mem_it = character_memories.begin();
-             mem_it != character_memories.end(); ++mem_it) {
+    if (it == character_memories_.end()) {
+        for (auto mem_it = character_memories_.begin();
+             mem_it != character_memories_.end(); ++mem_it) {
             if (str::iequals(mem_it->first, character)) {
                 it = mem_it;
                 break;
@@ -354,7 +404,7 @@ std::string World::tool_query_mind(const std::string& character) const {
         }
     }
 
-    if (it == character_memories.end()) {
+    if (it == character_memories_.end()) {
         nlohmann::json err;
         err["error"] = "character not found";
         return err.dump();
@@ -371,12 +421,23 @@ std::string World::tool_query_mind(const std::string& character) const {
 
 // -- Scenario bootstrap ------------------------------------------------------
 
-void World::seed_from_scenario(const nlohmann::json& j) {
+void World::seed_from_scenario(const nlohmann::json& j,
+                               const std::string& root_scene_id) {
+    characters_.clear();
+    character_memories_.clear();
+    for (const auto& character_json : j.value("characters", nlohmann::json::array())) {
+        Character character = character_json.get<Character>();
+        const bool authored_on = character_json.value(
+            "on_stage", character_json.value("is_player", false));
+        if (authored_on && !root_scene_id.empty()) character.join_scene(root_scene_id);
+        characters_.push_back(std::move(character));
+    }
+
     nlohmann::json graph_j;
     graph_j["next_id"] = 1;
     graph_j["nodes"] = j.value("nodes", nlohmann::json::array());
     graph_j["edges"] = j.value("edges", nlohmann::json::array());
-    world_graph = WorldGraph::from_json(graph_j);
+    world_graph_ = WorldGraph::from_json(graph_j);
 
     // Bootstrap CharacterMemory from initial_memory in character definitions.
     for (const auto& ch_j : j.value("characters", nlohmann::json::array())) {
@@ -422,7 +483,7 @@ void World::seed_from_scenario(const nlohmann::json& j) {
         for (const auto& ctx : im.value("context", nlohmann::json::array()))
             mem.seed_belief(ctx.get<std::string>(), {name}, 0);
 
-        character_memories.emplace(name, std::move(mem));
+        set_character_memory(std::move(mem));
     }
 }
 
@@ -439,11 +500,11 @@ bool World::has_save(const std::string& saves_dir) const {
 nlohmann::json World::to_json() const {
     nlohmann::json j;
     j["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
-    j["world_graph"]    = world_graph.to_json();
-    j["characters"]     = characters;
+    j["world_graph"]    = world_graph_.to_json();
+    j["characters"]     = characters_;
 
     nlohmann::json cm_j;
-    for (const auto& [name, mem] : character_memories)
+    for (const auto& [name, mem] : character_memories_)
         cm_j[name] = mem.to_json();
     j["character_memories"] = std::move(cm_j);
     return j;
@@ -452,15 +513,15 @@ nlohmann::json World::to_json() const {
 World World::from_json(const nlohmann::json& j) {
     World w;
     if (j.contains("world_graph")) {
-        w.world_graph = WorldGraph::from_json(j.at("world_graph"));
+        w.world_graph_ = WorldGraph::from_json(j.at("world_graph"));
     } else if (j.contains("node_pool")) {
-        w.world_graph = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
+        w.world_graph_ = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
     }
     if (j.contains("characters") && j["characters"].is_array())
-        w.characters = j["characters"].get<std::vector<Character>>();
+        w.characters_ = j["characters"].get<std::vector<Character>>();
     if (j.contains("character_memories") && j["character_memories"].is_object()) {
         for (auto& [name, cm_j] : j["character_memories"].items())
-            w.character_memories.insert_or_assign(name, CharacterMemory::from_json(cm_j));
+            w.character_memories_.insert_or_assign(name, CharacterMemory::from_json(cm_j));
     }
     return w;
 }
@@ -474,26 +535,26 @@ void World::load_save(const std::string& saves_dir) {
     in >> j;
 
     if (j.contains("world_graph")) {
-        world_graph = WorldGraph::from_json(j.at("world_graph"));
+        world_graph_ = WorldGraph::from_json(j.at("world_graph"));
     } else if (j.contains("node_pool")) {
-        world_graph = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
+        world_graph_ = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
     } else {
         throw std::runtime_error("World save is missing world_graph/node_pool data");
     }
 
     if (j.contains("characters") && j["characters"].is_array())
-        characters = j["characters"].get<std::vector<Character>>();
+        characters_ = j["characters"].get<std::vector<Character>>();
 
     if (memory_)
         memory_->set_next_id(j.value("memory_next_id", 0));
 
     if (j.contains("character_memories") && j["character_memories"].is_object()) {
-        character_memories.clear();
+        character_memories_.clear();
         for (auto& [name, cm_j] : j["character_memories"].items()) {
             auto memory = CharacterMemory::from_json(cm_j);
             if (reflection_llm_cb_)
                 memory.set_reflection_llm_callback(reflection_llm_cb_);
-            character_memories.insert_or_assign(name, std::move(memory));
+            character_memories_.insert_or_assign(name, std::move(memory));
         }
     }
 }

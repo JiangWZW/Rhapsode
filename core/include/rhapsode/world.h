@@ -19,34 +19,36 @@ struct DeathCandidate {
     std::vector<std::string> evidence;
 };
 
-// A lifecycle change a narrator staged during a beat, applied by Story only
-// after the beat is accepted (see Story::apply_pending_ops). Kept as pure data
-// so a decision tool never mutates the scene set mid-beat -- that would break
-// the whole-graph snapshot/rollback the retry loop depends on.
-enum class LifecycleKind { Fork, Conclude, Merge, Exit };
-
-struct LifecycleOp {
-    LifecycleKind kind;
-    std::string source_scene_id;     // the beat's own scene
-    std::string driving_intention;   // fork: the new storyline's drive
-    std::string target_scene_id;     // merge: into this scene
-    std::vector<std::string> cast;   // fork: cast to move onto the child; exit: who leaves
-    std::string reason;              // conclude: why it ended
-};
-
-// The durable, shared substrate. One World is co-owned by every Scene that
-// draws on it (via Scene's shared_ptr): the objective world graph, the
-// per-character minds, and the character roster. Storylines fork and merge as
-// separate Scenes over the same World; nothing here is per-scene/ephemeral.
+// The durable substrate for one Story: objective graph, character minds, roster,
+// and membership. World knows scene identity only as string ids carried by the
+// roster; it does not own or reference the Story's per-scene records.
 class World {
 public:
-    WorldGraph world_graph;
-    std::unordered_map<std::string, CharacterMemory> character_memories;
-    std::vector<Character> characters;  // durable roster (membership via scene_ids)
+    WorldGraph& graph() { return world_graph_; }
+    const WorldGraph& graph() const { return world_graph_; }
+    const std::vector<Character>& characters() const { return characters_; }
+    const std::unordered_map<std::string, CharacterMemory>& character_memories() const {
+        return character_memories_;
+    }
 
     // -- Roster --
-    Character* find_character(const std::string& name);
     const Character* find_character(const std::string& name) const;
+    const Character* find_in_scene(const std::string& scene_id,
+                                   const std::string& name) const;
+    Character& enter_character(const std::string& scene_id, Character character);
+    bool leave_character(const std::string& scene_id, const std::string& name);
+    void ensure_characters_present(const std::string& scene_id,
+                                   const std::vector<std::string>& canonical_names);
+    void move_scene_members(const std::string& from_scene_id,
+                            const std::string& into_scene_id,
+                            const std::vector<std::string>& names = {});
+    void clear_scene_membership(const std::string& scene_id);
+    void set_character_memory(CharacterMemory memory);
+    bool seed_character_intention(const std::string& character,
+                                  const std::string& intention,
+                                  const std::vector<std::string>& subjects,
+                                  int created_at);
+    void revert_to_turn(int target_turn);
 
     // -- Narrator tool-use queries over the shared substrate --
     /// Search world graph by entity name or free text. Returns entity-timeline
@@ -71,35 +73,14 @@ public:
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
 
-    // -- Staged lifecycle decisions (narrator decision tools) --------------
-    // Each stage_* appends a LifecycleOp and returns a JSON ack string for the
-    // tool caller. Ops accumulate across one beat's tool loop; the SceneLoop
-    // clears them before each narrator attempt (so a rejected attempt's ops are
-    // discarded) and Story drains + applies them after the beat is accepted.
-    std::string stage_fork(const std::string& source_scene_id,
-                           const std::string& driving_intention,
-                           const std::vector<std::string>& cast);
-    std::string stage_conclude(const std::string& source_scene_id,
-                               const std::string& reason);
-    std::string stage_merge(const std::string& source_scene_id,
-                            const std::string& into_scene_id);
-    /// Named characters leave `source_scene_id` for no storyline (a plain exit,
-    /// not a fork): they simply stop being in that scene's cast.
-    std::string stage_exit(const std::string& source_scene_id,
-                           const std::vector<std::string>& cast);
-
-    const std::vector<LifecycleOp>& pending_ops() const { return pending_ops_; }
-    std::vector<LifecycleOp> take_pending_ops();
-    void clear_pending_ops() { pending_ops_.clear(); }
-
     // -- System references --
     void set_memory(MemorySystem* mem) { memory_ = mem; }
     MemorySystem* memory() const { return memory_; }
 
     // -- Scenario bootstrap --
-    /// Populate the graph (nodes/edges) and seed authored minds (initial_memory)
-    /// from a scenario JSON. The roster itself is filled by Scene::from_json.
-    void seed_from_scenario(const nlohmann::json& j);
+    /// Populate graph, roster, membership, and authored minds from a scenario.
+    void seed_from_scenario(const nlohmann::json& j,
+                            const std::string& root_scene_id = {});
 
     // -- Persistence (durable substrate -> world.json) --
     bool has_save(const std::string& saves_dir) const;
@@ -111,9 +92,13 @@ public:
     static World from_json(const nlohmann::json& j);
 
 private:
+    Character* find_character_mutable(const std::string& name);
+
+    WorldGraph world_graph_;
+    std::unordered_map<std::string, CharacterMemory> character_memories_;
+    std::vector<Character> characters_;  // membership via Character::scene_ids
     MemorySystem* memory_ = nullptr;
     LLMCallback reflection_llm_cb_;
-    std::vector<LifecycleOp> pending_ops_;  // transient; never serialized
     static std::string save_path(const std::string& saves_dir);
 };
 

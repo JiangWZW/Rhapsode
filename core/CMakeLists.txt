@@ -9,7 +9,7 @@ add_library(rhapsode STATIC
     include/rhapsode/log_util.h
     include/rhapsode/narrator_prompt.h
     include/rhapsode/node.h
-    include/rhapsode/scene.h
+    include/rhapsode/scene_data.h
     include/rhapsode/json_util.h
     include/rhapsode/scene_loop.h
     include/rhapsode/scene_message.h
@@ -26,7 +26,6 @@ add_library(rhapsode STATIC
     src/character_memory.cpp
     src/character_memory_reflection.cpp
     src/narrator_prompt.cpp
-    src/scene.cpp
     src/story.cpp
     src/story_advance.cpp
     src/story_serialization.cpp

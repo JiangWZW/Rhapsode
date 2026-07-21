@@ -27,10 +27,9 @@ class TextDownsampler {
 public:
     TextDownsampler();
 
-    void set_llm_callback(LLMCallback cb);
-    bool has_llm_callback() const { return static_cast<bool>(llm_cb_); }
-
-    void process_turn(const std::vector<SceneMessage>& messages, int verbatim_tail = 6);
+    void process_turn(const std::vector<SceneMessage>& messages,
+                      const LLMCallback& llm_callback,
+                      int verbatim_tail = 6);
     std::string render() const;
     int summarized_up_to() const { return summarized_up_to_; }
 
@@ -38,13 +37,13 @@ public:
     static TextDownsampler from_json(const nlohmann::json& j);
 
 private:
-    LLMCallback llm_cb_;
     std::vector<MipLevel> levels_;
     int summarized_up_to_ = 0;
 
-    std::string summarize(const std::string& passage, int level);
+    std::string summarize(const std::string& passage, int level,
+                          const LLMCallback& llm_callback);
     std::string render_prior_context(int target_level) const;
-    void cascade(int source_level);
+    void cascade(int source_level, const LLMCallback& llm_callback);
 };
 
 } // namespace rhapsode

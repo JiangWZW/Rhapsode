@@ -7,12 +7,14 @@
 
 namespace rhapsode {
 
-class Scene;
+struct SceneData;
+class World;
 
 std::string build_narrator_instructions();
 
 std::string build_narrator_turn_state(
     const std::vector<SceneMessage>& history,
-    const Scene& scene);
+    const SceneData& scene,
+    const World& world);
 
 }  // namespace rhapsode

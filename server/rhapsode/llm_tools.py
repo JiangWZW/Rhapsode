@@ -1,5 +1,5 @@
 """Narrator tool-use infrastructure: the read/decision tool schemas, the
-dispatcher that routes tool calls to the shared World/Scene, and the callback
+dispatcher that routes tool calls through Story, and the callback
 that runs the tool-use loop for a narrator beat."""
 
 import json

@@ -12,8 +12,7 @@ from dataclasses import dataclass
 from fastapi import WebSocket, WebSocketDisconnect
 
 from rhapsode._core import (
-    Annotator, Director, MemorySystem, Scene, SceneLoop, SceneMessage,
-    Story, Weaver,
+    Annotator, MemorySystem, SceneData, SceneMessage, Story,
 )
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import call_llm, make_narrator_callback
@@ -34,13 +33,13 @@ def _init_memory(scene_id: str) -> MemorySystem:
     return memory
 
 
-def _sync_graph_to_memory(scene: Scene, memory: MemorySystem) -> None:
+def _sync_graph_to_memory(story: Story, memory: MemorySystem) -> None:
     """Ensure all graph nodes are indexed in ChromaDB (catches seed nodes from scenario load).
 
     Uses upsert so it's safe to call on every startup — already-indexed nodes
     are overwritten with the same data.  ~30 nodes embeds in 1-2 seconds.
     """
-    all_nodes = scene.world_graph.all_nodes_including_expired()
+    all_nodes = story.world().world_graph.all_nodes_including_expired()
     if not all_nodes:
         return
     for n in all_nodes:
@@ -54,49 +53,34 @@ def _sync_graph_to_memory(scene: Scene, memory: MemorySystem) -> None:
              len(all_nodes), len(expired))
 
 
-def _build_loop(story: Story, director: Director, weaver: Weaver,
-                *, resuming: bool) -> SceneLoop:
-    """Construct the SceneLoop, wire its Python callbacks, and bind it to the
-    Story so the engine can drive beats over it.
-
-    The narrator callback is scene-agnostic now: the engine tells it which scene
-    a beat belongs to. The downsampler and scheduler callbacks are handed to the
-    Story, which applies/invokes them as it advances scenes.
-    """
-    loop = SceneLoop()
-    loop.set_director(director)
-    loop.set_weaver(weaver)
-    loop.set_llm_callback(call_llm)
-    loop.set_narrator_llm_callback(make_narrator_callback(story))
-    if resuming:
-        loop.set_resuming(True)
-
-    story.bind_runtime(loop)
+def _configure_story(story: Story, *, resuming: bool) -> None:
+    """Configure callbacks on the Story-owned native runtime."""
+    story.set_llm_callback(call_llm)
+    story.set_narrator_llm_callback(make_narrator_callback(story))
+    story.set_weaver_llm_callback(call_llm)
+    story.set_weaver_local_llm_callback(make_local_llm_callback())
+    story.set_resuming(resuming)
     story.set_scheduler_callback(make_scheduler_callback(story))
     story.set_lifecycle_callback(make_lifecycle_callback())
     story.set_downsampler_callback(make_local_llm_callback(repair_json=False))
     story.set_saves_dir(SAVES_DIR)
-    return loop
 
 
 @dataclass
 class WsSession:
     story: Story
     memory: MemorySystem
-    director: Director
-    weaver: Weaver
     annotator: Annotator
-    loop: SceneLoop
     is_resuming: bool
 
     @property
-    def scene(self) -> Scene:
+    def scene(self) -> SceneData:
         """The player's active scene."""
         return self.story.active_scene()
 
 
 def _setup_ws_session() -> WsSession:
-    story = Story.from_scene(Scene.load_json(str(SCENARIO_PATH)))
+    story = Story.load_scenario(str(SCENARIO_PATH))
     scene = story.active_scene()
     memory = _init_memory(scene.scene_id)
     story.world().set_memory(memory)
@@ -108,32 +92,25 @@ def _setup_ws_session() -> WsSession:
         log.info(
             "=== SESSION RESUMED === scene_id=%s scenes=%d turn=%d graph=%d hist=%d",
             scene.scene_id, len(story.scene_ids()), scene.turn_index,
-            scene.world_graph.size(), scene.history.size(),
+            story.world().world_graph.size(), scene.history.size(),
         )
     else:
         log.info(
             "=== FRESH START === scene_id=%s graph=%d hist=%d",
-            scene.scene_id, scene.world_graph.size(), scene.history.size(),
+            scene.scene_id, story.world().world_graph.size(), scene.history.size(),
         )
 
-    _sync_graph_to_memory(scene, memory)
+    _sync_graph_to_memory(story, memory)
     # Reflection runs off the foreground path. World owns the callback because
     # it owns the complete character-memory map and reconstructs it on load.
     story.world().set_reflection_llm_callback(call_llm)
 
-    director = Director(scene.world_graph)
-
-    weaver = Weaver(scene.world_graph)
-    weaver.set_llm_callback(call_llm)
-    weaver.set_local_llm_callback(make_local_llm_callback())
-
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())
 
-    loop = _build_loop(story, director, weaver, resuming=is_resuming)
+    _configure_story(story, resuming=is_resuming)
 
-    return WsSession(story=story, memory=memory, director=director,
-                     weaver=weaver, annotator=annotator, loop=loop,
+    return WsSession(story=story, memory=memory, annotator=annotator,
                      is_resuming=is_resuming)
 
 
@@ -151,8 +128,10 @@ def _scene_ws_payload(msg: SceneMessage) -> dict:
     return payload
 
 
-async def _send_seed_messages(ws: WebSocket, scene: Scene, is_resuming: bool = False):
-    seeds = scene.display_timeline(8) if is_resuming else scene.display_timeline()
+async def _send_seed_messages(ws: WebSocket, story: Story,
+                              scene: SceneData, is_resuming: bool = False):
+    cap = 8 if is_resuming else None
+    seeds = story.display_timeline(scene.scene_id, cap)
     for msg in seeds:
         role = msg.role.name.lower()
         if role == "assistant":
@@ -194,7 +173,7 @@ async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
              n, reverted, scene.turn_index)
     await ws.send_json({"type": "undo", "turns_reverted": reverted,
                         "turn_index": scene.turn_index})
-    await _send_seed_messages(ws, scene, is_resuming=True)
+    await _send_seed_messages(ws, session.story, scene, is_resuming=True)
     await ws.send_json({"type": "status", "state": "idle"})
 
 
@@ -208,7 +187,7 @@ async def run_session(ws: WebSocket) -> None:
     await ws.accept()
 
     session = _setup_ws_session()
-    await _send_seed_messages(ws, session.scene, session.is_resuming)
+    await _send_seed_messages(ws, session.story, session.scene, session.is_resuming)
 
     try:
         while True:
@@ -232,12 +211,10 @@ async def run_session(ws: WebSocket) -> None:
                 log.exception("Turn failed")
                 await ws.send_json({"type": "error", "detail": str(exc)})
                 await ws.send_json({"type": "status", "state": "idle"})
-                await asyncio.get_event_loop().run_in_executor(
-                    None, session.loop.join_background)
                 continue
 
             await _stream_outputs(ws, session.annotator, outputs)
             await ws.send_json({"type": "status", "state": "idle"})
 
     except WebSocketDisconnect:
-        session.loop.join_background()
+        pass

@@ -44,11 +44,8 @@ TextDownsampler::TextDownsampler() {
     levels_[2].max_snippets = MIP2_MAX;
 }
 
-void TextDownsampler::set_llm_callback(LLMCallback cb) {
-    llm_cb_ = std::move(cb);
-}
-
 void TextDownsampler::process_turn(const std::vector<SceneMessage>& messages,
+                                    const LLMCallback& llm_callback,
                                     int verbatim_tail) {
     int total = static_cast<int>(messages.size());
     int eligible_end = std::max(0, total - verbatim_tail);
@@ -63,7 +60,7 @@ void TextDownsampler::process_turn(const std::vector<SceneMessage>& messages,
             batch_text += role_to_string(messages[i].role) + ": " + messages[i].content;
         }
 
-        auto summary = summarize(batch_text, 0);
+        auto summary = summarize(batch_text, 0, llm_callback);
         if (summary.empty())
             break;
 
@@ -76,7 +73,7 @@ void TextDownsampler::process_turn(const std::vector<SceneMessage>& messages,
         levels_[0].snippets.push_back(std::move(s));
 
         summarized_up_to_ = batch_end;
-        cascade(0);
+        cascade(0, llm_callback);
     }
 }
 
@@ -91,8 +88,9 @@ std::string TextDownsampler::render() const {
     return out;
 }
 
-std::string TextDownsampler::summarize(const std::string& passage, int level) {
-    if (!llm_cb_) return {};
+std::string TextDownsampler::summarize(const std::string& passage, int level,
+                                       const LLMCallback& llm_callback) {
+    if (!llm_callback) return {};
 
     auto prior = render_prior_context(level);
 
@@ -104,7 +102,7 @@ std::string TextDownsampler::summarize(const std::string& passage, int level) {
     std::string full_prompt = std::string(SUMMARIZER_SYSTEM) + "\n\n" + user_prompt;
 
     try {
-        auto result = llm_cb_(sanitize_utf8(full_prompt));
+        auto result = llm_callback(sanitize_utf8(full_prompt));
         // Strip whitespace
         auto start = result.find_first_not_of(" \t\n\r");
         if (start == std::string::npos) return {};
@@ -127,7 +125,8 @@ std::string TextDownsampler::render_prior_context(int target_level) const {
     return out.empty() ? "(none)" : out;
 }
 
-void TextDownsampler::cascade(int source_level) {
+void TextDownsampler::cascade(int source_level,
+                              const LLMCallback& llm_callback) {
     auto& src = levels_[source_level];
     if (static_cast<int>(src.snippets.size()) <= src.max_snippets)
         return;
@@ -170,7 +169,7 @@ void TextDownsampler::cascade(int source_level) {
             merged_text += s.text;
         }
 
-        auto summary = summarize(merged_text, dest_level);
+        auto summary = summarize(merged_text, dest_level, llm_callback);
         if (summary.empty()) {
             // Rollback on failure
             src.snippets.insert(src.snippets.begin(),
@@ -191,8 +190,8 @@ void TextDownsampler::cascade(int source_level) {
         dest.snippets.push_back(std::move(meta));
     }
 
-    cascade(source_level);
-    cascade(dest_level);
+    cascade(source_level, llm_callback);
+    cascade(dest_level, llm_callback);
 }
 
 // -- Serialization --

@@ -3,8 +3,6 @@
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
-#include "rhapsode/scene.h"
-#include "rhapsode/scene_loop.h"
 #include "rhapsode/text_downsampler.h"
 #include "rhapsode/weaver.h"
 
@@ -69,10 +67,9 @@ void bind_runtime(py::module_& m) {
 
     py::class_<TextDownsampler>(m, "TextDownsampler")
         .def(py::init<>())
-        .def("set_llm_callback",  &TextDownsampler::set_llm_callback)
-        .def("has_llm_callback",  &TextDownsampler::has_llm_callback)
         .def("process_turn",      &TextDownsampler::process_turn,
-             py::arg("messages"), py::arg("verbatim_tail") = 6)
+             py::arg("messages"), py::arg("llm_callback"),
+             py::arg("verbatim_tail") = 6)
         .def("render",            &TextDownsampler::render)
         .def("summarized_up_to",  &TextDownsampler::summarized_up_to)
         .def("to_json_str",       [](const TextDownsampler& td) {
@@ -82,41 +79,4 @@ void bind_runtime(py::module_& m) {
             return TextDownsampler::from_json(nlohmann::json::parse(s));
         }, py::arg("json_str"));
 
-    // -- Scene Loop --
-
-    py::enum_<LoopState>(m, "LoopState")
-        .value("Idle",             LoopState::Idle)
-        .value("WaitingForInput",  LoopState::WaitingForInput)
-        .value("ProcessingInput",  LoopState::ProcessingInput)
-        .value("Weaving",          LoopState::Weaving)
-        .value("BuildingPrompt",   LoopState::BuildingPrompt)
-        .value("RunningLLM",       LoopState::RunningLLM)
-        .value("AppendingResult",  LoopState::AppendingResult);
-
-    py::class_<SceneLoop>(m, "SceneLoop")
-        .def(py::init<>())
-        .def("load_scene",                   &SceneLoop::load_scene,
-             py::keep_alive<1, 2>())
-        .def("submit_input",                 &SceneLoop::submit_input,
-             py::call_guard<py::gil_scoped_release>())
-        .def("submit_autonomous",            &SceneLoop::submit_autonomous,
-             py::call_guard<py::gil_scoped_release>())
-        .def("state",                        &SceneLoop::state)
-        .def("set_llm_callback",             &SceneLoop::set_llm_callback)
-        .def("set_narrator_llm_callback",    &SceneLoop::set_narrator_llm_callback)
-        .def("set_turn_complete_callback",   &SceneLoop::set_turn_complete_callback)
-        .def("take_last_turn_outputs",       &SceneLoop::take_last_turn_outputs)
-        .def("set_director",                 &SceneLoop::set_director, py::arg("director"),
-             py::keep_alive<1, 2>())
-        .def("last_director_output",         &SceneLoop::last_director_output)
-        .def("set_weaver",                   &SceneLoop::set_weaver, py::arg("weaver"),
-             py::keep_alive<1, 2>())
-        .def("last_weave_result",            &SceneLoop::last_weave_result)
-        .def("set_history_window",           &SceneLoop::set_history_window,
-             py::arg("normal") = 3, py::arg("resume") = 10)
-        .def("set_resuming",                 &SceneLoop::set_resuming, py::arg("v"))
-        .def("set_saves_dir",               &SceneLoop::set_saves_dir, py::arg("dir"))
-        .def("join_background",             &SceneLoop::join_background,
-             py::call_guard<py::gil_scoped_release>())
-        .def("take_completed_expiry_ops",   &SceneLoop::take_completed_expiry_ops);
 }

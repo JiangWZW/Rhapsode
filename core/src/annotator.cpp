@@ -14,7 +14,7 @@ std::vector<EntitySpan> Annotator::match_characters(const std::string& text) con
     std::vector<EntitySpan> spans;
     std::string text_lower = str::to_lower(text);
 
-    for (const auto& ch : world_.characters) {
+    for (const auto& ch : world_.characters()) {
         if (ch.name.empty()) continue;
         std::string name_lower = str::to_lower(ch.name);
         size_t pos = 0;

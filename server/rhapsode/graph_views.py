@@ -10,7 +10,7 @@ import subprocess
 from fastapi import APIRouter
 from fastapi.responses import Response
 
-from rhapsode._core import Scene, Story, Weaver, analyze_graph
+from rhapsode._core import Story, Weaver, analyze_graph
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import call_llm
 
@@ -20,17 +20,16 @@ router = APIRouter()
 
 
 def _load_saved_story() -> Story:
-    story = Story.from_scene(Scene.load_json(str(SCENARIO_PATH)))
+    story = Story.load_scenario(str(SCENARIO_PATH))
     if story.has_save(SAVES_DIR):
         story.load_save(SAVES_DIR)
     return story
 
 
-def _load_saved_scene() -> Scene | None:
-    # Read-only endpoints view the player's (active) scene. The returned Scene
-    # keeps its Story alive (pybind reference_internal), so the shared World and
-    # graph stay valid for the duration of the request.
-    return _load_saved_story().active_scene()
+def _load_saved_state():
+    """Keep Story alive beside its active SceneData reference."""
+    story = _load_saved_story()
+    return story, story.active_scene()
 
 
 def _dot_to_svg_string(dot: str) -> tuple[bool, str]:
@@ -69,9 +68,9 @@ def _safe_render_thoughts(mem) -> str:
         return "(thoughts unavailable: invalid UTF-8 in belief data)"
 
 
-def _find_character_memory(scene, name: str):
+def _find_character_memory(world, name: str):
     """Look up a character's mind by name (case-insensitive), or None."""
-    mems = scene.character_memories
+    mems = world.character_memories
     if name in mems:
         return mems[name]
     for key in mems.keys():
@@ -82,30 +81,30 @@ def _find_character_memory(scene, name: str):
 
 @router.get("/graph.dot", response_class=Response)
 def graph_dot():
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return Response("// no active scene", media_type="text/plain", status_code=404)
-    return Response(scene.world_graph.to_dot(), media_type="text/vnd.graphviz")
+    return Response(story.world().world_graph.to_dot(), media_type="text/vnd.graphviz")
 
 
 @router.get("/graph.svg", response_class=Response)
 def graph_svg():
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return Response("no active scene", media_type="text/plain", status_code=404)
-    return _dot_to_svg_response(scene.world_graph.to_dot())
+    return _dot_to_svg_response(story.world().world_graph.to_dot())
 
 
 @router.get("/characters")
 def characters_endpoint():
     """List characters with a mind, and their current inner state."""
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
     return {
         "characters": [
             {"name": name, "interior": _safe_render_thoughts(mem)}
-            for name, mem in scene.character_memories.items()
+            for name, mem in story.world().character_memories.items()
         ]
     }
 
@@ -113,10 +112,10 @@ def characters_endpoint():
 @router.get("/character/{name}/graph.dot", response_class=Response)
 def character_graph_dot(name: str):
     """Graphviz dot of one character's subjective belief graph."""
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return Response("// no active scene", media_type="text/plain", status_code=404)
-    mem = _find_character_memory(scene, name)
+    mem = _find_character_memory(story.world(), name)
     if mem is None:
         return Response(f"// no character '{name}'", media_type="text/plain", status_code=404)
     return Response(mem.beliefs.to_dot(), media_type="text/vnd.graphviz")
@@ -125,10 +124,10 @@ def character_graph_dot(name: str):
 @router.get("/character/{name}/graph.svg", response_class=Response)
 def character_graph_svg(name: str):
     """Rendered SVG of one character's subjective belief graph."""
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return Response("no active scene", media_type="text/plain", status_code=404)
-    mem = _find_character_memory(scene, name)
+    mem = _find_character_memory(story.world(), name)
     if mem is None:
         return Response(f"no character '{name}'", media_type="text/plain", status_code=404)
     return _dot_to_svg_response(mem.beliefs.to_dot())
@@ -137,7 +136,7 @@ def character_graph_svg(name: str):
 @router.get("/minds", response_class=Response)
 def minds_endpoint():
     """Debug view: every character's inner state + belief graph on one page."""
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return Response("<h1>no active scene</h1>", media_type="text/html", status_code=404)
 
@@ -158,7 +157,7 @@ def minds_endpoint():
         "<p class='legend'>green = current belief / perception &nbsp;|&nbsp; "
         "blue = superseded (history) &nbsp;|&nbsp; yellow = foreshadowed</p>",
     ]
-    for name, mem in scene.character_memories.items():
+    for name, mem in story.world().character_memories.items():
         try:
             dot = mem.beliefs.to_dot()
         except Exception as exc:  # noqa: BLE001 -- one bad mind must not 500 the page
@@ -203,10 +202,10 @@ def scenes_endpoint():
 
 @router.get("/analyze")
 def analyze_endpoint():
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
-    a = analyze_graph(scene.world_graph)
+    a = analyze_graph(story.world().world_graph)
     return {
         "live_node_count": a.live_node_count,
         "active_edge_count": a.active_edge_count,
@@ -216,13 +215,13 @@ def analyze_endpoint():
 
 @router.post("/weave")
 def weave_endpoint():
-    scene = _load_saved_scene()
+    story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
-    w = Weaver(scene.world_graph)
+    w = Weaver(story.world().world_graph)
     w.set_llm_callback(call_llm)
     result = w.weave(scene.turn_index)
-    scene.save(SAVES_DIR)
+    story.save(SAVES_DIR)
     return {
         "connected": len(result.connected),
         "disconnected": len(result.disconnected),

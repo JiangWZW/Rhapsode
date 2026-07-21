@@ -9,4 +9,9 @@ namespace rhapsode {
 /// Used by Weaver, TextDownsampler, CharacterMemory, etc.
 using LLMCallback = std::function<std::string(const std::string&)>;
 
+using NarratorLLMCallback = std::function<std::string(
+    const std::string& scene_id,
+    const std::string& instructions,
+    const std::string& turn_state)>;
+
 }  // namespace rhapsode

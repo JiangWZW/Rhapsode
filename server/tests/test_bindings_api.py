@@ -3,154 +3,65 @@ import pytest
 from rhapsode import _core
 
 
-def test_public_binding_surface_is_stable():
+def test_public_binding_surface_matches_owned_runtime_design():
     expected = {
-        "Annotator",
-        "Character",
-        "CharacterMemory",
-        "DeathCandidate",
-        "Director",
-        "DirectorOutput",
-        "EdgeData",
-        "EdgeInfo",
-        "EntitySpan",
-        "ExpiryOp",
-        "GraphAnalysis",
-        "History",
-        "LoopState",
-        "MemorySystem",
-        "Node",
-        "NodeState",
-        "Rejection",
-        "Role",
-        "Scene",
-        "SceneLoop",
-        "SceneMessage",
-        "Snippet",
-        "Story",
-        "TextDownsampler",
-        "WeaveOp",
-        "WeaveResult",
-        "Weaver",
-        "World",
-        "WorldGraph",
-        "analyze_graph",
+        "Annotator", "Character", "CharacterMemory", "DeathCandidate",
+        "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EntitySpan",
+        "ExpiryOp", "GraphAnalysis", "History", "MemorySystem", "Node",
+        "NodeState", "Rejection", "Role", "SceneData", "SceneMessage",
+        "Snippet", "Story", "TextDownsampler", "WeaveOp", "WeaveResult",
+        "Weaver", "World", "WorldGraph", "analyze_graph",
     }
-
     assert {name for name in dir(_core) if not name.startswith("_")} == expected
+    assert not hasattr(_core, "Scene")
+    assert not hasattr(_core, "SceneLoop")
 
 
-def test_runtime_class_method_surfaces_are_stable():
+def test_story_is_the_production_composition_surface():
     expected = {
-        "SceneLoop": {
-            "join_background",
-            "last_director_output",
-            "last_weave_result",
-            "load_scene",
-            "set_director",
-            "set_history_window",
-            "set_llm_callback",
-            "set_narrator_llm_callback",
-            "set_resuming",
-            "set_saves_dir",
-            "set_turn_complete_callback",
-            "set_weaver",
-            "state",
-            "submit_autonomous",
-            "submit_input",
-            "take_completed_expiry_ops",
-            "take_last_turn_outputs",
-        },
-        "Story": {
-            "active_scene",
-            "active_scene_id",
-            "advance_scene",
-            "apply_pending_ops",
-            "beat_clock",
-            "bind_runtime",
-            "conclude_scene",
-            "delete_save",
-            "dispatch_tool",
-            "fork_scene",
-            "from_scene",
-            "get_scene",
-            "has_save",
-            "load_save",
-            "merge_scene",
-            "note_advanced",
-            "revert_active_turns",
-            "save",
-            "scene_count",
-            "scene_ids",
-            "set_downsampler_callback",
-            "set_lifecycle_callback",
-            "set_saves_dir",
-            "set_scheduler_callback",
-            "tool_list_scenes",
-            "world",
-        },
-        "World": {
-            "character_memories",
-            "characters",
-            "clear_pending_ops",
-            "find_character",
-            "has_save",
-            "load_save",
-            "save",
-            "scan_death_candidates",
-            "set_reflection_llm_callback",
-            "set_memory",
-            "stage_conclude",
-            "stage_exit",
-            "stage_fork",
-            "stage_merge",
-            "tool_query_graph",
-            "tool_query_mind",
-            "world_graph",
-        },
-        "Scene": {
-            "character_memories",
-            "characters",
-            "charge",
-            "delete_save",
-            "dialogue",
-            "display_timeline",
-            "downsampler",
-            "driving_intention",
-            "enter_character",
-            "exit_character",
-            "find_on_stage",
-            "fork",
-            "from_json_str",
-            "has_save",
-            "history",
-            "last_advanced",
-            "load_json",
-            "load_save",
-            "revert_turns",
-            "save",
-            "save_json",
-            "scan_death_candidates",
-            "scene_id",
-            "set_memory",
-            "system_prompt",
-            "title",
-            "to_json_str",
-            "tool_query_graph",
-            "tool_query_history",
-            "tool_query_mind",
-            "turn_index",
-            "world",
-            "world_graph",
-        },
+        "active_scene", "active_scene_id", "advance_scene", "beat_clock",
+        "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
+        "fork_scene", "from_scenario_json_str", "get_scene", "has_save",
+        "load_save", "load_scenario", "merge_scene", "note_advanced",
+        "revert_active_turns", "save", "scene_count", "scene_ids",
+        "set_downsampler_callback", "set_history_window",
+        "set_lifecycle_callback", "set_llm_callback",
+        "set_narrator_llm_callback", "set_resuming", "set_saves_dir",
+        "set_scheduler_callback", "set_weaver_interval",
+        "set_weaver_llm_callback", "set_weaver_local_llm_callback",
+        "to_scenario_json_str", "tool_list_scenes", "world",
     }
-
-    for class_name, methods in expected.items():
-        cls = getattr(_core, class_name)
-        assert {name for name in dir(cls) if not name.startswith("_")} == methods
+    assert {name for name in dir(_core.Story) if not name.startswith("_")} == expected
+    assert "bind_runtime" not in expected
 
 
-@pytest.mark.parametrize("owner", [_core.World(), _core.Scene()])
+def test_scene_data_has_only_per_storyline_state():
+    expected = {
+        "charge", "dialogue", "driving_intention", "history",
+        "last_advanced", "scene_id", "system_prompt", "title", "turn_index",
+    }
+    assert {name for name in dir(_core.SceneData) if not name.startswith("_")} == expected
+    for forbidden in (
+        "world", "world_graph", "characters", "character_memories",
+        "enter_character", "fork", "save", "load_save", "revert_turns",
+    ):
+        assert not hasattr(_core.SceneData, forbidden)
+
+
+def test_world_exposes_read_state_but_not_lifecycle_staging():
+    expected = {
+        "character_memories", "characters", "find_character",
+        "scan_death_candidates", "set_memory", "set_reflection_llm_callback",
+        "tool_query_graph", "tool_query_mind", "world_graph",
+    }
+    assert {name for name in dir(_core.World) if not name.startswith("_")} == expected
+    for removed in (
+        "stage_fork", "stage_conclude", "stage_merge", "stage_exit",
+        "clear_pending_ops", "save", "load_save",
+    ):
+        assert not hasattr(_core.World, removed)
+
+
 @pytest.mark.parametrize(
     ("attribute", "replacement"),
     [
@@ -159,7 +70,18 @@ def test_runtime_class_method_surfaces_are_stable():
         ("character_memories", {}),
     ],
 )
-def test_invariant_bearing_containers_cannot_be_replaced(owner, attribute, replacement):
-    assert getattr(owner, attribute) is not None
+def test_world_containers_cannot_be_replaced(attribute, replacement):
+    world = _core.World()
+    assert getattr(world, attribute) is not None
     with pytest.raises(AttributeError):
-        setattr(owner, attribute, replacement)
+        setattr(world, attribute, replacement)
+
+
+def test_python_cannot_mutate_membership_or_death_directly():
+    character = _core.Character("Scout", "Careful", False)
+    assert not hasattr(character, "join_scene")
+    assert not hasattr(character, "leave_scene")
+    with pytest.raises(AttributeError):
+        character.scene_ids = ["root"]
+    with pytest.raises(AttributeError):
+        character.dead = True
