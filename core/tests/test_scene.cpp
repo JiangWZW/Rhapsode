@@ -40,14 +40,25 @@ std::string response(const std::string& prose,
     return prose + "\n<<<RHAPSODE_JSON>>>\n" + plan;
 }
 
-void configure_executor(TurnExecutor& executor, NarratorLLMCallback narrator) {
-    executor.set_llm_callback([](const std::string&) { return std::string{"fallback"}; });
-    executor.set_narrator_llm_callback(std::move(narrator));
+using TestNarratorCallback = std::function<std::string(
+    const std::string&, const std::string&, const std::string&)>;
+
+NarratorLLMCallback with_unused_read_tools(TestNarratorCallback narrator) {
+    return [narrator = std::move(narrator)](
+               const std::string& scene_id, const std::string& instructions,
+               const std::string& turn_state, const ReadToolCallback&) {
+        return narrator(scene_id, instructions, turn_state);
+    };
 }
 
-void configure_story(Story& story, NarratorLLMCallback narrator) {
+void configure_executor(TurnExecutor& executor, TestNarratorCallback narrator) {
+    executor.set_llm_callback([](const std::string&) { return std::string{"fallback"}; });
+    executor.set_narrator_llm_callback(with_unused_read_tools(std::move(narrator)));
+}
+
+void configure_story(Story& story, TestNarratorCallback narrator) {
     story.set_llm_callback([](const std::string&) { return std::string{"fallback"}; });
-    story.set_narrator_llm_callback(std::move(narrator));
+    story.set_narrator_llm_callback(with_unused_read_tools(std::move(narrator)));
 }
 
 std::filesystem::path temp_dir(const std::string& prefix) {
@@ -412,7 +423,8 @@ TEST_CASE("TurnExecutor rolls back failed turns and can be reused",
     REQUIRE(world.graph().size() == 0);
 
     executor.set_narrator_llm_callback(
-        [](const std::string&, const std::string&, const std::string&) {
+        [](const std::string&, const std::string&, const std::string&,
+           const ReadToolCallback&) {
             return response("Recovered.");
         });
     REQUIRE(executor.run_player_turn(scene, "Again.").outputs.front().content == "Recovered.");
@@ -549,7 +561,8 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
         [](const std::string& id, const std::string&, const std::string&) {
             return response(id == "root" ? "Player beat." : "Away beat.");
         });
-    story.set_scheduler_callback([](const std::string&, const std::string&) {
+    story.set_scheduler_callback([](const std::string&, const std::string&,
+                                    const ReadToolCallback&) {
         return std::string{"away"};
     });
     const auto outputs = story.advance_scene("Act.");

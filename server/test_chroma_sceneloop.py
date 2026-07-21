@@ -19,7 +19,8 @@ def stub_llm(_prompt: str) -> str:
     return '"I have nothing to say right now."'
 
 
-def stub_narrator(scene_id: str, _instructions: str, _turn_state: str) -> str:
+def stub_narrator(scene_id: str, _instructions: str, _turn_state: str,
+                  _read_tool) -> str:
     global turn_count
     turn_count += 1
     plan = {

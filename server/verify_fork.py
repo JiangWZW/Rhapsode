@@ -20,7 +20,8 @@ class Script:
         self.root_id = story.active_scene_id
         self.mode = "idle"
 
-    def narrator(self, _scene_id: str, _instructions: str, _turn_state: str) -> str:
+    def narrator(self, _scene_id: str, _instructions: str, _turn_state: str,
+                 _read_tool) -> str:
         return (
             "The moment turns and the storyline moves on.\n"
             "<<<RHAPSODE_JSON>>>\n"
@@ -28,8 +29,8 @@ class Script:
             '"new_characters":[],"active_cast":[]}'
         )
 
-    def scheduler(self, _instructions: str, _user: str) -> str:
-        rows = json.loads(self.story.tool_list_scenes())
+    def scheduler(self, _instructions: str, _user: str, read_tool) -> str:
+        rows = json.loads(read_tool("list_scenes", "{}"))
         return next(
             (row["scene_id"] for row in rows if not row["player_present"]),
             "",

@@ -36,8 +36,10 @@ class TurnExecutor {
 public:
     TurnExecutor(World& world, Director& director, Weaver& weaver);
 
-    TurnResult run_player_turn(SceneData& scene, const std::string& text);
-    TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
+    TurnResult run_player_turn(SceneData& scene, const std::string& text,
+                               ReadToolCallback read_tool = {});
+    TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus,
+                                   ReadToolCallback read_tool = {});
 
     void set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
     void set_narrator_llm_callback(NarratorLLMCallback cb) {
@@ -81,19 +83,23 @@ private:
     struct TurnWork {
         std::vector<SceneMessage> outputs;
         DirectorOutput director;
+        ReadToolCallback read_tool;
     };
 
-    TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous);
+    TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous,
+                        ReadToolCallback read_tool);
     void submit_message(SceneData& scene, const std::string& text, bool autonomous,
                         TurnWork& work);
     PostTurnResult advance(SceneData& scene, TurnWork& work);
     NarratorPrompt build_turn_prompt(SceneData& scene, int turn);
     std::string call_narrator(const SceneData& scene,
                               const std::string& instructions,
-                              const std::string& turn_state) const;
+                              const std::string& turn_state,
+                              const ReadToolCallback& read_tool) const;
     NarratorTurnResult run_narrator_with_retry(SceneData& scene, int turn,
                                                 const NarratorPrompt& prompt,
-                                                DirectorOutput& director_output);
+                                                DirectorOutput& director_output,
+                                                const ReadToolCallback& read_tool);
     void register_new_characters(SceneData& scene, int turn,
                                  const nlohmann::json& plan);
     void apply_narrator_cast(SceneData& scene, const NarratorTurnResult& result);

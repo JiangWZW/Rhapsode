@@ -2,12 +2,10 @@
 
 The scheduler's policy -- the instructions, the weighing, and validating the
 pick -- lives in the C++ engine (`Story::pick_off_stage_scene`). This module only
-holds the tool schemas the scheduler LLM sees and the adapter that runs the
-tool-use loop, forwarding read tools to the engine and reporting the chosen
-scene back to it."""
+holds the tool schemas and runs the tool-use loop through a call-scoped native
+read function."""
 
 import json
-import weakref
 
 from rhapsode.llm import complete_with_tools
 from rhapsode.llm_tools import NARRATOR_TOOLS
@@ -38,23 +36,21 @@ SCHEDULER_TOOLS = [
 ]
 
 
-def make_scheduler_callback(story):
-    """Adapt the scheduler tool-use loop for `story`.
+def make_scheduler_callback():
+    """Adapt the scheduler tool-use loop.
 
-    The engine passes its instructions and prompt; we run the loop, forward the
-    read tools to `Story.dispatch_tool`, capture the `advance_scene` decision, and
-    return the chosen scene_id ("" for none) for the engine to validate.
+    The engine passes its instructions, prompt, and a call-scoped read function;
+    we run the tool loop, capture the `advance_scene` decision, and return the
+    chosen scene_id ("" for none) for the engine to validate.
     """
-    story_ref = weakref.proxy(story)
-
-    def scheduler(instructions: str, user: str) -> str:
+    def scheduler(instructions: str, user: str, read_tool) -> str:
         picked = {"id": ""}
 
         def dispatch(name: str, args: dict) -> str:
             if name == "advance_scene":
                 picked["id"] = (args.get("scene_id") or "").strip()
                 return json.dumps({"ok": True, "picked": picked["id"]})
-            return story_ref.dispatch_tool("", name, json.dumps(args or {}))
+            return read_tool(name, json.dumps(args or {}))
 
         messages = [
             {"role": "system", "parts": [{"text": instructions}]},

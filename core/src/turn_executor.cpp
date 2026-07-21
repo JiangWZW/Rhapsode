@@ -47,18 +47,21 @@ void TurnExecutor::set_history_window(size_t normal, size_t resume) {
 }
 
 TurnResult TurnExecutor::run_player_turn(SceneData& scene,
-                                         const std::string& text) {
-    return run_turn(scene, text, false);
+                                         const std::string& text,
+                                         ReadToolCallback read_tool) {
+    return run_turn(scene, text, false, std::move(read_tool));
 }
 
 TurnResult TurnExecutor::run_autonomous_turn(SceneData& scene,
-                                             const std::string& focus) {
-    return run_turn(scene, focus, true);
+                                             const std::string& focus,
+                                             ReadToolCallback read_tool) {
+    return run_turn(scene, focus, true, std::move(read_tool));
 }
 
 TurnResult TurnExecutor::run_turn(SceneData& scene,
                                   const std::string& text,
-                                  bool autonomous) {
+                                  bool autonomous,
+                                  ReadToolCallback read_tool) {
     if (running_)
         throw std::runtime_error("Cannot run turn: loop is already active");
 
@@ -68,6 +71,7 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
     const World world_snapshot = world_;
     const bool resuming_snapshot = resuming_;
     TurnWork work;
+    work.read_tool = std::move(read_tool);
 
     try {
         submit_message(scene, text, autonomous, work);
@@ -124,7 +128,8 @@ TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
 
     const NarratorPrompt prompt = build_turn_prompt(scene, turn);
     NarratorTurnResult result =
-        run_narrator_with_retry(scene, turn, prompt, work.director);
+        run_narrator_with_retry(
+            scene, turn, prompt, work.director, work.read_tool);
     apply_narrator_cast(scene, result);
 
     const std::string narration = result.prose;

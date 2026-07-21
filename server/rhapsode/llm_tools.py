@@ -1,10 +1,8 @@
-"""Narrator tool-use infrastructure: the read/decision tool schemas, the
-dispatcher that routes tool calls through Story, and the callback
-that runs the tool-use loop for a narrator beat."""
+"""Narrator tool schemas and the callback that runs one tool-use loop through
+the engine's call-scoped read function."""
 
 import json
 import logging
-import weakref
 
 from rhapsode.llm import complete, complete_with_tools
 
@@ -83,22 +81,18 @@ NARRATOR_TOOLS = [
 # authority on cross-scene membership -- see that module for why.
 
 
-def make_narrator_callback(story):
+def make_narrator_callback():
     """A single narrator callback for every scene.
 
     The engine drives a beat and tells us which scene it is via `scene_id`; each
-    tool call is forwarded to the engine's own dispatcher (`Story.dispatch_tool`),
-    so the tool bodies -- graph/mind/history reads and the fork/conclude/merge
-    decisions -- live in C++, not here. This module only adapts the LLM's
-    tool-use protocol to that dispatcher.
+    tool call is forwarded through the call-scoped read function supplied by the
+    engine. This module only adapts the LLM's tool-use protocol to that function.
     """
-    story_ref = weakref.proxy(story)
-
-    def narrator(scene_id: str, instructions: str, turn_state: str) -> str:
+    def narrator(scene_id: str, instructions: str, turn_state: str, read_tool) -> str:
         def dispatch(name: str, args: dict) -> str:
             log.info("[narrator %s] tool: %s %s", scene_id, name,
                      json.dumps(args or {}, ensure_ascii=False))
-            return story_ref.dispatch_tool(scene_id, name, json.dumps(args or {}))
+            return read_tool(name, json.dumps(args or {}))
 
         messages = [
             {"role": "system", "parts": [{"text": instructions}]},

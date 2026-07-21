@@ -56,11 +56,11 @@ def _sync_graph_to_memory(story: Story, memory: MemorySystem) -> None:
 def _configure_story(story: Story, *, resuming: bool) -> None:
     """Configure callbacks on the Story-owned native runtime."""
     story.set_llm_callback(call_llm)
-    story.set_narrator_llm_callback(make_narrator_callback(story))
+    story.set_narrator_llm_callback(make_narrator_callback())
     story.set_weaver_llm_callback(call_llm)
     story.set_weaver_local_llm_callback(make_local_llm_callback())
     story.set_resuming(resuming)
-    story.set_scheduler_callback(make_scheduler_callback(story))
+    story.set_scheduler_callback(make_scheduler_callback())
     story.set_lifecycle_callback(make_lifecycle_callback())
     story.set_downsampler_callback(make_local_llm_callback(repair_json=False))
     story.set_saves_dir(SAVES_DIR)

@@ -2,6 +2,8 @@ import gc
 import json
 import weakref
 
+import pytest
+
 from rhapsode._core import (
     Annotator,
     Director,
@@ -47,12 +49,33 @@ def test_standalone_graph_utilities_keep_their_graph_alive():
 
 def test_story_callbacks_do_not_form_strong_reference_cycles():
     story = _story()
-    story.set_scheduler_callback(make_scheduler_callback(story))
-    story.set_narrator_llm_callback(make_narrator_callback(story))
+    story.set_scheduler_callback(make_scheduler_callback())
+    story.set_narrator_llm_callback(make_narrator_callback())
     story_ref = weakref.ref(story)
     del story
     gc.collect()
     assert story_ref() is None
+
+
+def test_read_tools_expire_when_the_narrator_call_returns():
+    story = _story()
+    retained = []
+
+    def narrator(_scene_id, _instructions, _turn_state, read_tool):
+        assert json.loads(read_tool("list_scenes", "{}"))[0]["scene_id"] == "root"
+        retained.append(read_tool)
+        return (
+            "The scout waits.\n<<<RHAPSODE_JSON>>>\n"
+            '{"transitions":[],"new_nodes":[],"speech_turns":[],'
+            '"new_characters":[],"active_cast":["Scout"]}'
+        )
+
+    story.set_llm_callback(lambda _prompt: "")
+    story.set_narrator_llm_callback(narrator)
+    story.advance_scene("Wait.")
+
+    with pytest.raises(RuntimeError, match="no longer active"):
+        retained[0]("list_scenes", "{}")
 
 
 def test_complete_session_graph_is_released_together():

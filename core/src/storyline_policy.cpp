@@ -81,10 +81,12 @@ std::string serialize_scene_summaries(
     return rows.dump();
 }
 
-std::string request_off_stage_scene(const SchedulerCallback& callback) {
+std::string request_off_stage_scene(const SchedulerCallback& callback,
+                                    const ReadToolCallback& read_tool) {
     if (!callback) return {};
     return str::trim(callback(
-        kSchedulerInstructions, "Pick the next off-stage scene to advance."));
+        kSchedulerInstructions, "Pick the next off-stage scene to advance.",
+        read_tool));
 }
 
 std::optional<LifecycleDecision> request_lifecycle_decision(

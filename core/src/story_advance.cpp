@@ -1,10 +1,41 @@
 #include "rhapsode/story.h"
 
+#include <atomic>
+#include <memory>
+
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/turn_executor.h"
 
 namespace rhapsode {
+namespace {
+
+class ReadToolLease {
+private:
+    std::shared_ptr<std::atomic_bool> active_;
+
+public:
+    ReadToolLease(Story& story, std::string scene_id)
+        : active_(std::make_shared<std::atomic_bool>(true)),
+          callback([story_ptr = &story, scene_id = std::move(scene_id),
+                    active = active_](const std::string& name,
+                                      const std::string& args_json) {
+              if (!active->load()) {
+                  throw std::runtime_error(
+                      "Read tool callback is no longer active");
+              }
+              return story_ptr->dispatch_tool(scene_id, name, args_json);
+          }) {}
+
+    ~ReadToolLease() { active_->store(false); }
+
+    ReadToolLease(const ReadToolLease&) = delete;
+    ReadToolLease& operator=(const ReadToolLease&) = delete;
+
+    ReadToolCallback callback;
+};
+
+}  // namespace
 
 std::string Story::pick_off_stage_scene() {
     if (!scheduler_cb_) return "";
@@ -18,7 +49,8 @@ std::string Story::pick_off_stage_scene() {
 
     std::string pick;
     try {
-        pick = request_off_stage_scene(scheduler_cb_);
+        ReadToolLease read_tools(*this, "");
+        pick = request_off_stage_scene(scheduler_cb_, read_tools.callback);
     } catch (const std::exception& error) {
         log() << "  [scheduler] call failed: " << error.what() << "\n";
         return "";
@@ -160,7 +192,11 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     if (!active) throw std::runtime_error("Story::advance_scene: no active scene");
     const std::string player_scene_id = active->scene_id;
 
-    TurnResult player_result = executor_->run_player_turn(*active, player_input);
+    TurnResult player_result = [&] {
+        ReadToolLease read_tools(*this, player_scene_id);
+        return executor_->run_player_turn(
+            *active, player_input, read_tools.callback);
+    }();
     sync_beat(player_result);
     const int player_lifecycle = decide_lifecycle(player_scene_id, player_input);
     if (player_lifecycle)
@@ -174,8 +210,11 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
         if (!pick.empty()) {
             if (SceneData* scene = get_scene(pick)) {
                 try {
-                    TurnResult result =
-                        executor_->run_autonomous_turn(*scene, autonomous_cue(pick));
+                    TurnResult result = [&] {
+                        ReadToolLease read_tools(*this, pick);
+                        return executor_->run_autonomous_turn(
+                            *scene, autonomous_cue(pick), read_tools.callback);
+                    }();
                     const int completed_turn = result.completed_turn;
                     sync_beat(result);
                     const int lifecycle = decide_lifecycle(pick, "");

@@ -5,10 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "rhapsode/llm_callback.h"
+
 namespace rhapsode {
 
 using SchedulerCallback = std::function<std::string(
-    const std::string& instructions, const std::string& user)>;
+    const std::string& instructions, const std::string& user,
+    const ReadToolCallback& read_tool)>;
 using LifecycleCallback = std::function<std::string(
     const std::string& instructions, const std::string& user)>;
 
@@ -49,7 +52,8 @@ struct LifecycleDecision {
 
 std::string serialize_scene_summaries(
     const std::vector<SceneSummary>& summaries);
-std::string request_off_stage_scene(const SchedulerCallback& callback);
+std::string request_off_stage_scene(const SchedulerCallback& callback,
+                                    const ReadToolCallback& read_tool);
 std::optional<LifecycleDecision> request_lifecycle_decision(
     const BeatSummary& summary, const LifecycleCallback& callback);
 std::string build_autonomous_cue(const SceneSummary& summary);

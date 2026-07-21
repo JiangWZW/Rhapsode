@@ -200,12 +200,13 @@ TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene, i
 
 std::string TurnExecutor::call_narrator(const SceneData& scene,
                                         const std::string& instructions,
-                                        const std::string& turn_state) const {
+                                        const std::string& turn_state,
+                                        const ReadToolCallback& read_tool) const {
     const std::string safe_instructions = sanitize_utf8(instructions);
     const std::string safe_turn_state   = sanitize_utf8(turn_state);
     if (narrator_llm_cb_) {
         return sanitize_utf8(narrator_llm_cb_(
-            scene.scene_id, safe_instructions, safe_turn_state));
+            scene.scene_id, safe_instructions, safe_turn_state, read_tool));
     }
     return sanitize_utf8(llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
 }
@@ -234,10 +235,11 @@ void TurnExecutor::register_new_characters(SceneData& scene,
 
 TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     SceneData& scene, int turn, const NarratorPrompt& prompt,
-    DirectorOutput& director_output) {
+    DirectorOutput& director_output, const ReadToolCallback& read_tool) {
     log() << "[2/4] Calling narrative LLM...\n" << std::flush;
 
-    auto raw_response = call_narrator(scene, prompt.instructions, prompt.turn_state);
+    auto raw_response = call_narrator(
+        scene, prompt.instructions, prompt.turn_state, read_tool);
     log() << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
     if (verbose_logging_enabled()) {
         log() << "--- NARRATOR RESPONSE ---\n" << raw_response
@@ -266,7 +268,7 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
 
             auto [new_prose, new_plan] =
                 split_merged_response(call_narrator(scene, prompt.instructions,
-                                                    rewrite_turn_state));
+                                                    rewrite_turn_state, read_tool));
             result.prose = std::move(new_prose);
             result.plan = std::move(new_plan);
         }
