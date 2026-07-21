@@ -2,13 +2,21 @@
 
 #include <string>
 
-#include <nlohmann/json_fwd.hpp>
+#include <nlohmann/json.hpp>
 
+#include "rhapsode/scene_data.h"
 #include "rhapsode/world.h"
 
 namespace rhapsode {
 
-World build_world_from_scenario(const nlohmann::json& scenario,
-                                const std::string& root_scene_id = {});
+struct ScenarioBootstrap {
+    SceneData scene;
+    World world;
+};
+
+ScenarioBootstrap load_scenario_file(const std::string& path);
+ScenarioBootstrap bootstrap_scenario(const nlohmann::json& scenario,
+                                     const std::string& scene_id = {});
+nlohmann::json serialize_scenario(const SceneData& scene, const World& world);
 
 }  // namespace rhapsode

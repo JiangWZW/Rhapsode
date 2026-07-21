@@ -17,5 +17,7 @@ std::vector<SceneMessage> snapshot_history(
 void truncate_history(std::vector<SceneMessage>& history, std::size_t new_size);
 void drop_history_from_turn(std::vector<SceneMessage>& history, int min_turn);
 std::vector<SceneMessage> history_from_json(const nlohmann::json& value);
+std::string query_scene_history(const std::vector<SceneMessage>& history,
+                                const std::string& query);
 
 }  // namespace rhapsode

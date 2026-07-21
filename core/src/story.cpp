@@ -1,20 +1,15 @@
 #include "rhapsode/story.h"
 
 #include <algorithm>
-#include <cctype>
-#include <filesystem>
-#include <fstream>
 #include <stdexcept>
 
 #include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
-#include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/scenario_bootstrap.h"
 #include "rhapsode/scene_history.h"
 #include "rhapsode/turn_executor.h"
-#include "rhapsode/str_util.h"
 #include "rhapsode/weaver.h"
 #include "rhapsode/world_analysis.h"
 
@@ -31,30 +26,14 @@ Story::Story(Story&&) noexcept = default;
 Story& Story::operator=(Story&&) noexcept = default;
 
 Story Story::load_scenario(const std::string& path) {
-    std::ifstream input(path);
-    if (!input.is_open()) throw std::runtime_error("Cannot open scenario file: " + path);
-    nlohmann::json scenario;
-    input >> scenario;
-    return from_scenario_json(
-        scenario, std::filesystem::path(path).stem().string());
+    auto scenario = load_scenario_file(path);
+    return from_data(std::move(scenario.scene), std::move(scenario.world));
 }
 
 Story Story::from_scenario_json(const nlohmann::json& scenario,
                                 const std::string& scene_id) {
-    Story story;
-    SceneData root;
-    root.scene_id = scene_id;
-    root.title = scenario.value("title", std::string{});
-    root.system_prompt = scenario.value("system_prompt", std::string{});
-    if (scenario.contains("history"))
-        root.history = history_from_json(scenario.at("history"));
-    for (const auto& message : scenario.value("seed_messages", nlohmann::json::array()))
-        append_history_message(root.history, message.get<SceneMessage>());
-
-    *story.world_ = build_world_from_scenario(scenario, scene_id);
-    story.active_scene_id_ = scene_id;
-    story.adopt(std::move(root));
-    return story;
+    auto result = bootstrap_scenario(scenario, scene_id);
+    return from_data(std::move(result.scene), std::move(result.world));
 }
 
 Story Story::from_data(SceneData root, World world) {
@@ -68,12 +47,7 @@ Story Story::from_data(SceneData root, World world) {
 nlohmann::json Story::to_scenario_json(const std::string& scene_id) const {
     const SceneData* scene = get_scene(scene_id);
     if (!scene) throw std::runtime_error("Unknown scene: " + scene_id);
-    nlohmann::json result;
-    result["title"] = scene->title;
-    result["system_prompt"] = scene->system_prompt;
-    result["characters"] = world_->characters();
-    result["history"] = scene->history;
-    return result;
+    return serialize_scenario(*scene, *world_);
 }
 
 SceneData* Story::adopt(SceneData scene) {
@@ -231,49 +205,6 @@ std::string Story::tool_list_scenes() const {
     return serialize_scene_summaries(summarize_scenes());
 }
 
-std::string Story::query_history(const SceneData& scene,
-                                 const std::string& query) const {
-    std::vector<std::string> keywords;
-    std::string current;
-    for (const char character : str::to_lower(query)) {
-        if (std::isspace(static_cast<unsigned char>(character))) {
-            if (!current.empty()) {
-                keywords.push_back(std::move(current));
-                current.clear();
-            }
-        } else {
-            current += character;
-        }
-    }
-    if (!current.empty()) keywords.push_back(std::move(current));
-
-    std::vector<const SceneMessage*> matches;
-    for (const auto& message : scene.history) {
-        const std::string text = str::to_lower(message.content);
-        if (std::any_of(keywords.begin(), keywords.end(),
-                        [&](const auto& keyword) {
-                            return text.find(keyword) != std::string::npos;
-                        }))
-            matches.push_back(&message);
-    }
-    std::reverse(matches.begin(), matches.end());
-    if (matches.size() > 10) matches.resize(10);
-
-    auto role_name = [](Role role) {
-        switch (role) {
-            case Role::User: return "user";
-            case Role::Assistant: return "assistant";
-            case Role::System: return "system";
-        }
-        return "user";
-    };
-    nlohmann::json snippets = nlohmann::json::array();
-    for (const auto* message : matches)
-        snippets.push_back({{"role", role_name(message->role)},
-                            {"text", truncate_utf8(message->content, 400)}});
-    return nlohmann::json{{"snippets", std::move(snippets)}}.dump();
-}
-
 std::string Story::dispatch_tool(const std::string& scene_id,
                                  const std::string& name,
                                  const std::string& args_json) {
@@ -290,7 +221,7 @@ std::string Story::dispatch_tool(const std::string& scene_id,
     if (name == "query_history") {
         const SceneData* scene = get_scene(scene_id);
         if (!scene) return nlohmann::json{{"error", "unknown scene: " + scene_id}}.dump();
-        return query_history(*scene, string_arg("query"));
+        return query_scene_history(scene->history, string_arg("query"));
     }
     if (name == "list_scenes") return tool_list_scenes();
     return nlohmann::json{{"error", "unknown tool: " + name}}.dump();

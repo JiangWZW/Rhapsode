@@ -1,6 +1,9 @@
 #include "rhapsode/scenario_bootstrap.h"
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -8,11 +11,14 @@
 
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
+#include "rhapsode/scene_history.h"
 
 namespace rhapsode {
 
-World build_world_from_scenario(const nlohmann::json& scenario,
-                                const std::string& root_scene_id) {
+namespace {
+
+World build_world(const nlohmann::json& scenario,
+                  const std::string& root_scene_id) {
     std::vector<Character> characters;
     for (const auto& character_value :
          scenario.value("characters", nlohmann::json::array())) {
@@ -98,6 +104,45 @@ World build_world_from_scenario(const nlohmann::json& scenario,
     }
 
     return world;
+}
+
+}  // namespace
+
+ScenarioBootstrap load_scenario_file(const std::string& path) {
+    std::ifstream input(path);
+    if (!input.is_open())
+        throw std::runtime_error("Cannot open scenario file: " + path);
+    nlohmann::json scenario;
+    input >> scenario;
+    return bootstrap_scenario(
+        scenario, std::filesystem::path(path).stem().string());
+}
+
+ScenarioBootstrap bootstrap_scenario(const nlohmann::json& scenario,
+                                     const std::string& scene_id) {
+    ScenarioBootstrap result;
+    result.scene.scene_id = scene_id;
+    result.scene.title = scenario.value("title", std::string{});
+    result.scene.system_prompt =
+        scenario.value("system_prompt", std::string{});
+    if (scenario.contains("history"))
+        result.scene.history = history_from_json(scenario.at("history"));
+    for (const auto& message :
+         scenario.value("seed_messages", nlohmann::json::array())) {
+        append_history_message(
+            result.scene.history, message.get<SceneMessage>());
+    }
+    result.world = build_world(scenario, scene_id);
+    return result;
+}
+
+nlohmann::json serialize_scenario(const SceneData& scene, const World& world) {
+    nlohmann::json result;
+    result["title"] = scene.title;
+    result["system_prompt"] = scene.system_prompt;
+    result["characters"] = world.characters();
+    result["history"] = scene.history;
+    return result;
 }
 
 }  // namespace rhapsode

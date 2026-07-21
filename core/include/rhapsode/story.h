@@ -102,7 +102,6 @@ private:
     SceneData* adopt(SceneData scene);
     std::string derive_intention(const SceneData& scene, float* charge_out) const;
     std::vector<SceneSummary> summarize_scenes() const;
-    std::string query_history(const SceneData& scene, const std::string& query) const;
     std::string pick_off_stage_scene();
     int decide_lifecycle(const std::string& scene_id, const std::string& player_input);
     std::string autonomous_cue(const std::string& scene_id) const;

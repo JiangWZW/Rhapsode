@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -10,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include "rhapsode/json_util.h"
+#include "rhapsode/str_util.h"
 
 namespace rhapsode {
 namespace {
@@ -65,6 +67,52 @@ std::vector<SceneMessage> history_from_json(const nlohmann::json& value) {
     for (const auto& item : value)
         append_history_message(history, item.get<SceneMessage>());
     return history;
+}
+
+std::string query_scene_history(const std::vector<SceneMessage>& history,
+                                const std::string& query) {
+    std::vector<std::string> keywords;
+    std::string current;
+    for (const char character : str::to_lower(query)) {
+        if (std::isspace(static_cast<unsigned char>(character))) {
+            if (!current.empty()) {
+                keywords.push_back(std::move(current));
+                current.clear();
+            }
+        } else {
+            current += character;
+        }
+    }
+    if (!current.empty()) keywords.push_back(std::move(current));
+
+    std::vector<const SceneMessage*> matches;
+    for (const auto& message : history) {
+        const std::string text = str::to_lower(message.content);
+        if (std::any_of(keywords.begin(), keywords.end(),
+                        [&](const auto& keyword) {
+                            return text.find(keyword) != std::string::npos;
+                        })) {
+            matches.push_back(&message);
+        }
+    }
+    std::reverse(matches.begin(), matches.end());
+    if (matches.size() > 10) matches.resize(10);
+
+    const auto role_name = [](Role role) {
+        switch (role) {
+            case Role::User: return "user";
+            case Role::Assistant: return "assistant";
+            case Role::System: return "system";
+        }
+        return "user";
+    };
+    nlohmann::json snippets = nlohmann::json::array();
+    for (const auto* message : matches) {
+        snippets.push_back({
+            {"role", role_name(message->role)},
+            {"text", truncate_utf8(message->content, 400)}});
+    }
+    return nlohmann::json{{"snippets", std::move(snippets)}}.dump();
 }
 
 }  // namespace rhapsode
