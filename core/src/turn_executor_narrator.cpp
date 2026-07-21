@@ -174,6 +174,31 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
     return rejections;
 }
 
+std::string build_revision_turn_state(
+    const std::string& original,
+    const std::vector<Rejection>& rejections) {
+    std::string revision = original;
+    revision += "\n\n### REVISION REQUIRED\n"
+                "The following issues were found in your plan:\n";
+    for (const auto& rejection : rejections)
+        revision += "- " + rejection.fact + " -- " + rejection.reason + "\n";
+    revision += "\nRewrite your narrative and plan to fix these issues.\n";
+    return revision;
+}
+
+std::vector<Rejection> collect_plan_rejections(
+    const DirectorOutput& director_output,
+    const nlohmann::json& plan,
+    const std::vector<Character>& characters) {
+    std::vector<Rejection> rejections = director_output.rejections;
+    auto cast_rejections = validate_active_cast(plan, characters);
+    auto speech_rejections = validate_speech_turns(plan, characters);
+    rejections.insert(rejections.end(), cast_rejections.begin(), cast_rejections.end());
+    rejections.insert(
+        rejections.end(), speech_rejections.begin(), speech_rejections.end());
+    return rejections;
+}
+
 }  // namespace
 
 TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene) {
@@ -259,13 +284,8 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
         if (attempt > 0) {
             world_ = world_snapshot;
 
-            std::string rewrite_turn_state = prompt.turn_state;
-            rewrite_turn_state += "\n\n### REVISION REQUIRED\n"
-                                  "The following issues were found in your plan:\n";
-            for (const auto& r : all_rejections) {
-                rewrite_turn_state += "- " + r.fact + " -- " + r.reason + "\n";
-            }
-            rewrite_turn_state += "\nRewrite your narrative and plan to fix these issues.\n";
+            const std::string rewrite_turn_state =
+                build_revision_turn_state(prompt.turn_state, all_rejections);
 
             auto [new_prose, new_plan] =
                 split_merged_response(call_narrator(scene, prompt.instructions,
@@ -277,11 +297,8 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
         director_output = director_.apply_planned_turn(turn, result.plan);
         register_new_characters(scene, turn, result.plan);
 
-        const auto cast_rejections = validate_active_cast(result.plan, world_.characters());
-        const auto speech_rejections = validate_speech_turns(result.plan, world_.characters());
-        all_rejections = director_output.rejections;
-        all_rejections.insert(all_rejections.end(), cast_rejections.begin(), cast_rejections.end());
-        all_rejections.insert(all_rejections.end(), speech_rejections.begin(), speech_rejections.end());
+        all_rejections = collect_plan_rejections(
+            director_output, result.plan, world_.characters());
 
         if (all_rejections.empty()) {
             break;

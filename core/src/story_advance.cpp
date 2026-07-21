@@ -84,30 +84,46 @@ std::string Story::pick_off_stage_scene() {
     return pick;
 }
 
+BeatSummary Story::build_beat_summary(
+    const SceneData& scene, const std::string& player_input) const {
+    BeatSummary beat;
+    beat.scene_id = scene.scene_id;
+    beat.title = scene.title;
+    beat.storylines = summarize_scenes();
+    if (!player_input.empty()) beat.player_action = player_input;
+    for (const auto& summary : beat.storylines) {
+        if (summary.scene_id != scene.scene_id) continue;
+        beat.cast = summary.cast;
+        beat.player_present = summary.player_present;
+        break;
+    }
+    for (auto it = scene.history.rbegin(); it != scene.history.rend(); ++it) {
+        if (it->role == Role::Assistant) {
+            beat.narration = it->content;
+            break;
+        }
+    }
+    return beat;
+}
+
+std::vector<std::string> Story::without_player_characters(
+    const std::vector<std::string>& names) const {
+    std::vector<std::string> filtered;
+    filtered.reserve(names.size());
+    for (const auto& name : names) {
+        const Character* character = world_->find_character(name);
+        if (!character || !character->is_player) filtered.push_back(name);
+    }
+    return filtered;
+}
+
 int Story::apply_lifecycle(const std::string& scene_id,
                            const std::string& player_input) {
     if (!lifecycle_cb_) return 0;
     SceneData* scene = get_scene(scene_id);
     if (!scene) return 0;
 
-    const auto summaries = summarize_scenes();
-    BeatSummary beat;
-    beat.scene_id = scene_id;
-    beat.title = scene->title;
-    beat.storylines = summaries;
-    if (!player_input.empty()) beat.player_action = player_input;
-    for (const auto& summary : summaries) {
-        if (summary.scene_id != scene_id) continue;
-        beat.cast = summary.cast;
-        beat.player_present = summary.player_present;
-        break;
-    }
-    for (auto it = scene->history.rbegin(); it != scene->history.rend(); ++it) {
-        if (it->role == Role::Assistant) {
-            beat.narration = it->content;
-            break;
-        }
-    }
+    const BeatSummary beat = build_beat_summary(*scene, player_input);
 
     std::optional<LifecycleDecision> decision;
     try {
@@ -120,15 +136,6 @@ int Story::apply_lifecycle(const std::string& scene_id,
         log() << "  [lifecycle] verdict unparseable -- no-op\n";
         return 0;
     }
-
-    const auto without_player = [&](const std::vector<std::string>& values) {
-        std::vector<std::string> names;
-        for (const auto& name : values) {
-            const Character* character = world_->find_character(name);
-            if (!character || !character->is_player) names.push_back(name);
-        }
-        return names;
-    };
 
     if (decision->conclude_reason) {
         if (beat.player_present) {
@@ -153,7 +160,7 @@ int Story::apply_lifecycle(const std::string& scene_id,
 
     int applied = 0;
     if (decision->fork) {
-        const auto fork_cast = without_player(decision->fork->cast);
+        const auto fork_cast = without_player_characters(decision->fork->cast);
         const std::string& intention = decision->fork->driving_intention;
         if (!fork_cast.empty()) {
             const std::string new_id = scene_id + "_f" + std::to_string(beat_clock_)
@@ -165,7 +172,7 @@ int Story::apply_lifecycle(const std::string& scene_id,
     }
     if (!decision->exited.empty()) {
         bool any = false;
-        for (const auto& name : without_player(decision->exited)) {
+        for (const auto& name : without_player_characters(decision->exited)) {
             if (world_->leave_character(scene_id, name)) {
                 log() << "  [lifecycle] " << name << " exits '" << scene_id
                       << "' (no new storyline)\n";
@@ -198,6 +205,37 @@ void Story::sync_memory(const TurnResult& result) {
     }
 }
 
+void Story::advance_off_stage_scene() {
+    if (scene_count() <= 1) return;
+
+    const std::string scene_id = pick_off_stage_scene();
+    if (scene_id.empty()) return;
+
+    SceneData* scene = get_scene(scene_id);
+    if (!scene) return;
+
+    try {
+        TurnResult result = [&] {
+            ReadToolLease read_tools(
+                make_read_tool_context(*this, scene_id));
+            return executor_->run_autonomous_turn(
+                *scene, make_autonomous_cue(scene_id), read_tools.callback);
+        }();
+        const int completed_turn = result.completed_turn;
+        sync_memory(result);
+        const int lifecycle = apply_lifecycle(scene_id, "");
+        if (lifecycle)
+            log() << "  [lifecycle] applied " << lifecycle
+                  << " op(s) from off-stage beat\n";
+        note_advanced(scene_id);
+        log() << "[scheduler] advanced off-stage scene '" << scene_id
+              << "' (turn " << completed_turn << ")\n";
+    } catch (const std::exception& error) {
+        log() << "  [scheduler] off-stage beat failed for '" << scene_id
+              << "': " << error.what() << "\n";
+    }
+}
+
 std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) {
     SceneData* active = active_scene();
     if (!active) throw std::runtime_error("Story::advance_scene: no active scene");
@@ -217,33 +255,7 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     note_advanced(player_scene_id);
     std::vector<SceneMessage> outputs = std::move(player_result.outputs);
 
-    if (scene_count() > 1) {
-        const std::string pick = pick_off_stage_scene();
-        if (!pick.empty()) {
-            if (SceneData* scene = get_scene(pick)) {
-                try {
-                    TurnResult result = [&] {
-                        ReadToolLease read_tools(
-                            make_read_tool_context(*this, pick));
-                        return executor_->run_autonomous_turn(
-                            *scene, make_autonomous_cue(pick), read_tools.callback);
-                    }();
-                    const int completed_turn = result.completed_turn;
-                    sync_memory(result);
-                    const int lifecycle = apply_lifecycle(pick, "");
-                    if (lifecycle)
-                        log() << "  [lifecycle] applied " << lifecycle
-                              << " op(s) from off-stage beat\n";
-                    note_advanced(pick);
-                    log() << "[scheduler] advanced off-stage scene '" << pick
-                          << "' (turn " << completed_turn << ")\n";
-                } catch (const std::exception& error) {
-                    log() << "  [scheduler] off-stage beat failed for '" << pick
-                          << "': " << error.what() << "\n";
-                }
-            }
-        }
-    }
+    advance_off_stage_scene();
 
     if (!saves_dir_.empty()) save(saves_dir_);
     return outputs;

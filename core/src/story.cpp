@@ -174,53 +174,55 @@ void Story::note_advanced(const std::string& scene_id) {
     if (SceneData* scene = get_scene(scene_id)) scene->last_advanced = beat_clock_;
 }
 
-std::string Story::derive_intention(const SceneData& scene, float* charge_out) const {
-    std::string best = scene.driving_intention;
-    float best_weight = scene.charge;
+Story::SceneDrive Story::derive_intention(const SceneData& scene) const {
+    SceneDrive drive{scene.driving_intention, scene.charge};
     for (const auto& character : world_->characters()) {
         if (!character.in_scene(scene.scene_id)) continue;
         const auto it = world_->character_memories().find(character.name);
         if (it == world_->character_memories().end()) continue;
         it->second.beliefs().for_each([&](const Node& node) {
             if (node.type == "intention" && node.state == NodeState::Active &&
-                node.weight > best_weight) {
-                best_weight = node.weight;
-                best = node.fact;
+                node.weight > drive.charge) {
+                drive.charge = node.weight;
+                drive.intention = node.fact;
             }
         }, false);
     }
-    if (charge_out) *charge_out = best_weight;
-    return best;
+    return drive;
+}
+
+SceneSummary Story::summarize_scene(const SceneData& scene) const {
+    SceneSummary summary;
+    summary.scene_id = scene.scene_id;
+    summary.title = scene.title;
+    summary.active = scene.scene_id == active_scene_id_;
+    summary.turn_index = scene.turn_index;
+    summary.staleness = beat_clock_ - scene.last_advanced;
+
+    for (const auto& character : world_->characters()) {
+        if (!character.in_scene(scene.scene_id)) continue;
+        summary.cast.push_back(character.name);
+        if (character.is_player) summary.player_present = true;
+    }
+
+    SceneDrive drive = derive_intention(scene);
+    summary.driving_intention = std::move(drive.intention);
+    summary.charge = drive.charge;
+
+    for (auto it = scene.history.rbegin(); it != scene.history.rend(); ++it) {
+        if (it->role != Role::Assistant) continue;
+        summary.last_narration = it->content.size() > 240
+            ? it->content.substr(0, 240) + "..." : it->content;
+        break;
+    }
+    return summary;
 }
 
 std::vector<SceneSummary> Story::summarize_scenes() const {
     std::vector<SceneSummary> summaries;
     summaries.reserve(scenes_.size());
-    for (const auto& scene : scenes_) {
-        SceneSummary summary;
-        summary.scene_id = scene->scene_id;
-        summary.title = scene->title;
-        summary.active = scene->scene_id == active_scene_id_;
-        summary.turn_index = scene->turn_index;
-        summary.staleness = beat_clock_ - scene->last_advanced;
-
-        for (const auto& character : world_->characters()) {
-            if (!character.in_scene(scene->scene_id)) continue;
-            summary.cast.push_back(character.name);
-            if (character.is_player) summary.player_present = true;
-        }
-
-        summary.driving_intention = derive_intention(*scene, &summary.charge);
-
-        const auto& messages = scene->history;
-        for (auto it = messages.rbegin(); it != messages.rend(); ++it) {
-            if (it->role != Role::Assistant) continue;
-            summary.last_narration = it->content.size() > 240
-                ? it->content.substr(0, 240) + "..." : it->content;
-            break;
-        }
-        summaries.push_back(std::move(summary));
-    }
+    for (const auto& scene : scenes_)
+        summaries.push_back(summarize_scene(*scene));
     return summaries;
 }
 

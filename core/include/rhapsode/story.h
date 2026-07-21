@@ -101,13 +101,24 @@ public:
     void delete_save(const std::string& saves_dir) const;
 
 private:
+    struct SceneDrive {
+        std::string intention;
+        float charge = 0.0f;
+    };
+
     SceneData* adopt_scene(SceneData scene);
-    std::string derive_intention(const SceneData& scene, float* charge_out) const;
+    SceneDrive derive_intention(const SceneData& scene) const;
+    SceneSummary summarize_scene(const SceneData& scene) const;
     std::vector<SceneSummary> summarize_scenes() const;
+    BeatSummary build_beat_summary(const SceneData& scene,
+                                   const std::string& player_input) const;
+    std::vector<std::string> without_player_characters(
+        const std::vector<std::string>& names) const;
     std::string pick_off_stage_scene();
     int apply_lifecycle(const std::string& scene_id, const std::string& player_input);
     std::string make_autonomous_cue(const std::string& scene_id) const;
     void sync_memory(const TurnResult& result);
+    void advance_off_stage_scene();
     int revert_scene_turns(SceneData& scene, int count);
 
     // Stable allocation keeps TurnExecutor's World reference valid through Story

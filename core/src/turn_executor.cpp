@@ -48,6 +48,34 @@ private:
     bool& running_;
 };
 
+void append_unique_nodes(std::vector<Node>& destination,
+                         std::vector<Node> source) {
+    for (auto& node : source) {
+        const auto duplicate = std::find_if(
+            destination.begin(), destination.end(),
+            [&](const Node& existing) { return existing.id == node.id; });
+        if (duplicate == destination.end())
+            destination.push_back(std::move(node));
+    }
+}
+
+std::string build_death_confirmation_prompt(
+    const DeathCandidate& candidate, const std::string& narration) {
+    std::string prompt;
+    prompt.reserve(1024);
+    prompt += "A character death detector flagged the following character "
+              "as potentially dead.\nReview the evidence and determine if "
+              "they are ACTUALLY dead -- not feared dead, not hypothetically "
+              "dead, not metaphorically dead.\n\n";
+    prompt += "Character: " + candidate.character_name + "\n\n";
+    prompt += "Current narration:\n" + narration + "\n\n";
+    prompt += "World state facts mentioning this character:\n";
+    for (const auto& fact : candidate.evidence) prompt += "- " + fact + "\n";
+    prompt += "\nIs " + candidate.character_name
+           + " dead? Answer ONLY \"yes\" or \"no\".\n";
+    return prompt;
+}
+
 }  // namespace
 
 TurnExecutor::TurnExecutor(World& world, Director& director, Weaver& weaver)
@@ -98,14 +126,8 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
         result.outputs = std::move(work.outputs);
         result.effects.created_nodes = std::move(work.director_output.new_nodes);
         result.effects.expired_nodes = std::move(work.director_output.newly_expired);
-        for (auto& node : completed.expired_nodes) {
-            const auto duplicate = std::find_if(
-                result.effects.expired_nodes.begin(),
-                result.effects.expired_nodes.end(),
-                [&](const Node& existing) { return existing.id == node.id; });
-            if (duplicate == result.effects.expired_nodes.end())
-                result.effects.expired_nodes.push_back(std::move(node));
-        }
+        append_unique_nodes(result.effects.expired_nodes,
+                            std::move(completed.expired_nodes));
         return result;
     } catch (...) {
         const auto original = std::current_exception();
@@ -196,19 +218,8 @@ void TurnExecutor::confirm_deaths(const std::vector<DeathCandidate>& candidates,
                                   const std::string& narration) {
     if (!llm_cb_) return;
     for (const auto& candidate : candidates) {
-        std::string prompt;
-        prompt.reserve(1024);
-        prompt += "A character death detector flagged the following character "
-                  "as potentially dead.\nReview the evidence and determine if "
-                  "they are ACTUALLY dead -- not feared dead, not hypothetically "
-                  "dead, not metaphorically dead.\n\n";
-        prompt += "Character: " + candidate.character_name + "\n\n";
-        prompt += "Current narration:\n" + narration + "\n\n";
-        prompt += "World state facts mentioning this character:\n";
-        for (const auto& fact : candidate.evidence) prompt += "- " + fact + "\n";
-        prompt += "\nIs " + candidate.character_name
-               + " dead? Answer ONLY \"yes\" or \"no\".\n";
-
+        const std::string prompt =
+            build_death_confirmation_prompt(candidate, narration);
         try {
             const auto response = llm_cb_(sanitize_utf8(prompt));
             if (is_affirmative_yes_response(response)) {
