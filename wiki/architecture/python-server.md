@@ -63,8 +63,11 @@ Lifecycle receives a self-contained beat summary and returns JSON; it has no too
 ## Ownership boundary
 
 Python owns integration objects and cloud/local model clients. C++ owns runtime state and ordering.
-World and SceneData are exposed as read views for UI/diagnostic code; mutations that affect
-invariants go through Story.
+SceneData is exposed as a read-only view. Story-owned World graph, roster, character, and memory
+properties return detached snapshots for UI/diagnostic code, so mutating a returned Python object
+cannot alter the running story. Mutations that affect native state go through explicit Story
+commands. The manual `/weave` diagnostic, for example, configures the Story-owned Weaver and calls
+`Story.weave_scene()` rather than constructing a Python Weaver over a live graph reference.
 
 ## Persistence
 

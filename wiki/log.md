@@ -2,6 +2,19 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-21] implementation | Runtime mutation boundary cleanup
+
+- Replaced narrator/scheduler read callbacks that re-entered Story with C++ `ReadToolContext`
+  dispatch over bounded const World/history borrows.
+- Changed Python access to Story-owned graph, roster, character, and character-memory data to
+  detached snapshots; invariant-affecting mutation remains behind explicit Story commands.
+- Preserved the manual `/weave` diagnostic by routing it through the Story-owned Weaver rather than
+  mutating a Python graph alias.
+- Added ordered Story move assignment so destination borrowers are destroyed before their old
+  World, with native coverage of the transferred runtime and read-tool configuration.
+- Verified 46 native tests in Release and Debug, 36 Python tests, 7 frontend tests, frontend
+  lint/build, and changed-file Ruff checks; work remains local and nothing was pushed.
+
 ## [2026-07-21] implementation | Runtime architectural decoupling complete
 
 - Story now owns stable Director and Weaver services and injects them into a synchronous

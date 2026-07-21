@@ -66,9 +66,11 @@ Narrator and scheduler callbacks receive a read function with this logical shape
 string read_tool(string name, string args_json);
 ```
 
-Story creates it for one callback call. Python adapters do not capture Story, and retained use after
-the call throws `Read tool callback is no longer active`. The function dispatches only the existing
-read tools: graph, mind, history, and live-storyline summaries.
+Story creates it for one callback call from a `ReadToolContext` containing only const World/history
+borrows, the scene ID, and pre-serialized live-storyline summaries. The callback captures no Story.
+Python adapters do not capture Story, and retained use after the call throws
+`Read tool callback is no longer active`. C++ dispatches only the existing read tools: graph, mind,
+history, and live-storyline summaries.
 
 Lifecycle has no read tools. `storyline_policy` builds its plain BeatSummary, invokes the callback,
 and returns a plain LifecycleDecision for Story to validate and apply.

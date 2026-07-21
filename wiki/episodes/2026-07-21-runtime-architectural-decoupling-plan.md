@@ -57,13 +57,17 @@ the code.
 - Storyline policy, scenario bootstrap, World analysis, scene-history, and text-downsampling logic
   are plain function modules.
 - Python narrator and scheduler adapters retain no Story reference and use expiring call-scoped
-  read tools.
+  read tools; C++ dispatches those tools from a bounded read context that captures no Story.
 - SceneData is behavior-free and read-only through Python; active-scene selection is validated.
+- Story-owned World, Character, and CharacterMemory values cross Python as detached snapshots;
+  intentional graph maintenance uses an explicit Story-owned Weaver command.
+- Story move assignment explicitly destroys old borrowers before transferring their state and
+  stable service allocations.
 - Obsolete SceneLoop, History, TextDownsampler, async background, raw-memory, and weakref paths are
   deleted.
 
-Verification at completion: 44 native tests, 34 Python tests, network-free lifecycle integration,
-plus Release/Debug/frontend/lint gates recorded in the wiki log.
+Verification at completion: 46 native tests in Release and Debug, 36 Python tests, network-free
+lifecycle integration, 7 frontend tests, frontend lint/build, and changed-file Ruff checks.
 
 The previous stage removed ambiguous ownership, deleted Scene, made SceneData independent of
 World, and gave Story exclusive ownership of the native runtime. Those changes were necessary,
