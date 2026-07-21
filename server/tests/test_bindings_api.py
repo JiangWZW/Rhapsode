@@ -49,6 +49,37 @@ def test_scene_data_has_only_per_storyline_state():
         assert not hasattr(_core.SceneData, forbidden)
 
 
+@pytest.mark.parametrize(
+    ("attribute", "replacement"),
+    [
+        ("scene_id", "other"),
+        ("title", "Other"),
+        ("system_prompt", "Other"),
+        ("history", []),
+        ("dialogue", []),
+        ("turn_index", 9),
+        ("driving_intention", "Other"),
+        ("charge", 2.0),
+        ("last_advanced", 9),
+    ],
+)
+def test_scene_data_cannot_be_rewritten_from_python(attribute, replacement):
+    story = _core.Story.from_scenario_json_str(
+        '{"title":"Root","system_prompt":"Narrate."}', "root"
+    )
+    with pytest.raises(AttributeError):
+        setattr(story.active_scene(), attribute, replacement)
+
+
+def test_active_scene_rejects_unknown_ids():
+    story = _core.Story.from_scenario_json_str(
+        '{"title":"Root","system_prompt":"Narrate."}', "root"
+    )
+    with pytest.raises(ValueError, match="Unknown scene"):
+        story.active_scene_id = "missing"
+    assert story.active_scene_id == "root"
+
+
 def test_world_exposes_read_state_but_not_lifecycle_staging():
     expected = {
         "character_memories", "characters", "find_character",

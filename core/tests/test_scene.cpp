@@ -619,6 +619,12 @@ TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lif
     REQUIRE(story.world().find_in_scene("root", "Scout") == nullptr);
 }
 
+TEST_CASE("Story rejects an unknown active scene", "[story][invariant]") {
+    Story story = Story::from_data(basic_scene());
+    REQUIRE_THROWS_AS(story.set_active_scene("missing"), std::invalid_argument);
+    REQUIRE(story.active_scene_id() == "root");
+}
+
 TEST_CASE("Story undo preserves the owned runtime", "[story][undo]") {
     Story story = Story::from_data(basic_scene());
     configure_story(story, [](const std::string&, const std::string&, const std::string&) {

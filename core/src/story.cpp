@@ -100,6 +100,11 @@ std::vector<std::string> Story::scene_ids() const {
     return ids;
 }
 
+void Story::set_active_scene(const std::string& id) {
+    if (!get_scene(id)) throw std::invalid_argument("Unknown scene: " + id);
+    active_scene_id_ = id;
+}
+
 SceneData* Story::fork_scene(const std::string& parent_id,
                              const std::string& new_id,
                              const std::vector<std::string>& cast,

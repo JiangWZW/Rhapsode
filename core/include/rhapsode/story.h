@@ -50,7 +50,7 @@ public:
     size_t scene_count() const { return scenes_.size(); }
 
     const std::string& active_scene_id() const { return active_scene_id_; }
-    void set_active_scene(const std::string& id) { active_scene_id_ = id; }
+    void set_active_scene(const std::string& id);
     SceneData* active_scene() { return get_scene(active_scene_id_); }
     const SceneData* active_scene() const { return get_scene(active_scene_id_); }
 

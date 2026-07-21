@@ -82,15 +82,15 @@ void bind_story(py::module_& m) {
             }, py::arg("name"), py::return_value_policy::reference_internal);
 
     py::class_<SceneData>(m, "SceneData")
-        .def_readwrite("scene_id", &SceneData::scene_id)
-        .def_readwrite("title", &SceneData::title)
-        .def_readwrite("system_prompt", &SceneData::system_prompt)
-        .def_readwrite("history", &SceneData::history)
-        .def_readwrite("dialogue", &SceneData::dialogue)
-        .def_readwrite("turn_index", &SceneData::turn_index)
-        .def_readwrite("driving_intention", &SceneData::driving_intention)
-        .def_readwrite("charge", &SceneData::charge)
-        .def_readwrite("last_advanced", &SceneData::last_advanced);
+        .def_readonly("scene_id", &SceneData::scene_id)
+        .def_readonly("title", &SceneData::title)
+        .def_readonly("system_prompt", &SceneData::system_prompt)
+        .def_readonly("history", &SceneData::history)
+        .def_readonly("dialogue", &SceneData::dialogue)
+        .def_readonly("turn_index", &SceneData::turn_index)
+        .def_readonly("driving_intention", &SceneData::driving_intention)
+        .def_readonly("charge", &SceneData::charge)
+        .def_readonly("last_advanced", &SceneData::last_advanced);
 
     py::class_<Story>(m, "Story")
         .def(py::init<>())
