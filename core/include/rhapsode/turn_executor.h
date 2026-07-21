@@ -1,6 +1,5 @@
 #pragma once
 
-#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -23,17 +22,10 @@ struct TurnResult {
     std::string scene_id;
     int completed_turn = 0;
     std::vector<SceneMessage> outputs;
-    DirectorOutput director;
-    WeaveResult weave;
-    std::vector<ExpiryOp> expiry;
-};
-
-enum class LoopState {
-    Idle,
-    ProcessingInput,
-    BuildingPrompt,
-    RunningLLM,
-    AppendingResult
+    struct Effects {
+        std::vector<Node> created_nodes;
+        std::vector<Node> expired_nodes;
+    } effects;
 };
 
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
@@ -46,7 +38,6 @@ public:
 
     TurnResult run_player_turn(SceneData& scene, const std::string& text);
     TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
-    LoopState state() const { return state_; }
 
     void set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
     void set_narrator_llm_callback(NarratorLLMCallback cb) {
@@ -80,9 +71,8 @@ private:
         std::vector<SpeechCue> cues;
     };
 
-    struct BackgroundResult {
-        WeaveResult weave;
-        std::vector<ExpiryOp> expiry;
+    struct PostTurnResult {
+        std::vector<Node> expired_nodes;
     };
 
     struct TurnWork {
@@ -93,7 +83,7 @@ private:
     TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous);
     void submit_message(SceneData& scene, const std::string& text, bool autonomous,
                         TurnWork& work);
-    std::future<BackgroundResult> advance(SceneData& scene, TurnWork& work);
+    PostTurnResult advance(SceneData& scene, TurnWork& work);
     NarratorPrompt build_turn_prompt(SceneData& scene, int turn);
     std::string call_narrator(const SceneData& scene,
                               const std::string& instructions,
@@ -110,14 +100,13 @@ private:
                      OutputBucket bucket, TurnWork& work);
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,
                         const std::string& narration);
-    std::future<BackgroundResult> dispatch_background(SceneData& scene, int turn,
-                                                       const DirectorOutput& director_output);
-    BackgroundResult finish_background(std::future<BackgroundResult>& future) noexcept;
+    PostTurnResult run_post_turn(SceneData& scene, int turn,
+                                 const DirectorOutput& director_output) noexcept;
     World& world_;
     Director& director_;
     Weaver& weaver_;
 
-    LoopState state_ = LoopState::Idle;
+    bool running_ = false;
     LLMCallback llm_cb_;
     NarratorLLMCallback narrator_llm_cb_;
     TurnCompleteCallback turn_complete_cb_;

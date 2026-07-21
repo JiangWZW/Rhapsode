@@ -234,22 +234,10 @@ void Story::sync_beat(const TurnResult& result) {
     SceneData* scene = get_scene(result.scene_id);
     if (!memory || !scene) return;
     try {
-        if (!result.expiry.empty()) {
-            std::vector<Node> nodes;
-            nodes.reserve(result.expiry.size());
-            for (const auto& operation : result.expiry)
-                if (const Node* node = world_->graph().get_node(operation.id))
-                    nodes.push_back(*node);
-            if (!nodes.empty()) memory->sync_expired(nodes);
-        }
-    } catch (const std::exception& error) {
-        log() << "  [expiry] sync failed: " << error.what() << "\n";
-    }
-    try {
-        if (!result.director.new_nodes.empty())
-            memory->process_new_nodes(result.director.new_nodes, scene->turn_index);
-        if (!result.director.newly_expired.empty())
-            memory->sync_expired(result.director.newly_expired);
+        if (!result.effects.created_nodes.empty())
+            memory->process_new_nodes(result.effects.created_nodes, scene->turn_index);
+        if (!result.effects.expired_nodes.empty())
+            memory->sync_expired(result.effects.expired_nodes);
     } catch (const std::exception& error) {
         log() << "  [sync] post-beat memory sync failed: " << error.what() << "\n";
     }

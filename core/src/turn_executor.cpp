@@ -5,6 +5,7 @@
 #include "rhapsode/str_util.h"
 #include "rhapsode/world.h"
 
+#include <algorithm>
 #include <exception>
 #include <utility>
 
@@ -57,37 +58,42 @@ TurnResult TurnExecutor::run_autonomous_turn(SceneData& scene,
 TurnResult TurnExecutor::run_turn(SceneData& scene,
                                   const std::string& text,
                                   bool autonomous) {
-    if (state_ != LoopState::Idle)
+    if (running_)
         throw std::runtime_error("Cannot run turn: loop is already active");
+
+    running_ = true;
 
     const SceneData scene_snapshot = scene;
     const World world_snapshot = world_;
     const bool resuming_snapshot = resuming_;
     TurnWork work;
-    std::future<BackgroundResult> background;
 
     try {
         submit_message(scene, text, autonomous, work);
-        background = advance(scene, work);
-        BackgroundResult completed = finish_background(background);
+        PostTurnResult completed = advance(scene, work);
 
         TurnResult result;
         result.scene_id = scene.scene_id;
         result.completed_turn = scene.turn_index;
         result.outputs = std::move(work.outputs);
-        result.director = std::move(work.director);
-        result.weave = std::move(completed.weave);
-        result.expiry = std::move(completed.expiry);
-        state_ = LoopState::Idle;
+        result.effects.created_nodes = std::move(work.director.new_nodes);
+        result.effects.expired_nodes = std::move(work.director.newly_expired);
+        for (auto& node : completed.expired_nodes) {
+            const auto duplicate = std::find_if(
+                result.effects.expired_nodes.begin(),
+                result.effects.expired_nodes.end(),
+                [&](const Node& existing) { return existing.id == node.id; });
+            if (duplicate == result.effects.expired_nodes.end())
+                result.effects.expired_nodes.push_back(std::move(node));
+        }
+        running_ = false;
         return result;
     } catch (...) {
         const auto original = std::current_exception();
-        if (weaver_.active()) weaver_.stop_expiry_drain();
-        if (background.valid()) (void)finish_background(background);
         scene = scene_snapshot;
         world_ = world_snapshot;
         resuming_ = resuming_snapshot;
-        state_ = LoopState::Idle;
+        running_ = false;
         std::rethrow_exception(original);
     }
 }
@@ -96,7 +102,6 @@ void TurnExecutor::submit_message(SceneData& scene,
                                   const std::string& text,
                                   bool autonomous,
                                   TurnWork&) {
-    state_ = LoopState::ProcessingInput;
     if (autonomous) {
         log() << "\n[off-stage beat] advancing scene '" << scene.scene_id
               << "' player-lessly\n" << std::flush;
@@ -109,8 +114,8 @@ void TurnExecutor::submit_message(SceneData& scene,
     scene.history.append(std::move(message));
 }
 
-std::future<TurnExecutor::BackgroundResult> TurnExecutor::advance(
-    SceneData& scene, TurnWork& work) {
+TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
+                                                   TurnWork& work) {
     if (!llm_cb_) throw std::runtime_error("No LLM callback registered");
 
     const int turn = scene.turn_index;
@@ -139,7 +144,7 @@ std::future<TurnExecutor::BackgroundResult> TurnExecutor::advance(
     }
 
     log() << "====== Turn " << turn << " done ======\n" << std::flush;
-    return dispatch_background(scene, turn, work.director);
+    return run_post_turn(scene, turn, work.director);
 }
 
 void TurnExecutor::emit_output(SceneData& scene,

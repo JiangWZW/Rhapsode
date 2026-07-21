@@ -303,8 +303,8 @@ TEST_CASE("Weaver activation preserves optional runtime semantics",
     REQUIRE(weaver.active());
 }
 
-TEST_CASE("TurnExecutor returns associated Director, Weaver, and expiry results",
-          "[turn_executor][result][background]") {
+TEST_CASE("TurnExecutor returns associated generic turn effects",
+          "[turn_executor][result][post_turn]") {
     World world;
     SceneData scene = basic_scene("root");
     const auto old_id = add_fact(world.graph(), "The gate is closed", "Gate", 1);
@@ -331,11 +331,14 @@ TEST_CASE("TurnExecutor returns associated Director, Weaver, and expiry results"
     const TurnResult result = executor.run_player_turn(scene, "Look.");
     REQUIRE(result.scene_id == "root");
     REQUIRE(result.completed_turn == 1);
-    REQUIRE(result.director.new_nodes.size() == 1);
-    REQUIRE(result.weave.connected.size() == 1);
-    REQUIRE(result.expiry.size() == 1);
-    REQUIRE(result.expiry.front().id == old_id);
-    REQUIRE(executor.state() == LoopState::Idle);
+    REQUIRE(result.effects.created_nodes.size() == 1);
+    REQUIRE(result.effects.expired_nodes.size() == 1);
+    REQUIRE(result.effects.expired_nodes.front().id == old_id);
+    const auto edges = world.graph().all_edges();
+    REQUIRE(std::any_of(edges.begin(), edges.end(), [&](const EdgeInfo& edge) {
+        return edge.from_id == old_id && edge.to_id == new_id &&
+               edge.data.active && edge.data.weight == 0.8f;
+    }));
 }
 
 TEST_CASE("TurnExecutor keeps narrator and dialogue histories separate", "[turn_executor]") {
@@ -410,7 +413,6 @@ TEST_CASE("TurnExecutor rolls back failed turns and can be reused",
     REQUIRE(scene.turn_index == 0);
     REQUIRE(scene.history.size() == 0);
     REQUIRE(world.graph().size() == 0);
-    REQUIRE(executor.state() == LoopState::Idle);
 
     executor.set_narrator_llm_callback(
         [](const std::string&, const std::string&, const std::string&) {
@@ -437,7 +439,8 @@ TEST_CASE("TurnExecutor autonomous turns remain associated with their SceneData"
     REQUIRE(result.outputs.front().content == "Narration for second.");
 }
 
-TEST_CASE("TurnExecutor joins background work before returning", "[turn_executor][background]") {
+TEST_CASE("TurnExecutor completes post-turn work before returning",
+          "[turn_executor][post_turn]") {
     using namespace std::chrono_literals;
     World world;
     SceneData scene = basic_scene();
@@ -470,7 +473,7 @@ TEST_CASE("TurnExecutor joins background work before returning", "[turn_executor
 }
 
 TEST_CASE("TurnExecutor preserves post-turn callback order",
-          "[turn_executor][background][characterization]") {
+          "[turn_executor][post_turn][characterization]") {
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Scout", "Careful", false});
@@ -517,7 +520,7 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
 }
 
 TEST_CASE("TurnExecutor post-turn failures remain non-fatal",
-          "[turn_executor][background][characterization]") {
+          "[turn_executor][post_turn][characterization]") {
     World world;
     SceneData scene = basic_scene();
     add_fact(world.graph(), "Gate shut", "Gate", 1);

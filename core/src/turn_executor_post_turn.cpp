@@ -4,8 +4,6 @@
 #include "rhapsode/log_util.h"
 #include "rhapsode/world.h"
 
-#include <future>
-#include <functional>
 #include <utility>
 
 namespace rhapsode {
@@ -34,82 +32,68 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 
 }  // namespace
 
-std::future<TurnExecutor::BackgroundResult> TurnExecutor::dispatch_background(
-    SceneData& scene,
-    int turn,
-    const DirectorOutput&) {
-    const auto weaver = std::ref(weaver_);
-    const bool weaver_active = weaver_.active();
-    const auto world = std::ref(world_);
-    const auto scene_data = std::ref(scene);
+TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
+    SceneData& scene, int turn, const DirectorOutput&) noexcept {
+    PostTurnResult result;
     const auto history = scene.history.snapshot(window_size_);
     const std::string context =
         format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
-    const bool full_weave = weaver_active && weaver_.should_weave(turn);
-    const LLMCallback downsampler_callback = downsampler_cb_;
-
-    return std::async(std::launch::async,
-        [world, scene_data, weaver, weaver_active, turn, context, full_weave,
-         downsampler_callback]() {
-            BackgroundResult result;
-            if (weaver_active) {
-                Weaver& service = weaver.get();
-                if (full_weave) {
-                    log() << "  [bg] full graph weave (cloud)...\n" << std::flush;
-                    result.weave = service.weave(turn, context);
-                } else {
-                    log() << "  [bg] quick graph weave (local)...\n" << std::flush;
-                    result.weave = service.weave_local(turn, context);
-                }
-                if (!service.expiry_queue_empty())
-                    result.expiry = service.drain_expiry_queue(turn);
-            }
-
-            world.get().reflect_perceptions(turn);
-
-            if (downsampler_callback) {
-                try {
-                    SceneData& current = scene_data.get();
-                    const int before = current.downsampler.summarized_up_to();
-                    current.downsampler.process_turn(
-                        current.history.messages(), downsampler_callback);
-                    const int after = current.downsampler.summarized_up_to();
-                    log() << "  [downsampler] summarized_up_to " << before
-                          << " -> " << after << "\n";
-                    const auto rendered = current.downsampler.render();
-                    if (!rendered.empty())
-                        log() << "  [downsampler] story_so_far (" << rendered.size()
-                              << " chars): " << rendered.substr(0, 200)
-                              << (rendered.size() > 200 ? "..." : "") << "\n";
-                } catch (const std::exception& error) {
-                    log() << "  [downsampler] process_turn failed: "
-                          << error.what() << "\n";
-                }
-            }
-            return result;
-        });
-}
-
-TurnExecutor::BackgroundResult TurnExecutor::finish_background(
-    std::future<BackgroundResult>& future) noexcept {
-    BackgroundResult completed;
-    if (!future.valid()) return completed;
     try {
-        completed = future.get();
-    } catch (const std::exception& error) {
-        log() << "  [bg] background work failed: " << error.what() << "\n";
-    } catch (...) {
-        log() << "  [bg] background work failed with an unknown exception\n";
-    }
+        WeaveResult weave;
+        if (weaver_.active()) {
+            if (weaver_.should_weave(turn)) {
+                log() << "  [post-turn] full graph weave (cloud)...\n"
+                      << std::flush;
+                weave = weaver_.weave(turn, context);
+            } else {
+                log() << "  [post-turn] quick graph weave (local)...\n"
+                      << std::flush;
+                weave = weaver_.weave_local(turn, context);
+            }
+            if (!weaver_.expiry_queue_empty()) {
+                const auto expiry = weaver_.drain_expiry_queue(turn);
+                for (const auto& operation : expiry) {
+                    if (const Node* node = world_.graph().get_node(operation.id))
+                        result.expired_nodes.push_back(*node);
+                }
+            }
+        }
 
-    if (!completed.weave.connected.empty() ||
-        !completed.weave.disconnected.empty() ||
-        !completed.weave.reweighted.empty()) {
-        log() << "  [weave] +" << completed.weave.connected.size()
-              << " -" << completed.weave.disconnected.size()
-              << " ~" << completed.weave.reweighted.size() << "\n";
+        world_.reflect_perceptions(turn);
+
+        if (downsampler_cb_) {
+            try {
+                const int before = scene.downsampler.summarized_up_to();
+                scene.downsampler.process_turn(
+                    scene.history.messages(), downsampler_cb_);
+                const int after = scene.downsampler.summarized_up_to();
+                log() << "  [downsampler] summarized_up_to " << before
+                      << " -> " << after << "\n";
+                const auto rendered = scene.downsampler.render();
+                if (!rendered.empty())
+                    log() << "  [downsampler] story_so_far (" << rendered.size()
+                          << " chars): " << rendered.substr(0, 200)
+                          << (rendered.size() > 200 ? "..." : "") << "\n";
+            } catch (const std::exception& error) {
+                log() << "  [downsampler] process_turn failed: "
+                      << error.what() << "\n";
+            }
+        }
+
+        if (!weave.connected.empty() || !weave.disconnected.empty() ||
+            !weave.reweighted.empty()) {
+            log() << "  [weave] +" << weave.connected.size()
+                  << " -" << weave.disconnected.size()
+                  << " ~" << weave.reweighted.size() << "\n";
+        }
+    } catch (const std::exception& error) {
+        result = {};
+        log() << "  [post-turn] work failed: " << error.what() << "\n";
+    } catch (...) {
+        result = {};
+        log() << "  [post-turn] work failed with an unknown exception\n";
     }
-    return completed;
+    return result;
 }
 
 }  // namespace rhapsode

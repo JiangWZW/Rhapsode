@@ -176,7 +176,6 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
 }  // namespace
 
 TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene, int turn) {
-    state_ = LoopState::BuildingPrompt;
     log() << "[1/4] Building merged prompt...\n" << std::flush;
 
     const size_t win = resuming_ ? resume_window_size_ : window_size_;
@@ -236,7 +235,6 @@ void TurnExecutor::register_new_characters(SceneData& scene,
 TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     SceneData& scene, int turn, const NarratorPrompt& prompt,
     DirectorOutput& director_output) {
-    state_ = LoopState::RunningLLM;
     log() << "[2/4] Calling narrative LLM...\n" << std::flush;
 
     auto raw_response = call_narrator(scene, prompt.instructions, prompt.turn_state);
@@ -249,7 +247,6 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     NarratorTurnResult result;
     std::tie(result.prose, result.plan) = split_merged_response(std::move(raw_response));
 
-    state_ = LoopState::AppendingResult;
     log() << "[3/4] Applying graph...\n" << std::flush;
 
     std::vector<Rejection> all_rejections;
@@ -267,13 +264,11 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
             }
             rewrite_turn_state += "\nRewrite your narrative and plan to fix these issues.\n";
 
-            state_ = LoopState::RunningLLM;
             auto [new_prose, new_plan] =
                 split_merged_response(call_narrator(scene, prompt.instructions,
                                                     rewrite_turn_state));
             result.prose = std::move(new_prose);
             result.plan = std::move(new_plan);
-            state_ = LoopState::AppendingResult;
         }
 
         director_output = director_.apply_planned_turn(turn, result.plan);
