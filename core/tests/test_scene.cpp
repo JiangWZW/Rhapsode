@@ -11,6 +11,7 @@
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
 #include "rhapsode/history.h"
+#include "rhapsode/narrator_prompt.h"
 #include "rhapsode/node.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_loop.h"
@@ -67,6 +68,15 @@ std::uint64_t add_fact(WorldGraph& graph, const std::string& fact,
     return graph.add_node(std::move(node)).id;
 }
 
+std::uint64_t prompt_hash(const std::string& text) {
+    std::uint64_t hash = 14695981039346656037ULL;
+    for (const unsigned char byte : text) {
+        hash ^= byte;
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
 }  // namespace
 
 TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
@@ -75,6 +85,13 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
     scene.scene_id = "root";
     REQUIRE(scene.scene_id == "root");
     REQUIRE(scene.turn_index == 0);
+}
+
+TEST_CASE("Narrator instructions remain byte-identical across the refactor",
+          "[narrator_prompt][characterization]") {
+    const std::string instructions = build_narrator_instructions();
+    REQUIRE(instructions.size() == 4016);
+    REQUIRE(prompt_hash(instructions) == 0x15c41a86a90a0eedULL);
 }
 
 TEST_CASE("SceneMessage JSON round-trip", "[scene_message]") {

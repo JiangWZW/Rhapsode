@@ -121,9 +121,7 @@ Query first, then write. Do NOT guess when you can query. A node with valid_unti
 Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>
 Then raw JSON (no fences). Use ONLY straight ASCII double quotes (") for all keys
-and strings -- never smart/curly quotes ()RHAPSODE"
-        "\xe2\x80\x9c \xe2\x80\x9d \xe2\x80\x98 \xe2\x80\x99"
-        R"RHAPSODE(), or the JSON will not parse:
+and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
 {"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
  "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
  "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],

@@ -2,6 +2,21 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-21] implementation | Runtime coupling reduction complete
+
+- Replaced Scene with a World-free SceneData aggregate; Story now exclusively owns World,
+  SceneData records, and SceneLoop.
+- Made SceneLoop own Director and optional Weaver, removed retained-scene and submit/drain result
+  APIs, and made every background borrow call-scoped and synchronously joined.
+- Privatized World containers, moved roster/membership/memory mutation behind World operations,
+  and removed the World lifecycle queue; Story now applies accepted lifecycle verdicts directly.
+- Consolidated scenario loading, complete persistence, and runtime configuration through Story.
+  Production Python now owns Story, MemorySystem, and Annotator only.
+- Removed Scene and SceneLoop from the production Python surface, blocked direct Python membership
+  and death mutation, and migrated maintained diagnostics.
+- Verified 38 C++ tests, 23 Python tests, 7 frontend tests, production builds, both linters, 10
+  focused Debug tests, and the offline lifecycle diagnostic. Nothing was pushed.
+
 ## [2026-07-20] plan | Runtime coupling reduction
 
 - Audited the complete runtime graph after the dependency-safety refactor and separated ownership,

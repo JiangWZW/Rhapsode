@@ -31,7 +31,6 @@ struct SceneTurnResult {
 enum class LoopState {
     Idle,
     ProcessingInput,
-    Weaving,
     BuildingPrompt,
     RunningLLM,
     AppendingResult

@@ -1,8 +1,8 @@
 ---
 title: Runtime coupling reduction plan
 date: 2026-07-20
-last_updated: 2026-07-20
-status: proposed
+last_updated: 2026-07-21
+status: implemented
 confidence: verified
 tier: episodic
 tags:
@@ -13,7 +13,7 @@ tags:
 sources:
   - core/include/rhapsode/story.h
   - core/include/rhapsode/scene_loop.h
-  - core/include/rhapsode/scene.h
+  - core/include/rhapsode/scene_data.h
   - core/include/rhapsode/world.h
   - core/include/rhapsode/director.h
   - core/include/rhapsode/weaver.h
@@ -704,6 +704,41 @@ This stage is complete when:
 - normal and Debug verification pass;
 - save schemas, prompts, output payloads, operation order, and existing approved behavior remain
   unchanged.
+
+## Implementation result - 2026-07-21
+
+Implemented locally in commit `f279030` with a final follow-up for documentation and the
+call-scoped background capture cleanup. Nothing was pushed.
+
+The resulting graph matches the target:
+
+- Scene was deleted and replaced by the World-free SceneData aggregate;
+- Story exclusively owns stable World, SceneData, and SceneLoop allocations;
+- SceneLoop owns Director and optional Weaver and retains no SceneData between calls;
+- background work captures call-scoped reference wrappers and is joined before return;
+- World containers are private and World stores no lifecycle queue;
+- Story applies lifecycle verdicts directly and owns scenario loading, undo, and complete
+  persistence;
+- production Python owns Story, MemorySystem, and Annotator only;
+- Scene and SceneLoop are absent from the production Python binding surface;
+- TextDownsampler no longer stores an LLM callback.
+
+Verification at completion:
+
+- 38 C++ test cases, including prompt-byte, transaction, result-association, background, reload,
+  persistence, and substrate coverage;
+- 23 Python tests, including binding-surface and complete-session lifetime coverage;
+- 7 frontend tests;
+- C++ and frontend production builds;
+- Python Ruff and frontend ESLint;
+- 10 focused Debug transaction/background/load/undo tests;
+- offline fork/conclude/merge diagnostic.
+
+The native test-case count is lower than the earlier 52 because tests for deleted compatibility
+APIs (`load_scene`, submit/drain caches, graph-affinity mismatch wiring) were removed. Their
+supported behavior was replaced with tests for synchronous result association, owned-service graph
+affinity by construction, rollback, background joining, Story runtime reuse, and the new binding
+surface.
 
 ## Repository discipline
 

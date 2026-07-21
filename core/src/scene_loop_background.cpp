@@ -5,6 +5,7 @@
 #include "rhapsode/world.h"
 
 #include <future>
+#include <functional>
 #include <optional>
 #include <utility>
 
@@ -38,39 +39,46 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::dispatch_background(
     SceneData& scene,
     int turn,
     const DirectorOutput&) {
-    Weaver* const weaver = weaver_.get();
+    const std::optional<std::reference_wrapper<Weaver>> weaver = weaver_
+        ? std::optional<std::reference_wrapper<Weaver>>{std::ref(*weaver_)}
+        : std::nullopt;
+    const auto world = std::ref(world_);
+    const auto scene_data = std::ref(scene);
     const auto history = scene.history.snapshot(window_size_);
     const std::string context =
         format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
-    const bool full_weave = weaver && weaver->should_weave(turn);
+    const bool full_weave = weaver && weaver->get().should_weave(turn);
     const LLMCallback downsampler_callback = downsampler_cb_;
 
     return std::async(std::launch::async,
-        [this, &scene, weaver, turn, context, full_weave, downsampler_callback]() {
+        [world, scene_data, weaver, turn, context, full_weave,
+         downsampler_callback]() {
             BackgroundResult result;
             if (weaver) {
+                Weaver& service = weaver->get();
                 if (full_weave) {
                     log() << "  [bg] full graph weave (cloud)...\n" << std::flush;
-                    result.weave = weaver->weave(turn, context);
+                    result.weave = service.weave(turn, context);
                 } else {
                     log() << "  [bg] quick graph weave (local)...\n" << std::flush;
-                    result.weave = weaver->weave_local(turn, context);
+                    result.weave = service.weave_local(turn, context);
                 }
-                if (!weaver->expiry_queue_empty())
-                    result.expiry = weaver->drain_expiry_queue(turn);
+                if (!service.expiry_queue_empty())
+                    result.expiry = service.drain_expiry_queue(turn);
             }
 
-            world_.reflect_perceptions(turn);
+            world.get().reflect_perceptions(turn);
 
             if (downsampler_callback) {
                 try {
-                    const int before = scene.downsampler.summarized_up_to();
-                    scene.downsampler.process_turn(
-                        scene.history.messages(), downsampler_callback);
-                    const int after = scene.downsampler.summarized_up_to();
+                    SceneData& current = scene_data.get();
+                    const int before = current.downsampler.summarized_up_to();
+                    current.downsampler.process_turn(
+                        current.history.messages(), downsampler_callback);
+                    const int after = current.downsampler.summarized_up_to();
                     log() << "  [downsampler] summarized_up_to " << before
                           << " -> " << after << "\n";
-                    const auto rendered = scene.downsampler.render();
+                    const auto rendered = current.downsampler.render();
                     if (!rendered.empty())
                         log() << "  [downsampler] story_so_far (" << rendered.size()
                               << " chars): " << rendered.substr(0, 200)
