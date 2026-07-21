@@ -47,6 +47,9 @@ public:
         turn_complete_cb_ = std::move(cb);
     }
     void set_downsampler_callback(LLMCallback cb) { downsampler_cb_ = std::move(cb); }
+    void set_reflection_llm_callback(LLMCallback cb) {
+        reflection_llm_cb_ = std::move(cb);
+    }
     void set_history_window(size_t normal, size_t resume);
     void set_resuming(bool value) { resuming_ = value; }
 
@@ -111,6 +114,7 @@ private:
     NarratorLLMCallback narrator_llm_cb_;
     TurnCompleteCallback turn_complete_cb_;
     LLMCallback downsampler_cb_;
+    LLMCallback reflection_llm_cb_;
 
     size_t window_size_ = 8;
     size_t resume_window_size_ = 12;

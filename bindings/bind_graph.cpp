@@ -7,7 +7,6 @@
 #include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
 #include "rhapsode/node.h"
-#include "rhapsode/scene.h"
 #include "rhapsode/world_graph.h"
 
 namespace py = pybind11;
@@ -93,7 +92,6 @@ void bind_graph(py::module_& m) {
 
     py::class_<CharacterMemory>(m, "CharacterMemory")
         .def(py::init<std::string>(), py::arg("name"))
-        .def("set_reflection_llm_callback",  &CharacterMemory::set_reflection_llm_callback)
         .def("seed_belief",       &CharacterMemory::seed_belief,
              py::arg("fact"), py::arg("entities"), py::arg("created_at"),
              py::arg("weight") = CharacterMemory::kAuthoredSeedWeight,
@@ -104,7 +102,7 @@ void bind_graph(py::module_& m) {
         .def("route_fact",        &CharacterMemory::route_fact,
              py::arg("fact"), py::arg("entities"), py::arg("turn"))
         .def("reflect_perceptions", &CharacterMemory::reflect_perceptions,
-             py::arg("turn"), py::arg("description"))
+             py::arg("turn"), py::arg("description"), py::arg("callback"))
         .def("render_thoughts",   &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
         .def_property_readonly("beliefs", &CharacterMemory::beliefs,

@@ -97,11 +97,7 @@ void bind_story(py::module_& m) {
             }, py::arg("name"), py::return_value_policy::reference_internal)
         .def("tool_query_graph", &World::tool_query_graph, py::arg("query"))
         .def("tool_query_mind", &World::tool_query_mind, py::arg("character"))
-        .def("scan_death_candidates", &World::scan_death_candidates)
-        .def("set_reflection_llm_callback", &World::set_reflection_llm_callback,
-             py::arg("cb"))
-        .def("set_memory", &World::set_memory, py::arg("mem"),
-             py::keep_alive<1, 2>());
+        .def("scan_death_candidates", &World::scan_death_candidates);
 
     py::class_<SceneData>(m, "SceneData")
         .def_readwrite("scene_id", &SceneData::scene_id)
@@ -165,6 +161,9 @@ void bind_story(py::module_& m) {
         .def("set_scheduler_callback", &Story::set_scheduler_callback, py::arg("cb"))
         .def("set_lifecycle_callback", &Story::set_lifecycle_callback, py::arg("cb"))
         .def("set_downsampler_callback", &Story::set_downsampler_callback, py::arg("cb"))
+        .def("set_reflection_llm_callback", &Story::set_reflection_llm_callback,
+             py::arg("cb"))
+        .def("set_memory", &Story::set_memory, py::arg("memory"))
         .def("set_saves_dir", &Story::set_saves_dir, py::arg("dir"))
         .def("advance_scene", &Story::advance_scene, py::arg("player_input"),
              py::call_guard<py::gil_scoped_release>())

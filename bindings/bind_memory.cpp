@@ -9,7 +9,7 @@ namespace py = pybind11;
 using namespace rhapsode;
 
 void bind_memory(py::module_& m) {
-    py::class_<MemorySystem>(m, "MemorySystem")
+    py::class_<MemorySystem, std::shared_ptr<MemorySystem>>(m, "MemorySystem")
         .def(py::init<const std::string&>(), py::arg("scene_id"))
         .def("set_embed_callback",       &MemorySystem::set_embed_callback)
         .def("set_store_callback",       &MemorySystem::set_store_callback)

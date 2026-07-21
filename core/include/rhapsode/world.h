@@ -10,8 +10,6 @@
 
 namespace rhapsode {
 
-class MemorySystem;
-
 // A character flagged as possibly dead by the keyword scan, with the graph
 // facts that triggered it. Lives here because the scan is over the shared graph.
 struct DeathCandidate {
@@ -48,7 +46,7 @@ public:
                                   const std::string& intention,
                                   const std::vector<std::string>& subjects,
                                   int created_at);
-    void revert_to_turn(int target_turn);
+    std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
     // -- Narrator tool-use queries over the shared substrate --
     /// Search world graph by entity name or free text. Returns entity-timeline
@@ -66,27 +64,14 @@ public:
                            const std::vector<Node>& nodes,
                            int turn);
     /// Reflect every mind that has pending perceptions. Minds with none are a no-op.
-    void reflect_perceptions(int turn);
-    /// Configure reflection for the memories currently owned by this World.
-    /// Runtime-only: the callback is never serialized.
-    void set_reflection_llm_callback(LLMCallback cb);
+    void reflect_perceptions(int turn, const LLMCallback& llm_callback);
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
-
-    // -- System references --
-    void set_memory(MemorySystem* mem) { memory_ = mem; }
-    MemorySystem* memory() const { return memory_; }
 
     // -- Scenario bootstrap --
     /// Populate graph, roster, membership, and authored minds from a scenario.
     void seed_from_scenario(const nlohmann::json& j,
                             const std::string& root_scene_id = {});
-
-    // -- Persistence (durable substrate -> world.json) --
-    bool has_save(const std::string& saves_dir) const;
-    void load_save(const std::string& saves_dir);
-    void save(const std::string& saves_dir) const;
-    void delete_save(const std::string& saves_dir) const;
 
     nlohmann::json to_json() const;
     static World from_json(const nlohmann::json& j);
@@ -97,9 +82,6 @@ private:
     WorldGraph world_graph_;
     std::unordered_map<std::string, CharacterMemory> character_memories_;
     std::vector<Character> characters_;  // membership via Character::scene_ids
-    MemorySystem* memory_ = nullptr;
-    LLMCallback reflection_llm_cb_;
-    static std::string save_path(const std::string& saves_dir);
 };
 
 } // namespace rhapsode

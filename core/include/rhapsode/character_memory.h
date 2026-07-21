@@ -21,9 +21,6 @@ public:
 
     explicit CharacterMemory(std::string name);
 
-    // -- Callback (set from Python, once at session start) --
-    void set_reflection_llm_callback(LLMCallback cb); // prompt -> completion (cloud LLM)
-
     // -- Subjective belief graph (beliefs_) --
     // A character's view of the world and of others is a WorldGraph of its own,
     // owned subjectively.  Authored priors are seeded here; perception is routed
@@ -66,7 +63,8 @@ public:
     // untouched.  No-op without a reflection LLM callback or new perceptions.
     // `description` is the character's Character.description, passed in so the
     // memory does not duplicate it.
-    void reflect_perceptions(int turn, const std::string& description);
+    void reflect_perceptions(int turn, const std::string& description,
+                             const LLMCallback& llm_callback);
 
     const WorldGraph& beliefs() const { return beliefs_; }
 
@@ -102,7 +100,6 @@ private:
     // owned per-character.  This is the whole persisted mind.
     WorldGraph beliefs_;
 
-    LLMCallback reflection_llm_cb_;
 };
 
 } // namespace rhapsode

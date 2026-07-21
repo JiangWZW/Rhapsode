@@ -43,7 +43,7 @@ def main() -> None:
     scene = story.active_scene()
     memory = MemorySystem(scene.scene_id)
     register_callbacks(memory, scene.scene_id, CHROMA_PATH)
-    story.world().set_memory(memory)
+    story.set_memory(memory)
 
     resuming = story.has_save(SAVES_DIR)
     if resuming:
@@ -61,7 +61,7 @@ def main() -> None:
     if expired:
         memory.sync_expired(expired)
 
-    story.world().set_reflection_llm_callback(make_local_llm_callback())
+    story.set_reflection_llm_callback(make_local_llm_callback())
     story.set_llm_callback(stub_llm)
     story.set_narrator_llm_callback(stub_narrator)
     story.set_weaver_llm_callback(stub_llm)

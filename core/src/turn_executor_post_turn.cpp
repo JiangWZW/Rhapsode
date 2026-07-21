@@ -59,7 +59,7 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
             }
         }
 
-        world_.reflect_perceptions(turn);
+        world_.reflect_perceptions(turn, reflection_llm_cb_);
 
         if (downsampler_cb_) {
             try {

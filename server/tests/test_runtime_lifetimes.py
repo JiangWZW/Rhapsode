@@ -58,7 +58,7 @@ def test_story_callbacks_do_not_form_strong_reference_cycles():
 def test_complete_session_graph_is_released_together():
     story = _story()
     memory = MemorySystem("root")
-    story.world().set_memory(memory)
+    story.set_memory(memory)
     annotator = Annotator(story.world())
     story_ref = weakref.ref(story)
     memory_ref = weakref.ref(memory)

@@ -10,6 +10,7 @@
 #include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
+#include "rhapsode/memory_system.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/weaver.h"
@@ -323,7 +324,8 @@ int Story::revert_scene_turns(SceneData& scene, int count) {
     }
     scene.history.truncate(cut);
     scene.dialogue.drop_from_turn(target);
-    world_->revert_to_turn(target);
+    const auto removed_ids = world_->revert_to_turn(target);
+    if (memory_ && !removed_ids.empty()) memory_->delete_nodes(removed_ids);
     scene.turn_index = target;
     log() << "  [undo] Reverted " << actual << " turn(s), now at turn "
           << target << "\n" << std::flush;
@@ -362,6 +364,10 @@ void Story::set_history_window(size_t normal, size_t resume) {
 void Story::set_resuming(bool value) { executor_->set_resuming(value); }
 void Story::set_downsampler_callback(LLMCallback cb) {
     executor_->set_downsampler_callback(std::move(cb));
+}
+
+void Story::set_reflection_llm_callback(LLMCallback cb) {
+    executor_->set_reflection_llm_callback(std::move(cb));
 }
 
 }  // namespace rhapsode

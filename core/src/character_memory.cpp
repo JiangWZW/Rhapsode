@@ -15,13 +15,11 @@
 namespace rhapsode {
 
 // ---------------------------------------------------------------------------
-// Construction + callback setters
+// Construction
 // ---------------------------------------------------------------------------
 
 CharacterMemory::CharacterMemory(std::string name)
     : char_name_(std::move(name)) {}
-
-void CharacterMemory::set_reflection_llm_callback(LLMCallback cb) { reflection_llm_cb_ = std::move(cb); }
 
 // ---------------------------------------------------------------------------
 // Subjective belief graph (beliefs_)

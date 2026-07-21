@@ -230,7 +230,7 @@ std::string Story::autonomous_cue(const std::string& scene_id) const {
 }
 
 void Story::sync_beat(const TurnResult& result) {
-    MemorySystem* memory = world_->memory();
+    MemorySystem* memory = memory_.get();
     SceneData* scene = get_scene(result.scene_id);
     if (!memory || !scene) return;
     try {

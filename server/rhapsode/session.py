@@ -83,7 +83,7 @@ def _setup_ws_session() -> WsSession:
     story = Story.load_scenario(str(SCENARIO_PATH))
     scene = story.active_scene()
     memory = _init_memory(scene.scene_id)
-    story.world().set_memory(memory)
+    story.set_memory(memory)
 
     is_resuming = story.has_save(SAVES_DIR)
     if is_resuming:
@@ -101,9 +101,8 @@ def _setup_ws_session() -> WsSession:
         )
 
     _sync_graph_to_memory(story, memory)
-    # Reflection runs off the foreground path. World owns the callback because
-    # it owns the complete character-memory map and reconstructs it on load.
-    story.world().set_reflection_llm_callback(call_llm)
+    # Story keeps reflection configuration outside the persisted World value.
+    story.set_reflection_llm_callback(call_llm)
 
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())

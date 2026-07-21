@@ -276,8 +276,9 @@ int apply_reinforce_decay(WorldGraph& beliefs, int turn,
 
 }  // namespace
 
-void CharacterMemory::reflect_perceptions(int turn, const std::string& description) {
-    if (!reflection_llm_cb_) {
+void CharacterMemory::reflect_perceptions(int turn, const std::string& description,
+                                          const LLMCallback& llm_callback) {
+    if (!llm_callback) {
         log() << "  [char_mem:" << char_name_
               << "] reflect skip: no reflection LLM callback\n" << std::flush;
         return;
@@ -297,7 +298,7 @@ void CharacterMemory::reflect_perceptions(int turn, const std::string& descripti
 
     std::string raw;
     try {
-        raw = reflection_llm_cb_(prompt);
+        raw = llm_callback(prompt);
     } catch (const std::exception& ex) {
         log() << "  [char_mem:" << char_name_
               << "] reflect_perceptions failed: " << ex.what() << "\n";

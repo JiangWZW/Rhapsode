@@ -26,6 +26,7 @@ def test_story_is_the_production_composition_surface():
         "revert_active_turns", "save", "scene_count", "scene_ids",
         "set_downsampler_callback", "set_history_window",
         "set_lifecycle_callback", "set_llm_callback",
+        "set_memory", "set_reflection_llm_callback",
         "set_narrator_llm_callback", "set_resuming", "set_saves_dir",
         "set_scheduler_callback", "set_weaver_interval",
         "set_weaver_llm_callback", "set_weaver_local_llm_callback",
@@ -51,7 +52,7 @@ def test_scene_data_has_only_per_storyline_state():
 def test_world_exposes_read_state_but_not_lifecycle_staging():
     expected = {
         "character_memories", "characters", "find_character",
-        "scan_death_candidates", "set_memory", "set_reflection_llm_callback",
+        "scan_death_candidates",
         "tool_query_graph", "tool_query_mind", "world_graph",
     }
     assert {name for name in dir(_core.World) if not name.startswith("_")} == expected

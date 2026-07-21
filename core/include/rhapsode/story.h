@@ -18,6 +18,7 @@ namespace rhapsode {
 class TurnExecutor;
 class Director;
 class Weaver;
+class MemorySystem;
 struct TurnResult;
 
 using SchedulerCallback = std::function<std::string(const std::string& instructions,
@@ -86,6 +87,10 @@ public:
     void set_scheduler_callback(SchedulerCallback cb) { scheduler_cb_ = std::move(cb); }
     void set_lifecycle_callback(LifecycleCallback cb) { lifecycle_cb_ = std::move(cb); }
     void set_downsampler_callback(LLMCallback cb);
+    void set_reflection_llm_callback(LLMCallback cb);
+    void set_memory(std::shared_ptr<MemorySystem> memory) {
+        memory_ = std::move(memory);
+    }
     void set_saves_dir(const std::string& dir) { saves_dir_ = dir; }
 
     std::vector<SceneMessage> advance_scene(const std::string& player_input);
@@ -116,6 +121,7 @@ private:
     SchedulerCallback scheduler_cb_;
     LifecycleCallback lifecycle_cb_;
     std::string saves_dir_;
+    std::shared_ptr<MemorySystem> memory_;
 
     // Stable allocations keep graph-service references valid through Story moves.
     // Declaration order destroys the loop before its injected services and World.

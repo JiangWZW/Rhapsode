@@ -218,42 +218,39 @@ TEST_CASE("World death mutation clears all membership", "[world]") {
     REQUIRE(scout->scene_ids.empty());
 }
 
-TEST_CASE("New World memories inherit reflection configuration",
+TEST_CASE("New World memories accept call-scoped reflection configuration",
           "[world][character_memory]") {
     World world;
     int calls = 0;
-    world.set_reflection_llm_callback([&](const std::string&) {
+    const LLMCallback reflection = [&](const std::string&) {
         ++calls;
         return std::string{"not json"};
-    });
+    };
     world.enter_character("root", Character{"Scout", "Careful", false});
     Node perceived;
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.reflect_perceptions(2);
+    world.reflect_perceptions(2, reflection);
     REQUIRE(calls == 1);
 }
 
-TEST_CASE("Loaded World memories retain reflection configuration",
+TEST_CASE("Loaded World memories accept call-scoped reflection configuration",
           "[world][character_memory][persistence]") {
     World world;
     world.enter_character("root", Character{"Scout", "Careful", false});
     int calls = 0;
-    world.set_reflection_llm_callback([&](const std::string&) {
+    const LLMCallback reflection = [&](const std::string&) {
         ++calls;
         return std::string{"not json"};
-    });
-    const auto directory = temp_dir("rhapsode-world-reflection-");
-    world.save(directory.string());
-    world.load_save(directory.string());
+    };
+    world = World::from_json(world.to_json());
     Node perceived;
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.reflect_perceptions(2);
+    world.reflect_perceptions(2, reflection);
     REQUIRE(calls == 1);
-    std::filesystem::remove_all(directory);
 }
 
 TEST_CASE("Perceptions respect private and public audiences", "[world][memory]") {
@@ -505,7 +502,7 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
         events.push_back("expiry");
         return std::string{R"({"superseded":[],"reason":"current"})"};
     });
-    world.set_reflection_llm_callback([&](const std::string&) {
+    executor.set_reflection_llm_callback([&](const std::string&) {
         events.push_back("reflection");
         return std::string{R"({"thoughts":[]})"};
     });

@@ -4,11 +4,17 @@
 #include <fstream>
 #include <stdexcept>
 
+#include "rhapsode/memory_system.h"
+
 namespace rhapsode {
 namespace {
 
 std::string manifest_path(const std::string& saves_dir) {
     return saves_dir + "/story.json";
+}
+
+std::string world_path(const std::string& saves_dir) {
+    return saves_dir + "/world.json";
 }
 
 std::string scene_path(const std::string& saves_dir,
@@ -76,14 +82,27 @@ void save_scene_data(const SceneData& scene, const std::string& saves_dir) {
 }  // namespace
 
 bool Story::has_save(const std::string& saves_dir) const {
-    if (!world_->has_save(saves_dir)) return false;
+    if (!std::filesystem::exists(world_path(saves_dir))) return false;
     if (std::filesystem::exists(manifest_path(saves_dir))) return true;
     const SceneData* root = get_scene(active_scene_id_);
     return root && has_scene_save(saves_dir, root->scene_id);
 }
 
 void Story::load_save(const std::string& saves_dir) {
-    world_->load_save(saves_dir);
+    std::ifstream world_input(world_path(saves_dir));
+    if (!world_input.is_open())
+        throw std::runtime_error("No world save in: " + saves_dir);
+    nlohmann::json world_value;
+    world_input >> world_value;
+    if (!world_value.contains("world_graph") &&
+        !world_value.contains("node_pool")) {
+        throw std::runtime_error(
+            "World save is missing world_graph/node_pool data");
+    }
+    *world_ = World::from_json(world_value);
+    if (memory_)
+        memory_->set_next_id(world_value.value("memory_next_id", 0));
+
     const std::string path = manifest_path(saves_dir);
     if (!std::filesystem::exists(path)) {
         if (SceneData* root = active_scene()) load_scene_data(*root, saves_dir);
@@ -114,7 +133,13 @@ void Story::load_save(const std::string& saves_dir) {
 
 void Story::save(const std::string& saves_dir) const {
     std::filesystem::create_directories(saves_dir);
-    world_->save(saves_dir);
+    std::ofstream world_output(world_path(saves_dir));
+    if (!world_output.is_open())
+        throw std::runtime_error("Cannot write world save in: " + saves_dir);
+    auto world_value = world_->to_json();
+    world_value["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
+    world_output << world_value.dump(2);
+
     for (const auto& scene : scenes_) save_scene_data(*scene, saves_dir);
 
     nlohmann::json manifest;
@@ -128,7 +153,7 @@ void Story::save(const std::string& saves_dir) const {
 }
 
 void Story::delete_save(const std::string& saves_dir) const {
-    world_->delete_save(saves_dir);
+    std::filesystem::remove(world_path(saves_dir));
     std::filesystem::remove(manifest_path(saves_dir));
     for (const auto& scene : scenes_)
         std::filesystem::remove(scene_path(saves_dir, scene->scene_id));

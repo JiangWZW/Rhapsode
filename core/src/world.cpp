@@ -1,12 +1,9 @@
 #include "rhapsode/world.h"
 #include "rhapsode/log_util.h"
-#include "rhapsode/memory_system.h"
 #include "rhapsode/str_util.h"
 
 #include <algorithm>
 #include <cctype>
-#include <filesystem>
-#include <fstream>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -62,9 +59,7 @@ Character& World::enter_character(const std::string& scene_id, Character charact
           << " | \"" << added.description.substr(0, 80) << "\"\n";
 
     if (!added.is_player && character_memories_.find(added.name) == character_memories_.end()) {
-        CharacterMemory memory(added.name);
-        memory.set_reflection_llm_callback(reflection_llm_cb_);
-        character_memories_.emplace(added.name, std::move(memory));
+        character_memories_.emplace(added.name, CharacterMemory(added.name));
         log() << "  [cast]   memory created (empty -- learns by perception)\n";
     }
     return added;
@@ -114,7 +109,6 @@ void World::clear_scene_membership(const std::string& scene_id) {
 }
 
 void World::set_character_memory(CharacterMemory memory) {
-    memory.set_reflection_llm_callback(reflection_llm_cb_);
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
@@ -131,9 +125,8 @@ bool World::seed_character_intention(const std::string& character,
     return true;
 }
 
-void World::revert_to_turn(int target_turn) {
+std::vector<std::uint64_t> World::revert_to_turn(int target_turn) {
     const auto removed_ids = world_graph_.revert_to_turn(target_turn);
-    if (memory_) memory_->delete_nodes(removed_ids);
 
     characters_.erase(
         std::remove_if(characters_.begin(), characters_.end(),
@@ -147,6 +140,7 @@ void World::revert_to_turn(int target_turn) {
             [&](const Character& c) { return c.name == it->first; });
         it = exists ? std::next(it) : character_memories_.erase(it);
     }
+    return removed_ids;
 }
 
 // -- Death scan --------------------------------------------------------------
@@ -241,7 +235,7 @@ void World::route_perceptions(const std::string& scene_id,
           << " perception(s) routed to " << minds.size() << " mind(s)\n" << std::flush;
 }
 
-void World::reflect_perceptions(int turn) {
+void World::reflect_perceptions(int turn, const LLMCallback& llm_callback) {
     for (auto& [name, memory] : character_memories_) {
         std::string description;
         for (const auto& character : characters_) {
@@ -250,15 +244,7 @@ void World::reflect_perceptions(int turn) {
                 break;
             }
         }
-        memory.reflect_perceptions(turn, description);
-    }
-}
-
-void World::set_reflection_llm_callback(LLMCallback cb) {
-    reflection_llm_cb_ = std::move(cb);
-    for (auto& [name, memory] : character_memories_) {
-        (void)name;
-        memory.set_reflection_llm_callback(reflection_llm_cb_);
+        memory.reflect_perceptions(turn, description, llm_callback);
     }
 }
 
@@ -487,19 +473,8 @@ void World::seed_from_scenario(const nlohmann::json& j,
     }
 }
 
-// -- Persistence (durable substrate) -----------------------------------------
-
-std::string World::save_path(const std::string& saves_dir) {
-    return saves_dir + "/world.json";
-}
-
-bool World::has_save(const std::string& saves_dir) const {
-    return std::filesystem::exists(save_path(saves_dir));
-}
-
 nlohmann::json World::to_json() const {
     nlohmann::json j;
-    j["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
     j["world_graph"]    = world_graph_.to_json();
     j["characters"]     = characters_;
 
@@ -524,51 +499,6 @@ World World::from_json(const nlohmann::json& j) {
             w.character_memories_.insert_or_assign(name, CharacterMemory::from_json(cm_j));
     }
     return w;
-}
-
-void World::load_save(const std::string& saves_dir) {
-    std::ifstream in(save_path(saves_dir));
-    if (!in.is_open())
-        throw std::runtime_error("No world save in: " + saves_dir);
-
-    nlohmann::json j;
-    in >> j;
-
-    if (j.contains("world_graph")) {
-        world_graph_ = WorldGraph::from_json(j.at("world_graph"));
-    } else if (j.contains("node_pool")) {
-        world_graph_ = WorldGraph::from_legacy_node_pool_json(j.at("node_pool"));
-    } else {
-        throw std::runtime_error("World save is missing world_graph/node_pool data");
-    }
-
-    if (j.contains("characters") && j["characters"].is_array())
-        characters_ = j["characters"].get<std::vector<Character>>();
-
-    if (memory_)
-        memory_->set_next_id(j.value("memory_next_id", 0));
-
-    if (j.contains("character_memories") && j["character_memories"].is_object()) {
-        character_memories_.clear();
-        for (auto& [name, cm_j] : j["character_memories"].items()) {
-            auto memory = CharacterMemory::from_json(cm_j);
-            if (reflection_llm_cb_)
-                memory.set_reflection_llm_callback(reflection_llm_cb_);
-            character_memories_.insert_or_assign(name, std::move(memory));
-        }
-    }
-}
-
-void World::save(const std::string& saves_dir) const {
-    std::filesystem::create_directories(saves_dir);
-    std::ofstream out(save_path(saves_dir));
-    if (!out.is_open())
-        throw std::runtime_error("Cannot write world save in: " + saves_dir);
-    out << to_json().dump(2);
-}
-
-void World::delete_save(const std::string& saves_dir) const {
-    std::filesystem::remove(save_path(saves_dir));
 }
 
 } // namespace rhapsode
