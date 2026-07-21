@@ -1,4 +1,4 @@
-#include "rhapsode/scene_loop.h"
+#include "rhapsode/turn_executor.h"
 
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
@@ -34,7 +34,7 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 
 }  // namespace
 
-std::future<SceneLoop::BackgroundResult> SceneLoop::dispatch_background(
+std::future<TurnExecutor::BackgroundResult> TurnExecutor::dispatch_background(
     SceneData& scene,
     int turn,
     const DirectorOutput&) {
@@ -90,7 +90,7 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::dispatch_background(
         });
 }
 
-SceneLoop::BackgroundResult SceneLoop::finish_background(
+TurnExecutor::BackgroundResult TurnExecutor::finish_background(
     std::future<BackgroundResult>& future) noexcept {
     BackgroundResult completed;
     if (!future.valid()) return completed;

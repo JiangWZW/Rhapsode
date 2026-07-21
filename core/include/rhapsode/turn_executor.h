@@ -19,7 +19,7 @@ namespace rhapsode {
 class World;
 struct DeathCandidate;
 
-struct SceneTurnResult {
+struct TurnResult {
     std::string scene_id;
     int completed_turn = 0;
     std::vector<SceneMessage> outputs;
@@ -38,14 +38,14 @@ enum class LoopState {
 
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
 
-// Executes one complete turn against Story-owned state. SceneLoop owns its graph
-// services, borrows World for its lifetime, and retains no SceneData between calls.
-class SceneLoop {
+// Executes one complete turn against Story-owned state. TurnExecutor borrows
+// Story's World and graph services and retains no SceneData between calls.
+class TurnExecutor {
 public:
-    SceneLoop(World& world, Director& director, Weaver& weaver);
+    TurnExecutor(World& world, Director& director, Weaver& weaver);
 
-    SceneTurnResult run_player_turn(SceneData& scene, const std::string& text);
-    SceneTurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
+    TurnResult run_player_turn(SceneData& scene, const std::string& text);
+    TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus);
     LoopState state() const { return state_; }
 
     void set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
@@ -90,7 +90,7 @@ private:
         DirectorOutput director;
     };
 
-    SceneTurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous);
+    TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous);
     void submit_message(SceneData& scene, const std::string& text, bool autonomous,
                         TurnWork& work);
     std::future<BackgroundResult> advance(SceneData& scene, TurnWork& work);

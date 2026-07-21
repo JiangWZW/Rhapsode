@@ -1,4 +1,4 @@
-#include "rhapsode/scene_loop.h"
+#include "rhapsode/turn_executor.h"
 
 #include "rhapsode/character.h"
 #include "rhapsode/json_util.h"
@@ -175,7 +175,7 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
 
 }  // namespace
 
-SceneLoop::NarratorPrompt SceneLoop::build_turn_prompt(SceneData& scene, int turn) {
+TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene, int turn) {
     state_ = LoopState::BuildingPrompt;
     log() << "[1/4] Building merged prompt...\n" << std::flush;
 
@@ -199,9 +199,9 @@ SceneLoop::NarratorPrompt SceneLoop::build_turn_prompt(SceneData& scene, int tur
     return prompt;
 }
 
-std::string SceneLoop::call_narrator(const SceneData& scene,
-                                     const std::string& instructions,
-                                     const std::string& turn_state) const {
+std::string TurnExecutor::call_narrator(const SceneData& scene,
+                                        const std::string& instructions,
+                                        const std::string& turn_state) const {
     const std::string safe_instructions = sanitize_utf8(instructions);
     const std::string safe_turn_state   = sanitize_utf8(turn_state);
     if (narrator_llm_cb_) {
@@ -211,9 +211,9 @@ std::string SceneLoop::call_narrator(const SceneData& scene,
     return sanitize_utf8(llm_cb_(safe_instructions + "\n\n" + safe_turn_state));
 }
 
-void SceneLoop::register_new_characters(SceneData& scene,
-                                        int turn,
-                                        const nlohmann::json& plan) {
+void TurnExecutor::register_new_characters(SceneData& scene,
+                                           int turn,
+                                           const nlohmann::json& plan) {
     if (!plan.contains("new_characters") || !plan["new_characters"].is_array()) {
         return;
     }
@@ -233,7 +233,7 @@ void SceneLoop::register_new_characters(SceneData& scene,
     }
 }
 
-SceneLoop::NarratorTurnResult SceneLoop::run_narrator_with_retry(
+TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     SceneData& scene, int turn, const NarratorPrompt& prompt,
     DirectorOutput& director_output) {
     state_ = LoopState::RunningLLM;
@@ -308,8 +308,8 @@ SceneLoop::NarratorTurnResult SceneLoop::run_narrator_with_retry(
     return result;
 }
 
-void SceneLoop::apply_narrator_cast(SceneData& scene,
-                                    const NarratorTurnResult& result) {
+void TurnExecutor::apply_narrator_cast(SceneData& scene,
+                                       const NarratorTurnResult& result) {
     if (!result.plan.contains("active_cast") || !result.plan["active_cast"].is_array()) {
         log() << "  [cast] active_cast missing -- keeping current cast\n";
         return;

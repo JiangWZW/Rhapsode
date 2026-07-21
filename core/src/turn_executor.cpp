@@ -1,4 +1,4 @@
-#include "rhapsode/scene_loop.h"
+#include "rhapsode/turn_executor.h"
 
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
@@ -11,9 +11,9 @@
 namespace rhapsode {
 namespace {
 
-SceneMessage make_scene_loop_message(const std::string& kind,
-                                     std::string content,
-                                     const std::string& speaker = {}) {
+SceneMessage make_turn_message(const std::string& kind,
+                               std::string content,
+                               const std::string& speaker = {}) {
     SceneMessage message;
     message.role = Role::Assistant;
     message.content = std::move(content);
@@ -30,33 +30,33 @@ bool is_affirmative_yes_response(const std::string& response) {
 
 }  // namespace
 
-SceneLoop::SceneLoop(World& world, Director& director, Weaver& weaver)
+TurnExecutor::TurnExecutor(World& world, Director& director, Weaver& weaver)
     : world_(world), director_(director), weaver_(weaver) {
     if (!director_.uses_graph(world_.graph()) ||
         !weaver_.uses_graph(world_.graph())) {
         throw std::invalid_argument(
-            "SceneLoop services must use the injected World's graph");
+            "TurnExecutor services must use the injected World's graph");
     }
 }
 
-void SceneLoop::set_history_window(size_t normal, size_t resume) {
+void TurnExecutor::set_history_window(size_t normal, size_t resume) {
     window_size_ = normal;
     resume_window_size_ = resume;
 }
 
-SceneTurnResult SceneLoop::run_player_turn(SceneData& scene,
-                                           const std::string& text) {
+TurnResult TurnExecutor::run_player_turn(SceneData& scene,
+                                         const std::string& text) {
     return run_turn(scene, text, false);
 }
 
-SceneTurnResult SceneLoop::run_autonomous_turn(SceneData& scene,
-                                               const std::string& focus) {
+TurnResult TurnExecutor::run_autonomous_turn(SceneData& scene,
+                                             const std::string& focus) {
     return run_turn(scene, focus, true);
 }
 
-SceneTurnResult SceneLoop::run_turn(SceneData& scene,
-                                    const std::string& text,
-                                    bool autonomous) {
+TurnResult TurnExecutor::run_turn(SceneData& scene,
+                                  const std::string& text,
+                                  bool autonomous) {
     if (state_ != LoopState::Idle)
         throw std::runtime_error("Cannot run turn: loop is already active");
 
@@ -71,7 +71,7 @@ SceneTurnResult SceneLoop::run_turn(SceneData& scene,
         background = advance(scene, work);
         BackgroundResult completed = finish_background(background);
 
-        SceneTurnResult result;
+        TurnResult result;
         result.scene_id = scene.scene_id;
         result.completed_turn = scene.turn_index;
         result.outputs = std::move(work.outputs);
@@ -92,10 +92,10 @@ SceneTurnResult SceneLoop::run_turn(SceneData& scene,
     }
 }
 
-void SceneLoop::submit_message(SceneData& scene,
-                               const std::string& text,
-                               bool autonomous,
-                               TurnWork&) {
+void TurnExecutor::submit_message(SceneData& scene,
+                                  const std::string& text,
+                                  bool autonomous,
+                                  TurnWork&) {
     state_ = LoopState::ProcessingInput;
     if (autonomous) {
         log() << "\n[off-stage beat] advancing scene '" << scene.scene_id
@@ -109,8 +109,8 @@ void SceneLoop::submit_message(SceneData& scene,
     scene.history.append(std::move(message));
 }
 
-std::future<SceneLoop::BackgroundResult> SceneLoop::advance(SceneData& scene,
-                                                            TurnWork& work) {
+std::future<TurnExecutor::BackgroundResult> TurnExecutor::advance(
+    SceneData& scene, TurnWork& work) {
     if (!llm_cb_) throw std::runtime_error("No LLM callback registered");
 
     const int turn = scene.turn_index;
@@ -123,7 +123,7 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::advance(SceneData& scene,
 
     const std::string narration = result.prose;
     emit_output(scene,
-                make_scene_loop_message("narrator", std::move(result.prose)),
+                make_turn_message("narrator", std::move(result.prose)),
                 OutputBucket::Story, work);
     world_.route_perceptions(scene.scene_id, work.director.new_nodes, turn);
     emit_dialogue(scene, turn, result.cues, work);
@@ -142,20 +142,20 @@ std::future<SceneLoop::BackgroundResult> SceneLoop::advance(SceneData& scene,
     return dispatch_background(scene, turn, work.director);
 }
 
-void SceneLoop::emit_output(SceneData& scene,
-                            SceneMessage message,
-                            OutputBucket bucket,
-                            TurnWork& work) {
+void TurnExecutor::emit_output(SceneData& scene,
+                               SceneMessage message,
+                               OutputBucket bucket,
+                               TurnWork& work) {
     History& target = bucket == OutputBucket::Story ? scene.history : scene.dialogue;
     target.append(std::move(message));
     work.outputs.push_back(target.messages().back());
     if (turn_complete_cb_) turn_complete_cb_(target.messages().back());
 }
 
-void SceneLoop::emit_dialogue(SceneData& scene,
-                              int turn,
-                              const std::vector<SpeechCue>& cues,
-                              TurnWork& work) {
+void TurnExecutor::emit_dialogue(SceneData& scene,
+                                 int turn,
+                                 const std::vector<SpeechCue>& cues,
+                                 TurnWork& work) {
     log() << "[4/4] Emit authored dialogue...\n" << std::flush;
     for (const auto& cue : cues) {
         std::string spoken = str::trim(cue.field("line"));
@@ -163,14 +163,14 @@ void SceneLoop::emit_dialogue(SceneData& scene,
         if (!action.empty()) spoken += (spoken.empty() ? "" : " ") + ("(" + action + ")");
         if (spoken.empty()) spoken = "(" + cue.character + " is at a loss for words.)";
 
-        auto message = make_scene_loop_message("character", std::move(spoken), cue.character);
+        auto message = make_turn_message("character", std::move(spoken), cue.character);
         message.metadata["turn"] = turn;
         emit_output(scene, std::move(message), OutputBucket::Dialogue, work);
     }
 }
 
-void SceneLoop::confirm_deaths(const std::vector<DeathCandidate>& candidates,
-                               const std::string& narration) {
+void TurnExecutor::confirm_deaths(const std::vector<DeathCandidate>& candidates,
+                                  const std::string& narration) {
     if (!llm_cb_) return;
     for (const auto& candidate : candidates) {
         std::string prompt;

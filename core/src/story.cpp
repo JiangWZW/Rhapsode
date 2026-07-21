@@ -10,7 +10,7 @@
 #include "rhapsode/director.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
-#include "rhapsode/scene_loop.h"
+#include "rhapsode/turn_executor.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/weaver.h"
 
@@ -20,7 +20,7 @@ Story::Story()
     : world_(std::make_unique<World>()),
       director_(std::make_unique<Director>(world_->graph())),
       weaver_(std::make_unique<Weaver>(world_->graph())),
-      loop_(std::make_unique<SceneLoop>(*world_, *director_, *weaver_)) {}
+      executor_(std::make_unique<TurnExecutor>(*world_, *director_, *weaver_)) {}
 
 Story::~Story() = default;
 Story::Story(Story&&) noexcept = default;
@@ -334,17 +334,17 @@ int Story::revert_active_turns(int count) {
     SceneData* scene = active_scene();
     if (!scene) throw std::runtime_error("Story::revert_active_turns: no active scene");
     const int reverted = revert_scene_turns(*scene, count);
-    loop_->set_resuming(true);
+    executor_->set_resuming(true);
     if (!saves_dir_.empty()) save(saves_dir_);
     return reverted;
 }
 
 void Story::set_llm_callback(LLMCallback cb) {
-    loop_->set_llm_callback(std::move(cb));
+    executor_->set_llm_callback(std::move(cb));
 }
 
 void Story::set_narrator_llm_callback(NarratorLLMCallback cb) {
-    loop_->set_narrator_llm_callback(std::move(cb));
+    executor_->set_narrator_llm_callback(std::move(cb));
 }
 
 void Story::set_weaver_llm_callback(LLMCallback cb) {
@@ -357,11 +357,11 @@ void Story::set_weaver_local_llm_callback(LLMCallback cb) {
 
 void Story::set_weaver_interval(int turns) { weaver_->set_interval(turns); }
 void Story::set_history_window(size_t normal, size_t resume) {
-    loop_->set_history_window(normal, resume);
+    executor_->set_history_window(normal, resume);
 }
-void Story::set_resuming(bool value) { loop_->set_resuming(value); }
+void Story::set_resuming(bool value) { executor_->set_resuming(value); }
 void Story::set_downsampler_callback(LLMCallback cb) {
-    loop_->set_downsampler_callback(std::move(cb));
+    executor_->set_downsampler_callback(std::move(cb));
 }
 
 }  // namespace rhapsode

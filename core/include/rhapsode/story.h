@@ -15,17 +15,17 @@
 
 namespace rhapsode {
 
-class SceneLoop;
+class TurnExecutor;
 class Director;
 class Weaver;
-struct SceneTurnResult;
+struct TurnResult;
 
 using SchedulerCallback = std::function<std::string(const std::string& instructions,
                                                     const std::string& user)>;
 using LifecycleCallback = std::function<std::string(const std::string& instructions,
                                                     const std::string& user)>;
 // Runtime hub for one playthrough. Story exclusively owns one World, a stable
-// collection of World-free SceneData records, and the SceneLoop that executes
+// collection of World-free SceneData records, and the TurnExecutor that executes
 // turns over them.
 class Story {
 public:
@@ -75,7 +75,7 @@ public:
         std::optional<size_t> cap = std::nullopt) const;
 
     // Runtime configuration. Story forwards turn-service configuration to its
-    // owned SceneLoop; Python never owns or wires those services separately.
+    // owned TurnExecutor; Python never owns or wires those services separately.
     void set_llm_callback(LLMCallback cb);
     void set_narrator_llm_callback(NarratorLLMCallback cb);
     void set_weaver_llm_callback(LLMCallback cb);
@@ -103,10 +103,10 @@ private:
     std::string pick_off_stage_scene();
     int decide_lifecycle(const std::string& scene_id, const std::string& player_input);
     std::string autonomous_cue(const std::string& scene_id) const;
-    void sync_beat(const SceneTurnResult& result);
+    void sync_beat(const TurnResult& result);
     int revert_scene_turns(SceneData& scene, int count);
 
-    // Stable allocation keeps SceneLoop's World reference valid through Story
+    // Stable allocation keeps TurnExecutor's World reference valid through Story
     // moves and save loads. SceneData does not participate in this ownership.
     std::unique_ptr<World> world_;
     std::vector<std::unique_ptr<SceneData>> scenes_;
@@ -121,7 +121,7 @@ private:
     // Declaration order destroys the loop before its injected services and World.
     std::unique_ptr<Director> director_;
     std::unique_ptr<Weaver> weaver_;
-    std::unique_ptr<SceneLoop> loop_;
+    std::unique_ptr<TurnExecutor> executor_;
 };
 
 }  // namespace rhapsode

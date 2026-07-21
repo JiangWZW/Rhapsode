@@ -4,7 +4,7 @@
 
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
-#include "rhapsode/scene_loop.h"
+#include "rhapsode/turn_executor.h"
 #include "rhapsode/str_util.h"
 
 namespace rhapsode {
@@ -229,7 +229,7 @@ std::string Story::autonomous_cue(const std::string& scene_id) const {
     return cue;
 }
 
-void Story::sync_beat(const SceneTurnResult& result) {
+void Story::sync_beat(const TurnResult& result) {
     MemorySystem* memory = world_->memory();
     SceneData* scene = get_scene(result.scene_id);
     if (!memory || !scene) return;
@@ -260,7 +260,7 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     if (!active) throw std::runtime_error("Story::advance_scene: no active scene");
     const std::string player_scene_id = active->scene_id;
 
-    SceneTurnResult player_result = loop_->run_player_turn(*active, player_input);
+    TurnResult player_result = executor_->run_player_turn(*active, player_input);
     sync_beat(player_result);
     const int player_lifecycle = decide_lifecycle(player_scene_id, player_input);
     if (player_lifecycle)
@@ -274,8 +274,8 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
         if (!pick.empty()) {
             if (SceneData* scene = get_scene(pick)) {
                 try {
-                    SceneTurnResult result =
-                        loop_->run_autonomous_turn(*scene, autonomous_cue(pick));
+                    TurnResult result =
+                        executor_->run_autonomous_turn(*scene, autonomous_cue(pick));
                     const int completed_turn = result.completed_turn;
                     sync_beat(result);
                     const int lifecycle = decide_lifecycle(pick, "");
