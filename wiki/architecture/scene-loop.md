@@ -13,6 +13,7 @@ sources:
 related:
   - "[[architecture/cpp-data-model]]"
   - "[runtime coupling reduction plan](../episodes/2026-07-20-runtime-coupling-reduction-plan.md)"
+  - "[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)"
   - "[[decisions/callback-vs-pull]]"
 tags:
   - cpp-core
@@ -126,3 +127,11 @@ Weaver bindings remain available for graph inspection and maintenance tools.
 This refactor preserves narrator prompts, retry count, dialogue semantics, lifecycle precedence,
 save schema, turn output ordering, and the existing scene-local undo algorithm. Multi-scene undo
 semantics remain a separate design question.
+
+## Proposed replacement
+
+SceneLoop is currently a synchronous-call boundary wrapped around immediately joined background
+work, and its result exposes Director and Weaver types. The proposed
+[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)
+would replace it with a genuinely synchronous TurnExecutor and a generic TurnResult. This section
+describes proposed work, not current implementation.

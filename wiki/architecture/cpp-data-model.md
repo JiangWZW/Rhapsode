@@ -17,6 +17,7 @@ related:
   - "[[architecture/plot-graph]]"
   - "[[architecture/memory-system]]"
   - "[runtime coupling reduction plan](../episodes/2026-07-20-runtime-coupling-reduction-plan.md)"
+  - "[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)"
 tags:
   - cpp-core
   - cross-layer
@@ -168,3 +169,10 @@ callbacks on Story; it does not construct SceneLoop, Director, or Weaver.
 | Director | SceneLoop, or standalone graph caller | WorldGraph |
 | Weaver | SceneLoop, or standalone graph caller | WorldGraph |
 | Annotator | Python session or caller | World |
+
+## Proposed responsibility decoupling
+
+The ownership graph above is implemented, but Story, SceneLoop, and World still concentrate
+policy, infrastructure, query, and turn-algorithm responsibilities. The proposed
+[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)
+records that remaining work. It is not yet the implemented model described by this page.

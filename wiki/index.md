@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-20
+last_updated: 2026-07-21
 ---
 
 # Rhapsode wiki — index
@@ -32,6 +32,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
+- [Runtime architectural decoupling plan](episodes/2026-07-21-runtime-architectural-decoupling-plan.md) - proposed second-stage separation of Story, turn execution, World services, Python tools, and SceneData behavior
 - [Runtime coupling reduction plan](episodes/2026-07-20-runtime-coupling-reduction-plan.md) - second-stage SceneData, ownership, mutation, and API simplification plan
 
 - [Runtime dependency refactor plan](episodes/2026-07-20-runtime-dependency-refactor-plan.md) — audited ownership, turn-result, background, persistence, and binding migration plan

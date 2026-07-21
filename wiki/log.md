@@ -2,6 +2,20 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-21] plan | Runtime architectural decoupling
+
+- Audited the implemented ownership refactor and recorded the remaining responsibility,
+  infrastructure, result-type, temporal, lifetime, callback, and mutation coupling.
+- Proposed Story-owned Director and Weaver objects injected once into a synchronous TurnExecutor,
+  sealing its result behind generic effects, and moving pure narrator algorithms out without
+  adding manager classes.
+- Proposed reducing World to domain state and invariant operations, moving MemorySystem lifetime,
+  filesystem I/O, queries, death scanning, and scenario parsing to explicit boundaries.
+- Proposed reducing Story to aggregate coordination, extracting plain storyline-policy functions,
+  and replacing persistent Python-to-Story callback captures with call-scoped read functions.
+- Proposed behavior-free SceneData value state and read-only Python invariant boundaries.
+- Defined phased preservation gates, stop conditions, commit boundaries, and the no-push rule.
+
 ## [2026-07-21] implementation | Runtime coupling reduction complete
 
 - Replaced Scene with a World-free SceneData aggregate; Story now exclusively owns World,
