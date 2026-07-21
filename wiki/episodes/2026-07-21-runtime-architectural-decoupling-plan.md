@@ -66,7 +66,7 @@ the code.
 - Obsolete SceneLoop, History, TextDownsampler, async background, raw-memory, and weakref paths are
   deleted.
 
-Verification at completion: 46 native tests in Release and Debug, 36 Python tests, network-free
+Verification at completion: 52 native tests in Release and Debug, 36 Python tests, network-free
 lifecycle integration, 7 frontend tests, frontend lint/build, and changed-file Ruff checks.
 
 The previous stage removed ambiguous ownership, deleted Scene, made SceneData independent of

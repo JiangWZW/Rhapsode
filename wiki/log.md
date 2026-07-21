@@ -2,6 +2,20 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-21] implementation | Runtime class-internal cleanup
+
+- Added focused characterization for WorldGraph edge/components, Director output, successful
+  character reflection, MemorySystem payloads, and Annotator precedence.
+- Added an RAII TurnExecutor execution guard and replaced vague internal names and dead parameters.
+- Decomposed Story summarization, lifecycle context, memory synchronization, and off-stage
+  advancement without changing orchestration order.
+- Deduplicated WorldGraph edge/component mechanics and clarified World, Weaver, CharacterMemory,
+  MemorySystem, and Annotator helpers without adding manager classes.
+- Recorded behavior-sensitive findings separately rather than changing game semantics in a
+  readability refactor.
+- Verified 52 native tests in Release and Debug, 36 Python tests, 7 frontend tests, frontend
+  lint/build, and the production native/Python build. Nothing was pushed.
+
 ## [2026-07-21] implementation | Runtime mutation boundary cleanup
 
 - Replaced narrator/scheduler read callbacks that re-entered Story with C++ `ReadToolContext`

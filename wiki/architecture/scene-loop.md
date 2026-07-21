@@ -55,7 +55,8 @@ and there are no rebinding setters.
 9. Run post-turn work synchronously: weave, expiry, reflection, downsampling.
 10. Return generic effects and emitted messages.
 
-An exception restores the snapshots and leaves the executor reusable. Post-turn failures remain
+An RAII execution guard owns the re-entry flag, including while snapshots are being copied. An
+exception restores the snapshots and leaves the executor reusable. Post-turn failures remain
 non-fatal, matching the pre-refactor behavior.
 
 ## Callback boundary

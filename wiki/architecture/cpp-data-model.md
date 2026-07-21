@@ -61,6 +61,10 @@ Story owns composition and cross-component invariants:
 - exposes explicit aggregate commands, such as manual graph weaving, when maintained diagnostics
   need mutation; callers do not receive writable aliases to owned state.
 
+Internally, Story separates scene summarization, lifecycle-context construction, player filtering,
+memory synchronization, and optional off-stage advancement into named private steps. These are
+coordination helpers over the same aggregate, not additional owners or manager classes.
+
 Story's move constructor transfers its stable allocations. Its move assignment first destroys the
 destination's borrowing TurnExecutor, Weaver, and Director, then transfers state and services. This
 prevents the destination's old services from temporarily outliving the World they reference.
