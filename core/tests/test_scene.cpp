@@ -432,6 +432,74 @@ TEST_CASE("SceneLoop joins background work before returning", "[scene_loop][back
     REQUIRE(running.get().completed_turn == 1);
 }
 
+TEST_CASE("SceneLoop preserves post-turn callback order",
+          "[scene_loop][background][characterization]") {
+    World world;
+    SceneData scene = basic_scene();
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    add_fact(world.graph(), "The gate is closed", "Gate", 1);
+    add_fact(world.graph(), "The gate is open", "Gate", 2);
+    for (int i = 0; i < 7; ++i) {
+        SceneMessage prior;
+        prior.role = i % 2 ? Role::Assistant : Role::User;
+        prior.content = "Prior " + std::to_string(i);
+        scene.history.append(std::move(prior));
+    }
+
+    std::vector<std::string> events;
+    SceneLoop loop(world);
+    configure_loop(loop, [&](const std::string&, const std::string&,
+                             const std::string&) {
+        events.push_back("narrator");
+        return response("Wind crosses the gate.",
+            R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":["Scout"]})");
+    });
+    loop.set_weaver_interval(1);
+    loop.set_weaver_llm_callback([&](const std::string&) {
+        events.push_back("weave");
+        return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
+    });
+    loop.set_weaver_local_llm_callback([&](const std::string&) {
+        events.push_back("expiry");
+        return std::string{R"({"superseded":[],"reason":"current"})"};
+    });
+    world.set_reflection_llm_callback([&](const std::string&) {
+        events.push_back("reflection");
+        return std::string{R"({"thoughts":[]})"};
+    });
+    loop.set_downsampler_callback([&](const std::string&) {
+        events.push_back("downsample");
+        return std::string{"summary"};
+    });
+
+    REQUIRE(loop.run_player_turn(scene, "Look.").completed_turn == 1);
+    REQUIRE(events == std::vector<std::string>{
+        "narrator", "weave", "expiry", "reflection", "downsample"});
+}
+
+TEST_CASE("SceneLoop post-turn failures remain non-fatal",
+          "[scene_loop][background][characterization]") {
+    World world;
+    SceneData scene = basic_scene();
+    add_fact(world.graph(), "Gate shut", "Gate", 1);
+    add_fact(world.graph(), "Torch lit", "Torch", 1);
+    SceneLoop loop(world);
+    configure_loop(loop, [](const std::string&, const std::string&,
+                            const std::string&) {
+        return response("Time passes.");
+    });
+    loop.set_weaver_interval(1);
+    loop.set_weaver_llm_callback(
+        [](const std::string&) -> std::string {
+            throw std::runtime_error("weaver unavailable");
+        });
+
+    const SceneTurnResult result = loop.run_player_turn(scene, "Wait.");
+    REQUIRE(result.completed_turn == 1);
+    REQUIRE(result.outputs.front().content == "Time passes.");
+    REQUIRE(scene.turn_index == 1);
+}
+
 TEST_CASE("Story keeps player outputs separate from off-stage turns",
           "[story][scene_loop]") {
     Story story = Story::from_data(basic_scene());
