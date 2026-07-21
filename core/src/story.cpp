@@ -11,9 +11,11 @@
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
+#include "rhapsode/scenario_bootstrap.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/weaver.h"
+#include "rhapsode/world_analysis.h"
 
 namespace rhapsode {
 
@@ -48,7 +50,7 @@ Story Story::from_scenario_json(const nlohmann::json& scenario,
     for (const auto& message : scenario.value("seed_messages", nlohmann::json::array()))
         root.history.append(message.get<SceneMessage>());
 
-    story.world_->seed_from_scenario(scenario, scene_id);
+    *story.world_ = build_world_from_scenario(scenario, scene_id);
     story.active_scene_id_ = scene_id;
     story.adopt(std::move(root));
     return story;
@@ -279,8 +281,9 @@ std::string Story::dispatch_tool(const std::string& scene_id,
         return it != args.end() && it->is_string()
             ? it->get<std::string>() : std::string{};
     };
-    if (name == "query_graph") return world_->tool_query_graph(string_arg("query"));
-    if (name == "query_mind") return world_->tool_query_mind(string_arg("character"));
+    if (name == "query_graph") return query_world_graph(*world_, string_arg("query"));
+    if (name == "query_mind")
+        return query_character_mind(*world_, string_arg("character"));
     if (name == "query_history") {
         const SceneData* scene = get_scene(scene_id);
         if (!scene) return nlohmann::json{{"error", "unknown scene: " + scene_id}}.dump();

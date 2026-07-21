@@ -10,13 +10,6 @@
 
 namespace rhapsode {
 
-// A character flagged as possibly dead by the keyword scan, with the graph
-// facts that triggered it. Lives here because the scan is over the shared graph.
-struct DeathCandidate {
-    std::string character_name;
-    std::vector<std::string> evidence;
-};
-
 // The durable substrate for one Story: objective graph, character minds, roster,
 // and membership. World knows scene identity only as string ids carried by the
 // roster; it does not own or reference the Story's per-scene records.
@@ -48,17 +41,6 @@ public:
                                   int created_at);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
-    // -- Narrator tool-use queries over the shared substrate --
-    /// Search world graph by entity name or free text. Returns entity-timeline
-    /// chains (for entity matches) or matching nodes with chain predecessors
-    /// (for text matches), as a JSON string.
-    std::string tool_query_graph(const std::string& query) const;
-    /// Get a character's thoughts, beliefs, and dialogue voice as JSON.
-    std::string tool_query_mind(const std::string& character) const;
-
-    /// Keyword-scan the graph for characters that may have died this run.
-    std::vector<DeathCandidate> scan_death_candidates() const;
-
     /// Route objective nodes into the minds that perceived them in one scene.
     void route_perceptions(const std::string& scene_id,
                            const std::vector<Node>& nodes,
@@ -67,11 +49,6 @@ public:
     void reflect_perceptions(int turn, const LLMCallback& llm_callback);
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
-
-    // -- Scenario bootstrap --
-    /// Populate graph, roster, membership, and authored minds from a scenario.
-    void seed_from_scenario(const nlohmann::json& j,
-                            const std::string& root_scene_id = {});
 
     nlohmann::json to_json() const;
     static World from_json(const nlohmann::json& j);

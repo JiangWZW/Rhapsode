@@ -5,7 +5,7 @@ from rhapsode import _core
 
 def test_public_binding_surface_matches_owned_runtime_design():
     expected = {
-        "Annotator", "Character", "CharacterMemory", "DeathCandidate",
+        "Annotator", "Character", "CharacterMemory",
         "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EntitySpan",
         "ExpiryOp", "GraphAnalysis", "History", "MemorySystem", "Node",
         "NodeState", "Rejection", "Role", "SceneData", "SceneMessage",
@@ -52,8 +52,7 @@ def test_scene_data_has_only_per_storyline_state():
 def test_world_exposes_read_state_but_not_lifecycle_staging():
     expected = {
         "character_memories", "characters", "find_character",
-        "scan_death_candidates",
-        "tool_query_graph", "tool_query_mind", "world_graph",
+        "world_graph",
     }
     assert {name for name in dir(_core.World) if not name.startswith("_")} == expected
     for removed in (

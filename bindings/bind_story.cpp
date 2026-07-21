@@ -73,10 +73,6 @@ void bind_story(py::module_& m) {
             return "Character(" + character.name + ", " + tag + ")";
         });
 
-    py::class_<DeathCandidate>(m, "DeathCandidate")
-        .def_readonly("character_name", &DeathCandidate::character_name)
-        .def_readonly("evidence", &DeathCandidate::evidence);
-
     py::class_<World>(m, "World")
         .def(py::init<>())
         .def_property_readonly("world_graph",
@@ -94,10 +90,7 @@ void bind_story(py::module_& m) {
         .def("find_character",
             [](const World& world, const std::string& name) {
                 return world.find_character(name);
-            }, py::arg("name"), py::return_value_policy::reference_internal)
-        .def("tool_query_graph", &World::tool_query_graph, py::arg("query"))
-        .def("tool_query_mind", &World::tool_query_mind, py::arg("character"))
-        .def("scan_death_candidates", &World::scan_death_candidates);
+            }, py::arg("name"), py::return_value_policy::reference_internal);
 
     py::class_<SceneData>(m, "SceneData")
         .def_readwrite("scene_id", &SceneData::scene_id)

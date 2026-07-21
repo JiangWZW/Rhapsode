@@ -4,6 +4,7 @@
 #include "rhapsode/log_util.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/world.h"
+#include "rhapsode/world_analysis.h"
 
 #include <algorithm>
 #include <exception>
@@ -133,7 +134,7 @@ TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
     world_.route_perceptions(scene.scene_id, work.director.new_nodes, turn);
     emit_dialogue(scene, turn, result.cues, work);
 
-    const auto death_candidates = world_.scan_death_candidates();
+    const auto death_candidates = find_death_candidates(world_);
     if (!death_candidates.empty()) confirm_deaths(death_candidates, narration);
 
     if (weaver_.active()) {

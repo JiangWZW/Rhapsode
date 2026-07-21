@@ -10,6 +10,7 @@ add_library(rhapsode STATIC
     include/rhapsode/narrator_prompt.h
     include/rhapsode/node.h
     include/rhapsode/scene_data.h
+    include/rhapsode/scenario_bootstrap.h
     include/rhapsode/json_util.h
     include/rhapsode/turn_executor.h
     include/rhapsode/scene_message.h
@@ -18,9 +19,11 @@ add_library(rhapsode STATIC
     include/rhapsode/weaver.h
     include/rhapsode/story.h
     include/rhapsode/world.h
+    include/rhapsode/world_analysis.h
     include/rhapsode/world_graph.h
     src/annotator.cpp
     src/scene_message.cpp
+    src/scenario_bootstrap.cpp
     src/history.cpp
     src/character.cpp
     src/character_memory.cpp
@@ -39,6 +42,7 @@ add_library(rhapsode STATIC
     src/weaver.cpp
     src/weaver_work_queue.cpp
     src/world.cpp
+    src/world_analysis.cpp
     src/world_graph.cpp
     src/world_graph_dot.cpp
     src/world_graph_serialization.cpp
