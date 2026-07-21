@@ -195,6 +195,67 @@ std::string assemble_weave_prompt(const WorldGraph& graph,
     return os.str();
 }
 
+std::vector<WeaveOp> parse_weave_operations(const nlohmann::json& value) {
+    std::vector<WeaveOp> operations;
+    if (!value.is_array()) return operations;
+    for (const auto& element : value) {
+        if (!element.is_object()) continue;
+        WeaveOp operation;
+        operation.from_id = element.value("from", std::uint64_t{0});
+        operation.to_id = element.value("to", std::uint64_t{0});
+        operation.weight = element.value("weight", 1.0f);
+        operation.reason = element.value("reason", "");
+        if (operation.from_id && operation.to_id)
+            operations.push_back(std::move(operation));
+    }
+    return operations;
+}
+
+void apply_connections(WorldGraph& graph, std::vector<WeaveOp> operations,
+                       int turn_index, std::vector<WeaveOp>& applied) {
+    for (auto& operation : operations) {
+        const bool accepted = graph.add_relation(
+            operation.from_id, operation.to_id, operation.weight, turn_index);
+        log() << "  [weave]   + " << operation.from_id << " -> "
+              << operation.to_id << "  w=" << operation.weight
+              << (accepted ? "" : " (SKIP: already exists or bad id)")
+              << "  \"" << operation.reason << "\"\n";
+        if (accepted) applied.push_back(std::move(operation));
+    }
+}
+
+void apply_disconnections(WorldGraph& graph, std::vector<WeaveOp> operations,
+                          std::vector<WeaveOp>& applied) {
+    for (auto& operation : operations) {
+        const bool accepted = graph.set_edge_active(
+            operation.from_id, operation.to_id, false);
+        log() << "  [weave]   - " << operation.from_id << " -> "
+              << operation.to_id
+              << (accepted ? "" : " (SKIP: edge not found)")
+              << "  \"" << operation.reason << "\"\n";
+        if (accepted) applied.push_back(std::move(operation));
+    }
+}
+
+void apply_reweights(WorldGraph& graph, std::vector<WeaveOp> operations,
+                     std::vector<WeaveOp>& applied) {
+    for (auto& operation : operations) {
+        const bool accepted = graph.set_edge_weight(
+            operation.from_id, operation.to_id, operation.weight);
+        log() << "  [weave]   ~ " << operation.from_id << " -> "
+              << operation.to_id << "  w=" << operation.weight
+              << (accepted ? "" : " (SKIP: edge not found)")
+              << "  \"" << operation.reason << "\"\n";
+        if (accepted) applied.push_back(std::move(operation));
+    }
+}
+
+WeaveResult empty_weave_result(const GraphAnalysis& analysis) {
+    WeaveResult result;
+    result.analysis = analysis;
+    return result;
+}
+
 }  // namespace
 
 // ---------------------------------------------------------------------------
@@ -281,25 +342,12 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
               << truncate_utf8_ellipsis(llm_response, 300) << "\n";
     }
 
-    auto parse_ops = [](const nlohmann::json& arr) {
-        std::vector<WeaveOp> ops;
-        if (!arr.is_array()) return ops;
-        for (const auto& el : arr) {
-            if (!el.is_object()) continue;
-            WeaveOp op;
-            op.from_id = el.value("from", std::uint64_t{0});
-            op.to_id   = el.value("to",   std::uint64_t{0});
-            op.weight  = el.value("weight", 1.0f);
-            op.reason  = el.value("reason", "");
-            if (op.from_id && op.to_id)
-                ops.push_back(std::move(op));
-        }
-        return ops;
-    };
-
-    auto connect_ops    = parse_ops(j.value("connect",    nlohmann::json::array()));
-    auto disconnect_ops = parse_ops(j.value("disconnect", nlohmann::json::array()));
-    auto reweight_ops   = parse_ops(j.value("reweight",   nlohmann::json::array()));
+    auto connect_ops = parse_weave_operations(
+        j.value("connect", nlohmann::json::array()));
+    auto disconnect_ops = parse_weave_operations(
+        j.value("disconnect", nlohmann::json::array()));
+    auto reweight_ops = parse_weave_operations(
+        j.value("reweight", nlohmann::json::array()));
 
     log() << "  [weave] parse: connect=" << connect_ops.size()
           << " disconnect=" << disconnect_ops.size()
@@ -311,31 +359,11 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
           << disconnect_ops.size() << " disconnect, "
           << reweight_ops.size() << " reweight\n";
 
-    for (auto& op : connect_ops) {
-        bool ok = graph_.add_relation(op.from_id, op.to_id, op.weight, turn_index);
-        log() << "  [weave]   + " << op.from_id << " -> " << op.to_id
-              << "  w=" << op.weight
-              << (ok ? "" : " (SKIP: already exists or bad id)")
-              << "  \"" << op.reason << "\"\n";
-        if (ok) result.connected.push_back(std::move(op));
-    }
-
-    for (auto& op : disconnect_ops) {
-        bool ok = graph_.set_edge_active(op.from_id, op.to_id, false);
-        log() << "  [weave]   - " << op.from_id << " -> " << op.to_id
-              << (ok ? "" : " (SKIP: edge not found)")
-              << "  \"" << op.reason << "\"\n";
-        if (ok) result.disconnected.push_back(std::move(op));
-    }
-
-    for (auto& op : reweight_ops) {
-        bool ok = graph_.set_edge_weight(op.from_id, op.to_id, op.weight);
-        log() << "  [weave]   ~ " << op.from_id << " -> " << op.to_id
-              << "  w=" << op.weight
-              << (ok ? "" : " (SKIP: edge not found)")
-              << "  \"" << op.reason << "\"\n";
-        if (ok) result.reweighted.push_back(std::move(op));
-    }
+    apply_connections(
+        graph_, std::move(connect_ops), turn_index, result.connected);
+    apply_disconnections(
+        graph_, std::move(disconnect_ops), result.disconnected);
+    apply_reweights(graph_, std::move(reweight_ops), result.reweighted);
 
     result.analysis = analyze(graph_);
 
@@ -364,12 +392,12 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
     GraphAnalysis pre = analyze(graph_);
 
     if (pre.live_node_count < 2) {
-        return {{}, {}, {}, pre};
+        return empty_weave_result(pre);
     }
 
     if (!cb) {
         log() << "  [weave] no " << label << " LLM callback -- skipping\n";
-        return {{}, {}, {}, pre};
+        return empty_weave_result(pre);
     }
 
     log() << "  [weave] turn=" << turn_index << " label=" << label << "\n";
@@ -397,7 +425,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
         log() << "  [weave] " << label << " LLM call FAILED: " << e.what() << "\n";
         write_weave_artifact(turn_index, label, prompt, "",
                              std::string("exception: ") + e.what());
-        return {{}, {}, {}, pre};
+        return empty_weave_result(pre);
     }
 
     log() << "  [weave] response_chars=" << response.size() << "\n";
@@ -408,7 +436,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
               << "(see [local_llm:weave] lines above for HTTP details)\n";
         write_weave_artifact(turn_index, label, prompt, response,
                              "empty response from local LLM callback");
-        return {{}, {}, {}, pre};
+        return empty_weave_result(pre);
     }
 
     if (weave_log_verbose()) {

@@ -52,7 +52,7 @@ public:
 
     /// Full weave using the cloud LLM (called on should_weave turns).
     WeaveResult weave(int turn_index, const std::string& scene_context = "");
-    /// Lightweight weave using the local LLM (called every other turn).
+    /// Lightweight weave using the local LLM on non-full-weave turns.
     WeaveResult weave_local(int turn_index, const std::string& scene_context = "");
 
     // -- Entity-group expiry detector --
@@ -91,7 +91,7 @@ private:
     // Expiry state
     std::atomic<bool> expiry_stop_{false};
     std::vector<std::vector<std::uint64_t>> expiry_queue_;
-    std::vector<ExpiryOp> check_group(std::vector<const Node*> live,
+    std::vector<ExpiryOp> check_group(std::vector<const Node*> live_nodes,
                                       int turn_index);
 };
 

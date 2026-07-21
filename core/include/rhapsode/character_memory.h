@@ -91,10 +91,10 @@ public:
     nlohmann::json to_json() const;                  // belief graph -> JSON
     static CharacterMemory from_json(const nlohmann::json& j); // JSON -> CharacterMemory
 
-    const std::string& name() const { return char_name_; }
+    const std::string& name() const { return character_name_; }
 
 private:
-    std::string char_name_;
+    std::string character_name_;
 
     // The subjective belief graph -- same structure as the narrator's WorldGraph,
     // owned per-character.  This is the whole persisted mind.

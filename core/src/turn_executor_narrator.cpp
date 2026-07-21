@@ -356,7 +356,7 @@ void TurnExecutor::apply_narrator_cast(SceneData& scene,
         return;
     }
 
-    world_.ensure_characters_present(scene.scene_id, resolved_names);
+    world_.add_scene_characters(scene.scene_id, resolved_names);
 }
 
 }  // namespace rhapsode

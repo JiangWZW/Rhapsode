@@ -46,7 +46,7 @@ std::string strip_echoed_label(std::string s) {
 // felt-pressure, and classifies its relation to priors.  These helpers keep
 // perceptions and buckets aligned by index through prompt -> parse -> apply.
 
-struct Perc {
+struct Perception {
     std::uint64_t id;
     std::string fact;
     std::vector<std::string> entities;
@@ -60,7 +60,7 @@ struct ReflectionBucket {
 };
 
 struct ParsedThought {
-    std::size_t bucket_idx;
+    std::size_t bucket_index;
     std::string belief;
     int weight;
     std::string kind;  // "tension" or "evidence"
@@ -74,8 +74,9 @@ struct WeightTuning {
     float cull_floor = 0.05f;
 };
 
-std::vector<Perc> gather_unreflected_perceptions(const WorldGraph& beliefs) {
-    std::vector<Perc> perceptions;
+std::vector<Perception> gather_unreflected_perceptions(
+    const WorldGraph& beliefs) {
+    std::vector<Perception> perceptions;
     beliefs.for_each([&](const Node& n) {
         if (n.type == "perception" && n.state == NodeState::Active)
             perceptions.push_back({n.id, n.fact, n.entities});
@@ -86,7 +87,7 @@ std::vector<Perc> gather_unreflected_perceptions(const WorldGraph& beliefs) {
 // Entity-less perceptions fold under a synthetic "(world)" subject so general
 // news still becomes belief.
 std::unordered_map<std::string, std::vector<std::size_t>>
-group_perceptions_by_subject(const std::vector<Perc>& perceptions) {
+group_perceptions_by_subject(const std::vector<Perception>& perceptions) {
     std::unordered_map<std::string, std::vector<std::size_t>> by_subject;
     for (std::size_t i = 0; i < perceptions.size(); ++i) {
         const auto& p = perceptions[i];
@@ -103,39 +104,39 @@ group_perceptions_by_subject(const std::vector<Perc>& perceptions) {
 // Thoughts coexist and are kept as tension.
 std::vector<ReflectionBucket> build_reflection_buckets(
     const WorldGraph& beliefs,
-    const std::vector<Perc>& perceptions,
+    const std::vector<Perception>& perceptions,
     const std::unordered_map<std::string, std::vector<std::size_t>>& by_subject)
 {
     std::vector<ReflectionBucket> buckets;
     buckets.reserve(by_subject.size());
-    for (const auto& [subject, idxs] : by_subject) {
-        ReflectionBucket b;
-        b.subject           = subject;
-        b.perception_idxs   = idxs;
-        const std::string subj_lower = str::to_lower(subject);
+    for (const auto& [subject, perception_indices] : by_subject) {
+        ReflectionBucket bucket;
+        bucket.subject = subject;
+        bucket.perception_idxs = perception_indices;
+        const std::string subject_key = str::to_lower(subject);
         beliefs.for_each([&](const Node& n) {
             if (n.type != "belief" || n.state != NodeState::Active) return;
             for (const auto& e : n.entities) {
-                if (entity_matches(str::to_lower(e), subj_lower)) {
-                    b.prior_ids.push_back(n.id);
-                    b.prior_text += "- " + n.fact + "\n";
+                if (entity_matches(str::to_lower(e), subject_key)) {
+                    bucket.prior_ids.push_back(n.id);
+                    bucket.prior_text += "- " + n.fact + "\n";
                     return;
                 }
             }
         }, false);
-        buckets.push_back(std::move(b));
+        buckets.push_back(std::move(bucket));
     }
     return buckets;
 }
 
 std::string build_reflection_prompt(
-    const std::string& char_name,
+    const std::string& character_name,
     const std::string& description,
     const std::vector<ReflectionBucket>& buckets,
-    const std::vector<Perc>& perceptions)
+    const std::vector<Perception>& perceptions)
 {
     std::string prompt =
-        "You are " + char_name + ".\n"
+        "You are " + character_name + ".\n"
         + (description.empty() ? std::string() : "Who I am: " + description + "\n") +
         "I have just perceived new things about several subjects. For EACH "
         "subject below, in ONE terse first-person sentence -- how I would "
@@ -145,15 +146,18 @@ std::string build_reflection_prompt(
         "trivial) to 10 (unbearably charged). Say whether the new thought "
         "CONTRADICTS what I already thought (\"tension\") or EXTENDS / supports "
         "it (\"evidence\").\n\nSubjects:\n";
-    for (std::size_t bi = 0; bi < buckets.size(); ++bi) {
-        prompt += "[" + std::to_string(bi) + "] " + buckets[bi].subject + "\n";
-        if (buckets[bi].prior_text.empty())
+    for (std::size_t bucket_index = 0;
+         bucket_index < buckets.size(); ++bucket_index) {
+        const auto& bucket = buckets[bucket_index];
+        prompt += "[" + std::to_string(bucket_index) + "] "
+               + bucket.subject + "\n";
+        if (bucket.prior_text.empty())
             prompt += "  What I already think: (nothing in particular yet)\n";
         else
-            prompt += "  What I already think:\n" + buckets[bi].prior_text;
+            prompt += "  What I already think:\n" + bucket.prior_text;
         prompt += "  What I just perceived:\n";
-        for (auto i : buckets[bi].perception_idxs)
-            prompt += "  - " + perceptions[i].fact + "\n";
+        for (const auto perception_index : bucket.perception_idxs)
+            prompt += "  - " + perceptions[perception_index].fact + "\n";
     }
     prompt +=
         "\nRespond with ONLY a JSON object in exactly this shape, with one entry "
@@ -172,21 +176,24 @@ std::vector<ParsedThought> parse_reflection_response(
     const auto it = parsed.find("thoughts");
     if (it == parsed.end() || !it->is_array())
         return thoughts;
-    for (const auto& t : *it) {
-        if (!t.is_object()) continue;
-        const std::size_t bi = static_cast<std::size_t>(
-            json_number<int>(t, "id", -1));
-        if (bi >= bucket_count) continue;
+    for (const auto& value : *it) {
+        if (!value.is_object()) continue;
+        const std::size_t bucket_index = static_cast<std::size_t>(
+            json_number<int>(value, "id", -1));
+        if (bucket_index >= bucket_count) continue;
         std::string belief =
-            strip_echoed_label(sanitize_utf8(t.value("thought", "")));
+            strip_echoed_label(sanitize_utf8(value.value("thought", "")));
         if (belief.empty()) continue;
-        const int w = std::clamp(json_number<int>(t, "weight", 5), 1, 10);
-        const std::string rel = str::to_lower(t.value("relation", "evidence"));
+        const int weight =
+            std::clamp(json_number<int>(value, "weight", 5), 1, 10);
+        const std::string relation =
+            str::to_lower(value.value("relation", "evidence"));
         const std::string kind =
-            (rel.find("tension") != std::string::npos ||
-             rel.find("contradict") != std::string::npos)
+            (relation.find("tension") != std::string::npos ||
+             relation.find("contradict") != std::string::npos)
                 ? "tension" : "evidence";
-        thoughts.push_back({bi, std::move(belief), w, kind});
+        thoughts.push_back(
+            {bucket_index, std::move(belief), weight, kind});
     }
     return thoughts;
 }
@@ -196,42 +203,43 @@ std::vector<std::uint64_t> apply_reflection_thoughts(
     WorldGraph& beliefs,
     int turn,
     const std::vector<ReflectionBucket>& buckets,
-    const std::vector<Perc>& perceptions,
+    const std::vector<Perception>& perceptions,
     const std::vector<ParsedThought>& thoughts)
 {
-    std::vector<std::uint64_t> new_ids;
-    for (const auto& th : thoughts) {
-        const ReflectionBucket& bk = buckets[th.bucket_idx];
-        Node nb;
-        nb.fact        = sanitize_utf8(th.belief);
-        nb.type        = "belief";
-        nb.state       = NodeState::Active;
-        nb.entities    = (bk.subject == "(world)")
+    std::vector<std::uint64_t> new_thought_ids;
+    for (const auto& thought : thoughts) {
+        const ReflectionBucket& bucket = buckets[thought.bucket_index];
+        Node belief;
+        belief.fact = sanitize_utf8(thought.belief);
+        belief.type = "belief";
+        belief.state = NodeState::Active;
+        belief.entities = (bucket.subject == "(world)")
                              ? std::vector<std::string>{}
-                             : std::vector<std::string>{bk.subject};
-        nb.created_at  = turn;
-        nb.valid_until = -1;
-        nb.weight      = static_cast<float>(th.weight);
-        Node& ref = beliefs.add_node(std::move(nb));
-        const std::uint64_t new_id = ref.id;
-        new_ids.push_back(new_id);
+                             : std::vector<std::string>{bucket.subject};
+        belief.created_at = turn;
+        belief.valid_until = -1;
+        belief.weight = static_cast<float>(thought.weight);
+        const std::uint64_t new_id = beliefs.add_node(std::move(belief)).id;
+        new_thought_ids.push_back(new_id);
 
-        for (auto pid : bk.prior_ids)
-            beliefs.add_relation(new_id, pid, 1.0f, turn, th.kind);
-        for (auto i : bk.perception_idxs)
-            beliefs.add_relation(new_id, perceptions[i].id, 1.0f, turn, "evidence");
+        for (const auto prior_id : bucket.prior_ids)
+            beliefs.add_relation(
+                new_id, prior_id, 1.0f, turn, thought.kind);
+        for (const auto perception_index : bucket.perception_idxs)
+            beliefs.add_relation(new_id, perceptions[perception_index].id,
+                                 1.0f, turn, "evidence");
     }
-    return new_ids;
+    return new_thought_ids;
 }
 
 // Mark consolidated perceptions as no longer live (kept as history, not
 // re-reflected next turn).
 void consolidate_perceptions(WorldGraph& beliefs,
-                             const std::vector<Perc>& perceptions,
+                             const std::vector<Perception>& perceptions,
                              int turn)
 {
-    for (const auto& p : perceptions)
-        beliefs.set_valid_until(p.id, turn);
+    for (const auto& perception : perceptions)
+        beliefs.set_valid_until(perception.id, turn);
 }
 
 // Weight lives by reinforce-vs-decay (the only writer of Thought weight).
@@ -241,16 +249,20 @@ void consolidate_perceptions(WorldGraph& beliefs,
 int apply_reinforce_decay(WorldGraph& beliefs, int turn,
                           const std::vector<std::uint64_t>& new_thought_ids,
                           const WeightTuning& tuning,
-                          const std::string& char_name)
+    const std::string& character_name)
 {
     std::unordered_set<std::uint64_t> touched;
-    for (auto nid : new_thought_ids) {
-        touched.insert(nid);
-        for (auto nb_id : beliefs.neighbors_within(nid, tuning.touch_hops)) {
-            touched.insert(nb_id);
-            Node* n = beliefs.get_node(nb_id);
-            if (n && n->type == "belief")
-                n->weight = std::min(tuning.weight_cap, n->weight + tuning.reinforce);
+    for (const auto new_thought_id : new_thought_ids) {
+        touched.insert(new_thought_id);
+        for (const auto neighbor_id :
+             beliefs.neighbors_within(new_thought_id, tuning.touch_hops)) {
+            touched.insert(neighbor_id);
+            Node* neighbor = beliefs.get_node(neighbor_id);
+            if (neighbor && neighbor->type == "belief") {
+                neighbor->weight = std::min(
+                    tuning.weight_cap,
+                    neighbor->weight + tuning.reinforce);
+            }
         }
     }
     std::vector<std::uint64_t> live_thoughts;
@@ -259,16 +271,17 @@ int apply_reinforce_decay(WorldGraph& beliefs, int turn,
             live_thoughts.push_back(n.id);
     }, false);
     int culled = 0;
-    for (auto bid : live_thoughts) {
-        if (touched.count(bid)) continue;
-        Node* n = beliefs.get_node(bid);
-        if (!n) continue;
-        n->weight *= tuning.decay;
-        if (n->weight < tuning.cull_floor) {
-            beliefs.set_valid_until(bid, turn);
+    for (const auto belief_id : live_thoughts) {
+        if (touched.count(belief_id)) continue;
+        Node* belief = beliefs.get_node(belief_id);
+        if (!belief) continue;
+        belief->weight *= tuning.decay;
+        if (belief->weight < tuning.cull_floor) {
+            beliefs.set_valid_until(belief_id, turn);
             ++culled;
-            log() << "  [char_mem:" << char_name << "] culled #" << bid
-                  << " (w=" << n->weight << "): " << n->fact << "\n";
+            log() << "  [char_mem:" << character_name << "] culled #"
+                  << belief_id << " (w=" << belief->weight << "): "
+                  << belief->fact << "\n";
         }
     }
     return culled;
@@ -279,14 +292,14 @@ int apply_reinforce_decay(WorldGraph& beliefs, int turn,
 void CharacterMemory::reflect_perceptions(int turn, const std::string& description,
                                           const LLMCallback& llm_callback) {
     if (!llm_callback) {
-        log() << "  [char_mem:" << char_name_
+        log() << "  [char_mem:" << character_name_
               << "] reflect skip: no reflection LLM callback\n" << std::flush;
         return;
     }
 
     auto perceptions = gather_unreflected_perceptions(beliefs_);
     if (perceptions.empty()) {
-        log() << "  [char_mem:" << char_name_
+        log() << "  [char_mem:" << character_name_
               << "] reflect skip: no new perceptions\n" << std::flush;
         return;
     }
@@ -294,13 +307,13 @@ void CharacterMemory::reflect_perceptions(int turn, const std::string& descripti
     auto by_subject = group_perceptions_by_subject(perceptions);
     auto buckets    = build_reflection_buckets(beliefs_, perceptions, by_subject);
     auto prompt     = build_reflection_prompt(
-        char_name_, description, buckets, perceptions);
+        character_name_, description, buckets, perceptions);
 
     std::string raw;
     try {
         raw = llm_callback(prompt);
     } catch (const std::exception& ex) {
-        log() << "  [char_mem:" << char_name_
+        log() << "  [char_mem:" << character_name_
               << "] reflect_perceptions failed: " << ex.what() << "\n";
         raw.clear();
     }
@@ -314,9 +327,9 @@ void CharacterMemory::reflect_perceptions(int turn, const std::string& descripti
 
     consolidate_perceptions(beliefs_, perceptions, turn);
     int culled = apply_reinforce_decay(
-        beliefs_, turn, new_thought_ids, WeightTuning{}, char_name_);
+        beliefs_, turn, new_thought_ids, WeightTuning{}, character_name_);
 
-    log() << "  [char_mem:" << char_name_ << "] reflected "
+    log() << "  [char_mem:" << character_name_ << "] reflected "
           << perceptions.size() << " perception(s) into "
           << new_thought_ids.size() << " thought(s), culled "
           << culled << " faded\n" << std::flush;

@@ -10,6 +10,43 @@
 
 namespace rhapsode {
 
+namespace {
+
+void fill_missing_profile(Character& existing, Character& incoming) {
+    if (existing.description.empty() && !incoming.description.empty())
+        existing.description = std::move(incoming.description);
+    if (existing.dialogue_instructions.empty() &&
+        !incoming.dialogue_instructions.empty()) {
+        existing.dialogue_instructions =
+            std::move(incoming.dialogue_instructions);
+    }
+}
+
+void remove_dynamic_characters(std::vector<Character>& characters,
+                               int target_turn) {
+    characters.erase(
+        std::remove_if(characters.begin(), characters.end(),
+            [target_turn](const Character& character) {
+                return character.created_at >= target_turn;
+            }),
+        characters.end());
+}
+
+void remove_orphan_memories(
+    std::unordered_map<std::string, CharacterMemory>& memories,
+    const std::vector<Character>& characters) {
+    for (auto it = memories.begin(); it != memories.end();) {
+        const bool exists = std::any_of(
+            characters.begin(), characters.end(),
+            [&](const Character& character) {
+                return character.name == it->first;
+            });
+        it = exists ? std::next(it) : memories.erase(it);
+    }
+}
+
+}  // namespace
+
 // -- Roster ------------------------------------------------------------------
 
 Character* World::find_character_mutable(const std::string& name) {
@@ -40,17 +77,18 @@ Character& World::enter_character(const std::string& scene_id, Character charact
         }
         const bool was_off = !existing->in_scene(scene_id);
         existing->join_scene(scene_id);
-        if (existing->description.empty() && !character.description.empty())
-            existing->description = std::move(character.description);
-        if (existing->dialogue_instructions.empty() &&
-            !character.dialogue_instructions.empty())
-            existing->dialogue_instructions = std::move(character.dialogue_instructions);
+        fill_missing_profile(*existing, character);
         if (was_off)
             log() << "  [cast] " << existing->name
                   << " re-enters (was off-stage)\n";
         return *existing;
     }
 
+    return add_new_character(scene_id, std::move(character));
+}
+
+Character& World::add_new_character(const std::string& scene_id,
+                                    Character character) {
     if (!scene_id.empty()) character.join_scene(scene_id);
     characters_.push_back(std::move(character));
     Character& added = characters_.back();
@@ -72,7 +110,7 @@ bool World::leave_character(const std::string& scene_id, const std::string& name
     return true;
 }
 
-void World::ensure_characters_present(
+void World::add_scene_characters(
     const std::string& scene_id,
     const std::vector<std::string>& canonical_names) {
     std::unordered_set<std::string> resolved_names;
@@ -128,18 +166,11 @@ bool World::seed_character_intention(const std::string& character,
 std::vector<std::uint64_t> World::revert_to_turn(int target_turn) {
     const auto removed_ids = world_graph_.revert_to_turn(target_turn);
 
-    characters_.erase(
-        std::remove_if(characters_.begin(), characters_.end(),
-            [target_turn](const Character& c) { return c.created_at >= target_turn; }),
-        characters_.end());
+    remove_dynamic_characters(characters_, target_turn);
     for (auto& character : characters_)
         if (!character.is_player) character.dead = false;
 
-    for (auto it = character_memories_.begin(); it != character_memories_.end();) {
-        const bool exists = std::any_of(characters_.begin(), characters_.end(),
-            [&](const Character& c) { return c.name == it->first; });
-        it = exists ? std::next(it) : character_memories_.erase(it);
-    }
+    remove_orphan_memories(character_memories_, characters_);
     return removed_ids;
 }
 
@@ -178,15 +209,15 @@ void World::route_perceptions(const std::string& scene_id,
 
 void World::reflect_perceptions(int turn, const LLMCallback& llm_callback) {
     for (auto& [name, memory] : character_memories_) {
-        std::string description;
-        for (const auto& character : characters_) {
-            if (character.name == name) {
-                description = character.description;
-                break;
-            }
-        }
-        memory.reflect_perceptions(turn, description, llm_callback);
+        memory.reflect_perceptions(
+            turn, character_description(name), llm_callback);
     }
+}
+
+std::string World::character_description(const std::string& name) const {
+    for (const auto& character : characters_)
+        if (character.name == name) return character.description;
+    return {};
 }
 
 bool World::mark_character_dead(const std::string& name) {

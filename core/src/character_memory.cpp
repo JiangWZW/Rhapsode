@@ -19,7 +19,7 @@ namespace rhapsode {
 // ---------------------------------------------------------------------------
 
 CharacterMemory::CharacterMemory(std::string name)
-    : char_name_(std::move(name)) {}
+    : character_name_(std::move(name)) {}
 
 // ---------------------------------------------------------------------------
 // Subjective belief graph (beliefs_)
@@ -278,7 +278,7 @@ void CharacterMemory::route_fact(const std::string& fact,
 
 nlohmann::json CharacterMemory::to_json() const {
     nlohmann::json j;
-    j["name"]         = char_name_;
+    j["name"]         = character_name_;
     j["belief_graph"] = beliefs_.to_json();
     return j;
 }

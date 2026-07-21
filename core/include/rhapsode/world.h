@@ -28,8 +28,8 @@ public:
                                    const std::string& name) const;
     Character& enter_character(const std::string& scene_id, Character character);
     bool leave_character(const std::string& scene_id, const std::string& name);
-    void ensure_characters_present(const std::string& scene_id,
-                                   const std::vector<std::string>& canonical_names);
+    void add_scene_characters(const std::string& scene_id,
+                              const std::vector<std::string>& canonical_names);
     void move_scene_members(const std::string& from_scene_id,
                             const std::string& into_scene_id,
                             const std::vector<std::string>& names = {});
@@ -55,6 +55,9 @@ public:
 
 private:
     Character* find_character_mutable(const std::string& name);
+    Character& add_new_character(const std::string& scene_id,
+                                 Character character);
+    std::string character_description(const std::string& name) const;
 
     WorldGraph world_graph_;
     std::unordered_map<std::string, CharacterMemory> character_memories_;

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -86,6 +87,10 @@ public:
     static WorldGraph from_legacy_node_pool_json(const nlohmann::json& j);
 
 private:
+    std::optional<Edge> find_edge_between(std::uint64_t first_id,
+                                          std::uint64_t second_id);
+    std::pair<std::vector<int>, int> active_components() const;
+
     Graph graph_;
     std::unordered_map<std::uint64_t, Vertex> id_to_vertex_;
     std::uint64_t next_id_ = 1;

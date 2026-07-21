@@ -139,45 +139,42 @@ bool WorldGraph::add_relation(std::uint64_t from_id,
     return inserted;
 }
 
-bool WorldGraph::set_edge_active(std::uint64_t from_id, std::uint64_t to_id, bool active) {
-    auto fi = id_to_vertex_.find(from_id);
-    auto ti = id_to_vertex_.find(to_id);
-    if (fi == id_to_vertex_.end() || ti == id_to_vertex_.end()) return false;
+std::optional<WorldGraph::Edge> WorldGraph::find_edge_between(
+    std::uint64_t first_id, std::uint64_t second_id) {
+    const auto first = id_to_vertex_.find(first_id);
+    const auto second = id_to_vertex_.find(second_id);
+    if (first == id_to_vertex_.end() || second == id_to_vertex_.end())
+        return std::nullopt;
 
-    // Try both orderings since add_relation enforces temporal direction
-    for (auto [s, t] : {std::pair{fi->second, ti->second},
-                         std::pair{ti->second, fi->second}}) {
-        auto [e, ok] = boost::edge(s, t, graph_);
-        if (ok) { graph_[e].active = active; return true; }
+    for (const auto [source, target] : {
+             std::pair{first->second, second->second},
+             std::pair{second->second, first->second}}) {
+        auto [edge, found] = boost::edge(source, target, graph_);
+        if (found) return edge;
     }
-    return false;
+    return std::nullopt;
+}
+
+bool WorldGraph::set_edge_active(std::uint64_t from_id, std::uint64_t to_id, bool active) {
+    const auto edge = find_edge_between(from_id, to_id);
+    if (!edge) return false;
+    graph_[*edge].active = active;
+    return true;
 }
 
 bool WorldGraph::set_edge_weight(std::uint64_t from_id, std::uint64_t to_id, float weight) {
-    auto fi = id_to_vertex_.find(from_id);
-    auto ti = id_to_vertex_.find(to_id);
-    if (fi == id_to_vertex_.end() || ti == id_to_vertex_.end()) return false;
-
-    for (auto [s, t] : {std::pair{fi->second, ti->second},
-                         std::pair{ti->second, fi->second}}) {
-        auto [e, ok] = boost::edge(s, t, graph_);
-        if (ok) { graph_[e].weight = weight; return true; }
-    }
-    return false;
+    const auto edge = find_edge_between(from_id, to_id);
+    if (!edge) return false;
+    graph_[*edge].weight = weight;
+    return true;
 }
 
 bool WorldGraph::set_edge_kind(std::uint64_t from_id, std::uint64_t to_id,
                                const std::string& kind) {
-    auto fi = id_to_vertex_.find(from_id);
-    auto ti = id_to_vertex_.find(to_id);
-    if (fi == id_to_vertex_.end() || ti == id_to_vertex_.end()) return false;
-
-    for (auto [s, t] : {std::pair{fi->second, ti->second},
-                         std::pair{ti->second, fi->second}}) {
-        auto [e, ok] = boost::edge(s, t, graph_);
-        if (ok) { graph_[e].kind = kind; return true; }
-    }
-    return false;
+    const auto edge = find_edge_between(from_id, to_id);
+    if (!edge) return false;
+    graph_[*edge].kind = kind;
+    return true;
 }
 
 std::vector<EdgeInfo> WorldGraph::all_edges() const {
@@ -245,63 +242,52 @@ std::vector<std::uint64_t> WorldGraph::neighbors_within(
     return result;
 }
 
-std::vector<std::uint64_t> WorldGraph::thread_containing(std::uint64_t seed_id) const {
-    auto seed_it = id_to_vertex_.find(seed_id);
-    if (seed_it == id_to_vertex_.end()) return {};
-
-    // Build undirected view of active edges for connected_components
+std::pair<std::vector<int>, int> WorldGraph::active_components() const {
     using UndirectedView = boost::adjacency_list<boost::vecS, boost::vecS,
                                                   boost::undirectedS>;
-    auto n_verts = boost::num_vertices(graph_);
-    UndirectedView ug(n_verts);
+    const auto vertex_count = boost::num_vertices(graph_);
+    UndirectedView undirected(vertex_count);
 
-    auto [eit, eend] = boost::edges(graph_);
-    for (; eit != eend; ++eit) {
-        if (!graph_[*eit].active) continue;
-        auto s = boost::source(*eit, graph_);
-        auto t = boost::target(*eit, graph_);
-        boost::add_edge(s, t, ug);
+    auto [edge, edge_end] = boost::edges(graph_);
+    for (; edge != edge_end; ++edge) {
+        if (!graph_[*edge].active) continue;
+        boost::add_edge(boost::source(*edge, graph_),
+                        boost::target(*edge, graph_), undirected);
     }
 
-    std::vector<int> comp(n_verts);
-    boost::connected_components(ug, comp.data());
+    std::vector<int> components(vertex_count);
+    const int count = vertex_count == 0
+        ? 0 : boost::connected_components(undirected, components.data());
+    return {std::move(components), count};
+}
 
-    int target_comp = comp[seed_it->second];
+std::vector<std::uint64_t> WorldGraph::thread_containing(std::uint64_t seed_id) const {
+    const auto seed = id_to_vertex_.find(seed_id);
+    if (seed == id_to_vertex_.end()) return {};
+
+    const auto [components, count] = active_components();
+    (void)count;
+
+    const int target_component = components[seed->second];
     std::vector<std::uint64_t> thread;
     for (const auto& [id, v] : id_to_vertex_) {
-        if (comp[v] == target_comp)
-            thread.push_back(id);
+        if (components[v] == target_component) thread.push_back(id);
     }
     std::sort(thread.begin(), thread.end());
     return thread;
 }
 
 std::vector<std::vector<std::uint64_t>> WorldGraph::all_threads() const {
-    auto n_verts = boost::num_vertices(graph_);
-    if (n_verts == 0) return {};
+    const auto [components, component_count] = active_components();
+    if (component_count == 0) return {};
 
-    using UndirectedView = boost::adjacency_list<boost::vecS, boost::vecS,
-                                                  boost::undirectedS>;
-    UndirectedView ug(n_verts);
-
-    auto [eit, eend] = boost::edges(graph_);
-    for (; eit != eend; ++eit) {
-        if (!graph_[*eit].active) continue;
-        auto s = boost::source(*eit, graph_);
-        auto t = boost::target(*eit, graph_);
-        boost::add_edge(s, t, ug);
-    }
-
-    std::vector<int> comp(n_verts);
-    int num_comp = boost::connected_components(ug, comp.data());
-
-    std::vector<std::vector<std::uint64_t>> threads(num_comp);
+    std::vector<std::vector<std::uint64_t>> threads(component_count);
     for (const auto& [id, v] : id_to_vertex_)
-        threads[comp[v]].push_back(id);
+        threads[components[v]].push_back(id);
 
     // Remove empty components (vertices without ids) and sort each thread
     std::vector<std::vector<std::uint64_t>> result;
-    result.reserve(num_comp);
+    result.reserve(component_count);
     for (auto& t : threads) {
         if (t.empty()) continue;
         std::sort(t.begin(), t.end());

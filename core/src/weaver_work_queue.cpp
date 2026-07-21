@@ -20,24 +20,24 @@ void Weaver::rebuild_expiry_queue(
     expiry_queue_.clear();
     auto groups = graph_.entity_groups();
 
-    std::set<std::string> prio_lower;
-    for (const auto& e : priority_entities) {
-        prio_lower.insert(str::to_lower(e));
+    std::set<std::string> priority_keys;
+    for (const auto& entity : priority_entities) {
+        priority_keys.insert(str::to_lower(entity));
     }
 
     // Partition into priority and non-priority groups; deduplicate.
     std::vector<std::vector<std::uint64_t>> priority_groups, normal_groups;
-    std::set<std::vector<std::uint64_t>> seen;
-    for (auto& [entity, ids] : groups) {
-        if (ids.size() < 2) continue;
-        auto canonical = ids;
+    std::set<std::vector<std::uint64_t>> seen_groups;
+    for (auto& [entity, node_ids] : groups) {
+        if (node_ids.size() < 2) continue;
+        auto canonical = node_ids;
         std::sort(canonical.begin(), canonical.end());
-        if (!seen.insert(std::move(canonical)).second) continue;
+        if (!seen_groups.insert(std::move(canonical)).second) continue;
 
-        if (prio_lower.count(str::to_lower(entity)))
-            priority_groups.push_back(std::move(ids));
+        if (priority_keys.count(str::to_lower(entity)))
+            priority_groups.push_back(std::move(node_ids));
         else
-            normal_groups.push_back(std::move(ids));
+            normal_groups.push_back(std::move(node_ids));
     }
 
     // drain_expiry_queue pops from the back, so priority goes last
@@ -58,18 +58,18 @@ std::vector<ExpiryOp> Weaver::drain_expiry_queue(int turn_index) {
 
     while (!expiry_queue_.empty()
            && !expiry_stop_.load(std::memory_order_relaxed)) {
-        auto ids = std::move(expiry_queue_.back());
+        auto node_ids = std::move(expiry_queue_.back());
         expiry_queue_.pop_back();
 
-        std::vector<const Node*> live;
-        for (auto id : ids) {
-            const Node* n = graph_.get_node(id);
-            if (n && n->valid_until == -1)
-                live.push_back(n);
+        std::vector<const Node*> live_nodes;
+        for (const auto node_id : node_ids) {
+            const Node* node = graph_.get_node(node_id);
+            if (node && node->valid_until == -1)
+                live_nodes.push_back(node);
         }
-        if (live.size() < 2) continue;
+        if (live_nodes.size() < 2) continue;
 
-        auto expired = check_group(std::move(live), turn_index);
+        auto expired = check_group(std::move(live_nodes), turn_index);
         all.insert(all.end(),
                    std::make_move_iterator(expired.begin()),
                    std::make_move_iterator(expired.end()));
@@ -85,18 +85,18 @@ bool Weaver::expiry_queue_empty() const {
     return expiry_queue_.empty();
 }
 
-std::vector<ExpiryOp> Weaver::check_group(std::vector<const Node*> live,
-                                           int turn_index) {
-    std::sort(live.begin(), live.end(),
+std::vector<ExpiryOp> Weaver::check_group(
+    std::vector<const Node*> live_nodes, int turn_index) {
+    std::sort(live_nodes.begin(), live_nodes.end(),
               [](const Node* a, const Node* b) {
                   return a->created_at > b->created_at;
               });
 
     std::ostringstream os;
     os << "Active facts (newest first):\n";
-    for (const auto* n : live)
-        os << "- [" << n->id << "] (turn " << n->created_at
-           << ") \"" << n->fact << "\"\n";
+    for (const auto* node : live_nodes)
+        os << "- [" << node->id << "] (turn " << node->created_at
+           << ") \"" << node->fact << "\"\n";
 
     os << "\nWhich of these facts are NO LONGER TRUE given the full set?\n"
           "A fact is superseded only if a newer fact makes it factually false.\n"
@@ -121,34 +121,35 @@ std::vector<ExpiryOp> Weaver::check_group(std::vector<const Node*> live,
     }
 
     std::unordered_set<std::uint64_t> valid_ids;
-    for (const auto* n : live)
-        valid_ids.insert(n->id);
+    for (const auto* node : live_nodes)
+        valid_ids.insert(node->id);
 
-    auto j = try_parse_json(response);
-    auto reason = j.value("reason", std::string{});
+    const auto parsed = try_parse_json(response);
+    const auto reason = parsed.value("reason", std::string{});
 
     std::vector<ExpiryOp> expired;
-    auto arr = j.value("superseded", nlohmann::json::array());
-    if (!arr.is_array()) return expired;
+    const auto superseded =
+        parsed.value("superseded", nlohmann::json::array());
+    if (!superseded.is_array()) return expired;
 
-    for (const auto& elem : arr) {
+    for (const auto& element : superseded) {
         std::uint64_t old_id = 0;
-        int vu = turn_index;  // fallback: use current turn
+        int valid_until = turn_index;
 
-        if (elem.is_object()) {
-            old_id = json_number<std::uint64_t>(elem, "id", 0);
-            auto by_id = json_number<std::uint64_t>(elem, "by", 0);
+        if (element.is_object()) {
+            old_id = json_number<std::uint64_t>(element, "id", 0);
+            const auto by_id =
+                json_number<std::uint64_t>(element, "by", 0);
             if (by_id != 0) {
                 const Node* by_node = graph_.get_node(by_id);
-                if (by_node)
-                    vu = by_node->created_at;
+                if (by_node) valid_until = by_node->created_at;
             }
-        } else if (elem.is_number_integer()) {
-            old_id = elem.get<std::uint64_t>();
+        } else if (element.is_number_integer()) {
+            old_id = element.get<std::uint64_t>();
         }
 
         if (old_id == 0 || !valid_ids.count(old_id)) continue;
-        if (graph_.set_valid_until(old_id, vu))
+        if (graph_.set_valid_until(old_id, valid_until))
             expired.push_back({old_id, reason});
     }
 

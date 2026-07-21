@@ -5,6 +5,26 @@
 
 namespace rhapsode {
 
+namespace {
+
+std::string document_id(std::uint64_t node_id) {
+    return "node_" + std::to_string(node_id);
+}
+
+nlohmann::json node_metadata(std::uint64_t node_id,
+                             const std::string& state,
+                             const std::string& type,
+                             int turn) {
+    return {
+        {"node_id", node_id},
+        {"created_at", turn},
+        {"state", state},
+        {"type", type},
+    };
+}
+
+}  // namespace
+
 MemorySystem::MemorySystem(const std::string& scene_id)
     : collection_(scene_id + "_nodes")
 {}
@@ -22,7 +42,7 @@ void MemorySystem::set_delete_callback(DeleteCallback cb)          { delete_cb_ 
 void MemorySystem::delete_nodes(const std::vector<std::uint64_t>& node_ids) {
     if (!delete_cb_ || node_ids.empty()) return;
     nlohmann::json ids = nlohmann::json::array();
-    for (auto id : node_ids) ids.push_back("node_" + std::to_string(id));
+    for (const auto id : node_ids) ids.push_back(document_id(id));
     delete_cb_(collection_, ids.dump());
     log() << "  [memory] Deleted " << node_ids.size() << " nodes from ChromaDB\n" << std::flush;
 }
@@ -37,17 +57,12 @@ void MemorySystem::store_node(std::uint64_t node_id,
     if (!embed_cb_) throw std::runtime_error("No embed callback registered");
     if (!store_cb_) throw std::runtime_error("No store callback registered");
 
-    auto embedding_json = embed_cb_(fact);
-    std::string doc_id = "node_" + std::to_string(node_id);
+    const std::string embedding_json = embed_cb_(fact);
+    const std::string id = document_id(node_id);
+    const nlohmann::json metadata =
+        node_metadata(node_id, state, type, turn);
 
-    nlohmann::json metadata = {
-        {"node_id",    node_id},
-        {"created_at", turn},
-        {"state",      state},
-        {"type",       type},
-    };
-
-    store_cb_(collection_, doc_id, fact, embedding_json, metadata.dump());
+    store_cb_(collection_, id, fact, embedding_json, metadata.dump());
 }
 
 // -- Read --
@@ -56,16 +71,17 @@ std::vector<std::uint64_t> MemorySystem::search_nodes(const std::string& query,
                                                        int top_k) const {
     if (!embed_cb_ || !query_cb_) return {};
 
-    auto query_emb_json = embed_cb_(query);
-    nlohmann::json where = {{"state", {{"$ne", "dormant"}}}};
-    auto raw_str = query_cb_(collection_, query_emb_json, top_k, where.dump());
-    auto raw = nlohmann::json::parse(raw_str);
+    const std::string query_embedding = embed_cb_(query);
+    const nlohmann::json where = {{"state", {{"$ne", "dormant"}}}};
+    const std::string response =
+        query_cb_(collection_, query_embedding, top_k, where.dump());
+    const auto parsed = nlohmann::json::parse(response);
 
     std::vector<std::uint64_t> result;
-    auto ids = raw.value("ids", nlohmann::json::array());
+    const auto ids = parsed.value("ids", nlohmann::json::array());
     if (ids.empty() || ids[0].empty()) return result;
 
-    auto& metadatas = raw["metadatas"][0];
+    const auto& metadatas = parsed["metadatas"][0];
     result.reserve(metadatas.size());
     for (const auto& meta : metadatas) {
         if (meta.contains("node_id"))
@@ -95,11 +111,10 @@ void MemorySystem::sync_expired(const std::vector<Node>& expired_nodes) {
 
     int synced = 0;
     for (const auto& node : expired_nodes) {
-        std::string doc_id = "node_" + std::to_string(node.id);
-        nlohmann::json meta = {
+        const nlohmann::json metadata = {
             {"valid_until", node.valid_until},
         };
-        update_meta_cb_(collection_, doc_id, meta.dump());
+        update_meta_cb_(collection_, document_id(node.id), metadata.dump());
         ++synced;
     }
 
