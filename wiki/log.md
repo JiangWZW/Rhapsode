@@ -2,6 +2,21 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-21] implementation | Runtime architectural decoupling complete
+
+- Story now owns stable Director and Weaver services and injects them into a synchronous
+  TurnExecutor; TurnResult exposes only generic node effects.
+- Removed World filesystem, external-memory, stored-callback, query, death-scan, and scenario
+  parsing responsibilities while retaining invariant-preserving domain operations.
+- Extracted plain scenario-bootstrap, World-analysis, storyline-policy, scene-history, and
+  text-downsampling functions without adding manager or interface hierarchies.
+- Replaced persistent Python Story captures with expiring call-scoped read tools.
+- Made SceneData a behavior-free aggregate, removed History/TextDownsampler classes, sealed Python
+  mutation, and validated active-scene changes.
+- Preserved the save schema, prompt hash, transaction order, rollback, retry, lifecycle, query, and
+  post-turn failure behavior under native, Python, and integration tests.
+- Work was committed locally only; nothing was pushed to a remote.
+
 ## [2026-07-21] plan | Runtime architectural decoupling
 
 - Audited the implemented ownership refactor and recorded the remaining responsibility,

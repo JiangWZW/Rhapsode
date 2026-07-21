@@ -4,19 +4,17 @@ last_updated: 2026-07-21
 confidence: verified
 tier: semantic
 sources:
+  - core/include/rhapsode/story.h
   - core/include/rhapsode/world.h
   - core/include/rhapsode/scene_data.h
-  - core/include/rhapsode/story.h
-  - core/include/rhapsode/scene_loop.h
-  - core/include/rhapsode/director.h
-  - core/include/rhapsode/weaver.h
+  - core/include/rhapsode/turn_executor.h
+  - core/include/rhapsode/storyline_policy.h
+  - core/include/rhapsode/text_downsampling.h
   - bindings/bind_story.cpp
-  - server/rhapsode/session.py
 related:
   - "[[architecture/scene-loop]]"
   - "[[architecture/plot-graph]]"
   - "[[architecture/memory-system]]"
-  - "[runtime coupling reduction plan](../episodes/2026-07-20-runtime-coupling-reduction-plan.md)"
   - "[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)"
 tags:
   - cpp-core
@@ -25,154 +23,90 @@ tags:
 
 # C++ runtime data model
 
-The runtime has one native aggregate, Story. Story exclusively owns durable World state,
-World-free per-storyline records, and the executor that advances them.
+`Story` is the native aggregate and production facade. It owns the complete runtime for one
+playthrough; the other types either own one coherent part of that state or implement a focused
+operation over borrowed values.
 
 ```mermaid
 flowchart TD
-    Session["Python session"] -->|"owns"| Story
-    Session -->|"owns"| Memory["MemorySystem"]
-    Session -->|"owns"| Annotator
-
-    Story -->|"unique ownership"| World
-    Story -->|"owns stable collection"| Scenes["SceneData"]
-    Story -->|"unique ownership"| Loop["SceneLoop"]
-
-    Loop -.->|"lifetime reference"| World
-    Loop -.->|"synchronous call only"| Scenes
-    Loop -->|"owns"| Director
-    Loop -->|"owns optional"| Weaver
-
-    Director --> Graph["WorldGraph"]
-    Weaver --> Graph
-    World --> Graph
-    World --> Roster["character roster"]
-    World --> Minds["character memories"]
-    World -.->|"runtime adapter"| Memory
-    Annotator -.-> World
+    Session["Python WsSession"] -->|owns| Story
+    Story -->|owns| World
+    Story -->|owns many| SceneData
+    Story -->|owns| Director
+    Story -->|owns| Weaver
+    Story -->|owns| Executor["TurnExecutor"]
+    Story -->|shared ownership| Memory["MemorySystem adapter"]
+    Executor -.->|lifetime borrow| World
+    Executor -.->|lifetime borrow| Director
+    Executor -.->|lifetime borrow| Weaver
+    Executor -.->|one-call borrow| SceneData
+    World --> Graph["WorldGraph"]
+    World --> Roster["Character roster"]
+    World --> Minds["CharacterMemory map"]
 ```
 
-There is no SceneData-to-World edge, no World-to-SceneData edge, and no native runtime manager or
-service hierarchy.
-
-## World
-
-World owns the durable state for one Story:
-
-- WorldGraph storage;
-- character roster and scene-ID membership;
-- character-memory map;
-- a borrowed MemorySystem adapter;
-- the runtime-only reflection callback.
-
-The graph, roster, and memory containers are private. World exposes const roster/memory reads,
-explicit membership and character operations, and graph access for Director, Weaver, and graph
-inspection tools.
-
-World enforces the invariants that span its roster and memories:
-
-- character entry creates a configured memory when required;
-- membership moves and removals update Character scene IDs;
-- death clears every membership;
-- perception routing and reflection operate over the complete memory map;
-- rollback prunes graph nodes, dynamically created characters, and orphaned memories.
-
-World no longer stores lifecycle operations. Fork, merge, conclude, and exit decisions belong to
-Story because only Story owns the SceneData collection.
-
-## SceneData
-
-`SceneData` is an aggregate containing only per-storyline state:
-
-- ID, title, and system prompt;
-- narrator and dialogue histories;
-- TextDownsampler value state;
-- turn index;
-- driving intention, charge, and scheduler timestamp.
-
-It contains no World pointer, runtime callback, lifecycle method, character operation, query,
-undo, or persistence method. It is architecturally plain data, though not a strict C++ POD because
-its value members are non-trivial.
-
-Story retains SceneData in `vector<unique_ptr<SceneData>>` so references returned to callers remain
-stable across collection growth. This is exclusive, not shared, ownership.
+There is no ownership cycle and no SceneData-to-World edge.
 
 ## Story
 
-Story is the orchestration and complete-state boundary:
+Story owns composition and cross-component invariants:
 
-- exclusively owns World, SceneData records, and SceneLoop;
-- owns active-scene and scheduler bookkeeping;
-- creates, merges, concludes, and selects storylines;
-- applies accepted lifecycle verdicts directly;
-- routes graph/mind/history tools;
-- coordinates undo across one SceneData and World;
-- loads scenarios and owns complete save/load/delete operations.
+- constructs stable World, Director, Weaver, and TurnExecutor allocations;
+- owns the live SceneData collection and active-scene identity;
+- sequences player turns, optional off-stage turns, lifecycle application, memory synchronization,
+  undo, and persistence;
+- validates scene IDs and player-storyline protections;
+- forwards runtime callbacks to the component that consumes them.
 
-World uses stable `unique_ptr` storage so SceneLoop's World reference remains valid through Story
-moves and save loads. Save loading mutates the existing World allocation rather than rebinding the
-runtime.
+Story delegates mechanics to free-function modules:
 
-Implementation remains split by reason to change:
-
-| File | Responsibility |
+| Module | Responsibility |
 |---|---|
-| `story.cpp` | ownership, scenario loading, collection/lifecycle operations, tools, undo |
-| `story_advance.cpp` | player/off-stage sequencing, lifecycle callbacks, memory synchronization |
-| `story_serialization.cpp` | World, SceneData, and manifest persistence |
+| `scenario_bootstrap` | scenario file/JSON parsing and value construction |
+| `world_analysis` | graph query, mind query, and death-candidate detection |
+| `storyline_policy` | scheduler/lifecycle prompts, callback calls, verdict parsing, cues |
+| `scene_history` | message append/snapshot/undo/query mechanics |
+| `text_downsampling` | mip processing, rendering, and JSON conversion |
+| `story_serialization.cpp` | save paths and complete Story persistence |
 
-## SceneLoop and graph services
+## World
 
-SceneLoop is constructed with Story's World. It owns Director by value and creates an optional
-Weaver when Weaver callbacks are configured. Both services reference `World::graph()` by design.
+World owns durable domain state:
 
-The only execution APIs borrow one SceneData for one synchronous call and return a complete
-SceneTurnResult. SceneLoop has no retained SceneData field, temporal result cache, save directory,
-or public submit/drain compatibility path.
+- objective WorldGraph;
+- character roster and scene membership IDs;
+- subjective CharacterMemory map.
 
-Director and Weaver remain independently bound in Python for maintained graph utilities. They are
-not part of production session composition.
+Its methods are reads or invariant-preserving mutations: roster membership, perception routing,
+reflection over an explicitly supplied callback, rollback, death marking, and value JSON conversion.
+World has no filesystem, scenario-document, MemorySystem, or retained callback dependency.
 
-## Annotator and MemorySystem
+## SceneData
 
-Annotator reads World because named entities come from the durable roster, not from one
-storyline. MemorySystem remains externally owned because its Python callbacks and ChromaDB adapter
-are outside the native state model; World borrows it for synchronization.
+SceneData is a behavior-free value aggregate. It contains identity and display strings, narrator and
+dialogue message vectors, DownsamplingState, turn index, and scheduling fields. It has no methods,
+callback, service pointer, or World reference.
 
-## Persistence
+Python receives SceneData as a read-only view. Production Python cannot replace its identity,
+histories, counters, or scheduling fields. Validated Story operations are the mutation boundary.
 
-The serialized format is unchanged:
+## TurnExecutor and graph services
 
-- `world.json`: graph, roster, character memories, and memory ID;
-- one `<scene_id>.json` blob per SceneData record;
-- `story.json`: active scene, beat clock, and live scene IDs.
+Story owns Director and Weaver. TurnExecutor borrows them and World through constructor references;
+those references cannot be rebound. It borrows one SceneData only for one synchronous call.
 
-Only Story exposes complete persistence in production Python. SceneData has no persistence methods,
-and World's file operations are internal C++ implementation mechanisms.
+TurnExecutor returns `TurnResult`: scene identity, completed turn, emitted messages, and generic
+created/expired node effects. DirectorOutput, WeaveResult, and expiry implementation types do not
+cross the Story boundary.
 
-## Python mutation boundary
+## Runtime adapters and borrows
 
-Python can read World graph, roster, and memories, but cannot replace their containers. Character
-membership, death state, `join_scene()`, and `leave_scene()` are not writable from Python.
-
-Production `WsSession` owns only Story, MemorySystem, Annotator, and a resume flag. It configures
-callbacks on Story; it does not construct SceneLoop, Director, or Weaver.
-
-## Ownership summary
-
-| Object | Owner | Borrowed dependencies |
+| Owner | Owned value | Borrow/lifetime rule |
 |---|---|---|
-| Story | Python session or C++ caller | none |
-| SceneData | Story | none |
-| World | Story | MemorySystem |
-| SceneLoop | Story | World; one call-scoped SceneData |
-| Director | SceneLoop, or standalone graph caller | WorldGraph |
-| Weaver | SceneLoop, or standalone graph caller | WorldGraph |
-| Annotator | Python session or caller | World |
+| Story | World, SceneData, Director, Weaver, TurnExecutor | none |
+| Story | shared MemorySystem handle | pybind/C++ shared ownership |
+| TurnExecutor | no domain state | World/Director/Weaver live longer by declaration order |
+| Narrator/scheduler call | read-tool function | expires when the callback returns |
+| Annotator | no World ownership | pybind keeps its World owner alive |
 
-## Proposed responsibility decoupling
-
-The ownership graph above is implemented, but Story, SceneLoop, and World still concentrate
-policy, infrastructure, query, and turn-algorithm responsibilities. The proposed
-[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)
-records that remaining work. It is not yet the implemented model described by this page.
+See [[architecture/scene-loop]] for transaction order and callback details.

@@ -1,137 +1,91 @@
 ---
-title: SceneLoop runtime
+title: Turn execution
 last_updated: 2026-07-21
 confidence: verified
 tier: semantic
 sources:
-  - core/include/rhapsode/scene_loop.h
-  - core/src/scene_loop.cpp
-  - core/src/scene_loop_narrator.cpp
-  - core/src/scene_loop_background.cpp
+  - core/include/rhapsode/turn_executor.h
+  - core/src/turn_executor.cpp
+  - core/src/turn_executor_narrator.cpp
+  - core/src/turn_executor_post_turn.cpp
   - core/src/story_advance.cpp
-  - server/rhapsode/session.py
+  - server/rhapsode/llm_tools.py
+  - server/rhapsode/scheduler.py
 related:
   - "[[architecture/cpp-data-model]]"
-  - "[runtime coupling reduction plan](../episodes/2026-07-20-runtime-coupling-reduction-plan.md)"
   - "[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)"
-  - "[[decisions/callback-vs-pull]]"
 tags:
   - cpp-core
   - cross-layer
 ---
 
-# SceneLoop
+# Turn execution
 
-SceneLoop executes one complete turn. Story coordinates the larger advance: player turn,
-lifecycle verdict, optional off-stage turn, memory synchronization, and complete persistence.
+`TurnExecutor` executes one synchronous, rollback-capable turn. It is not a loop and does not own
+runtime composition, policy, persistence, external memory, or SceneData.
 
-## Runtime boundary
+## Boundary
 
 ```mermaid
-flowchart TD
-    Story["Story owns World + SceneData + SceneLoop"] -->|"run_player_turn(SceneData&, input)"| Loop["SceneLoop"]
-    Story -->|"run_autonomous_turn(SceneData&, cue)"| Loop
-    Loop -->|"complete SceneTurnResult"| Story
-    Loop -.->|"lifetime reference"| World
-    Loop -.->|"call-scoped reference"| Data["SceneData"]
-    Loop -->|"owns"| Director
-    Loop -->|"owns optional"| Weaver
-    Director --> Graph["WorldGraph"]
-    Weaver --> Graph
-    World --> Graph
+flowchart LR
+    Story -->|one call| Executor["TurnExecutor"]
+    Story -->|owns| Director
+    Story -->|owns| Weaver
+    Story -->|owns| World
+    Executor -.->|borrows| Director
+    Executor -.->|borrows| Weaver
+    Executor -.->|borrows| World
+    Executor -.->|call borrow| SceneData
+    Executor -->|TurnResult| Story
 ```
 
-SceneLoop receives World in its constructor. It retains no SceneData pointer between calls. There
-is no `load_scene`, submit/drain API, runtime service setter, persistence path, or temporal result
-cache.
+Director and Weaver must use the injected World's graph. Construction rejects a graph mismatch,
+and there are no rebinding setters.
+
+## Transaction order
+
+1. Reject re-entry and snapshot SceneData, World, and resume state.
+2. Append the player input or autonomous cue.
+3. Build narrator instructions and turn state.
+4. Invoke the narrator with a call-scoped read-tool function.
+5. Parse and validate the merged prose/plan response.
+6. Apply Director graph changes; on rejection, restore World and retry.
+7. Resolve cast, emit narration/dialogue, and route perceptions.
+8. Detect and confirm deaths.
+9. Run post-turn work synchronously: weave, expiry, reflection, downsampling.
+10. Return generic effects and emitted messages.
+
+An exception restores the snapshots and leaves the executor reusable. Post-turn failures remain
+non-fatal, matching the pre-refactor behavior.
+
+## Callback boundary
+
+Narrator and scheduler callbacks receive a read function with this logical shape:
 
 ```cpp
-struct SceneTurnResult {
-    std::string scene_id;
-    int completed_turn;
-    std::vector<SceneMessage> outputs;
-    DirectorOutput director;
-    WeaveResult weave;
-    std::vector<ExpiryOp> expiry;
-};
+string read_tool(string name, string args_json);
 ```
 
-## Turn sequence
+Story creates it for one callback call. Python adapters do not capture Story, and retained use after
+the call throws `Read tool callback is no longer active`. The function dispatches only the existing
+read tools: graph, mind, history, and live-storyline summaries.
 
-1. Snapshot the selected SceneData, World, and resume flag.
-2. Append player input or the autonomous director cue.
-3. Build narrator instructions and turn state from SceneData plus const World reads.
-4. Call the narrator and split prose from the JSON plan.
-5. Apply the plan through the owned Director.
-6. On rejection, restore World and request a corrected plan.
-7. Resolve cast presence through World membership operations.
-8. Emit narrator and dialogue output and route new facts through World.
-9. Confirm possible deaths and prepare the owned Weaver's expiry queue.
-10. Run weave, expiry, reflection, and downsampling in one background future.
-11. Join that future and return one complete SceneTurnResult.
+Lifecycle has no read tools. `storyline_policy` builds its plain BeatSummary, invokes the callback,
+and returns a plain LifecycleDecision for Story to validate and apply.
 
-NPC dialogue remains separate from narrator history. The output ordering and retry count are
-unchanged.
+## Result boundary
 
-## Failure contract
+`TurnResult` contains only stable public values:
 
-If foreground execution fails, SceneLoop stops any expiry drain, joins an existing background
-future, restores SceneData and World snapshots, restores the resume flag, returns to Idle, and
-rethrows the original exception.
+- `scene_id` and `completed_turn`;
+- output SceneMessages;
+- created and expired Nodes.
 
-Director and Weaver graph affinity is guaranteed by construction: SceneLoop creates both from the
-same World supplied by Story. Runtime graph mismatch checks and Python lifetime wiring are no
-longer needed in the production path.
+Story uses those effects to synchronize MemorySystem. It does not know Director or Weaver result
+types.
 
-## Background boundary
+## Concurrency
 
-The future captures reference wrappers for the exact World, SceneData, and optional Weaver used by
-the call. It does not capture SceneLoop. Work order remains:
-
-1. full or local weave;
-2. expiry queue drain;
-3. character-memory reflection;
-4. history downsampling.
-
-`run_*_turn()` always joins before returning, including exception paths. Therefore Story load,
-undo, lifecycle changes, and destruction never cross an active background borrow.
-
-The downsampler callback is passed into processing for that call. SceneData and TextDownsampler do
-not retain Python callbacks.
-
-## Ownership and persistence
-
-- Story exclusively owns SceneLoop, World, and SceneData records.
-- SceneLoop owns Director and optional Weaver.
-- SceneLoop borrows World for its lifetime and SceneData only during one call.
-- Story alone performs complete persistence after an accepted advance or undo.
-- SceneLoop contains no save directory or file operation.
-
-## Implementation files
-
-| File | Responsibility |
-|---|---|
-| `scene_loop.cpp` | synchronous transaction, foreground sequencing, output, death confirmation |
-| `scene_loop_narrator.cpp` | prompt construction, narrator call/retry, plan/cast/speech validation |
-| `scene_loop_background.cpp` | call-scoped async weave, expiry, reflection, and downsampling |
-| `story_advance.cpp` | player/off-stage sequencing, lifecycle, scheduler, memory synchronization |
-
-## Python composition
-
-SceneLoop is not bound as a production Python class. `server/rhapsode/session.py` configures
-callbacks on Story and invokes `Story.advance_scene()` in an executor. Standalone Director and
-Weaver bindings remain available for graph inspection and maintenance tools.
-
-## Deliberately unchanged behavior
-
-This refactor preserves narrator prompts, retry count, dialogue semantics, lifecycle precedence,
-save schema, turn output ordering, and the existing scene-local undo algorithm. Multi-scene undo
-semantics remain a separate design question.
-
-## Proposed replacement
-
-SceneLoop is currently a synchronous-call boundary wrapped around immediately joined background
-work, and its result exposes Director and Weaver types. The proposed
-[runtime architectural decoupling plan](../episodes/2026-07-21-runtime-architectural-decoupling-plan.md)
-would replace it with a genuinely synchronous TurnExecutor and a generic TurnResult. This section
-describes proposed work, not current implementation.
+Turn execution is synchronous. There is no internal future or background reference capture. The
+FastAPI layer may place the complete `Story.advance_scene()` call on a worker thread so the event
+loop remains responsive; that does not change native ownership or operation order.

@@ -2,7 +2,7 @@
 title: Runtime architectural decoupling plan
 date: 2026-07-21
 last_updated: 2026-07-21
-status: accepted
+status: implemented
 confidence: verified
 tier: episodic
 tags:
@@ -13,16 +13,19 @@ tags:
   - refactor
 sources:
   - core/include/rhapsode/story.h
-  - core/include/rhapsode/scene_loop.h
+  - core/include/rhapsode/turn_executor.h
   - core/include/rhapsode/world.h
   - core/include/rhapsode/scene_data.h
   - core/include/rhapsode/llm_callback.h
   - core/src/story.cpp
   - core/src/story_advance.cpp
   - core/src/story_serialization.cpp
-  - core/src/scene_loop.cpp
-  - core/src/scene_loop_narrator.cpp
-  - core/src/scene_loop_background.cpp
+  - core/src/turn_executor.cpp
+  - core/src/turn_executor_narrator.cpp
+  - core/src/turn_executor_post_turn.cpp
+  - core/src/storyline_policy.cpp
+  - core/src/world_analysis.cpp
+  - core/src/scenario_bootstrap.cpp
   - core/src/world.cpp
   - bindings/bind_story.cpp
   - server/rhapsode/session.py
@@ -31,7 +34,7 @@ sources:
 related:
   - "[runtime coupling reduction](2026-07-20-runtime-coupling-reduction-plan.md)"
   - "[C++ runtime data model](../architecture/cpp-data-model.md)"
-  - "[SceneLoop runtime](../architecture/scene-loop.md)"
+  - "[Turn execution](../architecture/scene-loop.md)"
 ---
 
 # Runtime architectural decoupling plan
@@ -39,6 +42,28 @@ related:
 ## Purpose
 
 Finish the architectural decoupling that the ownership refactor began.
+
+## Implementation result
+
+Implemented and verified on 2026-07-21. The audit/baseline sections below intentionally preserve
+the pre-refactor graph that motivated the work; the target graph and phase exit gates now describe
+the code.
+
+- Story owns stable World, Director, Weaver, TurnExecutor, SceneData records, and a shared
+  MemorySystem handle.
+- TurnExecutor is synchronous, constructor-injected, and returns generic TurnResult effects.
+- World has no filesystem, scenario-document, MemorySystem, stored callback, query-formatting, or
+  death-scan responsibility.
+- Storyline policy, scenario bootstrap, World analysis, scene-history, and text-downsampling logic
+  are plain function modules.
+- Python narrator and scheduler adapters retain no Story reference and use expiring call-scoped
+  read tools.
+- SceneData is behavior-free and read-only through Python; active-scene selection is validated.
+- Obsolete SceneLoop, History, TextDownsampler, async background, raw-memory, and weakref paths are
+  deleted.
+
+Verification at completion: 44 native tests, 34 Python tests, network-free lifecycle integration,
+plus Release/Debug/frontend/lint gates recorded in the wiki log.
 
 The previous stage removed ambiguous ownership, deleted Scene, made SceneData independent of
 World, and gave Story exclusive ownership of the native runtime. Those changes were necessary,

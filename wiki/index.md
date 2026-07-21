@@ -19,8 +19,8 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 - [System overview](architecture/system-overview.md) — subsystems, control flow, engineering constraints, implementation status
 - [Stack](architecture/stack.md) — layers, repo layout, build system, dependencies
-- [C++ data model](architecture/cpp-data-model.md) — all C++ types: SceneMessage, History, Character, Node, WorldGraph, Director, SceneLoop, MemorySystem, Scene
-- [Scene loop](architecture/scene-loop.md) — FSM states, Director integration, history windowing, callbacks
+- [C++ data model](architecture/cpp-data-model.md) — current Story/World/SceneData ownership and runtime boundaries
+- [Turn execution](architecture/scene-loop.md) — synchronous TurnExecutor transaction, rollback, effects, and callbacks
 - [Plot graph](architecture/plot-graph.md) — Node/WorldGraph with typed edges (implemented), trigger predicates (planned), F-T-P triples
 - [Memory system](architecture/memory-system.md) — hybrid retrieval, quality pipeline, C++/Python callback split
 - [Python server](architecture/python-server.md) — FastAPI, WebSocket protocol, Gemini client, memory callbacks
@@ -32,7 +32,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
-- [Runtime architectural decoupling plan](episodes/2026-07-21-runtime-architectural-decoupling-plan.md) - proposed second-stage separation of Story, turn execution, World services, Python tools, and SceneData behavior
+- [Runtime architectural decoupling plan](episodes/2026-07-21-runtime-architectural-decoupling-plan.md) - implemented separation of Story, turn execution, World services, Python tools, and SceneData behavior
 - [Runtime coupling reduction plan](episodes/2026-07-20-runtime-coupling-reduction-plan.md) - second-stage SceneData, ownership, mutation, and API simplification plan
 
 - [Runtime dependency refactor plan](episodes/2026-07-20-runtime-dependency-refactor-plan.md) — audited ownership, turn-result, background, persistence, and binding migration plan
