@@ -2,6 +2,7 @@
 
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/world.h"
 #include "rhapsode/world_analysis.h"
@@ -116,7 +117,7 @@ void TurnExecutor::submit_message(SceneData& scene,
     message.role = Role::User;
     message.content = text;
     if (autonomous) message.metadata["scene_kind"] = "director_cue";
-    scene.history.append(std::move(message));
+    append_history_message(scene.history, std::move(message));
 }
 
 TurnExecutor::PostTurnResult TurnExecutor::advance(SceneData& scene,
@@ -157,10 +158,10 @@ void TurnExecutor::emit_output(SceneData& scene,
                                SceneMessage message,
                                OutputBucket bucket,
                                TurnWork& work) {
-    History& target = bucket == OutputBucket::Story ? scene.history : scene.dialogue;
-    target.append(std::move(message));
-    work.outputs.push_back(target.messages().back());
-    if (turn_complete_cb_) turn_complete_cb_(target.messages().back());
+    auto& target = bucket == OutputBucket::Story ? scene.history : scene.dialogue;
+    append_history_message(target, std::move(message));
+    work.outputs.push_back(target.back());
+    if (turn_complete_cb_) turn_complete_cb_(target.back());
 }
 
 void TurnExecutor::emit_dialogue(SceneData& scene,

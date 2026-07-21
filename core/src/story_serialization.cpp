@@ -5,6 +5,8 @@
 #include <stdexcept>
 
 #include "rhapsode/memory_system.h"
+#include "rhapsode/scene_history.h"
+#include "rhapsode/text_downsampling.h"
 
 namespace rhapsode {
 namespace {
@@ -22,17 +24,19 @@ std::string scene_path(const std::string& saves_dir,
     return saves_dir + "/" + scene_id + ".json";
 }
 
-void migrate_character_lines_to_dialogue(History& history, History& dialogue) {
+void migrate_character_lines_to_dialogue(std::vector<SceneMessage>& history,
+                                         std::vector<SceneMessage>& dialogue) {
     std::vector<SceneMessage> kept;
     kept.reserve(history.size());
-    for (const auto& message : history.messages()) {
+    for (const auto& message : history) {
         if (message.metadata.value("scene_kind", std::string{}) == "character")
-            dialogue.append(message);
+            append_history_message(dialogue, message);
         else
             kept.push_back(message);
     }
     history.clear();
-    for (auto& message : kept) history.append(std::move(message));
+    for (auto& message : kept)
+        append_history_message(history, std::move(message));
 }
 
 bool has_scene_save(const std::string& saves_dir, const std::string& scene_id) {
@@ -52,13 +56,13 @@ void load_scene_data(SceneData& scene, const std::string& saves_dir) {
     if (scene.title.empty()) scene.title = value.value("title", std::string{});
     if (scene.system_prompt.empty())
         scene.system_prompt = value.value("system_prompt", std::string{});
-    scene.history = value.at("history").get<History>();
+    scene.history = history_from_json(value.at("history"));
     if (value.contains("dialogue"))
-        scene.dialogue = value.at("dialogue").get<History>();
+        scene.dialogue = history_from_json(value.at("dialogue"));
     else
         migrate_character_lines_to_dialogue(scene.history, scene.dialogue);
     if (value.contains("downsampler"))
-        scene.downsampler = TextDownsampler::from_json(value.at("downsampler"));
+        scene.downsampling = downsampling_from_json(value.at("downsampler"));
 }
 
 void save_scene_data(const SceneData& scene, const std::string& saves_dir) {
@@ -72,7 +76,7 @@ void save_scene_data(const SceneData& scene, const std::string& saves_dir) {
     value["last_advanced"] = scene.last_advanced;
     value["history"] = scene.history;
     value["dialogue"] = scene.dialogue;
-    value["downsampler"] = scene.downsampler.to_json();
+    value["downsampler"] = downsampling_to_json(scene.downsampling);
 
     std::ofstream output(scene_path(saves_dir, scene.scene_id));
     if (!output.is_open()) throw std::runtime_error("Cannot write save for: " + scene.scene_id);

@@ -3,7 +3,6 @@
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
-#include "rhapsode/text_downsampler.h"
 #include "rhapsode/weaver.h"
 
 namespace py = pybind11;
@@ -52,31 +51,5 @@ void bind_runtime(py::module_& m) {
         .def("expiry_queue_empty",     &Weaver::expiry_queue_empty);
 
     m.def("analyze_graph", &analyze, py::arg("graph"));
-
-    // -- TextDownsampler --
-
-    py::class_<Snippet>(m, "Snippet")
-        .def(py::init<>())
-        .def_readwrite("text",         &Snippet::text)
-        .def_readwrite("turn_start",   &Snippet::turn_start)
-        .def_readwrite("turn_end",     &Snippet::turn_end)
-        .def_readwrite("timestamp",    &Snippet::timestamp)
-        .def_readwrite("promoted",     &Snippet::promoted)
-        .def_readwrite("source_mip",   &Snippet::source_mip)
-        .def_readwrite("merged_count", &Snippet::merged_count);
-
-    py::class_<TextDownsampler>(m, "TextDownsampler")
-        .def(py::init<>())
-        .def("process_turn",      &TextDownsampler::process_turn,
-             py::arg("messages"), py::arg("llm_callback"),
-             py::arg("verbatim_tail") = 6)
-        .def("render",            &TextDownsampler::render)
-        .def("summarized_up_to",  &TextDownsampler::summarized_up_to)
-        .def("to_json_str",       [](const TextDownsampler& td) {
-            return td.to_json().dump();
-        })
-        .def_static("from_json_str", [](const std::string& s) {
-            return TextDownsampler::from_json(nlohmann::json::parse(s));
-        }, py::arg("json_str"));
 
 }

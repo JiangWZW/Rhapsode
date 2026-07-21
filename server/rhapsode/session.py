@@ -92,12 +92,12 @@ def _setup_ws_session() -> WsSession:
         log.info(
             "=== SESSION RESUMED === scene_id=%s scenes=%d turn=%d graph=%d hist=%d",
             scene.scene_id, len(story.scene_ids()), scene.turn_index,
-            story.world().world_graph.size(), scene.history.size(),
+            story.world().world_graph.size(), len(scene.history),
         )
     else:
         log.info(
             "=== FRESH START === scene_id=%s graph=%d hist=%d",
-            scene.scene_id, story.world().world_graph.size(), scene.history.size(),
+            scene.scene_id, story.world().world_graph.size(), len(scene.history),
         )
 
     _sync_graph_to_memory(story, memory)

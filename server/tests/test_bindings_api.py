@@ -7,9 +7,9 @@ def test_public_binding_surface_matches_owned_runtime_design():
     expected = {
         "Annotator", "Character", "CharacterMemory",
         "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EntitySpan",
-        "ExpiryOp", "GraphAnalysis", "History", "MemorySystem", "Node",
+        "ExpiryOp", "GraphAnalysis", "MemorySystem", "Node",
         "NodeState", "Rejection", "Role", "SceneData", "SceneMessage",
-        "Snippet", "Story", "TextDownsampler", "WeaveOp", "WeaveResult",
+        "Story", "WeaveOp", "WeaveResult",
         "Weaver", "World", "WorldGraph", "analyze_graph",
     }
     assert {name for name in dir(_core) if not name.startswith("_")} == expected

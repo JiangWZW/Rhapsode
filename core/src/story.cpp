@@ -12,6 +12,7 @@
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/scenario_bootstrap.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/weaver.h"
@@ -46,9 +47,9 @@ Story Story::from_scenario_json(const nlohmann::json& scenario,
     root.title = scenario.value("title", std::string{});
     root.system_prompt = scenario.value("system_prompt", std::string{});
     if (scenario.contains("history"))
-        root.history = scenario.at("history").get<History>();
+        root.history = history_from_json(scenario.at("history"));
     for (const auto& message : scenario.value("seed_messages", nlohmann::json::array()))
-        root.history.append(message.get<SceneMessage>());
+        append_history_message(root.history, message.get<SceneMessage>());
 
     *story.world_ = build_world_from_scenario(scenario, scene_id);
     story.active_scene_id_ = scene_id;
@@ -209,7 +210,7 @@ std::vector<SceneSummary> Story::summarize_scenes() const {
 
         summary.driving_intention = derive_intention(*scene, &summary.charge);
 
-        const auto& messages = scene->history.messages();
+        const auto& messages = scene->history;
         for (auto it = messages.rbegin(); it != messages.rend(); ++it) {
             if (it->role != Role::Assistant) continue;
             summary.last_narration = it->content.size() > 240
@@ -242,7 +243,7 @@ std::string Story::query_history(const SceneData& scene,
     if (!current.empty()) keywords.push_back(std::move(current));
 
     std::vector<const SceneMessage*> matches;
-    for (const auto& message : scene.history.messages()) {
+    for (const auto& message : scene.history) {
         const std::string text = str::to_lower(message.content);
         if (std::any_of(keywords.begin(), keywords.end(),
                         [&](const auto& keyword) {
@@ -297,8 +298,8 @@ std::vector<SceneMessage> Story::display_timeline(
     if (!scene) return {};
     std::vector<SceneMessage> merged;
     merged.reserve(scene->history.size() + scene->dialogue.size());
-    for (const auto& message : scene->history.messages()) merged.push_back(message);
-    for (const auto& message : scene->dialogue.messages()) merged.push_back(message);
+    for (const auto& message : scene->history) merged.push_back(message);
+    for (const auto& message : scene->dialogue) merged.push_back(message);
     std::sort(merged.begin(), merged.end(),
         [](const SceneMessage& left, const SceneMessage& right) {
             return left.timestamp < right.timestamp;
@@ -313,7 +314,7 @@ int Story::revert_scene_turns(SceneData& scene, int count) {
     const int target = std::max(0, scene.turn_index - count);
     const int actual = scene.turn_index - target;
 
-    const auto& messages = scene.history.messages();
+    const auto& messages = scene.history;
     int user_count = 0;
     size_t cut = messages.size();
     for (size_t i = messages.size(); i > 0; --i) {
@@ -322,8 +323,8 @@ int Story::revert_scene_turns(SceneData& scene, int count) {
             break;
         }
     }
-    scene.history.truncate(cut);
-    scene.dialogue.drop_from_turn(target);
+    truncate_history(scene.history, cut);
+    drop_history_from_turn(scene.dialogue, target);
     const auto removed_ids = world_->revert_to_turn(target);
     if (memory_ && !removed_ids.empty()) memory_->delete_nodes(removed_ids);
     scene.turn_index = target;

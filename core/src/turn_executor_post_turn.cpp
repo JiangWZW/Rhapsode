@@ -2,6 +2,8 @@
 
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
+#include "rhapsode/scene_history.h"
+#include "rhapsode/text_downsampling.h"
 #include "rhapsode/world.h"
 
 #include <utility>
@@ -35,7 +37,7 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
     SceneData& scene, int turn, const DirectorOutput&) noexcept {
     PostTurnResult result;
-    const auto history = scene.history.snapshot(window_size_);
+    const auto history = snapshot_history(scene.history, window_size_);
     const std::string context =
         format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
     try {
@@ -63,13 +65,13 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
 
         if (downsampler_cb_) {
             try {
-                const int before = scene.downsampler.summarized_up_to();
-                scene.downsampler.process_turn(
-                    scene.history.messages(), downsampler_cb_);
-                const int after = scene.downsampler.summarized_up_to();
+                const int before = scene.downsampling.summarized_up_to;
+                process_text_downsampling(
+                    scene.downsampling, scene.history, downsampler_cb_);
+                const int after = scene.downsampling.summarized_up_to;
                 log() << "  [downsampler] summarized_up_to " << before
                       << " -> " << after << "\n";
-                const auto rendered = scene.downsampler.render();
+                const auto rendered = render_text_downsampling(scene.downsampling);
                 if (!rendered.empty())
                     log() << "  [downsampler] story_so_far (" << rendered.size()
                           << " chars): " << rendered.substr(0, 200)

@@ -3,6 +3,7 @@
 #include "rhapsode/json_util.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/str_util.h"
+#include "rhapsode/text_downsampling.h"
 #include "rhapsode/world.h"
 
 #include <algorithm>
@@ -66,7 +67,8 @@ std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
         parts.insert(parts.end(), cast_header.begin(), cast_header.end());
     }
 
-    const std::string story_so_far = scene.downsampler.render();
+    const std::string story_so_far =
+        render_text_downsampling(scene.downsampling);
     if (!story_so_far.empty()) {
         parts.push_back("### Story so far");
         parts.push_back(truncate_utf8(story_so_far, kMaxStoryChars));

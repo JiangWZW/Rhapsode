@@ -5,6 +5,7 @@
 #include "rhapsode/log_util.h"
 #include "rhapsode/narrator_prompt.h"
 #include "rhapsode/scene_data.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/world.h"
 
@@ -179,7 +180,7 @@ TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene, i
     log() << "[1/4] Building merged prompt...\n" << std::flush;
 
     const size_t win = resuming_ ? resume_window_size_ : window_size_;
-    const std::vector<SceneMessage> history = scene.history.snapshot(win);
+    const std::vector<SceneMessage> history = snapshot_history(scene.history, win);
     resuming_ = false;
 
     NarratorPrompt prompt;

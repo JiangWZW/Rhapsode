@@ -6,6 +6,7 @@
 
 #include "rhapsode/character_memory.h"
 #include "rhapsode/node.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/story.h"
 
 using namespace rhapsode;
@@ -59,12 +60,13 @@ Story build_fixture() {
     seen.audience = {"Alice"};
     world.route_perceptions("golden", {seen}, 3);
 
-    scene.history.append(stamped(Role::User, "I approach the gate.",
-                                 "2026-01-01T00:00:00Z"));
-    scene.history.append(stamped(Role::Assistant, "The hall is cold and still.",
-                                 "2026-01-01T00:00:01Z"));
-    scene.dialogue.append(stamped(Role::Assistant, "Alice: Halt.",
-                                  "2026-01-01T00:00:02Z"));
+    append_history_message(scene.history, stamped(
+        Role::User, "I approach the gate.", "2026-01-01T00:00:00Z"));
+    append_history_message(scene.history, stamped(
+        Role::Assistant, "The hall is cold and still.",
+        "2026-01-01T00:00:01Z"));
+    append_history_message(scene.dialogue, stamped(
+        Role::Assistant, "Alice: Halt.", "2026-01-01T00:00:02Z"));
     return Story::from_data(std::move(scene), std::move(world));
 }
 
@@ -194,8 +196,10 @@ TEST_CASE("story: staleness tracks beats", "[substrate][story]") {
 TEST_CASE("story: save/reload preserves scene collection", "[substrate][story]") {
     Story story = build_fixture();
     story.fork_scene("golden", "hunt", {"Bob"}, "Hunt the intruder");
-    story.get_scene("hunt")->history.append(
-        stamped(Role::Assistant, "Bob slips into the woods.", "2026-01-02T00:00:00Z"));
+    append_history_message(
+        story.get_scene("hunt")->history,
+        stamped(Role::Assistant, "Bob slips into the woods.",
+                "2026-01-02T00:00:00Z"));
     const std::string saves = temp_saves_dir();
     story.save(saves);
 

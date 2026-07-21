@@ -10,13 +10,14 @@
 
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
-#include "rhapsode/history.h"
 #include "rhapsode/narrator_prompt.h"
 #include "rhapsode/node.h"
 #include "rhapsode/scene_data.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/story.h"
+#include "rhapsode/text_downsampling.h"
 #include "rhapsode/weaver.h"
 #include "rhapsode/world.h"
 #include "rhapsode/world_graph.h"
@@ -92,6 +93,7 @@ std::uint64_t prompt_hash(const std::string& text) {
 
 TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
     STATIC_REQUIRE(std::is_aggregate_v<SceneData>);
+    STATIC_REQUIRE(std::is_aggregate_v<DownsamplingState>);
     SceneData scene;
     scene.scene_id = "root";
     REQUIRE(scene.scene_id == "root");
@@ -132,35 +134,64 @@ TEST_CASE("SceneMessage roles serialize correctly", "[scene_message]") {
     }
 }
 
-TEST_CASE("History append, snapshot, truncate, and round-trip", "[history]") {
-    History history;
+TEST_CASE("Scene history append, snapshot, truncate, and round-trip", "[history]") {
+    std::vector<SceneMessage> history;
     for (int i = 0; i < 4; ++i) {
         SceneMessage message;
         message.role = i % 2 ? Role::Assistant : Role::User;
         message.content = std::to_string(i);
-        history.append(std::move(message));
+        append_history_message(history, std::move(message));
     }
     REQUIRE(history.size() == 4);
-    REQUIRE(history.snapshot(2).front().content == "2");
-    REQUIRE_FALSE(history.messages().front().timestamp.empty());
-    history.truncate(3);
+    REQUIRE(snapshot_history(history, 2).front().content == "2");
+    REQUIRE_FALSE(history.front().timestamp.empty());
+    truncate_history(history, 3);
     REQUIRE(history.size() == 3);
     const json value = history;
-    REQUIRE(value.get<History>().size() == 3);
+    REQUIRE(history_from_json(value).size() == 3);
 }
 
-TEST_CASE("History drops messages from a reverted turn", "[history]") {
-    History history;
+TEST_CASE("Scene history drops messages from a reverted turn", "[history]") {
+    std::vector<SceneMessage> history;
     for (int turn : {0, 1, 2}) {
         SceneMessage message;
         message.role = Role::Assistant;
         message.content = std::to_string(turn);
         message.metadata["turn"] = turn;
-        history.append(std::move(message));
+        append_history_message(history, std::move(message));
     }
-    history.drop_from_turn(1);
+    drop_history_from_turn(history, 1);
     REQUIRE(history.size() == 1);
-    REQUIRE(history.messages().front().content == "0");
+    REQUIRE(history.front().content == "0");
+}
+
+TEST_CASE("Text downsampling state preserves processing and JSON",
+          "[downsampling]") {
+    DownsamplingState state;
+    std::vector<SceneMessage> messages;
+    for (int index = 0; index < 9; ++index) {
+        SceneMessage message;
+        message.role = index % 2 ? Role::Assistant : Role::User;
+        message.content = std::to_string(index);
+        messages.push_back(std::move(message));
+    }
+
+    int calls = 0;
+    process_text_downsampling(
+        state, messages,
+        [&](const std::string&) {
+            ++calls;
+            return std::string{"  first summary  "};
+        });
+
+    REQUIRE(calls == 1);
+    REQUIRE(state.summarized_up_to == 3);
+    REQUIRE(state.levels[0].snippets.size() == 1);
+    REQUIRE(render_text_downsampling(state) == "first summary");
+
+    const auto value = downsampling_to_json(state);
+    const auto restored = downsampling_from_json(value);
+    REQUIRE(downsampling_to_json(restored) == value);
 }
 
 TEST_CASE("Character JSON round-trip preserves membership", "[character]") {
@@ -364,7 +395,7 @@ TEST_CASE("TurnExecutor keeps narrator and dialogue histories separate", "[turn_
     REQUIRE(result.outputs.size() == 2);
     REQUIRE(scene.history.size() == 2);
     REQUIRE(scene.dialogue.size() == 1);
-    REQUIRE(scene.dialogue.messages().front().content == "Stop. (blocks the door)");
+    REQUIRE(scene.dialogue.front().content == "Stop. (blocks the door)");
 }
 
 TEST_CASE("TurnExecutor active_cast adds presence without ejecting cast", "[turn_executor]") {
@@ -492,7 +523,7 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
         SceneMessage prior;
         prior.role = i % 2 ? Role::Assistant : Role::User;
         prior.content = "Prior " + std::to_string(i);
-        scene.history.append(std::move(prior));
+        append_history_message(scene.history, std::move(prior));
     }
 
     std::vector<std::string> events;
@@ -568,7 +599,7 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
     const auto outputs = story.advance_scene("Act.");
     REQUIRE(outputs.size() == 1);
     REQUIRE(outputs.front().content == "Player beat.");
-    REQUIRE(story.get_scene("away")->history.messages().back().content == "Away beat.");
+    REQUIRE(story.get_scene("away")->history.back().content == "Away beat.");
 }
 
 TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lifecycle]") {
@@ -640,12 +671,12 @@ TEST_CASE("Story timeline merges narrator and dialogue chronologically", "[story
     later.role = Role::Assistant;
     later.content = "later";
     later.timestamp = "2026-01-01T00:00:02Z";
-    scene.history.append(later);
+    append_history_message(scene.history, later);
     SceneMessage earlier;
     earlier.role = Role::Assistant;
     earlier.content = "earlier";
     earlier.timestamp = "2026-01-01T00:00:01Z";
-    scene.dialogue.append(earlier);
+    append_history_message(scene.dialogue, earlier);
     Story story = Story::from_data(std::move(scene));
     const auto timeline = story.display_timeline("root");
     REQUIRE(timeline.size() == 2);

@@ -3,19 +3,19 @@ add_library(rhapsode STATIC
     include/rhapsode/character.h
     include/rhapsode/character_memory.h
     include/rhapsode/director.h
-    include/rhapsode/history.h
     include/rhapsode/llm_callback.h
     include/rhapsode/memory_system.h
     include/rhapsode/log_util.h
     include/rhapsode/narrator_prompt.h
     include/rhapsode/node.h
     include/rhapsode/scene_data.h
+    include/rhapsode/scene_history.h
     include/rhapsode/scenario_bootstrap.h
     include/rhapsode/json_util.h
     include/rhapsode/turn_executor.h
     include/rhapsode/scene_message.h
     include/rhapsode/str_util.h
-    include/rhapsode/text_downsampler.h
+    include/rhapsode/text_downsampling.h
     include/rhapsode/weaver.h
     include/rhapsode/story.h
     include/rhapsode/storyline_policy.h
@@ -25,7 +25,7 @@ add_library(rhapsode STATIC
     src/annotator.cpp
     src/scene_message.cpp
     src/scenario_bootstrap.cpp
-    src/history.cpp
+    src/scene_history.cpp
     src/character.cpp
     src/character_memory.cpp
     src/character_memory_reflection.cpp
@@ -37,7 +37,7 @@ add_library(rhapsode STATIC
     src/turn_executor.cpp
     src/turn_executor_post_turn.cpp
     src/turn_executor_narrator.cpp
-    src/text_downsampler.cpp
+    src/text_downsampling.cpp
     src/node.cpp
     src/director.cpp
     src/memory_system.cpp

@@ -90,8 +90,7 @@ int Story::decide_lifecycle(const std::string& scene_id,
         beat.player_present = summary.player_present;
         break;
     }
-    for (auto it = scene->history.messages().rbegin();
-         it != scene->history.messages().rend(); ++it) {
+    for (auto it = scene->history.rbegin(); it != scene->history.rend(); ++it) {
         if (it->role == Role::Assistant) {
             beat.narration = it->content;
             break;

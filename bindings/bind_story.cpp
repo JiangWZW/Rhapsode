@@ -5,7 +5,6 @@
 
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
-#include "rhapsode/history.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_message.h"
@@ -38,16 +37,6 @@ void bind_story(py::module_& m) {
             return "SceneMessage(" + value["role"].get<std::string>() + ": " +
                    value["content"].get<std::string>().substr(0, 40) + ")";
         });
-
-    py::class_<History>(m, "History")
-        .def(py::init<>())
-        .def("append", &History::append)
-        .def("snapshot", &History::snapshot, py::arg("n") = py::none())
-        .def("size", &History::size)
-        .def("truncate", &History::truncate, py::arg("new_size"))
-        .def("clear", &History::clear)
-        .def("messages", &History::messages,
-             py::return_value_policy::reference_internal);
 
     py::class_<Character>(m, "Character")
         .def(py::init<>())

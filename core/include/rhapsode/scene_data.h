@@ -1,9 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
-#include "rhapsode/history.h"
-#include "rhapsode/text_downsampler.h"
+#include "rhapsode/scene_message.h"
+#include "rhapsode/text_downsampling.h"
 
 namespace rhapsode {
 
@@ -14,9 +15,9 @@ struct SceneData {
     std::string title;
     std::string system_prompt;
 
-    History history;
-    History dialogue;
-    TextDownsampler downsampler;
+    std::vector<SceneMessage> history;
+    std::vector<SceneMessage> dialogue;
+    DownsamplingState downsampling;
     int turn_index = 0;
 
     std::string driving_intention;
