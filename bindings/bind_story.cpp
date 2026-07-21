@@ -9,6 +9,7 @@
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/story.h"
+#include "rhapsode/weaver.h"
 #include "rhapsode/world.h"
 #include "rhapsode/world_graph.h"
 
@@ -65,21 +66,22 @@ void bind_story(py::module_& m) {
     py::class_<World>(m, "World")
         .def(py::init<>())
         .def_property_readonly("world_graph",
-            [](World& world) -> WorldGraph& { return world.graph(); },
-            py::return_value_policy::reference_internal)
+            [](const World& world) { return world.graph(); })
         .def_property_readonly("characters",
-            [](const World& world) -> const std::vector<Character>& {
+            [](const World& world) {
                 return world.characters();
-            }, py::return_value_policy::reference_internal)
+            })
         .def_property_readonly("character_memories",
-            [](const World& world)
-                -> const std::unordered_map<std::string, CharacterMemory>& {
+            [](const World& world) {
                 return world.character_memories();
-            }, py::return_value_policy::reference_internal)
+            })
         .def("find_character",
-            [](const World& world, const std::string& name) {
-                return world.find_character(name);
-            }, py::arg("name"), py::return_value_policy::reference_internal);
+            [](const World& world, const std::string& name)
+                -> std::optional<Character> {
+                const Character* character = world.find_character(name);
+                return character ? std::optional<Character>(*character)
+                                 : std::nullopt;
+            }, py::arg("name"));
 
     py::class_<SceneData>(m, "SceneData")
         .def_readonly("scene_id", &SceneData::scene_id)
@@ -102,7 +104,9 @@ void bind_story(py::module_& m) {
         .def("to_scenario_json_str", [](const Story& story, const std::string& scene_id) {
             return story.to_scenario_json(scene_id).dump(2);
         }, py::arg("scene_id"))
-        .def("world", [](Story& story) -> World& { return story.world(); },
+        .def("world", [](const Story& story) -> const World& {
+                 return story.world();
+             },
              py::return_value_policy::reference_internal)
         .def("get_scene", [](Story& story, const std::string& id) {
             return story.get_scene(id);
@@ -137,6 +141,7 @@ void bind_story(py::module_& m) {
              py::arg("cb"))
         .def("set_weaver_interval", &Story::set_weaver_interval,
              py::arg("turns"))
+        .def("weave_scene", &Story::weave_scene, py::arg("scene_id"))
         .def("set_history_window", &Story::set_history_window,
              py::arg("normal") = 3, py::arg("resume") = 10)
         .def("set_resuming", &Story::set_resuming, py::arg("value"))

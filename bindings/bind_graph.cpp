@@ -105,8 +105,9 @@ void bind_graph(py::module_& m) {
              py::arg("turn"), py::arg("description"), py::arg("callback"))
         .def("render_thoughts",   &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
-        .def_property_readonly("beliefs", &CharacterMemory::beliefs,
-             py::return_value_policy::reference_internal)
+        .def_property_readonly("beliefs", [](const CharacterMemory& memory) {
+             return memory.beliefs();
+        })
         .def("to_json_str", [](const CharacterMemory& self) { return self.to_json().dump(2); })
         .def_static("from_json_str", [](const std::string& s) {
             return CharacterMemory::from_json(nlohmann::json::parse(s));

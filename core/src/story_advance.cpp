@@ -5,6 +5,7 @@
 
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
+#include "rhapsode/read_tools.h"
 #include "rhapsode/turn_executor.h"
 
 namespace rhapsode {
@@ -15,16 +16,16 @@ private:
     std::shared_ptr<std::atomic_bool> active_;
 
 public:
-    ReadToolLease(Story& story, std::string scene_id)
+    explicit ReadToolLease(ReadToolContext context)
         : active_(std::make_shared<std::atomic_bool>(true)),
-          callback([story_ptr = &story, scene_id = std::move(scene_id),
-                    active = active_](const std::string& name,
-                                      const std::string& args_json) {
+          callback([context = std::move(context), active = active_](
+                       const std::string& name,
+                       const std::string& args_json) {
               if (!active->load()) {
                   throw std::runtime_error(
                       "Read tool callback is no longer active");
               }
-              return story_ptr->dispatch_tool(scene_id, name, args_json);
+              return dispatch_read_tool(context, name, args_json);
           }) {}
 
     ~ReadToolLease() { active_->store(false); }
@@ -34,6 +35,17 @@ public:
 
     ReadToolCallback callback;
 };
+
+ReadToolContext make_read_tool_context(const Story& story,
+                                       const std::string& scene_id) {
+    const SceneData* scene = story.get_scene(scene_id);
+    return ReadToolContext{
+        &story.world(),
+        scene ? &scene->history : nullptr,
+        scene_id,
+        story.tool_list_scenes(),
+    };
+}
 
 }  // namespace
 
@@ -49,7 +61,7 @@ std::string Story::pick_off_stage_scene() {
 
     std::string pick;
     try {
-        ReadToolLease read_tools(*this, "");
+        ReadToolLease read_tools(make_read_tool_context(*this, ""));
         pick = request_off_stage_scene(scheduler_cb_, read_tools.callback);
     } catch (const std::exception& error) {
         log() << "  [scheduler] call failed: " << error.what() << "\n";
@@ -192,7 +204,8 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
     const std::string player_scene_id = active->scene_id;
 
     TurnResult player_result = [&] {
-        ReadToolLease read_tools(*this, player_scene_id);
+        ReadToolLease read_tools(
+            make_read_tool_context(*this, player_scene_id));
         return executor_->run_player_turn(
             *active, player_input, read_tools.callback);
     }();
@@ -210,7 +223,8 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
             if (SceneData* scene = get_scene(pick)) {
                 try {
                     TurnResult result = [&] {
-                        ReadToolLease read_tools(*this, pick);
+                        ReadToolLease read_tools(
+                            make_read_tool_context(*this, pick));
                         return executor_->run_autonomous_turn(
                             *scene, autonomous_cue(pick), read_tools.callback);
                     }();

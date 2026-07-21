@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from rhapsode import _core
@@ -30,7 +32,7 @@ def test_story_is_the_production_composition_surface():
         "set_narrator_llm_callback", "set_resuming", "set_saves_dir",
         "set_scheduler_callback", "set_weaver_interval",
         "set_weaver_llm_callback", "set_weaver_local_llm_callback",
-        "to_scenario_json_str", "tool_list_scenes", "world",
+        "to_scenario_json_str", "tool_list_scenes", "weave_scene", "world",
     }
     assert {name for name in dir(_core.Story) if not name.startswith("_")} == expected
     assert "bind_runtime" not in expected
@@ -106,6 +108,71 @@ def test_world_containers_cannot_be_replaced(attribute, replacement):
     assert getattr(world, attribute) is not None
     with pytest.raises(AttributeError):
         setattr(world, attribute, replacement)
+
+
+def test_story_world_views_are_detached_snapshots():
+    story = _core.Story.from_scenario_json_str(
+        json.dumps({
+            "characters": [{
+                "name": "Scout",
+                "description": "Careful",
+                "on_stage": True,
+                "initial_memory": {
+                    "beliefs": [{"content": "The gate is shut", "about": ["Gate"]}],
+                },
+            }],
+        }),
+        "root",
+    )
+    world = story.world()
+
+    graph_snapshot = world.world_graph
+    node = _core.Node()
+    node.fact = "Injected"
+    node.entities = ["Gate"]
+    graph_snapshot.add_node(node)
+    assert graph_snapshot.size() == 1
+    assert world.world_graph.size() == 0
+
+    character_snapshot = world.find_character("Scout")
+    character_snapshot.name = "Changed"
+    character_snapshot.is_player = True
+    assert world.find_character("Scout").name == "Scout"
+    assert world.find_character("Changed") is None
+    assert not world.find_character("Scout").is_player
+
+    memory_snapshot = world.character_memories["Scout"]
+    belief_snapshot = memory_snapshot.beliefs
+    belief_count = belief_snapshot.size()
+    belief_snapshot.add_node(node)
+    assert belief_snapshot.size() == belief_count + 1
+    assert world.character_memories["Scout"].beliefs.size() == belief_count
+
+
+def test_story_weave_command_mutates_owned_graph():
+    story = _core.Story.from_scenario_json_str(
+        json.dumps({
+            "nodes": [
+                {"fact": "The gate is shut", "entities": ["Gate"]},
+                {"fact": "The key is nearby", "entities": ["Key"]},
+            ],
+        }),
+        "root",
+    )
+    story.set_weaver_llm_callback(
+        lambda _prompt: json.dumps({
+            "connect": [{
+                "from": 1, "to": 2, "weight": 0.7, "reason": "key",
+            }],
+            "disconnect": [],
+            "reweight": [],
+        })
+    )
+
+    result = story.weave_scene("root")
+
+    assert len(result.connected) == 1
+    assert len(story.world().world_graph.all_edges()) == 1
 
 
 def test_python_cannot_mutate_membership_or_death_directly():

@@ -10,7 +10,7 @@ import subprocess
 from fastapi import APIRouter
 from fastapi.responses import Response
 
-from rhapsode._core import Story, Weaver, analyze_graph
+from rhapsode._core import Story, analyze_graph
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import call_llm
 
@@ -218,9 +218,8 @@ def weave_endpoint():
     story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
-    w = Weaver(story.world().world_graph)
-    w.set_llm_callback(call_llm)
-    result = w.weave(scene.turn_index)
+    story.set_weaver_llm_callback(call_llm)
+    result = story.weave_scene(scene.scene_id)
     story.save(SAVES_DIR)
     return {
         "connected": len(result.connected),

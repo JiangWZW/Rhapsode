@@ -21,6 +21,7 @@ class Director;
 class Weaver;
 class MemorySystem;
 struct TurnResult;
+struct WeaveResult;
 
 // Runtime hub for one playthrough. Story exclusively owns one World, a stable
 // collection of World-free SceneData records, and the TurnExecutor that executes
@@ -79,6 +80,7 @@ public:
     void set_weaver_llm_callback(LLMCallback cb);
     void set_weaver_local_llm_callback(LLMCallback cb);
     void set_weaver_interval(int turns);
+    WeaveResult weave_scene(const std::string& scene_id);
     void set_history_window(size_t normal, size_t resume);
     void set_resuming(bool value);
     void set_scheduler_callback(SchedulerCallback cb) { scheduler_cb_ = std::move(cb); }

@@ -653,6 +653,57 @@ TEST_CASE("Story load reuses its configured runtime", "[story][persistence]") {
     std::filesystem::remove_all(directory);
 }
 
+TEST_CASE("Story move assignment preserves its configured runtime",
+          "[story][ownership]") {
+    Story destination = Story::from_data(basic_scene("discarded"));
+    configure_story(destination,
+        [](const std::string&, const std::string&, const std::string&) {
+            return response("Wrong runtime.");
+        });
+
+    World world;
+    add_fact(world.graph(), "The gate is shut", "Gate", 0);
+    Story source = Story::from_data(basic_scene(), std::move(world));
+    bool read_source_world = false;
+    source.set_llm_callback(
+        [](const std::string&) { return std::string{"fallback"}; });
+    source.set_narrator_llm_callback(
+        [&](const std::string&, const std::string&, const std::string&,
+            const ReadToolCallback& read_tool) {
+            read_source_world =
+                read_tool("query_graph", R"({"query":"gate"})")
+                    .find("The gate is shut") != std::string::npos;
+            return response("Moved runtime.");
+        });
+
+    destination = std::move(source);
+    const auto outputs = destination.advance_scene("Open it.");
+
+    REQUIRE(read_source_world);
+    REQUIRE(outputs.size() == 1);
+    REQUIRE(outputs.front().content == "Moved runtime.");
+    REQUIRE(destination.active_scene_id() == "root");
+    REQUIRE(destination.active_scene()->turn_index == 1);
+}
+
+TEST_CASE("Story owns explicit graph weaving", "[story][weaver][ownership]") {
+    World world;
+    const auto from = add_fact(world.graph(), "The gate is shut", "Gate", 0);
+    const auto to = add_fact(world.graph(), "The key is nearby", "Key", 0);
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    story.set_weaver_llm_callback([=](const std::string&) {
+        return std::string{"{\"connect\":[{\"from\":"} +
+            std::to_string(from) + ",\"to\":" + std::to_string(to) +
+            R"(,"weight":0.7,"reason":"key"}],"disconnect":[],"reweight":[]})";
+    });
+
+    const WeaveResult result = story.weave_scene("root");
+
+    REQUIRE(result.connected.size() == 1);
+    REQUIRE(story.world().graph().all_edges().size() == 1);
+    REQUIRE_THROWS_AS(story.weave_scene("missing"), std::invalid_argument);
+}
+
 TEST_CASE("Story save schema remains world, scene, and manifest blobs",
           "[story][persistence]") {
     Story story = Story::from_data(basic_scene());

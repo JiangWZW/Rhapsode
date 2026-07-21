@@ -7,11 +7,11 @@
 #include "rhapsode/director.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
+#include "rhapsode/read_tools.h"
 #include "rhapsode/scenario_bootstrap.h"
 #include "rhapsode/scene_history.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/weaver.h"
-#include "rhapsode/world_analysis.h"
 
 namespace rhapsode {
 
@@ -23,7 +23,30 @@ Story::Story()
 
 Story::~Story() = default;
 Story::Story(Story&&) noexcept = default;
-Story& Story::operator=(Story&&) noexcept = default;
+Story& Story::operator=(Story&& other) noexcept {
+    if (this == &other) return *this;
+
+    // Tear down borrowers before replacing the state they reference. The
+    // transferred service allocations already refer to other's World, whose
+    // allocation is transferred unchanged below.
+    executor_.reset();
+    weaver_.reset();
+    director_.reset();
+
+    world_ = std::move(other.world_);
+    scenes_ = std::move(other.scenes_);
+    active_scene_id_ = std::move(other.active_scene_id_);
+    beat_clock_ = other.beat_clock_;
+    scheduler_cb_ = std::move(other.scheduler_cb_);
+    lifecycle_cb_ = std::move(other.lifecycle_cb_);
+    saves_dir_ = std::move(other.saves_dir_);
+    memory_ = std::move(other.memory_);
+
+    director_ = std::move(other.director_);
+    weaver_ = std::move(other.weaver_);
+    executor_ = std::move(other.executor_);
+    return *this;
+}
 
 Story Story::load_scenario(const std::string& path) {
     auto scenario = load_scenario_file(path);
@@ -208,23 +231,14 @@ std::string Story::tool_list_scenes() const {
 std::string Story::dispatch_tool(const std::string& scene_id,
                                  const std::string& name,
                                  const std::string& args_json) {
-    nlohmann::json args = nlohmann::json::parse(args_json, nullptr, false);
-    if (!args.is_object()) args = nlohmann::json::object();
-    auto string_arg = [&](const char* key) {
-        const auto it = args.find(key);
-        return it != args.end() && it->is_string()
-            ? it->get<std::string>() : std::string{};
+    const SceneData* scene = get_scene(scene_id);
+    const ReadToolContext context{
+        world_.get(),
+        scene ? &scene->history : nullptr,
+        scene_id,
+        tool_list_scenes(),
     };
-    if (name == "query_graph") return query_world_graph(*world_, string_arg("query"));
-    if (name == "query_mind")
-        return query_character_mind(*world_, string_arg("character"));
-    if (name == "query_history") {
-        const SceneData* scene = get_scene(scene_id);
-        if (!scene) return nlohmann::json{{"error", "unknown scene: " + scene_id}}.dump();
-        return query_scene_history(scene->history, string_arg("query"));
-    }
-    if (name == "list_scenes") return tool_list_scenes();
-    return nlohmann::json{{"error", "unknown tool: " + name}}.dump();
+    return dispatch_read_tool(context, name, args_json);
 }
 
 std::vector<SceneMessage> Story::display_timeline(
@@ -295,6 +309,13 @@ void Story::set_weaver_local_llm_callback(LLMCallback cb) {
 }
 
 void Story::set_weaver_interval(int turns) { weaver_->set_interval(turns); }
+
+WeaveResult Story::weave_scene(const std::string& scene_id) {
+    const SceneData* scene = get_scene(scene_id);
+    if (!scene) throw std::invalid_argument("Unknown scene: " + scene_id);
+    return weaver_->weave(scene->turn_index);
+}
+
 void Story::set_history_window(size_t normal, size_t resume) {
     executor_->set_history_window(normal, resume);
 }

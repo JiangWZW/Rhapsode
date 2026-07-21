@@ -8,6 +8,7 @@ add_library(rhapsode STATIC
     include/rhapsode/log_util.h
     include/rhapsode/narrator_prompt.h
     include/rhapsode/node.h
+    include/rhapsode/read_tools.h
     include/rhapsode/scene_data.h
     include/rhapsode/scene_history.h
     include/rhapsode/scenario_bootstrap.h
@@ -30,6 +31,7 @@ add_library(rhapsode STATIC
     src/character_memory.cpp
     src/character_memory_reflection.cpp
     src/narrator_prompt.cpp
+    src/read_tools.cpp
     src/story.cpp
     src/story_advance.cpp
     src/story_serialization.cpp
