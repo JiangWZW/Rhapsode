@@ -11,6 +11,7 @@
 #include "rhapsode/llm_callback.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_message.h"
+#include "rhapsode/storyline_policy.h"
 #include "rhapsode/world.h"
 
 namespace rhapsode {
@@ -21,10 +22,6 @@ class Weaver;
 class MemorySystem;
 struct TurnResult;
 
-using SchedulerCallback = std::function<std::string(const std::string& instructions,
-                                                    const std::string& user)>;
-using LifecycleCallback = std::function<std::string(const std::string& instructions,
-                                                    const std::string& user)>;
 // Runtime hub for one playthrough. Story exclusively owns one World, a stable
 // collection of World-free SceneData records, and the TurnExecutor that executes
 // turns over them.
@@ -104,6 +101,7 @@ public:
 private:
     SceneData* adopt(SceneData scene);
     std::string derive_intention(const SceneData& scene, float* charge_out) const;
+    std::vector<SceneSummary> summarize_scenes() const;
     std::string query_history(const SceneData& scene, const std::string& query) const;
     std::string pick_off_stage_scene();
     int decide_lifecycle(const std::string& scene_id, const std::string& player_input);

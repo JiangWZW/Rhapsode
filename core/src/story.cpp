@@ -190,42 +190,39 @@ std::string Story::derive_intention(const SceneData& scene, float* charge_out) c
     return best;
 }
 
-std::string Story::tool_list_scenes() const {
-    nlohmann::json rows = nlohmann::json::array();
+std::vector<SceneSummary> Story::summarize_scenes() const {
+    std::vector<SceneSummary> summaries;
+    summaries.reserve(scenes_.size());
     for (const auto& scene : scenes_) {
-        nlohmann::json row;
-        row["scene_id"] = scene->scene_id;
-        row["title"] = scene->title;
-        row["active"] = scene->scene_id == active_scene_id_;
-        row["turn_index"] = scene->turn_index;
-        row["staleness"] = beat_clock_ - scene->last_advanced;
+        SceneSummary summary;
+        summary.scene_id = scene->scene_id;
+        summary.title = scene->title;
+        summary.active = scene->scene_id == active_scene_id_;
+        summary.turn_index = scene->turn_index;
+        summary.staleness = beat_clock_ - scene->last_advanced;
 
-        nlohmann::json cast = nlohmann::json::array();
-        bool player_present = false;
         for (const auto& character : world_->characters()) {
             if (!character.in_scene(scene->scene_id)) continue;
-            cast.push_back(character.name);
-            if (character.is_player) player_present = true;
+            summary.cast.push_back(character.name);
+            if (character.is_player) summary.player_present = true;
         }
-        row["cast"] = std::move(cast);
-        row["player_present"] = player_present;
 
-        float charge = 0.0f;
-        row["driving_intention"] = derive_intention(*scene, &charge);
-        row["charge"] = charge;
+        summary.driving_intention = derive_intention(*scene, &summary.charge);
 
-        std::string last;
         const auto& messages = scene->history.messages();
         for (auto it = messages.rbegin(); it != messages.rend(); ++it) {
             if (it->role != Role::Assistant) continue;
-            last = it->content.size() > 240 ? it->content.substr(0, 240) + "..."
-                                            : it->content;
+            summary.last_narration = it->content.size() > 240
+                ? it->content.substr(0, 240) + "..." : it->content;
             break;
         }
-        row["last_narration"] = last;
-        rows.push_back(std::move(row));
+        summaries.push_back(std::move(summary));
     }
-    return rows.dump();
+    return summaries;
+}
+
+std::string Story::tool_list_scenes() const {
+    return serialize_scene_summaries(summarize_scenes());
 }
 
 std::string Story::query_history(const SceneData& scene,

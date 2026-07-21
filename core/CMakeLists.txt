@@ -18,6 +18,7 @@ add_library(rhapsode STATIC
     include/rhapsode/text_downsampler.h
     include/rhapsode/weaver.h
     include/rhapsode/story.h
+    include/rhapsode/storyline_policy.h
     include/rhapsode/world.h
     include/rhapsode/world_analysis.h
     include/rhapsode/world_graph.h
@@ -32,6 +33,7 @@ add_library(rhapsode STATIC
     src/story.cpp
     src/story_advance.cpp
     src/story_serialization.cpp
+    src/storyline_policy.cpp
     src/turn_executor.cpp
     src/turn_executor_post_turn.cpp
     src/turn_executor_narrator.cpp
