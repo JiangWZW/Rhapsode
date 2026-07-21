@@ -2,6 +2,23 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-20] plan | Runtime coupling reduction
+
+- Audited the complete runtime graph after the dependency-safety refactor and separated ownership,
+  mutation, callback, async, and compatibility edges.
+- Proposed reducing production session ownership to Story, MemorySystem, and Annotator; Story owns
+  SceneLoop, while SceneLoop owns Director and optional Weaver.
+- Planned removal of the retained-Scene submit/drain compatibility path, temporal result caches,
+  standalone loop persistence, and Python-composed runtime wiring.
+- Planned private World containers, narrow roster/membership/memory operations, and explicit graph
+  access for Director and Weaver without introducing managers, interfaces, or dependency-injection
+  infrastructure.
+- Revised the target to replace Scene with a World-free SceneData aggregate owned exclusively by
+  Story; lifecycle coordination, scenario loading, undo, and complete persistence move to Story.
+- Removed the planned Scene-to-World edge and the unnecessary World lifecycle queue from the target
+  graph; SceneLoop borrows World by lifetime and SceneData only within a synchronous turn.
+- Recorded the first plan's missing acceptance and verification gates as Phase 0 requirements.
+
 ## [2026-07-20] implementation | Runtime dependency refactor complete
 
 - Executed the audited Story/SceneLoop dependency plan as local, verified commits; nothing was
