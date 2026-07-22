@@ -118,11 +118,12 @@ BeatSummary Story::build_beat_summary(
     return beat;
 }
 
-int Story::apply_lifecycle(const std::string& scene_id,
-                           const std::string& player_input) {
-    if (!lifecycle_cb_) return 0;
+Story::LifecycleApplyResult Story::apply_lifecycle(
+    const std::string& scene_id, const std::string& player_input) {
+    LifecycleApplyResult result;
+    if (!lifecycle_cb_) return result;
     SceneData* scene = get_scene(scene_id);
-    if (!scene) return 0;
+    if (!scene) return result;
 
     const BeatSummary beat = build_beat_summary(*scene, player_input);
 
@@ -133,21 +134,27 @@ int Story::apply_lifecycle(const std::string& scene_id,
             beat, lifecycle_cb_, read_tools.callback);
     } catch (const std::exception& error) {
         log() << "  [lifecycle] verdict call failed: " << error.what() << "\n";
-        return 0;
+        return result;
     }
     if (!decision) {
         log() << "  [lifecycle] verdict invalid or unparseable -- no-op\n";
-        return 0;
+        return result;
     }
 
     if (decision->conclude_reason) {
         log() << "  [lifecycle] verdict: conclude '" << scene_id << "'\n";
-        return conclude_scene(scene_id, *decision->conclude_reason) ? 1 : 0;
+        if (conclude_scene(scene_id, *decision->conclude_reason))
+            result.applied = 1;
+        return result;
     }
     if (decision->merge_into) {
         log() << "  [lifecycle] verdict: merge '" << scene_id << "' -> '"
               << *decision->merge_into << "'\n";
-        return merge_scene(scene_id, *decision->merge_into) ? 1 : 0;
+        if (merge_scene(scene_id, *decision->merge_into)) {
+            result.applied = 1;
+            result.merged_into = *decision->merge_into;
+        }
+        return result;
     }
 
     std::optional<std::vector<std::string>> fork_cast;
@@ -157,13 +164,13 @@ int Story::apply_lifecycle(const std::string& scene_id,
             decision->fork->driving_intention);
         if (!fork_cast) {
             log() << "  [lifecycle] invalid fork cast or intention -- no-op\n";
-            return 0;
+            return result;
         }
     }
     const auto exited = resolve_non_player_members(scene_id, decision->exited);
     if (!exited) {
         log() << "  [lifecycle] invalid exit cast -- no-op\n";
-        return 0;
+        return result;
     }
 
     std::unordered_map<std::string, bool> leaving;
@@ -174,7 +181,7 @@ int Story::apply_lifecycle(const std::string& scene_id,
         const Character* character = world_->find_character(name);
         if (!character || leaving.count(character->name) > 0) {
             log() << "  [lifecycle] overlapping fork/exit cast -- no-op\n";
-            return 0;
+            return result;
         }
         leaving.emplace(character->name, true);
     }
@@ -189,17 +196,16 @@ int Story::apply_lifecycle(const std::string& scene_id,
         }
         if (!cast_remains) {
             log() << "  [lifecycle] verdict would empty the scene -- no-op\n";
-            return 0;
+            return result;
         }
     }
 
-    int applied = 0;
     if (decision->fork) {
         const std::string& intention = decision->fork->driving_intention;
         const std::string new_id = scene_id + "_f" + std::to_string(beat_clock_)
-                                 + "_" + std::to_string(applied);
-        if (!fork_scene(scene_id, new_id, *fork_cast, intention)) return 0;
-        ++applied;
+                                 + "_" + std::to_string(result.applied);
+        if (!fork_scene(scene_id, new_id, *fork_cast, intention)) return {};
+        ++result.applied;
         log() << "  [lifecycle] verdict: fork from '" << scene_id
               << "' intent=" << intention << "\n";
     }
@@ -212,9 +218,9 @@ int Story::apply_lifecycle(const std::string& scene_id,
                 any = true;
             }
         }
-        if (any) ++applied;
+        if (any) ++result.applied;
     }
-    return applied;
+    return result;
 }
 
 std::string Story::make_autonomous_cue(const std::string& scene_id) const {
@@ -238,14 +244,14 @@ void Story::sync_memory(const TurnResult& result) {
     }
 }
 
-void Story::advance_off_stage_scene() {
-    if (scene_count() <= 1) return;
+std::vector<SceneMessage> Story::advance_off_stage_scene() {
+    if (scene_count() <= 1) return {};
 
     const std::string scene_id = pick_off_stage_scene();
-    if (scene_id.empty()) return;
+    if (scene_id.empty()) return {};
 
     SceneData* scene = get_scene(scene_id);
-    if (!scene) return;
+    if (!scene) return {};
 
     try {
         TurnResult result = [&] {
@@ -255,18 +261,24 @@ void Story::advance_off_stage_scene() {
                 *scene, make_autonomous_cue(scene_id), read_tools.callback);
         }();
         const int completed_turn = result.completed_turn;
+        std::vector<SceneMessage> outputs = std::move(result.outputs);
         sync_memory(result);
-        const int lifecycle = apply_lifecycle(scene_id, "");
-        if (lifecycle)
-            log() << "  [lifecycle] applied " << lifecycle
+        const LifecycleApplyResult lifecycle = apply_lifecycle(scene_id, "");
+        if (lifecycle.applied)
+            log() << "  [lifecycle] applied " << lifecycle.applied
                   << " op(s) from off-stage beat\n";
         note_advanced(scene_id);
         log() << "[scheduler] advanced off-stage scene '" << scene_id
               << "' (turn " << completed_turn << ")\n";
+        if (lifecycle.merged_into &&
+            *lifecycle.merged_into == active_scene_id_) {
+            return outputs;
+        }
     } catch (const std::exception& error) {
         log() << "  [scheduler] off-stage beat failed for '" << scene_id
               << "': " << error.what() << "\n";
     }
+    return {};
 }
 
 std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) {
@@ -281,14 +293,16 @@ std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) 
             *active, player_input, read_tools.callback);
     }();
     sync_memory(player_result);
-    const int player_lifecycle = apply_lifecycle(player_scene_id, player_input);
-    if (player_lifecycle)
-        log() << "  [lifecycle] applied " << player_lifecycle
+    const LifecycleApplyResult player_lifecycle =
+        apply_lifecycle(player_scene_id, player_input);
+    if (player_lifecycle.applied)
+        log() << "  [lifecycle] applied " << player_lifecycle.applied
               << " op(s) from player beat\n";
     note_advanced(player_scene_id);
     std::vector<SceneMessage> outputs = std::move(player_result.outputs);
 
-    advance_off_stage_scene();
+    auto merged = advance_off_stage_scene();
+    outputs.insert(outputs.end(), merged.begin(), merged.end());
 
     if (!saves_dir_.empty()) save(saves_dir_);
     return outputs;

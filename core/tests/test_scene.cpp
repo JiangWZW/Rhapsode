@@ -67,6 +67,10 @@ void configure_story(Story& story, TestNarratorCallback narrator) {
                 return std::string{
                     R"({"fork_story_so_far":"The departing cast carries its established situation into a parallel thread."})"};
             }
+            if (instructions.find("merged_story_so_far") != std::string::npos) {
+                return std::string{
+                    R"({"merged_story_so_far":"The parallel cast reunites with the player storyline."})"};
+            }
             return narrator(scene_id, instructions, turn_state);
         });
 }
@@ -614,6 +618,43 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
     REQUIRE(outputs.size() == 1);
     REQUIRE(outputs.front().content == "Player beat.");
     REQUIRE(story.get_scene("away")->history.back().content == "Away beat.");
+}
+
+TEST_CASE("Story surfaces off-stage outputs when they merge into the active scene",
+          "[story][turn_executor][lifecycle]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story,
+        [](const std::string& id, const std::string&, const std::string&) {
+            return response(id == "root" ? "Player beat."
+                                         : "Scout steps from the treeline beside the player.");
+        });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Reach the player") != nullptr);
+    story.set_scheduler_callback([](const std::string&, const std::string&,
+                                    const ReadToolCallback&) {
+        return std::string{"away"};
+    });
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string& user, const ReadToolCallback&) {
+            const json context = json::parse(user.substr(user.find('{')));
+            if (context["scene_id"] == "away") {
+                return std::string{
+                    R"({"fork":null,"merge_into":"root","conclude":null,"exited":[]})"};
+            }
+            return std::string{
+                R"({"fork":null,"merge_into":null,"conclude":null,"exited":[]})"};
+        });
+
+    const auto outputs = story.advance_scene("Act.");
+    REQUIRE(outputs.size() == 2);
+    REQUIRE(outputs[0].content == "Player beat.");
+    REQUIRE(outputs[1].content ==
+            "Scout steps from the treeline beside the player.");
+    REQUIRE(story.get_scene("away") == nullptr);
+    REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
 }
 
 TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lifecycle]") {

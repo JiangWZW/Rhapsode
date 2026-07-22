@@ -33,7 +33,9 @@ const std::string kLifecycleInstructions =
     "(fork the ones LEFT BEHIND). The player NEVER leaves their own storyline; "
     "never put \"Player\" in a fork.\n"
     "- MERGE: this scene's cast has physically reunited with another live "
-    "storyline (co-presence, not mere pursuit) -- fold this scene into that one.\n"
+    "storyline (co-presence evidenced in THIS beat's narration, not mere "
+    "pursuit) -- fold this scene into that one via merge_into set to that "
+    "storyline's scene_id from other_storylines.\n"
     "- CONCLUDE: this scene's driving intention is fulfilled or dead -- end it.\n"
     "- EXIT: a character simply leaves with no ongoing thread worth following (a "
     "passing NPC the group walked away from). They leave the cast; no new "
@@ -188,7 +190,8 @@ std::string build_autonomous_cue(const SceneSummary& summary) {
     if (!summary.last_narration.empty())
         cue += "\nLast we saw: " + summary.last_narration;
     cue += "\nIf this storyline's cast has physically reached another storyline's "
-           "location (co-presence, not mere pursuit), call merge_scene into it.";
+           "location (co-presence, not mere pursuit), author that arrival in this "
+           "beat. Do not call tools to merge; lifecycle decides afterward.";
     return cue;
 }
 

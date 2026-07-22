@@ -20,7 +20,6 @@ from rhapsode.scheduler import make_scheduler_callback
 from rhapsode.lifecycle import make_lifecycle_callback
 from rhapsode.memory import register_callbacks
 from rhapsode.fable import make_ner_callback
-from rhapsode.validator import make_local_llm_callback
 
 log = logging.getLogger(__name__)
 
@@ -58,11 +57,11 @@ def _configure_story(story: Story, *, resuming: bool) -> None:
     story.set_llm_callback(call_llm)
     story.set_narrator_llm_callback(make_narrator_callback())
     story.set_weaver_llm_callback(call_llm)
-    story.set_weaver_local_llm_callback(make_local_llm_callback())
+    story.set_weaver_local_llm_callback(call_llm)
     story.set_resuming(resuming)
     story.set_scheduler_callback(make_scheduler_callback())
     story.set_lifecycle_callback(make_lifecycle_callback())
-    story.set_downsampler_callback(make_local_llm_callback(repair_json=False))
+    story.set_downsampler_callback(call_llm)
     story.set_saves_dir(SAVES_DIR)
 
 

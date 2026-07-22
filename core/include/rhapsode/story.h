@@ -116,6 +116,11 @@ private:
         float charge = 0.0f;
     };
 
+    struct LifecycleApplyResult {
+        int applied = 0;
+        std::optional<std::string> merged_into;
+    };
+
     SceneData* adopt_scene(SceneData scene);
     SceneDrive derive_intention(const SceneData& scene) const;
     SceneSummary summarize_scene(const SceneData& scene) const;
@@ -130,10 +135,12 @@ private:
         const std::vector<std::string>& names,
         const std::string& driving_intention) const;
     std::string pick_off_stage_scene();
-    int apply_lifecycle(const std::string& scene_id, const std::string& player_input);
+    LifecycleApplyResult apply_lifecycle(const std::string& scene_id,
+                                         const std::string& player_input);
     std::string make_autonomous_cue(const std::string& scene_id) const;
     void sync_memory(const TurnResult& result);
-    void advance_off_stage_scene();
+    // Empty unless the off-stage beat merged into the active scene.
+    std::vector<SceneMessage> advance_off_stage_scene();
     int revert_scene_turns(SceneData& scene, int count);
 
     // Stable allocation keeps TurnExecutor's World reference valid through Story
