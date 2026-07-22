@@ -2,6 +2,38 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-07-22] implementation | Storyline lifecycle continuity
+
+- Fork now validates canonical non-Player cast and intention, asks the narrator for one
+  `fork_story_so_far`, and commits the child, owned intention, and membership transfer only after a
+  valid response.
+- Conclusion now rejects Player/final scenes, persists a compact closure, expires the exact
+  fork-owned subjective intention, retires membership, and removes stale scene files on save.
+- Lifecycle judgment now receives bounded history/graph/mind tools plus completed dialogue;
+  contradictory verdicts and invalid or overlapping cast operations are no-ops.
+- Python scene reads are detached values, scenario NPCs always have subjective memories, and the
+  network-free verifier covers fork, conclusion, and merge synthesis.
+
+## [2026-07-22] plan | Storyline lifecycle continuity
+
+- Defined one lifecycle transaction rule: validate, synthesize only when needed, then commit once.
+- Planned narrator-synthesized fork context, exact ownership/expiry of fork intentions, and compact
+  persisted conclusion records without an extra conclusion LLM call.
+- Moved Player/cast/final-scene checks into Story, added lifecycle read tools and verdict validation,
+  and separated whole-Story undo into a later focused change.
+- Included detached Python scene values, stale scene-save cleanup, and lifecycle verifier coverage.
+
+## [2026-07-21] plan | Narrator-synthesized scene merge
+
+- Replaced the cast-transfer-only merge with a dedicated narrator call over both scenes' rendered
+  summaries, recent narration/dialogue, cast, and intentions.
+- Added optional scene selection to `query_history` so merge synthesis can inspect either stream
+  while retaining bounded, expiring read-tool borrows.
+- The narrator returns one `merged_story_so_far`; only a valid response replaces the destination's
+  downsampled context and permits membership transfer/source retirement. Failure is a no-op.
+- Kept destination history, dialogue, turn index, and scheduling fields unchanged; save/load
+  persists the synthesized context through the existing downsampling schema.
+
 ## [2026-07-21] implementation | Runtime class-internal cleanup
 
 - Added focused characterization for WorldGraph edge/components, Director output, successful

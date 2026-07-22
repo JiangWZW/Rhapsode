@@ -23,6 +23,16 @@ class MemorySystem;
 struct TurnResult;
 struct WeaveResult;
 
+struct SceneClosure {
+    std::string scene_id;
+    std::string reason;
+    std::vector<std::string> cast;
+    std::string driving_intention;
+    std::string story_so_far;
+    std::string final_narration;
+    int concluded_at = 0;
+};
+
 // Runtime hub for one playthrough. Story exclusively owns one World, a stable
 // collection of World-free SceneData records, and the TurnExecutor that executes
 // turns over them.
@@ -112,8 +122,13 @@ private:
     std::vector<SceneSummary> summarize_scenes() const;
     BeatSummary build_beat_summary(const SceneData& scene,
                                    const std::string& player_input) const;
-    std::vector<std::string> without_player_characters(
+    std::optional<std::vector<std::string>> resolve_non_player_members(
+        const std::string& scene_id,
         const std::vector<std::string>& names) const;
+    std::optional<std::vector<std::string>> resolve_fork_cast(
+        const std::string& parent_id,
+        const std::vector<std::string>& names,
+        const std::string& driving_intention) const;
     std::string pick_off_stage_scene();
     int apply_lifecycle(const std::string& scene_id, const std::string& player_input);
     std::string make_autonomous_cue(const std::string& scene_id) const;
@@ -125,6 +140,7 @@ private:
     // moves and save loads. SceneData does not participate in this ownership.
     std::unique_ptr<World> world_;
     std::vector<std::unique_ptr<SceneData>> scenes_;
+    std::vector<SceneClosure> scene_closures_;
     std::string active_scene_id_;
     int beat_clock_ = 0;
 

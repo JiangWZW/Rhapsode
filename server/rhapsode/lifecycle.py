@@ -5,19 +5,23 @@ character -- lives in the C++ engine (`Story::decide_lifecycle`). This module on
 runs the completion: the engine hands us the instructions and a description of the
 beat, and we return the model's JSON verdict for the engine to parse and apply.
 
-It is deliberately a plain, focused completion (no tool loop): isolating this one
-decision -- instead of leaving it as an optional tool competing with prose -- is
-what makes forking reliable. It runs on the reasoning model for consistent
-rule-following.
+It remains a focused verdict call, but may inspect the engine's call-scoped
+history, graph, mind, and live-scene tools before returning its decision.
 """
 
-from rhapsode.llm import complete_reasoning
+import json
+
+from rhapsode.llm import complete_with_tools
+from rhapsode.llm_tools import NARRATOR_TOOLS
 
 
 def make_lifecycle_callback():
-    def lifecycle(instructions: str, user: str) -> str:
-        return complete_reasoning([
+    def lifecycle(instructions: str, user: str, read_tool) -> str:
+        def dispatch(name: str, args: dict) -> str:
+            return read_tool(name, json.dumps(args or {}))
+
+        return complete_with_tools([
             {"role": "system", "parts": [{"text": instructions}]},
             {"role": "user", "parts": [{"text": user}]},
-        ])
+        ], NARRATOR_TOOLS, dispatch)
     return lifecycle

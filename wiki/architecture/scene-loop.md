@@ -61,7 +61,7 @@ non-fatal, matching the pre-refactor behavior.
 
 ## Callback boundary
 
-Narrator and scheduler callbacks receive a read function with this logical shape:
+Narrator, scheduler, and lifecycle callbacks receive a read function with this logical shape:
 
 ```cpp
 string read_tool(string name, string args_json);
@@ -73,8 +73,16 @@ Python adapters do not capture Story, and retained use after the call throws
 `Read tool callback is no longer active`. C++ dispatches only the existing read tools: graph, mind,
 history, and live-storyline summaries.
 
-Lifecycle has no read tools. `storyline_policy` builds its plain BeatSummary, invokes the callback,
-and returns a plain LifecycleDecision for Story to validate and apply.
+`storyline_policy` builds a plain BeatSummary containing the completed narration and dialogue. Its
+`other_storylines` payload excludes the scene being judged. The lifecycle callback may inspect the
+same read tools before returning a plain LifecycleDecision; contradictory terminal/fork/exit
+combinations are rejected before Story applies anything.
+
+Fork and merge use the narrator callback outside normal turn execution to synthesize continuity.
+Both validate the response before changing scenes or membership. Conclusion makes no extra LLM
+call: Story records the completed beat as a compact closure, expires the fork-owned intention, and
+retires the scene. See the implemented
+[storyline lifecycle continuity plan](../episodes/2026-07-22-storyline-lifecycle-continuity-plan.md).
 
 ## Result boundary
 

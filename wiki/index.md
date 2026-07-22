@@ -32,6 +32,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
+- [Storyline lifecycle continuity](episodes/2026-07-22-storyline-lifecycle-continuity-plan.md) - implemented transactional fork context, durable conclusion, and lifecycle invariants
 - [Runtime semantic-risk audit](episodes/2026-07-21-runtime-semantic-risk-audit.md) - behavior-sensitive findings intentionally excluded from the internal readability refactor
 - [Runtime architectural decoupling plan](episodes/2026-07-21-runtime-architectural-decoupling-plan.md) - implemented separation of Story, turn execution, World services, Python tools, and SceneData behavior
 - [Runtime coupling reduction plan](episodes/2026-07-20-runtime-coupling-reduction-plan.md) - second-stage SceneData, ownership, mutation, and API simplification plan

@@ -53,10 +53,17 @@ NARRATOR_TOOLS = [
     },
     {
         "name": "query_history",
-        "description": "Search past conversation history for relevant events by keyword.",
+        "description": (
+            "Search a scene's past conversation history for relevant events by keyword. "
+            "Omit scene_id to search the scene currently being narrated."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
+                "scene_id": {
+                    "type": "string",
+                    "description": "Optional scene id to search",
+                },
                 "query": {
                     "type": "string",
                     "description": "What to search for",

@@ -38,6 +38,13 @@ public:
                                ReadToolCallback read_tool = {});
     TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus,
                                    ReadToolCallback read_tool = {});
+    std::string synthesize_merge_context(
+        const SceneData& source, const SceneData& target,
+        ReadToolCallback read_tool = {});
+    std::string synthesize_fork_context(
+        const SceneData& parent, const std::vector<std::string>& cast,
+        const std::string& driving_intention,
+        ReadToolCallback read_tool = {});
 
     void set_llm_callback(LLMCallback cb) { llm_cb_ = std::move(cb); }
     void set_narrator_llm_callback(NarratorLLMCallback cb) {

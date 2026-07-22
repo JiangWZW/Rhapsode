@@ -180,6 +180,23 @@ std::string render_text_downsampling(const DownsamplingState& state) {
     return output;
 }
 
+DownsamplingState text_downsampling_from_summary(
+    std::string summary, int summarized_up_to) {
+    DownsamplingState state;
+    state.summarized_up_to = std::max(0, summarized_up_to);
+    if (summary.empty()) return state;
+
+    Snippet snippet;
+    snippet.text = sanitize_utf8(std::move(summary));
+    snippet.turn_start = 0;
+    snippet.turn_end = std::max(0, state.summarized_up_to - 1);
+    snippet.timestamp = now_seconds();
+    snippet.promoted = true;
+    snippet.source_mip = 1;
+    state.levels.back().snippets.push_back(std::move(snippet));
+    return state;
+}
+
 nlohmann::json downsampling_to_json(const DownsamplingState& state) {
     nlohmann::json value;
     value["summarized_up_to"] = state.summarized_up_to;

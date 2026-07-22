@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,11 @@ struct SceneData {
     std::string driving_intention;
     float charge = 0.0f;
     int last_advanced = 0;
+
+    // A fork seeds one intention in one character's subjective memory. Keep
+    // its identity so retiring the storyline can expire exactly that node.
+    std::string intention_owner;
+    std::uint64_t intention_node_id = 0;
 };
 
 }  // namespace rhapsode

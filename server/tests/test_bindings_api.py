@@ -41,7 +41,8 @@ def test_story_is_the_production_composition_surface():
 def test_scene_data_has_only_per_storyline_state():
     expected = {
         "charge", "dialogue", "driving_intention", "history",
-        "last_advanced", "scene_id", "system_prompt", "title", "turn_index",
+        "intention_node_id", "intention_owner", "last_advanced",
+        "scene_id", "system_prompt", "title", "turn_index",
     }
     assert {name for name in dir(_core.SceneData) if not name.startswith("_")} == expected
     for forbidden in (
@@ -63,6 +64,8 @@ def test_scene_data_has_only_per_storyline_state():
         ("driving_intention", "Other"),
         ("charge", 2.0),
         ("last_advanced", 9),
+        ("intention_owner", "Scout"),
+        ("intention_node_id", 3),
     ],
 )
 def test_scene_data_cannot_be_rewritten_from_python(attribute, replacement):

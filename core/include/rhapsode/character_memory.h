@@ -37,6 +37,9 @@ public:
                               float weight = kAuthoredSeedWeight,
                               const std::string& type = "belief");
 
+    // Expire one owned intention without exposing mutable belief-graph access.
+    bool expire_intention(std::uint64_t node_id, int valid_until);
+
     // Cross-link two of my Thoughts as a held contradiction (a "tension" edge),
     // so the pair surfaces in the rendered Tensions section.  Both stay live.
     // No-op if either node id is unknown.

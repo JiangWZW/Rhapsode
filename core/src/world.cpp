@@ -150,17 +150,28 @@ void World::set_character_memory(CharacterMemory memory) {
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
-bool World::seed_character_intention(const std::string& character,
-                                     const std::string& intention,
-                                     const std::vector<std::string>& subjects,
-                                     int created_at) {
+std::uint64_t World::seed_character_intention(
+    const std::string& character,
+    const std::string& intention,
+    const std::vector<std::string>& subjects,
+    int created_at) {
     const Character* canonical = find_character(character);
-    if (!canonical) return false;
+    if (!canonical) return 0;
     auto it = character_memories_.find(canonical->name);
-    if (it == character_memories_.end()) return false;
-    it->second.seed_belief(intention, subjects, created_at,
-                           CharacterMemory::kAuthoredSeedWeight, "intention");
-    return true;
+    if (it == character_memories_.end()) return 0;
+    return it->second.seed_belief(
+        intention, subjects, created_at,
+        CharacterMemory::kAuthoredSeedWeight, "intention");
+}
+
+bool World::expire_character_intention(const std::string& character,
+                                       std::uint64_t node_id,
+                                       int valid_until) {
+    const Character* canonical = find_character(character);
+    if (!canonical || node_id == 0) return false;
+    auto it = character_memories_.find(canonical->name);
+    return it != character_memories_.end() &&
+        it->second.expire_intention(node_id, valid_until);
 }
 
 std::vector<std::uint64_t> World::revert_to_turn(int target_turn) {
@@ -255,6 +266,14 @@ World World::from_json(const nlohmann::json& j) {
     if (j.contains("character_memories") && j["character_memories"].is_object()) {
         for (auto& [name, cm_j] : j["character_memories"].items())
             w.character_memories_.insert_or_assign(name, CharacterMemory::from_json(cm_j));
+    }
+    for (const auto& character : w.characters_) {
+        if (!character.is_player &&
+            w.character_memories_.find(character.name) ==
+                w.character_memories_.end()) {
+            w.character_memories_.emplace(
+                character.name, CharacterMemory(character.name));
+        }
     }
     return w;
 }

@@ -20,8 +20,22 @@ class Script:
         self.root_id = story.active_scene_id
         self.mode = "idle"
 
-    def narrator(self, _scene_id: str, _instructions: str, _turn_state: str,
+    def narrator(self, _scene_id: str, instructions: str, _turn_state: str,
                  _read_tool) -> str:
+        if "fork_story_so_far" in instructions:
+            return json.dumps({
+                "fork_story_so_far": (
+                    "Maren leaves the siege line for the drainage tunnels, "
+                    "carrying the unresolved flanking plan."
+                ),
+            })
+        if "merged_story_so_far" in instructions:
+            return json.dumps({
+                "merged_story_so_far": (
+                    "Maren returns from the tunnels to the siege line with "
+                    "the flanking thread reconciled into the main defense."
+                ),
+            })
         return (
             "The moment turns and the storyline moves on.\n"
             "<<<RHAPSODE_JSON>>>\n"
@@ -36,7 +50,7 @@ class Script:
             "",
         )
 
-    def lifecycle(self, _instructions: str, user: str) -> str:
+    def lifecycle(self, _instructions: str, user: str, _read_tool) -> str:
         context = json.loads(user[user.find("{"):])
         scene_id = context["scene_id"]
         verdict = {

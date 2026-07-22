@@ -22,6 +22,10 @@ def _story() -> Story:
             "title": "Root",
             "system_prompt": "Narrate.",
             "characters": [
+                {
+                    "name": "Player", "description": "The player",
+                    "is_player": True, "on_stage": True,
+                },
                 {"name": "Scout", "description": "Careful", "on_stage": True},
             ],
         }),
@@ -78,6 +82,32 @@ def test_read_tools_expire_when_the_narrator_call_returns():
         retained[0]("list_scenes", "{}")
 
 
+def test_read_tools_expire_when_the_lifecycle_call_returns():
+    story = _story()
+    retained = []
+    story.set_llm_callback(lambda _prompt: "")
+    story.set_narrator_llm_callback(
+        lambda _scene_id, _instructions, _turn_state, _read_tool: (
+            "The scout waits.\n<<<RHAPSODE_JSON>>>\n"
+            '{"transitions":[],"new_nodes":[],"speech_turns":[],'
+            '"new_characters":[],"active_cast":["Scout"]}'
+        )
+    )
+
+    def lifecycle(_instructions, _user, read_tool):
+        retained.append(read_tool)
+        assert json.loads(read_tool("list_scenes", "{}"))[0]["scene_id"] == "root"
+        return json.dumps({
+            "fork": None, "merge_into": None, "conclude": None, "exited": [],
+        })
+
+    story.set_lifecycle_callback(lifecycle)
+    story.advance_scene("Wait.")
+
+    with pytest.raises(RuntimeError, match="no longer active"):
+        retained[0]("list_scenes", "{}")
+
+
 def test_complete_session_graph_is_released_together():
     story = _story()
     memory = MemorySystem("root")
@@ -97,8 +127,15 @@ def test_complete_session_graph_is_released_together():
 
 def test_annotator_survives_scene_retirement_because_world_is_story_owned():
     story = _story()
-    story.fork_scene("root", "ridge", [], "Watch the ridge")
+    story.set_narrator_llm_callback(
+        lambda _scene_id, _instructions, _turn_state, _read_tool: json.dumps({
+            "fork_story_so_far": "Scout leaves the player to watch the ridge.",
+        })
+    )
+    assert story.fork_scene("root", "ridge", ["Scout"], "Watch the ridge")
+    retired_scene = story.get_scene("ridge")
     annotator = Annotator(story.world())
-    assert story.conclude_scene("root", "The root storyline closes")
+    assert story.conclude_scene("ridge", "The ridge is secure")
+    assert retired_scene.scene_id == "ridge"
     spans = annotator.annotate("Scout waits.")
     assert [(span.text, span.category) for span in spans] == [("Scout", "character")]

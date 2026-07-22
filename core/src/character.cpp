@@ -10,7 +10,7 @@ void to_json(nlohmann::json& j, const Character& c)
         {"is_player", c.is_player}
     };
     if (!c.dialogue_instructions.empty())
-        j["dialogue_instructions"] = c.dialogue_instructions;
+        j["dialogue_instructions"] = c.dialogue_instructions; 
     if (!c.example_dialogue.empty())
         j["example_dialogue"] = c.example_dialogue;
     if (!c.role.empty())

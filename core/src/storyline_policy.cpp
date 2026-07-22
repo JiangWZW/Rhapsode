@@ -2,6 +2,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <unordered_set>
+
 #include "rhapsode/str_util.h"
 
 namespace rhapsode {
@@ -42,6 +44,8 @@ const std::string kLifecycleInstructions =
     "conclude or merge it even if a shared goal just ended.\n"
     "Most beats change NOTHING. Act only on a concrete change in THIS beat -- never "
     "on mood, a passing aside, or characters merely staying together.\n"
+    "Use query_history, query_graph, or query_mind when the beat does not contain "
+    "enough evidence to decide.\n"
     "Reply with ONLY JSON (use null / [] for anything that does not apply):\n"
     "{\"fork\": {\"cast\": [names], \"driving_intention\": \"one sentence\"} | null, "
     "\"merge_into\": \"scene_id\" | null, \"conclude\": \"reason\" | null, "
@@ -90,7 +94,8 @@ std::string request_off_stage_scene(const SchedulerCallback& callback,
 }
 
 std::optional<LifecycleDecision> request_lifecycle_decision(
-    const BeatSummary& summary, const LifecycleCallback& callback) {
+    const BeatSummary& summary, const LifecycleCallback& callback,
+    const ReadToolCallback& read_tool) {
     if (!callback) return std::nullopt;
 
     nlohmann::json context;
@@ -100,15 +105,25 @@ std::optional<LifecycleDecision> request_lifecycle_decision(
     context["player_action"] = summary.player_action
         ? nlohmann::json(*summary.player_action) : nlohmann::json(nullptr);
     context["narration"] = summary.narration;
+    context["dialogue"] = nlohmann::json::array();
+    for (const auto& message : summary.dialogue) {
+        nlohmann::json row{{"content", message.content}};
+        if (message.metadata.contains("speaker"))
+            row["speaker"] = message.metadata["speaker"];
+        context["dialogue"].push_back(std::move(row));
+    }
     nlohmann::json storylines = nlohmann::json::array();
-    for (const auto& storyline : summary.storylines)
+    for (const auto& storyline : summary.storylines) {
+        if (storyline.scene_id == summary.scene_id) continue;
         storylines.push_back(scene_summary_json(storyline));
+    }
     context["other_storylines"] = std::move(storylines);
 
     const std::string raw = callback(
         kLifecycleInstructions,
         "Decide the lifecycle verdict for the beat just authored:\n" +
-            context.dump(2));
+            context.dump(2),
+        read_tool);
     const auto left = raw.find('{');
     const auto right = raw.rfind('}');
     if (left == std::string::npos || right == std::string::npos || right < left)
@@ -131,11 +146,36 @@ std::optional<LifecycleDecision> request_lifecycle_decision(
         it != verdict.end() && it->is_object()) {
         LifecycleDecision::Fork fork;
         fork.cast = string_values(it->value("cast", nlohmann::json::array()));
-        fork.driving_intention = it->value("driving_intention", "");
+        fork.driving_intention = str::trim(
+            it->value("driving_intention", ""));
         decision.fork = std::move(fork);
     }
     if (const auto it = verdict.find("exited"); it != verdict.end())
         decision.exited = string_values(*it);
+
+    const int terminal_actions =
+        static_cast<int>(decision.conclude_reason.has_value()) +
+        static_cast<int>(decision.merge_into.has_value());
+    if (terminal_actions > 1 ||
+        (terminal_actions == 1 &&
+         (decision.fork.has_value() || !decision.exited.empty()))) {
+        return std::nullopt;
+    }
+    if (decision.fork) {
+        if (decision.fork->cast.empty() ||
+            decision.fork->driving_intention.empty()) {
+            return std::nullopt;
+        }
+        std::unordered_set<std::string> forked;
+        for (const auto& name : decision.fork->cast) {
+            if (!forked.insert(str::to_lower(name)).second)
+                return std::nullopt;
+        }
+        for (const auto& name : decision.exited) {
+            if (forked.count(str::to_lower(name)) > 0)
+                return std::nullopt;
+        }
+    }
     return decision;
 }
 

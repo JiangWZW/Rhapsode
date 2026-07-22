@@ -31,11 +31,20 @@ std::string dispatch_read_tool(const ReadToolContext& context,
             *context.world, string_arg("character"));
     }
     if (name == "query_history") {
-        if (!context.history) {
-            return nlohmann::json{
-                {"error", "unknown scene: " + context.scene_id}}.dump();
+        const std::string requested_scene = string_arg("scene_id");
+        const std::string resolved_scene = requested_scene.empty()
+            ? context.scene_id : requested_scene;
+        const std::vector<SceneMessage>* history = context.history;
+        if (!requested_scene.empty() && requested_scene != context.scene_id) {
+            const auto it = context.histories_by_scene.find(requested_scene);
+            history = it == context.histories_by_scene.end()
+                ? nullptr : it->second;
         }
-        return query_scene_history(*context.history, string_arg("query"));
+        if (!history) {
+            return nlohmann::json{
+                {"error", "unknown scene: " + resolved_scene}}.dump();
+        }
+        return query_scene_history(*history, string_arg("query"));
     }
     if (name == "list_scenes") return context.scene_summaries_json;
     return nlohmann::json{{"error", "unknown tool: " + name}}.dump();

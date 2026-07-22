@@ -56,7 +56,14 @@ Story owns composition and cross-component invariants:
 - owns the live SceneData collection and active-scene identity;
 - sequences player turns, optional off-stage turns, lifecycle application, memory synchronization,
   undo, and persistence;
-- validates scene IDs and player-storyline protections;
+- resolves a scene merge by asking the configured narrator to synthesize source and destination
+  continuity before moving membership or retiring the source; an invalid synthesis leaves both
+  scenes unchanged;
+- resolves a fork by validating its cast/intention and synthesizing the child's starting continuity
+  before seeding its owned intention or moving membership;
+- persists compact concluded-scene records and expires the exact subjective intention owned by a
+  retired fork;
+- validates scene IDs, cast membership, Player protection, and the final-live-scene invariant;
 - forwards runtime callbacks to the component that consumes them.
 - exposes explicit aggregate commands, such as manual graph weaving, when maintained diagnostics
   need mutation; callers do not receive writable aliases to owned state.
@@ -75,7 +82,7 @@ Story delegates mechanics to free-function modules:
 |---|---|
 | `scenario_bootstrap` | scenario file/JSON parsing and value construction |
 | `world_analysis` | graph query, mind query, and death-candidate detection |
-| `read_tools` | read-tool argument parsing and dispatch over a bounded read context |
+| `read_tools` | read-tool argument parsing and dispatch over bounded World and live-scene history views |
 | `storyline_policy` | scheduler/lifecycle prompts, callback calls, verdict parsing, cues |
 | `scene_history` | message append/snapshot/undo/query mechanics |
 | `text_downsampling` | mip processing, rendering, and JSON conversion |
@@ -90,16 +97,19 @@ World owns durable domain state:
 - subjective CharacterMemory map.
 
 Its methods are reads or invariant-preserving mutations: roster membership, perception routing,
-reflection over an explicitly supplied callback, rollback, death marking, and value JSON conversion.
-World has no filesystem, scenario-document, MemorySystem, or retained callback dependency.
+reflection over an explicitly supplied callback, owned-intention seed/expiry, rollback, death
+marking, and value JSON conversion. Every non-Player roster member has a subjective memory, even
+when a scenario supplies no authored initial beliefs. World has no filesystem, scenario-document,
+MemorySystem, or retained callback dependency.
 
 ## SceneData
 
 SceneData is a behavior-free value aggregate. It contains identity and display strings, narrator and
-dialogue message vectors, DownsamplingState, turn index, and scheduling fields. It has no methods,
-callback, service pointer, or World reference.
+dialogue message vectors, DownsamplingState, turn index, scheduling fields, and the owner/node ID of
+an intention seeded for a fork. It has no methods, callback, service pointer, or World reference.
 
-Python receives SceneData as a read-only view. It receives detached snapshots of Story-owned graph,
+Python receives detached, read-only SceneData values, so a retained value remains safe after its
+native scene is merged or concluded. It also receives detached snapshots of Story-owned graph,
 roster, character, and character-memory values. Production Python therefore cannot mutate either
 scene invariants or World state through a returned reference. Validated Story operations are the
 mutation boundary.
@@ -110,9 +120,14 @@ Story owns Director and Weaver. TurnExecutor borrows them and World through cons
 those references cannot be rebound. It borrows one SceneData only for one synchronous call.
 
 TurnExecutor returns `TurnResult`: scene identity, completed turn, emitted messages, and generic
-created/expired node effects. DirectorOutput, WeaveResult, and expiry implementation types do not
-cross the turn-execution boundary. The separate, explicit manual-weave command returns its normal
-WeaveResult because that command is itself a Weaver maintenance operation.
+created/expired node effects. It also exposes narrow merge- and fork-context synthesis calls that
+use the narrator callback without running a turn or mutating scene/World state. Both receive the
+same continuity shape: rendered downsampling, recent narration/dialogue timeline, cast, and driving
+intention. Merge replaces the destination's prior downsampled context while retaining its recent
+history; fork initializes a clean child transcript around its synthesized downsampling. DirectorOutput,
+WeaveResult, and expiry implementation types do not cross the turn-execution boundary. The separate,
+explicit manual-weave command returns its normal WeaveResult because that command is itself a
+Weaver maintenance operation.
 
 ## Runtime adapters and borrows
 
@@ -121,7 +136,7 @@ WeaveResult because that command is itself a Weaver maintenance operation.
 | Story | World, SceneData, Director, Weaver, TurnExecutor | none |
 | Story | shared MemorySystem handle | pybind/C++ shared ownership |
 | TurnExecutor | no domain state | World/Director/Weaver live longer by declaration order |
-| Narrator/scheduler call | const World/history read context and read-tool function | captures no Story; expires when the callback returns |
+| Narrator/scheduler/lifecycle call | const World/live-history read context and read-tool function | captures no Story; expires when the callback returns |
 | Annotator | no World ownership | pybind keeps its World owner alive |
 
 See [[architecture/scene-loop]] for transaction order and callback details.

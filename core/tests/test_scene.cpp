@@ -59,7 +59,16 @@ void configure_executor(TurnExecutor& executor, TestNarratorCallback narrator) {
 
 void configure_story(Story& story, TestNarratorCallback narrator) {
     story.set_llm_callback([](const std::string&) { return std::string{"fallback"}; });
-    story.set_narrator_llm_callback(with_unused_read_tools(std::move(narrator)));
+    story.set_narrator_llm_callback(
+        [narrator = std::move(narrator)](
+            const std::string& scene_id, const std::string& instructions,
+            const std::string& turn_state, const ReadToolCallback&) {
+            if (instructions.find("fork_story_so_far") != std::string::npos) {
+                return std::string{
+                    R"({"fork_story_so_far":"The departing cast carries its established situation into a parallel thread."})"};
+            }
+            return narrator(scene_id, instructions, turn_state);
+        });
 }
 
 std::filesystem::path temp_dir(const std::string& prefix) {
@@ -222,6 +231,7 @@ TEST_CASE("Story scenario JSON builds World and SceneData", "[story][scenario]")
     REQUIRE(story.active_scene()->history.size() == 1);
     REQUIRE(story.world().characters().size() == 2);
     REQUIRE(story.world().find_in_scene("hall", "Guard") != nullptr);
+    REQUIRE(story.world().character_memories().count("Guard") == 1);
     REQUIRE(story.to_scenario_json("hall")["title"] == "Hall");
 }
 
@@ -586,12 +596,16 @@ TEST_CASE("TurnExecutor post-turn failures remain non-fatal",
 
 TEST_CASE("Story keeps player outputs separate from off-stage turns",
           "[story][turn_executor]") {
-    Story story = Story::from_data(basic_scene());
-    story.fork_scene("root", "away", {}, "Advance the patrol");
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
     configure_story(story,
         [](const std::string& id, const std::string&, const std::string&) {
             return response(id == "root" ? "Player beat." : "Away beat.");
         });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Advance the patrol") != nullptr);
     story.set_scheduler_callback([](const std::string&, const std::string&,
                                     const ReadToolCallback&) {
         return std::string{"away"};
@@ -604,12 +618,21 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
 
 TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lifecycle]") {
     World world;
+    world.enter_character("root", Character{"Player", "The player", true});
     world.enter_character("root", Character{"Scout", "Careful", false});
     Story story = Story::from_data(basic_scene(), std::move(world));
     configure_story(story, [](const std::string&, const std::string&, const std::string&) {
-        return response("The scout leaves.");
+        return response("The scout shoulders a pack.",
+            R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Scout","line":"I will take the ridge.","action":"tightens the straps"}],"new_characters":[],"active_cast":["Scout"]})");
     });
-    story.set_lifecycle_callback([](const std::string&, const std::string&) {
+    story.set_lifecycle_callback([](const std::string&, const std::string& user,
+                                    const ReadToolCallback& read_tool) {
+        REQUIRE(json::parse(read_tool("list_scenes", "{}"))[0]["scene_id"] ==
+                "root");
+        const json context = json::parse(user.substr(user.find('{')));
+        REQUIRE(context["dialogue"].size() == 1);
+        REQUIRE(context["dialogue"][0]["speaker"] == "Scout");
+        REQUIRE(context["other_storylines"].empty());
         return std::string{R"({"fork":{"cast":["Scout"],"driving_intention":"Scout ridge"},"merge_into":null,"conclude":null,"exited":[]})"};
     });
     story.advance_scene("Go.");
@@ -617,6 +640,30 @@ TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lif
     REQUIRE(story.get_scene("root_f0_0") != nullptr);
     REQUIRE(story.world().find_in_scene("root_f0_0", "Scout") != nullptr);
     REQUIRE(story.world().find_in_scene("root", "Scout") == nullptr);
+}
+
+TEST_CASE("Lifecycle policy rejects contradictory verdicts",
+          "[story][lifecycle]") {
+    BeatSummary beat;
+    beat.scene_id = "root";
+    auto decide = [&](const std::string& raw) {
+        return request_lifecycle_decision(
+            beat,
+            [raw](const std::string&, const std::string&,
+                  const ReadToolCallback&) { return raw; },
+            [](const std::string&, const std::string&) {
+                return std::string{"{}"};
+            });
+    };
+
+    REQUIRE_FALSE(decide(
+        R"({"fork":null,"merge_into":"away","conclude":"done","exited":[]})"));
+    REQUIRE_FALSE(decide(
+        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":"done","exited":[]})"));
+    REQUIRE_FALSE(decide(
+        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":null,"exited":["scout"]})"));
+    REQUIRE(decide(
+        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":null,"exited":["Guard"]})"));
 }
 
 TEST_CASE("Story rejects an unknown active scene", "[story][invariant]") {
@@ -706,8 +753,15 @@ TEST_CASE("Story owns explicit graph weaving", "[story][weaver][ownership]") {
 
 TEST_CASE("Story save schema remains world, scene, and manifest blobs",
           "[story][persistence]") {
-    Story story = Story::from_data(basic_scene());
-    story.fork_scene("root", "away", {}, "Wait");
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story,
+        [](const std::string&, const std::string&, const std::string&) {
+            return response("Wait.");
+        });
+    REQUIRE(story.fork_scene("root", "away", {"Scout"}, "Wait") != nullptr);
     const auto directory = temp_dir("rhapsode-story-schema-");
     story.save(directory.string());
     REQUIRE(std::filesystem::exists(directory / "world.json"));

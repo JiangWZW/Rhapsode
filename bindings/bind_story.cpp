@@ -92,7 +92,9 @@ void bind_story(py::module_& m) {
         .def_readonly("turn_index", &SceneData::turn_index)
         .def_readonly("driving_intention", &SceneData::driving_intention)
         .def_readonly("charge", &SceneData::charge)
-        .def_readonly("last_advanced", &SceneData::last_advanced);
+        .def_readonly("last_advanced", &SceneData::last_advanced)
+        .def_readonly("intention_owner", &SceneData::intention_owner)
+        .def_readonly("intention_node_id", &SceneData::intention_node_id);
 
     py::class_<Story>(m, "Story")
         .def(py::init<>())
@@ -108,19 +110,30 @@ void bind_story(py::module_& m) {
                  return story.world();
              },
              py::return_value_policy::reference_internal)
-        .def("get_scene", [](Story& story, const std::string& id) {
-            return story.get_scene(id);
-        }, py::arg("id"), py::return_value_policy::reference_internal)
+        .def("get_scene", [](const Story& story, const std::string& id)
+                -> std::optional<SceneData> {
+            const SceneData* scene = story.get_scene(id);
+            return scene ? std::optional<SceneData>(*scene) : std::nullopt;
+        }, py::arg("id"))
         .def("scene_ids", &Story::scene_ids)
         .def("scene_count", &Story::scene_count)
         .def_property("active_scene_id", &Story::active_scene_id,
                       &Story::set_active_scene)
-        .def("active_scene", static_cast<SceneData* (Story::*)()>(&Story::active_scene),
-             py::return_value_policy::reference_internal)
-        .def("fork_scene", &Story::fork_scene,
-             py::arg("parent_id"), py::arg("new_id"), py::arg("cast"),
-             py::arg("driving_intention") = "",
-             py::return_value_policy::reference_internal)
+        .def("active_scene", [](const Story& story)
+                -> std::optional<SceneData> {
+            const SceneData* scene = story.active_scene();
+            return scene ? std::optional<SceneData>(*scene) : std::nullopt;
+        })
+        .def("fork_scene", [](Story& story, const std::string& parent_id,
+                              const std::string& new_id,
+                              const std::vector<std::string>& cast,
+                              const std::string& driving_intention)
+                -> std::optional<SceneData> {
+            SceneData* scene = story.fork_scene(
+                parent_id, new_id, cast, driving_intention);
+            return scene ? std::optional<SceneData>(*scene) : std::nullopt;
+        }, py::arg("parent_id"), py::arg("new_id"), py::arg("cast"),
+           py::arg("driving_intention") = "")
         .def("conclude_scene", &Story::conclude_scene,
              py::arg("id"), py::arg("reason"))
         .def("merge_scene", &Story::merge_scene,

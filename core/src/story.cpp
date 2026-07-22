@@ -1,7 +1,10 @@
 #include "rhapsode/story.h"
 
 #include <algorithm>
+#include <atomic>
 #include <stdexcept>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
@@ -10,6 +13,8 @@
 #include "rhapsode/read_tools.h"
 #include "rhapsode/scenario_bootstrap.h"
 #include "rhapsode/scene_history.h"
+#include "rhapsode/str_util.h"
+#include "rhapsode/text_downsampling.h"
 #include "rhapsode/turn_executor.h"
 #include "rhapsode/weaver.h"
 
@@ -35,6 +40,7 @@ Story& Story::operator=(Story&& other) noexcept {
 
     world_ = std::move(other.world_);
     scenes_ = std::move(other.scenes_);
+    scene_closures_ = std::move(other.scene_closures_);
     active_scene_id_ = std::move(other.active_scene_id_);
     beat_clock_ = other.beat_clock_;
     scheduler_cb_ = std::move(other.scheduler_cb_);
@@ -102,6 +108,46 @@ void Story::set_active_scene(const std::string& id) {
     active_scene_id_ = id;
 }
 
+std::optional<std::vector<std::string>> Story::resolve_non_player_members(
+    const std::string& scene_id,
+    const std::vector<std::string>& names) const {
+    std::vector<std::string> resolved;
+    resolved.reserve(names.size());
+    std::unordered_set<std::string> seen;
+    for (const auto& requested : names) {
+        if (str::trim(requested).empty()) return std::nullopt;
+        const Character* character = world_->find_in_scene(scene_id, requested);
+        if (!character || character->is_player) return std::nullopt;
+        const std::string key = str::to_lower(character->name);
+        if (!seen.insert(key).second) return std::nullopt;
+        resolved.push_back(character->name);
+    }
+    return resolved;
+}
+
+std::optional<std::vector<std::string>> Story::resolve_fork_cast(
+    const std::string& parent_id,
+    const std::vector<std::string>& names,
+    const std::string& driving_intention) const {
+    if (!get_scene(parent_id) || str::trim(driving_intention).empty())
+        return std::nullopt;
+    auto resolved = resolve_non_player_members(parent_id, names);
+    if (!resolved || resolved->empty()) return std::nullopt;
+
+    std::unordered_set<std::string> departing;
+    for (const auto& name : *resolved)
+        departing.insert(str::to_lower(name));
+    bool parent_keeps_cast = false;
+    for (const auto& character : world_->characters()) {
+        if (character.dead || !character.in_scene(parent_id)) continue;
+        if (departing.count(str::to_lower(character.name)) == 0) {
+            parent_keeps_cast = true;
+            break;
+        }
+    }
+    return parent_keeps_cast ? resolved : std::nullopt;
+}
+
 SceneData* Story::fork_scene(const std::string& parent_id,
                              const std::string& new_id,
                              const std::vector<std::string>& cast,
@@ -111,8 +157,47 @@ SceneData* Story::fork_scene(const std::string& parent_id,
         log() << "  [story] fork_scene: unknown parent '" << parent_id << "'\n";
         return nullptr;
     }
-    if (get_scene(new_id)) {
+    if (new_id.empty() || get_scene(new_id)) {
         log() << "  [story] fork_scene: scene '" << new_id << "' already exists\n";
+        return nullptr;
+    }
+
+    const auto resolved_cast = resolve_fork_cast(
+        parent_id, cast, driving_intention);
+    if (!resolved_cast) {
+        log() << "  [story] fork_scene: invalid cast or intention for '"
+              << parent_id << "'\n";
+        return nullptr;
+    }
+
+    std::unordered_map<std::string, const std::vector<SceneMessage>*> histories;
+    for (const auto& scene : scenes_)
+        histories.emplace(scene->scene_id, &scene->history);
+    const ReadToolContext context{
+        world_.get(),
+        &parent->history,
+        parent_id,
+        tool_list_scenes(),
+        std::move(histories),
+    };
+    const auto read_tools_active = std::make_shared<std::atomic_bool>(true);
+    const ReadToolCallback read_tool =
+        [context, active = read_tools_active](
+            const std::string& name, const std::string& args_json) {
+            if (!active->load())
+                throw std::runtime_error("Read tool callback is no longer active");
+            return dispatch_read_tool(context, name, args_json);
+        };
+
+    std::string fork_story_so_far;
+    try {
+        fork_story_so_far = executor_->synthesize_fork_context(
+            *parent, *resolved_cast, str::trim(driving_intention), read_tool);
+        read_tools_active->store(false);
+    } catch (const std::exception& error) {
+        read_tools_active->store(false);
+        log() << "  [story] fork synthesis failed for '" << parent_id
+              << "' -> '" << new_id << "': " << error.what() << "\n";
         return nullptr;
     }
 
@@ -120,22 +205,32 @@ SceneData* Story::fork_scene(const std::string& parent_id,
     child.scene_id = new_id;
     child.title = parent->title;
     child.system_prompt = parent->system_prompt;
-    child.driving_intention = driving_intention;
+    child.driving_intention = str::trim(driving_intention);
+    child.downsampling = text_downsampling_from_summary(
+        std::move(fork_story_so_far), 0);
     child.last_advanced = beat_clock_;
-    SceneData* adopted = adopt_scene(std::move(child));
 
-    world_->move_scene_members(parent_id, new_id, cast);
+    World next_world = *world_;
+    child.intention_owner = resolved_cast->front();
+    child.intention_node_id = next_world.seed_character_intention(
+        child.intention_owner, child.driving_intention,
+        *resolved_cast, beat_clock_);
+    if (child.intention_node_id == 0) {
+        log() << "  [story] fork_scene: could not seed intention for '"
+              << child.intention_owner << "'\n";
+        return nullptr;
+    }
+    child.charge = CharacterMemory::kAuthoredSeedWeight;
+    next_world.move_scene_members(parent_id, new_id, *resolved_cast);
+
+    SceneData* adopted = adopt_scene(std::move(child));
+    *world_ = std::move(next_world);
     log() << "  [fork] scene '" << parent_id << "' -> '" << new_id << "' with cast [";
-    for (size_t i = 0; i < cast.size(); ++i) {
+    for (size_t i = 0; i < resolved_cast->size(); ++i) {
         if (i) log() << ", ";
-        log() << cast[i];
+        log() << (*resolved_cast)[i];
     }
     log() << "]\n";
-
-    if (!driving_intention.empty() && !cast.empty() &&
-        world_->seed_character_intention(cast.front(), driving_intention, cast, 0)) {
-        adopted->charge = CharacterMemory::kAuthoredSeedWeight;
-    }
     return adopted;
 }
 
@@ -146,20 +241,109 @@ bool Story::conclude_scene(const std::string& id, const std::string& reason) {
         log() << "  [story] conclude_scene: unknown scene '" << id << "'\n";
         return false;
     }
-    world_->clear_scene_membership(id);
+
+    const std::string clean_reason = str::trim(reason);
+    if (clean_reason.empty() || scenes_.size() <= 1) {
+        log() << "  [story] conclude_scene: refused '" << id
+              << "' (empty reason or final live scene)\n";
+        return false;
+    }
+
+    SceneClosure closure;
+    closure.scene_id = id;
+    closure.reason = clean_reason;
+    closure.driving_intention = (*it)->driving_intention;
+    closure.story_so_far = render_text_downsampling((*it)->downsampling);
+    closure.concluded_at = beat_clock_;
+    for (const auto& character : world_->characters()) {
+        if (character.dead || !character.in_scene(id)) continue;
+        if (character.is_player) {
+            log() << "  [story] conclude_scene: refused '" << id
+                  << "' because it contains the Player\n";
+            return false;
+        }
+        closure.cast.push_back(character.name);
+    }
+    for (auto message = (*it)->history.rbegin();
+         message != (*it)->history.rend(); ++message) {
+        if (message->role != Role::Assistant) continue;
+        closure.final_narration = message->content;
+        break;
+    }
+
+    World next_world = *world_;
+    if ((*it)->intention_node_id != 0 &&
+        !next_world.expire_character_intention(
+            (*it)->intention_owner, (*it)->intention_node_id, beat_clock_)) {
+        log() << "  [story] conclude_scene: owned intention missing for '"
+              << id << "'\n";
+        return false;
+    }
+    next_world.clear_scene_membership(id);
+
+    scene_closures_.push_back(std::move(closure));
+    *world_ = std::move(next_world);
     scenes_.erase(it);
-    log() << "  [story] conclude scene '" << id << "': " << reason << "\n";
+    log() << "  [story] conclude scene '" << id << "': " << clean_reason << "\n";
     if (active_scene_id_ == id)
-        active_scene_id_ = scenes_.empty() ? std::string{} : scenes_.front()->scene_id;
+        active_scene_id_ = scenes_.front()->scene_id;
     return true;
 }
 
 bool Story::merge_scene(const std::string& from_id, const std::string& into_id) {
-    if (!get_scene(from_id) || !get_scene(into_id) || from_id == into_id) {
+    SceneData* source = get_scene(from_id);
+    SceneData* target = get_scene(into_id);
+    if (!source || !target || from_id == into_id) {
         log() << "  [story] merge_scene: bad ids '" << from_id << "' -> '"
               << into_id << "'\n";
         return false;
     }
+    for (const auto& character : world_->characters()) {
+        if (character.is_player && character.in_scene(from_id)) {
+            log() << "  [story] merge_scene: source '" << from_id
+                  << "' contains the Player\n";
+            return false;
+        }
+    }
+
+    std::unordered_map<std::string, const std::vector<SceneMessage>*> histories;
+    for (const auto& scene : scenes_)
+        histories.emplace(scene->scene_id, &scene->history);
+    const ReadToolContext context{
+        world_.get(),
+        &target->history,
+        into_id,
+        tool_list_scenes(),
+        std::move(histories),
+    };
+    const auto read_tools_active = std::make_shared<std::atomic_bool>(true);
+    const ReadToolCallback read_tool =
+        [context, active = read_tools_active](
+            const std::string& name, const std::string& args_json) {
+            if (!active->load())
+                throw std::runtime_error("Read tool callback is no longer active");
+            return dispatch_read_tool(context, name, args_json);
+        };
+
+    std::string merged_story_so_far;
+    try {
+        merged_story_so_far = executor_->synthesize_merge_context(
+            *source, *target, read_tool);
+        read_tools_active->store(false);
+    } catch (const std::exception& error) {
+        read_tools_active->store(false);
+        log() << "  [story] merge synthesis failed for '" << from_id
+              << "' -> '" << into_id << "': " << error.what() << "\n";
+        return false;
+    }
+
+    constexpr int kVerbatimTail = 6;
+    const int summarized_up_to = std::max(
+        0, static_cast<int>(target->history.size()) - kVerbatimTail);
+    DownsamplingState merged_downsampling = text_downsampling_from_summary(
+        std::move(merged_story_so_far), summarized_up_to);
+
+    target->downsampling = std::move(merged_downsampling);
     world_->move_scene_members(from_id, into_id);
     auto it = std::find_if(scenes_.begin(), scenes_.end(),
         [&](const auto& scene) { return scene->scene_id == from_id; });
@@ -234,11 +418,15 @@ std::string Story::dispatch_tool(const std::string& scene_id,
                                  const std::string& name,
                                  const std::string& args_json) {
     const SceneData* scene = get_scene(scene_id);
+    std::unordered_map<std::string, const std::vector<SceneMessage>*> histories;
+    for (const auto& item : scenes_)
+        histories.emplace(item->scene_id, &item->history);
     const ReadToolContext context{
         world_.get(),
         scene ? &scene->history : nullptr,
         scene_id,
         tool_list_scenes(),
+        std::move(histories),
     };
     return dispatch_read_tool(context, name, args_json);
 }

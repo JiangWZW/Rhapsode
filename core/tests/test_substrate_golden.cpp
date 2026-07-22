@@ -2,12 +2,14 @@
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 
 #include "rhapsode/character_memory.h"
 #include "rhapsode/node.h"
 #include "rhapsode/scene_history.h"
 #include "rhapsode/story.h"
+#include "rhapsode/text_downsampling.h"
 
 using namespace rhapsode;
 using json = nlohmann::json;
@@ -21,6 +23,18 @@ SceneMessage stamped(Role role, const std::string& content,
     message.content = content;
     message.timestamp = timestamp;
     return message;
+}
+
+void configure_fork_synthesis(Story& story) {
+    story.set_narrator_llm_callback(
+        [](const std::string&, const std::string& instructions,
+           const std::string&, const ReadToolCallback&) {
+            if (instructions.find("fork_story_so_far") != std::string::npos) {
+                return std::string{
+                    R"({"fork_story_so_far":"The departing cast leaves the Golden Hall with its purpose unresolved."})"};
+            }
+            return std::string{"unexpected narrator call"};
+        });
 }
 
 Story build_fixture() {
@@ -67,7 +81,9 @@ Story build_fixture() {
         "2026-01-01T00:00:01Z"));
     append_history_message(scene.dialogue, stamped(
         Role::Assistant, "Alice: Halt.", "2026-01-01T00:00:02Z"));
-    return Story::from_data(std::move(scene), std::move(world));
+    Story story = Story::from_data(std::move(scene), std::move(world));
+    configure_fork_synthesis(story);
+    return story;
 }
 
 json canonical_state(const Story& story) {
@@ -137,13 +153,43 @@ TEST_CASE("substrate: narrator read-tools survive round-trip", "[substrate][gold
 TEST_CASE("story: fork shares World without coupling SceneData to it",
           "[substrate][fork]") {
     Story story = build_fixture();
+    story.note_advanced("golden");
+    bool narrator_called = false;
+    story.set_narrator_llm_callback(
+        [&](const std::string& scene_id, const std::string& instructions,
+            const std::string& turn_state, const ReadToolCallback& read_tool) {
+            narrator_called = true;
+            REQUIRE(scene_id == "golden");
+            REQUIRE(instructions.find("fork_story_so_far") != std::string::npos);
+            const json context = json::parse(turn_state);
+            REQUIRE(context["parent"]["scene_id"] == "golden");
+            REQUIRE(context["fork"]["cast"] == json::array({"Alice"}));
+            REQUIRE(context["fork"]["driving_intention"] == "Guard the road");
+            REQUIRE(context["parent"]["recent_timeline"].size() == 3);
+            REQUIRE(json::parse(read_tool(
+                "query_mind", R"({"character":"Alice"})"))["character"] ==
+                    "Alice");
+            return std::string{
+                R"({"fork_story_so_far":"Alice leaves the cold hall to guard the road while the barred gate remains unresolved."})"};
+        });
     SceneData* parent = story.active_scene();
-    SceneData* child = story.fork_scene("golden", "golden_b", {"Alice"});
+    SceneData* child = story.fork_scene(
+        "golden", "golden_b", {"Alice"}, "Guard the road");
     REQUIRE(child != nullptr);
+    REQUIRE(narrator_called);
     REQUIRE(parent != nullptr);
     REQUIRE(child->history.size() == 0);
     REQUIRE(child->dialogue.size() == 0);
     REQUIRE(child->turn_index == 0);
+    REQUIRE(render_text_downsampling(child->downsampling) ==
+            "Alice leaves the cold hall to guard the road while the barred gate remains unresolved.");
+    REQUIRE(child->intention_owner == "Alice");
+    REQUIRE(child->intention_node_id != 0);
+    const Node* intention = story.world().character_memories().at("Alice")
+        .beliefs().get_node(child->intention_node_id);
+    REQUIRE(intention != nullptr);
+    REQUIRE(intention->type == "intention");
+    REQUIRE(intention->created_at == 1);
     REQUIRE(story.world().find_in_scene("golden_b", "Alice") != nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Alice") == nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
@@ -157,28 +203,198 @@ TEST_CASE("story: fork shares World without coupling SceneData to it",
 TEST_CASE("story: owns stable storyline records", "[substrate][story]") {
     Story story = build_fixture();
     SceneData* parent = story.active_scene();
-    REQUIRE(story.fork_scene("golden", "golden_b", {"Alice"}) != nullptr);
-    REQUIRE(story.fork_scene("golden", "golden_b", {}) == nullptr);
-    REQUIRE(story.fork_scene("missing", "golden_c", {}) == nullptr);
-    story.fork_scene("golden", "golden_c", {"Bob"});
+    REQUIRE(story.fork_scene(
+        "golden", "golden_b", {"Alice"}, "Guard the road") != nullptr);
+    REQUIRE(story.fork_scene(
+        "golden", "golden_b", {"Bob"}, "Scout ahead") == nullptr);
+    REQUIRE(story.fork_scene(
+        "missing", "golden_c", {"Bob"}, "Scout ahead") == nullptr);
+    REQUIRE(story.fork_scene(
+        "golden", "golden_c", {}, "Scout ahead") == nullptr);
+    REQUIRE(story.fork_scene(
+        "golden", "golden_c", {"Unknown"}, "Scout ahead") == nullptr);
+    REQUIRE(story.fork_scene(
+        "golden", "golden_c", {"Bob"}, "") == nullptr);
+    REQUIRE(story.fork_scene(
+        "golden", "golden_c", {"Bob"}, "Scout ahead") != nullptr);
     REQUIRE(story.get_scene("golden") == parent);
     REQUIRE(story.scene_count() == 3);
 }
 
-TEST_CASE("story: merge moves cast and retires source", "[substrate][story]") {
+TEST_CASE("story: failed fork synthesis changes no domain state",
+          "[substrate][fork]") {
     Story story = build_fixture();
-    REQUIRE(story.fork_scene("golden", "hunt", {"Bob"}, "Hunt") != nullptr);
-    REQUIRE(story.merge_scene("hunt", "golden"));
-    REQUIRE(story.get_scene("hunt") == nullptr);
-    REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
+    const json world_before = story.world().to_json();
+    const std::vector<std::string> ids_before = story.scene_ids();
+    story.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&,
+           const ReadToolCallback&) { return std::string{"not json"}; });
+
+    REQUIRE(story.fork_scene(
+        "golden", "failed", {"Alice"}, "Guard the road") == nullptr);
+    REQUIRE(story.scene_ids() == ids_before);
+    REQUIRE(story.world().to_json() == world_before);
 }
 
-TEST_CASE("story: conclude clears membership and repoints active", "[substrate][story]") {
+TEST_CASE("story: fork cannot empty its parent scene", "[substrate][fork]") {
+    SceneData scene;
+    scene.scene_id = "root";
+    World world;
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    Story story = Story::from_data(std::move(scene), std::move(world));
+    bool narrator_called = false;
+    story.set_narrator_llm_callback(
+        [&](const std::string&, const std::string&, const std::string&,
+            const ReadToolCallback&) {
+            narrator_called = true;
+            return std::string{R"({"fork_story_so_far":"Scout leaves."})"};
+        });
+
+    REQUIRE(story.fork_scene(
+        "root", "empty", {"Scout"}, "Leave") == nullptr);
+    REQUIRE_FALSE(narrator_called);
+    REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
+}
+
+TEST_CASE("story: merge synthesizes context before moving cast and retiring source",
+          "[substrate][story]") {
     Story story = build_fixture();
-    story.fork_scene("golden", "hunt", {"Bob"}, "Hunt");
-    REQUIRE(story.conclude_scene("golden", "done"));
-    REQUIRE(story.active_scene_id() == "hunt");
-    REQUIRE(story.world().find_in_scene("golden", "Alice") == nullptr);
+    REQUIRE(story.fork_scene("golden", "hunt", {"Bob"}, "Hunt") != nullptr);
+    append_history_message(
+        story.get_scene("hunt")->history,
+        stamped(Role::Assistant, "Bob follows tracks through the woods.",
+                "2026-01-02T00:00:00Z"));
+    story.active_scene()->downsampling =
+        text_downsampling_from_summary("Alice guards the barred gate.", 0);
+    const std::size_t target_history_size = story.active_scene()->history.size();
+
+    bool narrator_called = false;
+    story.set_narrator_llm_callback(
+        [&](const std::string& scene_id, const std::string& instructions,
+            const std::string& turn_state, const ReadToolCallback& read_tool) {
+            narrator_called = true;
+            REQUIRE(scene_id == "golden");
+            REQUIRE(instructions.find("merged_story_so_far") != std::string::npos);
+            const json context = json::parse(turn_state);
+            REQUIRE(context["source"]["scene_id"] == "hunt");
+            REQUIRE(context["destination"]["scene_id"] == "golden");
+            REQUIRE(context["source"]["recent_timeline"][0]["content"] ==
+                    "Bob follows tracks through the woods.");
+            const json history = json::parse(read_tool(
+                "query_history", R"({"scene_id":"hunt","query":"tracks"})"));
+            REQUIRE(history["snippets"].size() == 1);
+            return std::string{
+                R"({"merged_story_so_far":"Alice holds the gate as Bob arrives from the woods with the trail unresolved."})"};
+        });
+
+    REQUIRE(story.merge_scene("hunt", "golden"));
+    REQUIRE(narrator_called);
+    REQUIRE(story.get_scene("hunt") == nullptr);
+    REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
+    REQUIRE(story.active_scene()->history.size() == target_history_size);
+    REQUIRE(render_text_downsampling(story.active_scene()->downsampling) ==
+            "Alice holds the gate as Bob arrives from the woods with the trail unresolved.");
+
+    const std::string saves = temp_saves_dir();
+    story.save(saves);
+    SceneData shell;
+    shell.scene_id = "golden";
+    Story reloaded = Story::from_data(std::move(shell));
+    reloaded.load_save(saves);
+    REQUIRE(reloaded.scene_count() == 1);
+    REQUIRE(render_text_downsampling(reloaded.active_scene()->downsampling) ==
+            "Alice holds the gate as Bob arrives from the woods with the trail unresolved.");
+}
+
+TEST_CASE("story: failed merge synthesis leaves both scenes unchanged",
+          "[substrate][story]") {
+    Story story = build_fixture();
+    REQUIRE(story.fork_scene("golden", "hunt", {"Bob"}, "Hunt") != nullptr);
+    const json target_downsampling =
+        downsampling_to_json(story.active_scene()->downsampling);
+    story.set_narrator_llm_callback(
+        [](const std::string&, const std::string&, const std::string&,
+           const ReadToolCallback&) { return std::string{"not json"}; });
+
+    REQUIRE_FALSE(story.merge_scene("hunt", "golden"));
+    REQUIRE(story.get_scene("hunt") != nullptr);
+    REQUIRE(story.world().find_in_scene("hunt", "Bob") != nullptr);
+    REQUIRE(story.world().find_in_scene("golden", "Bob") == nullptr);
+    REQUIRE(downsampling_to_json(story.active_scene()->downsampling) ==
+            target_downsampling);
+}
+
+TEST_CASE("story: merge cannot retire the Player storyline",
+          "[substrate][story]") {
+    Story story = build_fixture();
+    REQUIRE(story.fork_scene(
+        "golden", "hunt", {"Bob"}, "Hunt") != nullptr);
+    bool narrator_called = false;
+    story.set_narrator_llm_callback(
+        [&](const std::string&, const std::string&, const std::string&,
+            const ReadToolCallback&) {
+            narrator_called = true;
+            return std::string{
+                R"({"merged_story_so_far":"This must not be used."})"};
+        });
+
+    REQUIRE_FALSE(story.merge_scene("golden", "hunt"));
+    REQUIRE_FALSE(narrator_called);
+    REQUIRE(story.get_scene("golden") != nullptr);
+    REQUIRE(story.world().find_in_scene("golden", "Player") != nullptr);
+}
+
+TEST_CASE("story: conclusion expires its intention and persists a compact closure",
+          "[substrate][story]") {
+    Story story = build_fixture();
+    SceneData* child = story.fork_scene(
+        "golden", "hunt", {"Bob"}, "Hunt the intruder");
+    REQUIRE(child != nullptr);
+    append_history_message(
+        child->history,
+        stamped(Role::Assistant, "Bob corners the intruder and ends the chase.",
+                "2026-01-02T00:00:00Z"));
+    const std::uint64_t intention_id = child->intention_node_id;
+    const std::string saves = temp_saves_dir();
+    story.save(saves);
+    REQUIRE(std::filesystem::exists(
+        std::filesystem::path(saves) / "hunt.json"));
+
+    REQUIRE_FALSE(story.conclude_scene("golden", "cannot retire Player"));
+    REQUIRE(story.conclude_scene("hunt", "the chase is over"));
+    REQUIRE(story.active_scene_id() == "golden");
+    REQUIRE(story.world().find_in_scene("hunt", "Bob") == nullptr);
+    const Node* intention = story.world().character_memories().at("Bob")
+        .beliefs().get_node(intention_id);
+    REQUIRE(intention != nullptr);
+    REQUIRE(intention->valid_until == 0);
+    REQUIRE_FALSE(story.conclude_scene("golden", "final scene"));
+
+    story.save(saves);
+    REQUIRE_FALSE(std::filesystem::exists(
+        std::filesystem::path(saves) / "hunt.json"));
+    std::ifstream manifest_file(
+        std::filesystem::path(saves) / "story.json");
+    json manifest;
+    manifest_file >> manifest;
+    REQUIRE(manifest["scene_closures"].size() == 1);
+    REQUIRE(manifest["scene_closures"][0]["scene_id"] == "hunt");
+    REQUIRE(manifest["scene_closures"][0]["reason"] == "the chase is over");
+    REQUIRE(manifest["scene_closures"][0]["cast"] == json::array({"Bob"}));
+    REQUIRE(manifest["scene_closures"][0]["final_narration"] ==
+            "Bob corners the intruder and ends the chase.");
+
+    SceneData shell;
+    shell.scene_id = "golden";
+    Story reloaded = Story::from_data(std::move(shell));
+    reloaded.load_save(saves);
+    reloaded.save(saves);
+    std::ifstream reloaded_manifest_file(
+        std::filesystem::path(saves) / "story.json");
+    json reloaded_manifest;
+    reloaded_manifest_file >> reloaded_manifest;
+    REQUIRE(reloaded_manifest["scene_closures"] ==
+            manifest["scene_closures"]);
 }
 
 TEST_CASE("story: staleness tracks beats", "[substrate][story]") {

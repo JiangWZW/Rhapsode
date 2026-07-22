@@ -35,10 +35,14 @@ public:
                             const std::vector<std::string>& names = {});
     void clear_scene_membership(const std::string& scene_id);
     void set_character_memory(CharacterMemory memory);
-    bool seed_character_intention(const std::string& character,
-                                  const std::string& intention,
-                                  const std::vector<std::string>& subjects,
-                                  int created_at);
+    std::uint64_t seed_character_intention(
+        const std::string& character,
+        const std::string& intention,
+        const std::vector<std::string>& subjects,
+        int created_at);
+    bool expire_character_intention(const std::string& character,
+                                    std::uint64_t node_id,
+                                    int valid_until);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
     /// Route objective nodes into the minds that perceived them in one scene.

@@ -36,6 +36,8 @@ void process_text_downsampling(DownsamplingState& state,
                                const LLMCallback& llm_callback,
                                int verbatim_tail = 6);
 std::string render_text_downsampling(const DownsamplingState& state);
+DownsamplingState text_downsampling_from_summary(
+    std::string summary, int summarized_up_to);
 nlohmann::json downsampling_to_json(const DownsamplingState& state);
 DownsamplingState downsampling_from_json(const nlohmann::json& value);
 

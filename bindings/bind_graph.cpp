@@ -7,6 +7,7 @@
 #include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
 #include "rhapsode/node.h"
+#include "rhapsode/world.h"
 #include "rhapsode/world_graph.h"
 
 namespace py = pybind11;

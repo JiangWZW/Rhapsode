@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "rhapsode/llm_callback.h"
+#include "rhapsode/scene_message.h"
 
 namespace rhapsode {
 
@@ -13,7 +14,8 @@ using SchedulerCallback = std::function<std::string(
     const std::string& instructions, const std::string& user,
     const ReadToolCallback& read_tool)>;
 using LifecycleCallback = std::function<std::string(
-    const std::string& instructions, const std::string& user)>;
+    const std::string& instructions, const std::string& user,
+    const ReadToolCallback& read_tool)>;
 
 struct SceneSummary {
     std::string scene_id;
@@ -35,6 +37,7 @@ struct BeatSummary {
     bool player_present = false;
     std::optional<std::string> player_action;
     std::string narration;
+    std::vector<SceneMessage> dialogue;
     std::vector<SceneSummary> storylines;
 };
 
@@ -55,7 +58,8 @@ std::string serialize_scene_summaries(
 std::string request_off_stage_scene(const SchedulerCallback& callback,
                                     const ReadToolCallback& read_tool);
 std::optional<LifecycleDecision> request_lifecycle_decision(
-    const BeatSummary& summary, const LifecycleCallback& callback);
+    const BeatSummary& summary, const LifecycleCallback& callback,
+    const ReadToolCallback& read_tool);
 std::string build_autonomous_cue(const SceneSummary& summary);
 
 }  // namespace rhapsode

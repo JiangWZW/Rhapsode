@@ -57,6 +57,13 @@ std::uint64_t CharacterMemory::seed_belief(const std::string& fact,
     return beliefs_.add_node_chained(std::move(n), created_at).id;
 }
 
+bool CharacterMemory::expire_intention(std::uint64_t node_id,
+                                       int valid_until) {
+    const Node* node = beliefs_.get_node(node_id);
+    if (!node || node->type != "intention") return false;
+    return beliefs_.set_valid_until(node_id, valid_until);
+}
+
 void CharacterMemory::link_tension(std::uint64_t a_id, std::uint64_t b_id, int turn) {
     if (a_id == 0 || b_id == 0 || a_id == b_id) return;
     if (!beliefs_.has_node(a_id) || !beliefs_.has_node(b_id)) return;

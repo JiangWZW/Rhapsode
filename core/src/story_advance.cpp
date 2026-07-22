@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <memory>
+#include <unordered_map>
 
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
@@ -39,11 +40,17 @@ public:
 ReadToolContext make_read_tool_context(const Story& story,
                                        const std::string& scene_id) {
     const SceneData* scene = story.get_scene(scene_id);
+    std::unordered_map<std::string, const std::vector<SceneMessage>*> histories;
+    for (const auto& id : story.scene_ids()) {
+        const SceneData* item = story.get_scene(id);
+        if (item) histories.emplace(id, &item->history);
+    }
     return ReadToolContext{
         &story.world(),
         scene ? &scene->history : nullptr,
         scene_id,
         story.tool_list_scenes(),
+        std::move(histories),
     };
 }
 
@@ -103,18 +110,12 @@ BeatSummary Story::build_beat_summary(
             break;
         }
     }
-    return beat;
-}
-
-std::vector<std::string> Story::without_player_characters(
-    const std::vector<std::string>& names) const {
-    std::vector<std::string> filtered;
-    filtered.reserve(names.size());
-    for (const auto& name : names) {
-        const Character* character = world_->find_character(name);
-        if (!character || !character->is_player) filtered.push_back(name);
+    const int completed_turn = scene.turn_index - 1;
+    for (const auto& message : scene.dialogue) {
+        if (message.metadata.value("turn", -1) == completed_turn)
+            beat.dialogue.push_back(message);
     }
-    return filtered;
+    return beat;
 }
 
 int Story::apply_lifecycle(const std::string& scene_id,
@@ -127,52 +128,84 @@ int Story::apply_lifecycle(const std::string& scene_id,
 
     std::optional<LifecycleDecision> decision;
     try {
-        decision = request_lifecycle_decision(beat, lifecycle_cb_);
+        ReadToolLease read_tools(make_read_tool_context(*this, scene_id));
+        decision = request_lifecycle_decision(
+            beat, lifecycle_cb_, read_tools.callback);
     } catch (const std::exception& error) {
         log() << "  [lifecycle] verdict call failed: " << error.what() << "\n";
         return 0;
     }
     if (!decision) {
-        log() << "  [lifecycle] verdict unparseable -- no-op\n";
+        log() << "  [lifecycle] verdict invalid or unparseable -- no-op\n";
         return 0;
     }
 
     if (decision->conclude_reason) {
-        if (beat.player_present) {
-            log() << "  [lifecycle] verdict: conclude '" << scene_id
-                  << "' refused -- the player is in this storyline\n";
-        } else {
-            log() << "  [lifecycle] verdict: conclude '" << scene_id << "'\n";
-            return conclude_scene(scene_id, *decision->conclude_reason) ? 1 : 0;
-        }
+        log() << "  [lifecycle] verdict: conclude '" << scene_id << "'\n";
+        return conclude_scene(scene_id, *decision->conclude_reason) ? 1 : 0;
     }
     if (decision->merge_into) {
-        if (beat.player_present) {
-            log() << "  [lifecycle] verdict: merge '" << scene_id << "' -> '"
-                  << *decision->merge_into
-                  << "' refused -- the player is in this storyline\n";
-        } else {
-            log() << "  [lifecycle] verdict: merge '" << scene_id << "' -> '"
-                  << *decision->merge_into << "'\n";
-            return merge_scene(scene_id, *decision->merge_into) ? 1 : 0;
+        log() << "  [lifecycle] verdict: merge '" << scene_id << "' -> '"
+              << *decision->merge_into << "'\n";
+        return merge_scene(scene_id, *decision->merge_into) ? 1 : 0;
+    }
+
+    std::optional<std::vector<std::string>> fork_cast;
+    if (decision->fork) {
+        fork_cast = resolve_fork_cast(
+            scene_id, decision->fork->cast,
+            decision->fork->driving_intention);
+        if (!fork_cast) {
+            log() << "  [lifecycle] invalid fork cast or intention -- no-op\n";
+            return 0;
+        }
+    }
+    const auto exited = resolve_non_player_members(scene_id, decision->exited);
+    if (!exited) {
+        log() << "  [lifecycle] invalid exit cast -- no-op\n";
+        return 0;
+    }
+
+    std::unordered_map<std::string, bool> leaving;
+    if (fork_cast) {
+        for (const auto& name : *fork_cast) leaving.emplace(name, true);
+    }
+    for (const auto& name : *exited) {
+        const Character* character = world_->find_character(name);
+        if (!character || leaving.count(character->name) > 0) {
+            log() << "  [lifecycle] overlapping fork/exit cast -- no-op\n";
+            return 0;
+        }
+        leaving.emplace(character->name, true);
+    }
+    if (!leaving.empty()) {
+        bool cast_remains = false;
+        for (const auto& character : world_->characters()) {
+            if (!character.dead && character.in_scene(scene_id) &&
+                leaving.count(character.name) == 0) {
+                cast_remains = true;
+                break;
+            }
+        }
+        if (!cast_remains) {
+            log() << "  [lifecycle] verdict would empty the scene -- no-op\n";
+            return 0;
         }
     }
 
     int applied = 0;
     if (decision->fork) {
-        const auto fork_cast = without_player_characters(decision->fork->cast);
         const std::string& intention = decision->fork->driving_intention;
-        if (!fork_cast.empty()) {
-            const std::string new_id = scene_id + "_f" + std::to_string(beat_clock_)
-                                     + "_" + std::to_string(applied);
-            if (fork_scene(scene_id, new_id, fork_cast, intention)) ++applied;
-            log() << "  [lifecycle] verdict: fork from '" << scene_id
-                  << "' intent=" << intention << "\n";
-        }
+        const std::string new_id = scene_id + "_f" + std::to_string(beat_clock_)
+                                 + "_" + std::to_string(applied);
+        if (!fork_scene(scene_id, new_id, *fork_cast, intention)) return 0;
+        ++applied;
+        log() << "  [lifecycle] verdict: fork from '" << scene_id
+              << "' intent=" << intention << "\n";
     }
-    if (!decision->exited.empty()) {
+    if (!exited->empty()) {
         bool any = false;
-        for (const auto& name : without_player_characters(decision->exited)) {
+        for (const auto& name : *exited) {
             if (world_->leave_character(scene_id, name)) {
                 log() << "  [lifecycle] " << name << " exits '" << scene_id
                       << "' (no new storyline)\n";
