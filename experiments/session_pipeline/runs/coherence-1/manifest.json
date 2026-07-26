@@ -1,0 +1,12 @@
+{
+  "end_reason": "MaxTurns",
+  "errors": 0,
+  "max_turns": 4,
+  "saves_dir": "D:\\cursor-workspace\\Rhapsode\\server\\saves",
+  "server_exit_code": 0,
+  "timeouts": 0,
+  "turns_completed": 4,
+  "ws_host": "127.0.0.1",
+  "ws_path": "/ws",
+  "ws_port": "8080"
+}

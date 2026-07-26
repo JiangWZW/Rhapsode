@@ -1,0 +1,31 @@
+{
+  "critique": "Hello! How can I assist you today? If you have a question or need help with something, feel free to ask.",
+  "end_reason": "WsError",
+  "narrative": {
+    "cast_gaps": 0,
+    "empty_beats": 0,
+    "findings": [
+      "Narration length collapse: 0.695931"
+    ],
+    "length_collapse": 0.6959311851447297,
+    "repetition_score": 0.1581303975268491
+  },
+  "reliability": {
+    "errors": 0,
+    "log_markers": [],
+    "server_exit_code": 0,
+    "timeouts": 0,
+    "turn_ms": [
+      824964.862,
+      605992.3045,
+      553947.4581,
+      535208.7102,
+      649755.1075,
+      850386.4119,
+      899752.646,
+      0.4226
+    ],
+    "turns_completed": 8,
+    "turns_requested": 10
+  }
+}

@@ -1,0 +1,239 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 3  Concluded: 1
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=6
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I glance from Darkness's trembling form at the quest board to Aqua's tear-streaked face, then to Megumin's napkin covered in explosion radii.
+
+"Perfect timing." I stand and point at the three of them. "Darkness, you're obviously dying to get grabbed by sewer alligators. Aqua, you want money — there's the quest. Megumin, you're useless today anyway, so at least be useless in a sewer. You three take the Brutal Alligator quest. I'll handle Luna."
+
+[Narrator]
+Your finger swings from Darkness to Aqua to Megumin as you lay out the logic — the masochist wants the grappling, the drunk wants the payout, the collapsed wizard wants a place to lie down that isn't a tavern table. The words tumble out with the momentum of a plan that almost makes sense.
+
+Then the word "take" dies halfway out of your mouth.
+
+Darkness has already shot to her feet, gauntlets clanking, cheeks flushed crimson. Aqua's fourth mug hits the table with a slosh, her wail building before she's even processed the word "sewer." And Megumin — still face-down on her napkin of concentric circles — lifts one trembling hand like a student who knows the answer but lacks the strength to raise her arm fully.
+
+Luna watches from behind the reception counter, her professional smile fixed in place. She doesn't look surprised. She looks like a woman adding another line item to an already catastrophic tab.
+
+[Darkness]
+The sewers! Where it's dark and cramped and the alligators drag you under and— and you can't even scream because the water fills your— I VOLUNTEER. As a Crusader. It is my solemn duty. (Stands ramrod-straight, gauntlets pressed to her chest, eyes glazed with fervor.)
+
+[Aqua]
+The SEWERS?! Kazumaaaa! I am a GODDESS! A goddess does not wade through... through whatever is down there! It's dark and it smells and there are probably undead rats and— wait, how much did you say it pays? (Tears already streaming, then abruptly stopping as greed flickers through the indignation.)
+
+[Megumin]
+I cast Explosion at dawn. My mana is utterly spent. I cannot lift my head from this table. And yet... if there are alligators in those sewers, the enclosed space would amplify the blast radius exponentially. The shockwave alone would be... legendary. (Raises one finger from her collapsed position, face still pressed against the napkin, voice muffled but increasingly animated.)
+
+[Player]
+I push back from the table and give Luna an apologetic wave. "Rain check on whatever disaster you're about to tell me."
+
+I jog out of the guild hall and head east toward the sewer grate, following the distant sound of Aqua's complaining.
+
+[Narrator]
+The eastern road out of Axel is dusty and mostly empty this time of morning — most adventurers are still in the guild hall nursing their hangovers or their pride. You weave past a vegetable cart and a stray cat that gives you a deeply judgmental look before you spot them.
+
+The municipal sewer grate is set into the base of the old eastern wall, a heavy iron disc bolted into stone. It's been pried open just enough for a person to squeeze through, and the smell wafting up is exactly what you'd expect from several centuries of Axel's collective plumbing decisions.
+
+Aqua stands at the edge, arms crossed, nose wrinkled in theatrical disgust. Darkness is already down on one knee, gauntleted hands gripping the grate's rim, breathing just a little too heavily for someone about to enter a sewer. Megumin leans against the wall nearby, her staff propping her up, eyes half-lidded with post-Explosion exhaustion but still managing to radiate condescension.
+
+The moment Aqua spots you, her complaining cuts off mid-sentence and redirects.
+
+[Aqua]
+Finally! Do you know how long I've been standing here inhaling sewer stench while you took your time? A goddess shouldn't have to wait over an open sewer, Kazuma. I hope you brought snacks. And a gas mask. And a apology. (stomps one foot, pointing an accusing finger at the Player)
+
+[Darkness]
+The smell is... bracing. Really makes you feel alive, doesn't it? I can only imagine what it must be like down there — the darkness, the filth, the creatures lurking just beneath the surface waiting to— (voice trailing into a breathy murmur, grip tightening on the grate)
+
+[Megumin]
+If the two of you are done making this sewer grate sound like a romantic getaway, some of us would like to get this over with before our legs fully stop responding to commands. (pushes off the wall with visible effort, staff clacking against the cobblestones)
+
+[Player]
+I slow from a jog to a walk as I approach the eastern wall, the smell hitting me a full thirty paces out. I pinch my nose and peer down at the three of them gathered around the open grate.
+
+"Sorry I'm late. Had to settle our tab. Again." I wave a hand in front of my face. "You three couldn't wait five minutes before opening the gates of hell?"
+
+[Narrator]
+The stench hits you like a physical force — a wet, ancient reek of rot and bile and things that have been decomposing in the dark for decades. Below the open grate, the sewer channel stretches into blackness in both directions, slick stone walls glistening with something you don't want to identify. A narrow maintenance ledge runs along one side, but your three party members have forgone it entirely, standing waist-deep in the murky water like they're wading through a public bath.
+
+Darkness stands at the front, her adamantite armor dull in the faint light from above, her breath coming in short, eager little puffs. Aqua is behind her, clutching her scepter with both hands, her Feather Mantle already acquiring a brownish stain at the hem. And Megumin — still visibly unsteady on her feet from this morning's Explosion — grips her staff in one hand and the slime-coated wall in the other, her cape floating on the water's surface behind her like a crimson lily pad.
+
+Then you see them. Two yellow eyes, low in the water about thirty feet down the tunnel, cutting through the darkness with the slow, patient gleam of something that hasn't missed a meal in a very long time. The water barely ripples as it drifts closer. Fifteen feet of scales, teeth, and territorial fury, and your party is standing directly in its living room.
+
+[Aqua]
+You're late! Do you have any idea how long I've been standing in this — this filth? I want snacks. And a gas mask. And an apology. And you're carrying me out of here when we're done! (She whirls on the Player, scepter raised, completely oblivious to the approaching alligator.)
+
+[Darkness]
+Finally... it's coming. Look at those eyes — it's been waiting for prey just like us. When it grabs me, don't interfere. Let it drag me under. Let it— (Her voice drops to a breathless murmur, gauntleted fingers twitching at her sides.)
+
+[Megumin]
+Stop your theatrical swooning and do your job, Darkness! I cannot cast Explosion — my mana is spent, my legs are numb, and I refuse to die in a sewer to a glorified lizard while the great Megumin is reduced to a spectator! (She jabs her staff toward the yellow eyes, wobbling dangerously in the water.)
+
+[Player]
+I swing my legs through the gap in the grate and drop down onto the maintenance ledge with a wet splat, one hand on the hilt of the Chunchunmaru.
+
+"Alright, what'd I miss? Besides the obvious assault on my nostrils."
+
+[Narrator]
+Your boots hit the maintenance ledge with a wet, unpleasant sound that you immediately regret being able to hear. The sewer channel below churns with dark, foul water — and in the middle of it, a spreading ring of ripples and bubbles marks the spot where something large went under. Something large, and someone wearing adamantite armor.
+
+Aqua has somehow scrambled up onto the ledge about ten feet further down, hugging her scepter to her chest like a security blanket. Her Feather Mantle is dripping with something you don't want to identify. She looks simultaneously furious, terrified, and deeply wronged — her default state.
+
+Megumin hasn't moved from where she clings to the slime-slicked stone wall, her legs clearly refusing to cooperate. Her crimson eyes are fixed on the churning water with an expression of profound professional regret — the look of an arch-wizard who used her one spell six hours too early and now has nothing to contribute except dramatic narration.
+
+From somewhere beneath the murky surface, a muffled, gurgling sound echoes through the tunnel. It might be a death-cry. It might, given who went under, be something else entirely.
+
+[Aqua]
+Kazumaaaa! You took forever! Do you have any idea what I've been through? First Darkness jumped in front of that thing on purpose — on purpose! — and then it actually grabbed her and dragged her under, and I was going to blast it with holy water but then I thought maybe I'd hit her too, and now she's been down there for like thirty seconds and I'm a goddess standing in sewage! (points accusingly at the churning water, then at her soiled mantle, voice cracking with indignation)
+
+[Megumin]
+A fifteen-foot Brutal Alligator. Armored scales. Death-roll capabilities. And I, Megumin, foremost genius of the Crimson Demon Clan, already spent today's Explosion on an empty hillside at dawn. The irony is not lost on me. (clings to the wall, legs trailing uselessly in the water, voice flat with self-loathing)
+
+[Player]
+I lunge off the ledge and knife into the foul water, already reaching for the Chunchunmaru as the cold murk swallows me whole.
+
+[Narrator]
+The sewer water swallows you whole — cold and thick and wrong, nothing like the clear rivers outside Axel. It's the kind of cold that lives underground, that hasn't seen sunlight in decades. Your ears fill with a muffled roar, your own dive echoing through the channel, and then everything goes murky and still.
+
+You can't see a thing. The water is a brown-green soup of silt and things you refuse to name, and the only light comes from the open grate twenty feet above — a pale square of sky, already dim and distant. Your boots find the slimy channel floor, but the current tugs at your ankles, pulling eastward into the darker tunnel. That's where the ripples are coming from. That's where the water is still churning — a turbulence of bubbles and disturbed silt, something big thrashing just out of sight.
+
+From above, you can hear Aqua's voice cutting through the water, tinny and distant, and then the splash as something small — a pebble, maybe — hits the surface near your head. Megumin is probably yelling too, though her voice is fainter, harder to make out. The tunnel ahead is black as ink, but the churning is moving away from you, and with it, the faint clank of adamantite scraping stone.
+
+[Player]
+I kick hard for the surface, the Chunchunmaru still clenched in my fist as the murk streams off my face, and I gasp a lungful of sewer-tainted air before swimming toward the ledge where Aqua and Megumin are perched.
+
+"Aqua! Megumin!"
+
+[Narrator]
+Your voice echoes off the slime-slicked stone, bouncing down the tunnel in both directions before the sewer swallows it whole. For a long, unpleasant moment, nothing answers but the drip of condensation and the distant gurgle of the channel.
+
+Then, from the ledge about twenty feet ahead, a faint shimmer cuts through the murk — Aqua's Feather Mantle, its once-pristine white now streaked with brown, catching what little light filters down from the grate above. She's huddled against the wall with her arms wrapped around herself, the picture of divine misery.
+
+Megumin is right beside her, still clinging to the wall with one hand, her legs clearly refusing to cooperate. Her crimson eyes lock onto you the moment you surface — wide, urgent, and for once entirely devoid of theatrical flourish. She opens her mouth, but Aqua gets there first, jabbing a finger down at you from her perch like a bedraggled, sewage-soaked angel of judgment.
+
+[Aqua]
+Oh, NOW you remember we exist! You dive in after that pervert without even looking at us, and you expect me to just sit here and — ugh, the smell is even worse when I yell! This is your fault, Kazuma! (jabs an accusing finger at the Player, then immediately recoils as the motion wafts sewer stench up toward her face)
+
+[Megumin]
+Kazuma! Darkness is still under there — the alligator dragged her down the tunnel, that way! I would obliterate it with Explosion, but my mana is... regrettably committed to this morning's masterpiece. You have to go after her! (points shakily down the dark tunnel with her free hand, her other arm locked around a rusted pipe to keep her numb legs from giving out)
+
+============================================================
+## Off-stage — konosuba_f0_0 (Axel Town — The Adventurer's Guild)
+turn=4  intention=Take the Brutal Alligator quest into the sewers and hunt down the alligators.
+
+[Narrator]
+The guild hall's morning noise fades behind you as the three of you cross the cobblestone plaza toward the iron grate set into the ground near the eastern wall of Axel — the municipal sewer access. A thick, wet odor rises from the dark opening, something between rotting vegetation and old fish. Aqua stops three paces from the grate, her nose wrinkling with the full theatrical force of divine offense.
+
+Darkness does not stop. She strides forward until her armored boots ring against the iron bars, peering down into the black water that sloshes somewhere below. Her breathing has gone shallow, the kind of breathing that has nothing to do with exertion and everything to do with whatever images are unspooling behind her half-lidded eyes. She grips the hilt of her sword — the one she has never landed a single blow with — and a faint, trembling smile crosses her lips.
+
+Megumin leans heavily on her staff, still unsteady from the morning's Explosion. Her legs wobble when she tries to plant her feet, and she compensates by striking a dramatic pose, crimson eyes glinting in the morning light as she gazes at the sewer entrance like it is the maw of some ancient dungeon. Chomusuke, perched on her shoulder, mews once and bats at a fly.
+
+The water below gurgles. Something heavy shifts in the darkness, scales scraping against stone.
+
+[Darkness]
+The darkness below... the water closing over my head... an alligator's jaws clamping down on my armor and pulling me under... Th-this is exactly the kind of frontline duty a Crusader must face. I shall go first. I insist. (Her voice drops to a breathless murmur by the end, one gauntleted hand pressed to her chest.)
+
+[Aqua]
+Ugh, it smells like Kazuma's laundry down there! A goddess like me shouldn't have to set foot in a sewer! But... five hundred thousand eris is five hundred thousand eris. Fine! But you're all buying me the expensive sparkling wine after this, not that cheap guild swill! (She jabs a finger at Darkness and Megumin, then peers down the grate with theatrical disgust.)
+
+[Megumin]
+An enclosed stone chamber, reverberating with the echoes of beastly roars... The confined space would amplify Explosion's shockwave to truly cataclysmic proportions! ...Unfortunately, my mana reserves are currently... let us say, in a state of strategic dormancy. You two will have to handle the initial skirmishing. (She raises her staff dramatically, then sags against it, trying to disguise her exhaustion as a thoughtful pause.)
+
+[Narrator]
+The iron grate shrieks as Darkness heaves it open with both hands, her armored shoulders flexing under the weight. A column of wet, rotting air billows upward — something dead and vegetable and deeply, fundamentally wrong. Aqua gags theatrically and staggers backward, clutching her scepter like a walking stick. Below, the darkness is nearly absolute. The sound of slow-moving water echoes up from stone walls: a lazy slosh, rhythmic, punctuated by the occasional drip. Rusted iron rungs descend into the black.
+
+Darkness is already swinging one armored leg over the edge, her breathing gone shallow and quick. Her gauntlets tremble against the ladder — not from fear. She descends first, each rung groaning under the weight of Adamantite plate, and the water below receives her calves with a thick, sucking sound. The sewer channel is waist-deep and cold enough to make even her gasp. Something long and dark shifts against the far wall, just beyond the reach of the daylight shafting down from the grate, and two yellow eyes open without hurry.
+
+Megumin follows, her movements stiff and deliberate — the careful locomotion of someone whose legs stopped belonging to her an hour ago. She grips the rungs with both small hands, knuckles white, muttering something about the indignity of a Crimson Demon climbing into filth. When her boots touch the water she sways, catches herself against the slime-slicked wall, and refuses to acknowledge it.
+
+Aqua remains at the top, silhouetted against the morning sky, her feather mantle rippling in the breeze. She stares down into the hole with the expression of someone who has just been asked to personally scrub every toilet in the mortal realm. Then, with a whimper that might have been the word "money," she grabs the ladder and begins her descent — slowly, rung by rung, making sure everyone knows exactly how much she is suffering.
+
+The yellow eyes drift closer. The water barely ripples. The alligator is enormous — fifteen feet of armored hide and patience — and it has been waiting beneath this grate since before dawn.
+
+[Darkness]
+The water is... it's so cold. So deep. Anything could be lurking just below the surface and I wouldn't even see it coming. (Her voice drops to a breathless murmur, one gauntleted hand pressed flat against her breastplate.)
+
+[Megumin]
+If I still had my Explosion, this entire sewer would become my crucible. Alas, you will have to content yourselves with my moral support. And my tactical genius. (She leans heavily against the slime-slicked wall, arms crossed, chin lifted with as much dignity as she can muster.)
+
+[Aqua]
+This is cruelty! This is persecution! A goddess of water should not have to touch sewer water — it's an entirely different category! It's like making a master chef eat garbage! (She hugs her scepter to her chest, one foot still on the bottom rung, refusing to let go of the ladder.)
+
+[Narrator]
+The water erupts.
+
+A scaled snout longer than your arm breaks the surface three feet from Darkness, jaws yawning wide enough to swallow a barrel. Sewer water cascades off rows of teeth the color of old bone. The Brutal Alligator's yellow eyes are fixed and stupid and utterly without malice — it doesn't hate her. It doesn't need to. It simply clamps down on her armored torso with the sound of grinding metal and drags.
+
+Darkness vanishes beneath the black water in an explosion of bubbles. Her sword, which she had raised in a defensive stance she never intended to complete, floats briefly on the surface before drifting toward the tunnel wall. The alligator's ridged tail lashes once and then the channel goes still except for a spreading ripple and the distant glug of something large submerging deeper.
+
+Aqua shrieks. The sound bounces off the curved brick ceiling and comes back doubled — a chorus of Aquas all screaming at once. She backpedals through the waist-deep channel, scepter held out before her like a torch against a ghost, sloshing directly into Megumin's numb legs in her retreat.
+
+Megumin's fingers, white-knuckled on a slime-slick ledge, are the only thing keeping her upright. Her boots scrape uselessly against the submerged stone as Aqua's wake tugs at her. The water where Darkness disappeared is already glassing over, betraying nothing.
+
+[Narrator]
+The ledge is slick with decades of filth, and every time Aqua shifts her weight, another disgusting squelch sounds beneath her boots. She holds her soiled Feather Mantle away from her body with two fingers, her face a mask of genuine anguish. Down the tunnel, the churning water grows quieter — the alligator is hauling Darkness deeper, and the ripples of their struggle are already fading against the stone walls.
+
+Megumin braces herself against the slime-coated brick, her legs little more than numb weights beneath her, and stares hard at Aqua. Her crimson eyes narrow. The eyepatch, as always, is purely decorative, but the look beneath it is the sharpest thing in this sewer.
+
+============================================================
+## Off-stage — konosuba_f8_0 (Axel Town — The Adventurer's Guild)
+turn=0  intention=Get down into the sewer and regroup with the Player and Darkness to finish the Brutal Alligator hunt.
+
+============================================================
+## Concluded — konosuba_f0_0_f5_0 (beat 11)
+intention=Survive being dragged underwater by the Brutal Alligator and escape its jaws.
+cast=Darkness
+reason=Driving intention fulfilled: Darkness pried the alligator's jaws apart, broke free, and surfaced — she has survived and escaped its grip.
+
+[Story so far]
+You are Darkness, a Crusader of the adventuring party led by Kazuma, operating out of Axel. You are clad in heavy plate armor and carry a sword you almost never land a hit with — but your defense is truly unbreakable, a fact that fills you with pride and, more secretly, with intoxicating anticipation of the harm you can endure.
+
+This morning your party took the Brutal Alligator subjugation quest from the guild board: hunt the alligators infesting Axel's municipal sewers. Kazuma sent you, Aqua (an Archpriest), and Megumin (an Archwizard) ahead while he handled paperwork with the guild receptionist. You volunteered instantly. Brutal Alligators are notorious for grappling prey and dragging it underwater — exactly the kind of helpless, humiliating peril that makes your breath catch and your heart race.
+
+You three crossed the cobblestone plaza to the eastern wall, heaved open the iron sewer grate, and descended into the waist-deep channel. The water was black, cold, and stank of rot. Megumin was useless from the start — she had already spent her daily Explosion at dawn and could barely stand. Aqua whined and clung to the ladder, outraged at the indignity of a goddess touching sewer water.
+
+Then the water erupted. A fifteen-foot Brutal Alligator — yellow-eyed, stupid, utterly without malice — surfaced three feet from you and clamped its jaws around your armored torso with a grinding shriek of metal. Before you could even savor the moment, it dragged you under.
+
+Now you are submerged in the black, choking sewer water, clamped in the alligator's jaws. Your sword is gone — it floated to the surface as you were dragged down. Your armor is holding against the teeth for now, but the weight of it is pulling you deeper. Aqua and Megumin are somewhere above, on the surface. You can hear nothing but the rush of water and the creak of your own breastplate.
+
+And somewhere, unread, your father's letter about an arranged marriage sits in your belongings — a different kind of drowning you've been trying not to think about.
+
+[Final narration]
+The death-roll stops.
+
+The alligator settles into a steady, grinding pressure — its jaws working your adamantite plate like a dog gnawing a bone too large to crack. Enamel screeches against enchanted metal. The sound travels through your armor and into your skull, intimate as a whisper. Your lungs are no longer aching. They are screaming — a raw, spasmodic demand for air that makes your vision prickle at the edges.
+
+You realize, with the slow, unwelcome clarity of genuine danger, that you might actually drown down here. Not in the abstract, erotic way you have imagined a hundred times in the dark of your quarters — but truly, messily, your body thrashing against black water until it goes still. The thought is not as arousing as you expected.
+
+Your gauntlets find the alligator's jaws. Upper and lower — rough pebbled hide, the ridge of teeth locked around your torso. You plant your boots against the sewer floor and pull. Crusader's strength surges through your shoulders, your arms, your fingers. The jaws separate — an inch, three inches, a grinding shriek of protest from the beast — and for one suspended heartbeat there is slack. You wrench yourself backward, armor screeching free of teeth. A kick against the creature's snout, and then you are rising through the black water with nothing but the burn of your lungs and the distant, fading thump of the alligator's tail somewhere below.
+
+You break the surface.
+
+Air hits your face like a blessing from Eris herself. You gasp — great, heaving, undignified gulps — and your gauntlets find a curved stone wall slick with filth. The tunnel here is narrower, darker, the ceiling lower. No grate above. No light shaft from the surface. Only the faint green glow of distant phosphorescent fungus and the slowly settling ripples where you emerged.
+
+The water shifts. The alligator is still down there somewhere, circling.
+

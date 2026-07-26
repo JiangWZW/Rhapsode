@@ -33,6 +33,10 @@ void configure_fork_synthesis(Story& story) {
                 return std::string{
                     R"({"fork_story_so_far":"The departing cast leaves the Golden Hall with its purpose unresolved."})"};
             }
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                return std::string{
+                    "<<<RHAPSODE_JSON>>>\n{\"transitions\":[],\"new_nodes\":[]}"};
+            }
             return std::string{"unexpected narrator call"};
         });
 }

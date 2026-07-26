@@ -1,0 +1,12 @@
+{
+  "end_reason": "TurnTimeout",
+  "errors": 0,
+  "max_turns": 3,
+  "saves_dir": "D:\\cursor-workspace\\Rhapsode\\server\\saves",
+  "server_exit_code": 0,
+  "timeouts": 1,
+  "turns_completed": 3,
+  "ws_host": "127.0.0.1",
+  "ws_path": "/ws",
+  "ws_port": "8080"
+}

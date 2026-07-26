@@ -4,6 +4,7 @@ pybind11_add_module(_core
     bind_graph.cpp
     bind_runtime.cpp
     bind_memory.cpp
+    bind_eval.cpp
 )
 target_link_libraries(_core PRIVATE rhapsode)
 

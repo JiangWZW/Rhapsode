@@ -115,9 +115,44 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
 
 TEST_CASE("Narrator instructions remain byte-identical across the refactor",
           "[narrator_prompt][characterization]") {
-    const std::string instructions = build_narrator_instructions();
-    REQUIRE(instructions.size() == 4016);
-    REQUIRE(prompt_hash(instructions) == 0x15c41a86a90a0eedULL);
+    const std::string beat = build_narrator_instructions();
+    REQUIRE(beat.size() == 3036);
+    REQUIRE(prompt_hash(beat) == 0xbda3188c79baae87ULL);
+
+    const std::string graph = build_narrator_graph_instructions();
+    REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
+    REQUIRE(graph.size() == 1628);
+    REQUIRE(prompt_hash(graph) == 0xe345b641887160dbULL);
+}
+
+TEST_CASE("TurnExecutor merges Phase B graph ops into the beat plan",
+          "[turn_executor][narrator][two_phase]") {
+    World world;
+    SceneData scene = basic_scene();
+    Director director(world.graph());
+    Weaver weaver(world.graph());
+    TurnExecutor executor(world, director, weaver);
+    int calls = 0;
+    configure_executor(executor,
+        [&](const std::string&, const std::string& instructions, const std::string&) {
+            ++calls;
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                REQUIRE(calls == 2);
+                return std::string{
+                    "<<<RHAPSODE_JSON>>>\n"
+                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"],"audience":[]}]})"};
+            }
+            REQUIRE(calls == 1);
+            return response(
+                "Wind catches the gate.",
+                R"({"speech_turns":[],"new_characters":[],"active_cast":[],"transitions":[],"new_nodes":[]})");
+        });
+
+    const TurnResult result = executor.run_player_turn(scene, "Listen.");
+    REQUIRE(calls == 2);
+    REQUIRE(result.outputs.front().content == "Wind catches the gate.");
+    REQUIRE(world.graph().size() == 1);
+    REQUIRE(world.graph().all_nodes().front().fact == "A hinge loosens");
 }
 
 TEST_CASE("SceneMessage JSON round-trip", "[scene_message]") {
@@ -446,7 +481,7 @@ TEST_CASE("TurnExecutor retries invalid Player speech without leaking state",
         return response("Corrected.");
     });
     const auto result = executor.run_player_turn(scene, "Act.");
-    REQUIRE(calls == 2);
+    REQUIRE(calls == 3);  // beat fail + beat retry + graph
     REQUIRE(result.outputs.front().content == "Corrected.");
     REQUIRE(scene.turn_index == 1);
 }
@@ -570,7 +605,7 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
 
     REQUIRE(executor.run_player_turn(scene, "Look.").completed_turn == 1);
     REQUIRE(events == std::vector<std::string>{
-        "narrator", "weave", "expiry", "reflection", "downsample"});
+        "narrator", "narrator", "weave", "expiry", "reflection", "downsample"});
 }
 
 TEST_CASE("TurnExecutor post-turn failures remain non-fatal",

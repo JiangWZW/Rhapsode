@@ -145,6 +145,7 @@ void bind_story(py::module_& m) {
              py::arg("scene_id"), py::arg("name"), py::arg("args_json"))
         .def("display_timeline", &Story::display_timeline,
              py::arg("scene_id"), py::arg("cap") = std::nullopt)
+        .def("render_transcript", &Story::render_transcript)
         .def("set_llm_callback", &Story::set_llm_callback, py::arg("cb"))
         .def("set_narrator_llm_callback", &Story::set_narrator_llm_callback,
              py::arg("cb"))

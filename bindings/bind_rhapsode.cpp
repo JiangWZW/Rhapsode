@@ -13,4 +13,5 @@ PYBIND11_MODULE(_core, m) {
     bind_graph(m);
     bind_runtime(m);
     bind_memory(m);
+    bind_eval(m);
 }

@@ -83,6 +83,10 @@ public:
         const std::string& scene_id,
         std::optional<size_t> cap = std::nullopt) const;
 
+    /// Full readable transcript: active scene, other live storylines, then
+    /// concluded closures (summary only — full history is not retained).
+    std::string render_transcript() const;
+
     // Runtime configuration. Story forwards turn-service configuration to its
     // owned TurnExecutor; Python never owns or wires those services separately.
     void set_llm_callback(LLMCallback cb);

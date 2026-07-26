@@ -23,7 +23,11 @@ add_library(rhapsode STATIC
     include/rhapsode/world.h
     include/rhapsode/world_analysis.h
     include/rhapsode/world_graph.h
+    include/rhapsode/eval/session_eval.h
+    include/rhapsode/eval/session_report.h
     src/annotator.cpp
+    src/eval/session_eval.cpp
+    src/eval/session_report.cpp
     src/scene_message.cpp
     src/scenario_bootstrap.cpp
     src/scene_history.cpp
@@ -66,6 +70,11 @@ target_include_directories(rhapsode PUBLIC
 
 target_link_libraries(rhapsode PUBLIC nlohmann_json::nlohmann_json)
 
+if(WIN32)
+    target_link_libraries(rhapsode PUBLIC ws2_32 mswsock)
+    target_compile_definitions(rhapsode PUBLIC _WIN32_WINNT=0x0601)
+endif()
+
 if(MSVC)
     target_compile_options(rhapsode PRIVATE /W4)
 else()
@@ -77,6 +86,7 @@ add_executable(test_scene EXCLUDE_FROM_ALL
     tests/test_class_internals.cpp
     tests/test_scene.cpp
     tests/test_substrate_golden.cpp
+    tests/test_session_report.cpp
 )
 target_link_libraries(test_scene PRIVATE rhapsode Catch2::Catch2WithMain)
 

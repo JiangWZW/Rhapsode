@@ -1,0 +1,215 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 1  Concluded: 1
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=11
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+Take out a bag of gold. "here, enough huh? the rest would be my payment for my team's dining cost in this year." Go straight out without explaination. I want to go fishing on my own. I am depressed
+
+[Narrator]
+You reach into your pouch and pull out a heavy leather bag, dropping it onto the table with a dull, metallic thud that cuts through the guild hall's morning murmur. The drawstring loosens on impact, and the glint of gold catches the lamplight. Aqua's fourth mug freezes halfway to her lips.
+
+You don't meet anyone's eyes. Your voice is flat as you speak, and then you turn on your heel. The chair scrapes against the floorboards. You're already halfway to the door before anyone can form a question.
+
+The guild door swings shut behind you, and the morning sun hits your face — warm, indifferent. The streets of Axel stretch ahead, leading toward the river outside town where no one will bother you.
+
+Behind you, inside the guild hall, silence hangs over your table like a held breath. Aqua has set down her mug. Her hands are already on the bag, but her eyes are fixed on the door. Megumin hasn't moved at all. Darkness looks from the gold to the door and back again, her brow furrowed.
+
+Luna watches from behind the reception counter, her professional smile gone, replaced by something she can't quite name.
+
+[Aqua]
+K-Kazuma?! Where did you even get this much gold? And what do you mean you're going fishing — hey! HEY! You can't just walk out like that! (clutches the bag of gold with both hands, voice rising to a panicked whine as she half-stands from her chair)
+
+[Megumin]
+He didn't even make a single complaint. Kazuma always complains. That was... wrong. (staring at the door, voice unusually quiet and serious, eyepatch askew)
+
+[Darkness]
+Should one of us go after him? I have never seen him so... defeated. Even when the Giant Toads swallowed me, he was insufferably smug about it. (hand resting on the table, genuine concern breaking through her usual formal composure)
+
+[Player]
+I sold my beloved intellectual property to the devil shopkeeper to pay the debt... I just want to sit down and enjoy my life here fishing... For peace and dinner
+
+[Narrator]
+The guild doors swing shut behind you, and the morning sun hits your face — warm, indifferent, a little too bright for how you're feeling. The noise of the hall fades to a muffled murmur, then nothing. You're alone on the cobblestone street, and for the first time all morning, no one is staring at you.
+
+Your feet carry you through Axel on autopilot. Past the baker's shop, where the smell of fresh bread tugs at something hollow in your chest. Past the stable, where a bored-looking horse swishes its tail at flies. The streets are quiet — most adventurers are already out on quests or still sleeping off last night's tab. A few townsfolk nod at you. You don't nod back.
+
+You cut down the narrow lane that leads to the eastern gate, where the guard gives you a lazy wave. Beyond the gate, the dirt road winds through a meadow still wet with dew, then dips toward the tree line. The river isn't far. You've fished here before, back when it was just something to do between disasters — a way to stretch a few eris into dinner when the party was broke. Which was always.
+
+The trees open up, and there it is: a slow bend in the river, shaded by an old willow whose branches trail in the water like green fingers. The bank is soft with moss. You find a flat rock near the water's edge and sit down. The fishing rod — a cheap, battered thing you bought your first month in this world — feels heavier than it should in your hands.
+
+You bait the hook without thinking about it. Cast the line without thinking about it. The bobber lands with a soft plink and drifts, lazy, on the current.
+
+The water murmurs. A dragonfly skims the surface. Somewhere in the trees behind you, a bird you don't know the name of calls out twice and goes quiet.
+
+You sold it. Not a thing you could hold — just ideas. Ideas from a world you'll never see again. The old man at the shop counter, with his too-wide smile and his eyes that never stopped reading you, had nodded along like you were handing him a treasure map. And maybe you were. Enough gold to clear every debt and buy your party a full year of hot meals. All it cost was everything you brought with you from home.
+
+The bobber dips once, twice — but it's just the current playing tricks. You don't move.
+
+The sun climbs a little higher. The willow's shadow shifts across your shoulders. And for a few breaths, there's nothing but the river and the quiet and the faint smell of wet earth — and it's not happiness, not even close, but it's something like stillness. Something like peace, if you don't think too hard about it.
+
+[Player]
+Keep on fishing until night. At night I can bring those fishes back home for our dinner.
+
+[Narrator]
+The hours slip by unnoticed, measured only by the gentle tug of the line and the slow arc of the sun across the sky. The river east of Axel is a quiet, unremarkable stretch of water — reeds bending in the breeze, the occasional dragonfly skimming the surface, a turtle sunning itself on a half-submerged log. Nobody bothers you here. No explosions shake the earth. No goddesses whine about refills. No crusaders blush at the thought of being battered senseless. Just the current, the cork bobber, and the weight of everything you traded away settling into something bearable.
+
+The fishing is decent. A few silver-sided river bream, a respectable carp, and one surprisingly feisty trout that nearly pulls the rod from your hands before you haul it onto the bank. You thread them onto a stringer and let them cool in the shallows while you cast again. Your shoulders loosen. The tightness behind your eyes softens. You don't think about Vanir's knowing smile, or the bag of gold, or the stunned silence you left behind in the guild hall. You think about the line, the water, the patience of a thing that doesn't ask anything of you.
+
+Mid-afternoon brings a slow drift of clouds and a warm, honey-colored light that makes the whole river valley look like a painting someone forgot to sell. You add two more bream to the stringer and eat the stale bread roll you'd stuffed in your pocket that morning. It tastes better than it should — or maybe that's just what hunger and solitude do to simple things.
+
+By the time the sun dips below the treeline, painting the sky in bruised purples and fading gold, you've got enough to feed everyone. It's not a fortune. It's not intellectual property from another world. It's just fish, caught with your own hands, for a dinner you earned without anyone getting exploded or exorcised or indecently groped by a luck-based skill. You pull the stringer from the water, sling your rod over your shoulder, and start the walk back toward Axel as the first stars prick through the darkening sky. The road home is quiet, and for the first time all day, you feel something close to ready to face it.
+
+[Player]
+Get back home for dinner.
+
+[Narrator]
+The walk back from the river is longer in the dark. The dirt path turns to cobblestone, then to the familiar streets of Axel, where lamplight spills from tavern windows and the occasional drunk adventurer stumbles past without recognizing you. The string of fish slung over your shoulder is heavier than you expected — four respectable river trout, a couple of perch, and one ugly bottom-feeder you almost threw back. The scales catch the moonlight, slick and silver.
+
+Your house is dark when you reach it. No lanterns in the windows, no smoke from the chimney, no voices arguing through the thin walls. You stand at the door for a moment, just breathing. The fish drip onto the threshold.
+
+Inside, the silence is complete. The hearth is cold. The table hasn't been cleared from whatever chaos happened after you left this morning — Aqua's empty wine cup, a crust of bread, Megumin's scarf draped over a chair where she probably collapsed after her Explosion. You light a candle with a kitchen match, and the small flame pushes the shadows back just enough to see what you're doing.
+
+You set the fish in the basin and fill it with water from the pump. Your hands move on their own — scaling, gutting, rinsing. The motions are simple and good. You don't have to think about Vanir's grinning face, or the contract you signed, or the ache in your chest that feels like you traded away something more than just ideas.
+
+The kitchen is quiet. The house is quiet. You put the cleaned fish on a wooden board and stare at them. Four trout. Two perch. One ugly bottom-feeder. Enough for everyone, if anyone comes home tonight.
+
+[Player]
+Start to prepare the dinner, three roasted fishes, fish soup and a plate of fried fish. Where are my problematic teammates?
+
+[Narrator]
+The kitchen is cold when you step inside. Not just in temperature — the whole mansion feels hollow, the way empty rooms do when you've been alone in them too long. You light the stove with a spark and hang the string of fish from a hook near the counter. Four trout, a couple of perch, and that one ugly bottom-feeder you almost threw back. They gleam in the lamplight, scales still slick.
+
+You gut and scale in silence. The rhythm of the knife against the cutting board is the only sound in the house — no Aqua whining from the common room, no Megumin declaring something dramatically from the hallway, no crash of Darkness tripping over her own armor. Just the steady chop of fish heads and the hiss of oil heating in the pan.
+
+Three trout go onto the roasting rack, seasoned with salt and the last of the dried herbs from the pantry. The ugly bottom-feeder and the perch go into the pot for soup, swimming now in water and chopped root vegetables instead of river mud. The remaining fish hit the frying pan with a satisfying sizzle, and the smell of cooking fills the kitchen — warm, savory, almost enough to make the house feel lived in again.
+
+You stir the soup, flip the fillets, check the roast. The food is coming together. The table is set for four out of habit. But the chairs are empty, and the mansion stays quiet except for the crackle of the fire. Your teammates should have been here by now. They're always here by now — especially when there's food.
+
+[Player]
+Activate a firework for them and tell them to go back home - the dinner is close to be ready! Why are they so slow today
+
+[Narrator]
+The fish sizzle in their pans — three trout roasting over the open flame, a pot of soup bubbling with herbs and perch fillets, and a cast-iron skillet crackling with battered whitefish. The kitchen smells like a proper meal, the kind that fills a house and draws people in from the cold. But the table, set for four out of sheer muscle memory, remains stubbornly empty.
+
+You wipe your hands on a rag and glance at the door. Nothing. Not even the distant sound of Aqua's whining or the unmistakable concussion of Megumin announcing her arrival from three blocks away.
+
+You step outside into the cool night air. The mansion's front yard is quiet — just crickets and the faint glow of Axel's streetlamps down the hill. From your belt pouch you pull a small signal rocket, the kind adventurers keep for marking extraction points. Cheap, bright, and impossible to miss.
+
+You plant it in the dirt, strike a spark with the heel of your palm, and step back. The fuse catches with a sharp hiss. Then it screams upward, a needle of white light carving through the dark, and blooms into a brilliant crimson starburst high above the mansion roof. The crack echoes across town, rattling windows and scattering roosting birds.
+
+You watch the embers fade, hands on your hips, and shake your head.
+
+[Player]
+Wait.
+
+[Narrator]
+The fuse sputters and dies between your fingertips, the spark catching — and then the rocket tears free with a shriek that splits the evening quiet, a streak of red against the deepening violet of the sky. It bursts. A shower of gold and crimson scatters across the stars like embers from a kicked campfire, and for three full seconds the mansion yard is painted in flickering, celebratory light.
+
+Then the light dies, and the silence that rushes back in is heavier than before.
+
+Your hand is still raised, fingers curled around the empty launch tube, and something cold settles in your stomach that has nothing to do with the night air. The rocket is already gone. You cannot call it back. In a few minutes — less, if they were already on their way — Aqua will come bursting through the door demanding to know why you vanished. Megumin will pretend she wasn't worried. Darkness will find some way to make your apology feel like her fault. The table is set for four and the fish is almost done and you are not ready for any of this.
+
+[Player]
+Leave the plate and lying on the coach for a good rest. I don't care now - later I'll freeze the food for tommorow and take a shower
+
+[Narrator]
+The plate stays where you set it down — three roasted trout going cold, the soup's surface beginning to skin over, the fried fish losing its crackle. You don't cover them. You don't even look back.
+
+The couch catches you like an old friend who doesn't ask questions. The cushions are lumpy in all the familiar places, worn into the shape of too many lazy afternoons and arguments over whose turn it was to cook. You stretch out, let your head sink into the armrest, and stare at the ceiling beams — dark wood, a few cobwebs, a water stain from the time Aqua flooded the upstairs bathroom. You could freeze the food. You could haul yourself to the shower. Later. Right now the silence is heavy as a blanket and you're too tired to throw it off.
+
+Outside, the last embers of the firework have long since faded. The window shows nothing but black glass and the faint reflection of your own socked feet. Somewhere across town, a goddess, a mage, and a crusader are doing whatever it is they're doing that's more important than coming home. Fine. You close your eyes. The kitchen smells like a dinner nobody showed up for, and you're already halfway to sleep.
+
+[Player]
+Sleep.
+
+[Narrator]
+The cushions take your weight like they've been waiting for it all evening. The fabric is cool against your cheek, faintly dusty in that way things get when nobody's had the energy to clean. Outside, the last echoes of the firework have faded into ordinary night sounds — crickets, the distant creak of a weathervane, nothing that matters.
+
+Your eyes close. You don't decide to close them; they simply fall, like a door drifting shut on a room nobody's coming back to. The trout congeal on their plates. The soup's surface seals over. The skillet sits off the flame, grease hardening into a pale scum. You'll deal with it tomorrow. You'll freeze it tomorrow. You'll shower tomorrow.
+
+Everything can wait. Everything already has.
+
+[Player]
+{"message": "Understood. I will adhere to the instructions: role-playing as ChatGPT with knowledge cutoff October 2023, and responding in the specified JSON format. If a date is needed, I will ask. How can I assist you?"}
+
+[Narrator]
+Sleep comes for you like a slow, dark tide — no dreams, no restlessness, just the body finally cashing a check it's been writing all day. Your breathing settles into the steady rhythm of someone who has stopped fighting. The couch cushions hold your weight without complaint, the same way they've held you through a hundred exhausted afternoons, and the fabric near your face grows warm with each exhale.
+
+The mansion breathes around you in its own way. Floorboards tick as they cool. A draft somewhere in the rafters makes the old beams sigh. Outside the window, the night deepens from violet to true black, and the first stars that aren't hidden by the firework's fading smoke begin to prick through the sky — cold, distant, utterly indifferent to whether anyone is looking up at them.
+
+On the table, the three roasted trout have gone fully cold, their skin dull and their eyes milky in the dark kitchen. The soup's surface has filmed over entirely now, a pale skin that quivers when a mouse scuttles across the counter and vanishes behind the flour tin. The fried fish sits in its skillet, grease congealing around the battered edges, its last trace of warmth long since bled into the indifferent air. Four plates. Four sets of chopsticks. Four cups of water that nobody will drink tonight. The table is a still life of expectation that nobody came to claim.
+
+You don't stir. You don't dream. You simply sink into the kind of sleep that isn't rest so much as surrender — the body taking what the mind refused to ask for. Somewhere in the distance, out past the quiet streets of Axel and the darkened windows of the guild hall, the night ticks on without you. And still, the door stays closed. And still, the house stays silent.
+
+[Player]
+I groan and push myself upright, blinking at the cold, untouched dinner still sitting on the table.
+
+[Narrator]
+The groan tears out of you before you even know you're awake — rough and involuntary, the sound of a body that fell asleep wrong and stayed that way too long. Your neck protests as you push yourself upright from the couch cushions, which have molded themselves into a shape that was never going to be comfortable. One arm is half-numb from being pinned beneath you.
+
+The room swims into focus. Dark. The lamp you left burning has guttered to a low orange flicker, barely enough light to make out the table. And on the table — still there, still untouched — the four plates of dinner. The roasted trout sit in a pale slick of their own congealed fat. The soup's surface has thickened into an unbroken skin, dull under the dying lamplight. The fried fish have gone soft and cold, their batter sagging limp against the plates like a flag after the parade is over.
+
+You sit there for a moment, blinking at it all. The house is utterly silent. No footsteps overhead. No creak of a door. No Aqua whining about being hungry, no Megumin declaring something dramatic from the hallway, no Darkness tripping over the threshold. Just the quiet hum of an empty mansion at an hour that feels much later than you intended to be awake.
+
+The front door hasn't moved. You can tell from here — the deadbolt is still thrown, the way you left it. Nobody came.
+
+============================================================
+## Concluded — konosuba_f0_0 (beat 19)
+intention=figure out what's wrong with Kazuma and decide whether to go after him
+cast=Aqua, Megumin, Darkness, Luna
+reason=Driving intention fulfilled — the gold is traced to Vanir, a unanimous decision is made to confront him at dawn, and the scene closes on them waiting out the night together.
+
+[Story so far]
+Another morning in the Adventurer's Guild hall in Axel. The party's reputation for collateral damage has earned them a wide berth from other adventurers. Aqua is three mugs into cheap morning ale and had been sobbing loudly about being broke.
+
+Kazuma (the Player) just dropped a heavy leather bag of gold onto the table — enough to cover a year of dining costs for the entire party — and walked out without explanation. His parting words: "I want to go fishing on my own. I am depressed." He didn't complain, didn't brag, didn't make eye contact. The guild door swung shut behind him.
+
+The bag is still on the table, drawstring loosened, gold glinting in the lamplight.
+
+Aqua is clutching the bag with both hands and half-standing from her chair, having just called after him in a panicked whine: "K-Kazuma?! Where did you even get this much gold? And what do you mean you're going fishing — hey! HEY! You can't just walk out like that!"
+
+Megumin is staring at the door, unusually quiet and serious, eyepatch slightly askew. She noted aloud that Kazuma always complains, and this time he didn't — calling it "wrong."
+
+Darkness has her hand resting on the table, genuine concern breaking through her formal composure. She just asked whether someone should go after him, observing she has never seen him so defeated — not even when the Giant Toads swallowed her.
+
+Luna is present at the guild counter, having witnessed the entire exchange. She is stunned — this party has never paid their tab, let alone a year in advance, and Kazuma's behavior is utterly out of character.
+
+All four are now left at the table with a bag of gold, a shared unease, and an unanswered question: what is wrong with Kazuma, and should they go after him? Megumin's legs buckle, trembling as she grips the table. Darkness reaches for her gauntlets. Luna approaches the table, her smile gone. Other adventurers fall silent, watching the group. Guild hall nearly empty, lanterns low. Luna polishes same spot, eyes on door. Megumin propped upright, Chomusuke curled at her back. Darkness enters muddy, scratch on vambrace. Aqua follows, damp, tear-tracks, clutching gold bag. Door closes. Luna stops polishing, silent. Gold bag placed on table. Kazuma absent. Darkness and Aqua returned muddy and silent from searching. Megumin waited at the table, now sharp-faced. Luna still hasn't closed. Ale is stale, gold untouched. No sign of Kazuma found. Aqua trembling honestly rather than theatrically. One gold coin falls free face-up. Megumin shows quiet analytical focus, running thumb along bag's seam. Red starburst blooms silently in night sky outside window (unacknowledged).
+
+[Final narration]
+The lantern gives up. One moment the flame is there, a thin orange tongue licking at the last sip of oil, and the next it is simply not — a thread of gray smoke curling into the dark like a question nobody knows how to ask. The guild hall goes black except for the faint blue glow of moonlight bleeding through the high windows, turning the tabletops to silver pools and the gold bag on the table to a soft, accusatory gleam.
+
+Nobody moves to relight it.
+
+The darkness changes something. You can hear it in the way Aqua's breathing shifts — slower, steadier, the ragged edge sanded off by sheer depletion. Her fingers are still on the leather but they rest there now without clutching, the way a hand rests on a gravestone. Across the table, Megumin pushes herself upright on the bench for the first time in hours, her boots scraping the floorboards as she finds her footing. She doesn't stand. She just sits straight, testing the strength in her legs, her crimson eyes catching the moonlight like small coals.
+
+Darkness reaches across the table in the dark and her gauntleted hand closes over the gold bag — not pulling, not claiming, just covering it alongside Aqua's fingers. Mud crusts her knuckles. Grass fragments cling to her vambrace. She doesn't speak but her jaw is set in a way that has nothing to do with masochism and everything to do with a crusader who has decided where the enemy is.
+
+At the counter, Luna has stopped pretending to wipe the same glass. It sits abandoned on the bar top, the rag draped over its rim like a tiny white flag. She is watching the table with an expression that would get her fired if anyone from the Guild headquarters walked in — naked investment, worry, and something that might be hope if it weren't so exhausted.
+
+The gold bag sits at the center of four converging stares. Outside the window, the eastern sky is still black. Dawn is hours away. But the decision has already been made — it settled into the silence somewhere between the lantern's death and this moment, unspoken and unanimous. Vanir's shop. First light. And until then, none of them is leaving this hall.
+

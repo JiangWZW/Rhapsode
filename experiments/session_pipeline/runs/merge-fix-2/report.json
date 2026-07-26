@@ -1,0 +1,30 @@
+{
+  "critique": "",
+  "end_reason": "TurnError",
+  "narrative": {
+    "cast_gaps": 1,
+    "empty_beats": 0,
+    "findings": [
+      "Cast gap: \"Wiz\" never mentioned in assistant text",
+      "Narration length collapse: 0.524454"
+    ],
+    "length_collapse": 0.5244544770504138,
+    "repetition_score": 0.10425021863932414
+  },
+  "reliability": {
+    "errors": 2,
+    "log_markers": [],
+    "server_exit_code": 0,
+    "timeouts": 0,
+    "turn_ms": [
+      153542.6339,
+      120832.9127,
+      91239.5844,
+      331158.3672,
+      161084.5565,
+      27.5314
+    ],
+    "turns_completed": 6,
+    "turns_requested": 6
+  }
+}

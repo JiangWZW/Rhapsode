@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <atomic>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "rhapsode/character_memory.h"
 #include "rhapsode/director.h"
+#include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/read_tools.h"
@@ -395,8 +397,8 @@ SceneSummary Story::summarize_scene(const SceneData& scene) const {
 
     for (auto it = scene.history.rbegin(); it != scene.history.rend(); ++it) {
         if (it->role != Role::Assistant) continue;
-        summary.last_narration = it->content.size() > 240
-            ? it->content.substr(0, 240) + "..." : it->content;
+        // Byte-substr mid codepoint breaks nlohmann dump() (UTF-8 type_error.316).
+        summary.last_narration = truncate_utf8_ellipsis(it->content, 240);
         break;
     }
     return summary;
@@ -447,6 +449,108 @@ std::vector<SceneMessage> Story::display_timeline(
     if (cap && merged.size() > *cap)
         return {merged.end() - static_cast<ptrdiff_t>(*cap), merged.end()};
     return merged;
+}
+
+namespace {
+
+std::string message_speaker_label(const SceneMessage& message) {
+    std::string kind;
+    if (message.metadata.is_object() &&
+        message.metadata.contains("scene_kind") &&
+        message.metadata["scene_kind"].is_string())
+        kind = message.metadata["scene_kind"].get<std::string>();
+
+    // Autonomous off-stage inputs are director cues, not player speech.
+    if (kind == "director_cue") return "Off-stage cue";
+    if (message.role == Role::User) return "Player";
+    if (message.role == Role::System) return "System";
+
+    std::string speaker;
+    if (message.metadata.is_object() &&
+        message.metadata.contains("speaker") &&
+        message.metadata["speaker"].is_string())
+        speaker = message.metadata["speaker"].get<std::string>();
+    if (!speaker.empty()) return speaker;
+    if (kind == "character") return "Character";
+    return "Narrator";
+}
+
+void append_timeline(std::ostringstream& out, const Story& story,
+                     const std::string& scene_id) {
+    for (const auto& message : story.display_timeline(scene_id)) {
+        if (message.role == Role::System) continue;
+        // Omit the internal autonomous prompt; section headers already carry
+        // intention, and the following Narrator beat is the readable content.
+        if (message.metadata.is_object() &&
+            message.metadata.value("scene_kind", std::string{}) == "director_cue")
+            continue;
+        const std::string content = str::trim(message.content);
+        if (content.empty()) continue;
+        out << "[" << message_speaker_label(message) << "]\n"
+            << content << "\n\n";
+    }
+}
+
+}  // namespace
+
+std::string Story::render_transcript() const {
+    std::ostringstream out;
+    out << "# Story transcript\n\n";
+    out << "Active scene: " << active_scene_id_ << "\n";
+    out << "Live storylines: " << scenes_.size()
+        << "  Concluded: " << scene_closures_.size() << "\n\n";
+
+    const std::string active = active_scene_id_;
+    if (const SceneData* scene = active_scene()) {
+        out << "============================================================\n";
+        out << "## Main — " << scene->scene_id;
+        if (!scene->title.empty()) out << " (" << scene->title << ")";
+        out << "\n";
+        out << "turn=" << scene->turn_index;
+        if (!scene->driving_intention.empty())
+            out << "  intention=" << scene->driving_intention;
+        out << "\n\n";
+        append_timeline(out, *this, scene->scene_id);
+    }
+
+    for (const auto& scene : scenes_) {
+        if (!scene || scene->scene_id == active) continue;
+        out << "============================================================\n";
+        out << "## Off-stage — " << scene->scene_id;
+        if (!scene->title.empty()) out << " (" << scene->title << ")";
+        out << "\n";
+        out << "turn=" << scene->turn_index;
+        if (!scene->driving_intention.empty())
+            out << "  intention=" << scene->driving_intention;
+        out << "\n\n";
+        append_timeline(out, *this, scene->scene_id);
+    }
+
+    for (const auto& closure : scene_closures_) {
+        out << "============================================================\n";
+        out << "## Concluded — " << closure.scene_id
+            << " (beat " << closure.concluded_at << ")\n";
+        if (!closure.driving_intention.empty())
+            out << "intention=" << closure.driving_intention << "\n";
+        if (!closure.cast.empty()) {
+            out << "cast=";
+            for (size_t i = 0; i < closure.cast.size(); ++i) {
+                if (i) out << ", ";
+                out << closure.cast[i];
+            }
+            out << "\n";
+        }
+        if (!closure.reason.empty())
+            out << "reason=" << closure.reason << "\n";
+        out << "\n";
+        if (!closure.story_so_far.empty()) {
+            out << "[Story so far]\n" << closure.story_so_far << "\n\n";
+        }
+        if (!closure.final_narration.empty()) {
+            out << "[Final narration]\n" << closure.final_narration << "\n\n";
+        }
+    }
+    return out.str();
 }
 
 int Story::revert_scene_turns(SceneData& scene, int count) {

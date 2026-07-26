@@ -1,0 +1,15 @@
+# Session eval pipeline defaults. CLI flags override these values.
+
+[player]
+protocol = "protocol.md"
+guide = "guides/merge_fork_test.md"
+empty_action = "I look around carefully."
+
+[run]
+turns = 3
+host = "127.0.0.1"
+port = "8080"
+ws_path = "/ws"
+turn_timeout_s = 1200
+open_timeout_s = 1200
+saves_dir = ""   # empty = <repo>/server/saves

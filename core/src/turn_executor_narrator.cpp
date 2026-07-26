@@ -186,17 +186,64 @@ std::string build_revision_turn_state(
     return revision;
 }
 
-std::vector<Rejection> collect_plan_rejections(
-    const DirectorOutput& director_output,
+std::vector<Rejection> validate_beat_plan(
     const nlohmann::json& plan,
     const std::vector<Character>& characters) {
-    std::vector<Rejection> rejections = director_output.rejections;
-    auto cast_rejections = validate_active_cast(plan, characters);
-    auto speech_rejections = validate_speech_turns(plan, characters);
-    rejections.insert(rejections.end(), cast_rejections.begin(), cast_rejections.end());
-    rejections.insert(
-        rejections.end(), speech_rejections.begin(), speech_rejections.end());
+    auto rejections = validate_active_cast(plan, characters);
+    auto speech = validate_speech_turns(plan, characters);
+    rejections.insert(rejections.end(), speech.begin(), speech.end());
     return rejections;
+}
+
+void log_narrator_phase(std::string_view phase, const std::string& raw) {
+    log() << "  [narrator] phase=" << phase << " response=" << raw.size()
+          << " chars\n" << std::flush;
+    if (!verbose_logging_enabled()) return;
+    log() << "--- NARRATOR " << phase << " RESPONSE ---\n" << raw
+          << "\n--- END NARRATOR " << phase << " RESPONSE ---\n" << std::flush;
+}
+
+void log_rejections(std::string_view label, int attempt,
+                    const std::vector<Rejection>& rejections) {
+    log() << "  [retry] " << label << " attempt " << attempt << "/"
+          << kMaxNarratorAttempts << ": " << rejections.size() << " issue(s)\n";
+    for (const auto& r : rejections)
+        log() << "    - " << r.fact << " -- " << r.reason << "\n";
+    log() << std::flush;
+}
+
+std::string build_graph_turn_state(const std::string& turn_state,
+                                   const std::string& prose,
+                                   const nlohmann::json& beat_plan) {
+    std::string state = turn_state;
+    state += "\n\n### This beat's narration\n";
+    state += prose;
+    const auto it = beat_plan.find("speech_turns");
+    if (it != beat_plan.end() && it->is_array() && !it->empty()) {
+        state += "\n\n### Speech turns\n";
+        state += it->dump();
+    }
+    return state;
+}
+
+nlohmann::json json_array_or_empty(const nlohmann::json& plan,
+                                   const char* key) {
+    if (plan.is_object()) {
+        const auto it = plan.find(key);
+        if (it != plan.end() && it->is_array()) return *it;
+    }
+    return nlohmann::json::array();
+}
+
+void merge_graph_into_beat_plan(nlohmann::json& beat_plan,
+                                const nlohmann::json& graph_plan) {
+    if (!beat_plan.is_object()) beat_plan = nlohmann::json::object();
+    if (!graph_plan.is_object() || graph_plan.empty()) {
+        log() << "  [narrator] phase=graph parse empty -- using []\n"
+              << std::flush;
+    }
+    beat_plan["transitions"] = json_array_or_empty(graph_plan, "transitions");
+    beat_plan["new_nodes"] = json_array_or_empty(graph_plan, "new_nodes");
 }
 
 }  // namespace
@@ -264,57 +311,44 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     DirectorOutput& director_output, const ReadToolCallback& read_tool) {
     log() << "[2/4] Calling narrative LLM...\n" << std::flush;
 
-    auto raw_response = call_narrator(
-        scene, prompt.instructions, prompt.turn_state, read_tool);
-    log() << "  [narrator] response=" << raw_response.size() << " chars\n" << std::flush;
-    if (verbose_logging_enabled()) {
-        log() << "--- NARRATOR RESPONSE ---\n" << raw_response
-              << "\n--- END NARRATOR RESPONSE ---\n" << std::flush;
+    NarratorTurnResult result;
+    std::vector<Rejection> rejections;
+
+    // Phase A — prose / speech / cast (retry on validation only).
+    for (int attempt = 0; attempt < kMaxNarratorAttempts; ++attempt) {
+        const std::string turn_state = attempt == 0
+            ? prompt.turn_state
+            : build_revision_turn_state(prompt.turn_state, rejections);
+
+        auto raw = call_narrator(
+            scene, prompt.instructions, turn_state, read_tool);
+        log_narrator_phase("beat", raw);
+        std::tie(result.prose, result.plan) =
+            split_merged_response(std::move(raw));
+
+        rejections = validate_beat_plan(result.plan, world_.characters());
+        if (rejections.empty()) break;
+        log_rejections("beat", attempt + 1, rejections);
     }
 
-    NarratorTurnResult result;
-    std::tie(result.prose, result.plan) = split_merged_response(std::move(raw_response));
+    // Phase B — transitions / new_nodes from the committed beat (single call).
+    auto raw_graph = call_narrator(
+        scene, build_narrator_graph_instructions(),
+        build_graph_turn_state(prompt.turn_state, result.prose, result.plan),
+        read_tool);
+    log_narrator_phase("graph", raw_graph);
+    auto [ignored_prose, graph_plan] =
+        split_merged_response(std::move(raw_graph));
+    (void)ignored_prose;
+    merge_graph_into_beat_plan(result.plan, graph_plan);
 
     log() << "[3/4] Applying graph...\n" << std::flush;
+    director_output = director_.apply_planned_turn(turn, result.plan);
+    register_new_characters(scene, turn, result.plan);
 
-    std::vector<Rejection> all_rejections;
-    const World world_snapshot = world_;
-
-    for (int attempt = 0; attempt < kMaxNarratorAttempts; ++attempt) {
-        if (attempt > 0) {
-            world_ = world_snapshot;
-
-            const std::string rewrite_turn_state =
-                build_revision_turn_state(prompt.turn_state, all_rejections);
-
-            auto [new_prose, new_plan] =
-                split_merged_response(call_narrator(scene, prompt.instructions,
-                                                    rewrite_turn_state, read_tool));
-            result.prose = std::move(new_prose);
-            result.plan = std::move(new_plan);
-        }
-
-        director_output = director_.apply_planned_turn(turn, result.plan);
-        register_new_characters(scene, turn, result.plan);
-
-        all_rejections = collect_plan_rejections(
-            director_output, result.plan, world_.characters());
-
-        if (all_rejections.empty()) {
-            break;
-        }
-
-        log() << "  [retry] attempt " << (attempt + 1) << "/" << kMaxNarratorAttempts
-              << ": " << all_rejections.size() << " issue(s)\n";
-        for (const auto& r : all_rejections) {
-            log() << "    - " << r.fact << " -- " << r.reason << "\n";
-        }
-        log() << std::flush;
-    }
-
-    auto it = result.plan.find("speech_turns");
-    if (it != result.plan.end() && it->is_array()) {
-        for (const auto& el : *it) {
+    const auto speech = result.plan.find("speech_turns");
+    if (speech != result.plan.end() && speech->is_array()) {
+        for (const auto& el : *speech) {
             if (!el.is_object()) continue;
             auto name = el.value("character", "");
             if (!name.empty()) result.cues.push_back({std::move(name), el});

@@ -1,0 +1,140 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 2  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=5
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I glance at Darkness still trembling at the quest board, then at Aqua draining my wallet one mug at a time, and finally at Megumin's napkin covered in explosion radius calculations.
+
+None of them have noticed Luna's beckoning smile.
+
+I sigh and push myself up from the table. "Nobody accept anything or order anything until I get back," I mutter, jabbing a finger at each of them in turn, and head toward the front desk to find out what fresh hell Luna has for us this time.
+
+[Narrator]
+You weave between the crowded tables of the guild hall, dodging a half-orc's elbow and stepping over someone's discarded greaves. Behind you, the silence at your table lasts exactly three seconds.
+
+Aqua's arm shoots up. "Another round!" she calls toward the serving girl, then freezes when she catches your glare over your shoulder. Her hand wavers in the air like a flag of surrender — but she doesn't lower it.
+
+Darkness hasn't moved from the quest board. Her gauntleted fingers trace the parchment edges with trembling reverence, her breath coming in shallow, audible hitches. A low, throaty murmur escapes her — something about grappling and underwater — before she catches herself and clears her throat with the dignity of a noble who absolutely was not just moaning at a piece of paper.
+
+Megumin, still slumped boneless in her chair from dawn's Explosion, watches you leave through half-lidded crimson eyes. Her fingers twitch toward her napkin of radius calculations — the only part of her body currently obeying commands. She manages a weak, dramatic nod of acknowledgment before her head lolls back against the chair.
+
+Luna's smile doesn't waver as you approach the reception counter. It's the smile of a woman who has seen your party's ledger and knows exactly how many zeroes are in the debt column. She folds her hands on the polished wood, the gesture somehow both welcoming and deeply apologetic.
+
+[Luna]
+Good morning. I have a quest that pays quite well. I am so, so sorry. (Her professional smile tightens at the corners — the expression of someone about to hand you a live grenade and call it an opportunity.)
+
+[Player]
+I reach the counter and plant both hands on the polished wood, leaning in.
+
+"Alright, Luna. That smile. I've seen it before. It's the same one you wore when you sent us after the flying cabbages." I narrow my eyes. "What fresh disaster are you about to apologize for?"
+
+[Narrator]
+Luna's smile doesn't waver. If anything, it tightens at the corners — the expression of a woman who has spent years perfecting the art of apologizing for things that aren't her fault but are absolutely her problem.
+
+She reaches beneath the counter and produces a quest scroll, the parchment edges singed and the wax seal already broken. Someone else rejected this one. Maybe several someones. She lays it flat on the polished wood between you, smoothing the curl with practiced fingers.
+
+"It's not *quite* flying cabbages," she says, and her professional tone has that slight upward lilt at the end that makes it sound like a question. It isn't.
+
+She taps the quest header with one manicured nail: BRUTAL ALLIGATOR — SEWER SUBJUGATION. The reward figure beneath it has entirely too many zeroes. That's never a good sign.
+
+[Luna]
+The sewers beneath the commercial district. Something's been dragging livestock down through the drainage grates. The merchants pooled funds for a bounty. Several parties have already... opted for other assignments. (taps the quest scroll, then folds her hands on the counter with the air of someone about to deliver the bad part)
+
+[Player]
+I glance down at the singed parchment, then back up at Luna.
+
+"That many zeroes and not a single other party willing to touch it." I tap the broken wax seal. "How many rejections did this thing rack up before it landed on your desk?"
+
+[Narrator]
+Luna's smile doesn't falter, but her eyes do something complicated — a flicker that might be a wince trying to escape through a crack in her professional armor. She pulls the scroll back toward herself, smoothing the singed edges with the practiced hands of someone who has done this exact gesture too many times in the past week.
+
+Behind you, a crash. You don't turn around. You already know it's Aqua's tankard hitting the floor because she tried to flag the serving girl with both arms and forgot she was holding something. The serving girl — a part-timer with the thousand-yard stare of someone who's worked exactly three shifts with your party in the building — steps over the puddle without breaking stride. She is not coming to your table. She has learned.
+
+Luna dips a quill in ink it doesn't need and taps it against the ledger anyway, buying time. "Seven," she says. The quill keeps tapping. "Officially." The word lands like a stone dropped into still water. She lets you sit with it for exactly one heartbeat before she slides the scroll back across the counter.
+
+[Player]
+"Seven rejections." I let the word hang there for a beat. "That's almost impressive."
+
+I turn in my chair and raise my voice toward the quest board. "Hey, Darkness. You want a head start? Go check out the sewer entrance by the commercial district drains. Scout the access point. Don't go in alone — just find the way down and wait for us there."
+
+[Narrator]
+Darkness jerks at the sound of her name, spinning away from the quest board so fast she nearly clotheslines a passing thief-class adventurer. Her face is flushed — not from embarrassment at being caught staring, but from whatever mental cinema has been playing behind her eyes for the past five minutes. Drool glistens at the corner of her mouth. She wipes it with the back of her gauntlet and straightens her pauldrons, attempting to reassemble something resembling Crusader dignity.
+
+Across the room, Aqua's mug freezes halfway to her lips. Megumin looks up from her napkin, her one visible eye narrowing with suspicion.
+
+"The sewers." Darkness's voice cracks on the second syllable. She clears her throat, gripping the hilt of her sword with both hands like a maiden clutching a love letter. "The dark, foul, unspeakably dangerous sewers where a lone Crusader could be ambushed at any moment by creatures that drag their prey into the water and—"
+
+She stops herself. Swallows. Her gauntlets are trembling.
+
+At the table, Aqua slowly lowers her mug. "Is she okay?"
+
+Megumin doesn't look up from her calculations. "She's never been more okay. It's disgusting."
+
+[Darkness]
+I-I shall go at once! As a Crusader, it is my sacred duty to shield this party — even from sewer filth! Even from whatever horrors lurk in those dark, narrow tunnels! Even from— from being the first one down, alone, where anything could happen to me... (Clutching her breastplate, voice rising to something between a vow and a gasp.)
+
+[Aqua]
+She's doing that thing again where she breathes funny and her eyes go all weird. (Pointing at Darkness with her mug, unimpressed.)
+
+[Megumin]
+Ignore her. The sooner she leaves, the sooner the ambient perversion in this guild hall drops to tolerable levels. (Resumes drawing concentric circles on her napkin without looking up.)
+
+[Luna]
+The commercial district drains are east of the fountain square. I'll... make a note that you're on the case. The guild thanks you for your service. (Her professional smile twitches. She is clearly wondering if she just sent that nice Crusader to her doom — and why the Crusader seemed so happy about it.)
+
+[Player]
+I push back from the counter and head for the guild hall doors.
+
+"Try not to add to the debt while I'm gone," I call over my shoulder. "That means you, Aqua."
+
+[Narrator]
+Your boots echo across the guild hall's worn floorboards, each step a small punctuation mark on the conversation you're leaving behind. A few scattered adventurers at nearby tables glance up from their morning ale, then quickly look away — nobody wants to get caught in the splash radius when this particular party starts drama.
+
+Behind you, the sound of a chair scraping hard against wood. Aqua has shot to her feet, the Feather Mantle fluttering indignantly around her shoulders. Her scepter clatters against the table's edge. The empty mug — no, three empty mugs — wobble precariously near her elbow. She'd been ordering drinks the whole time you were at the counter. Of course she had.
+
+Megumin remains slumped in her chair, chin propped on the tabletop, too drained from dawn's Explosion to lift anything heavier than her voice. Chomusuke has materialized on her head like a furry black hat, tail curling lazily. The little cat blinks at the commotion with the serene indifference of a creature who has seen this exact scene too many times to count.
+
+Luna stands frozen behind the counter, the singed quest scroll still in her hands, her professional smile now holding on by pure muscle memory. She watches you go with the expression of a woman mentally recalculating the party's tab.
+
+============================================================
+## Off-stage — konosuba_f3_0 (Axel Town — The Adventurer's Guild)
+turn=1  intention=Scout the sewer entrance by the commercial district drains and wait for the party there
+
+[Narrator]
+The afternoon sun has begun its descent over Axel's rooftops, streaking the cobblestones of the commercial district in amber and long shadow. Darkness marches through the thinning crowd with the stiff-backed gait of a soldier on campaign, her adamantite plate catching the light in dull silver flashes that make shopkeepers pause in their shuttering to stare. She keeps her eyes fixed ahead, jaw set, the heat in her cheeks only now beginning to fade — though every few steps the memory of Luna's aghast expression or Aqua's jeering laughter flickers through her and the flush returns, creeping up from beneath her gorget.
+
+The fountain square opens before her: the bronze statue of the legendary hero at its center, water spilling from his upraised sword into the basin below. A few children scatter pigeons as she passes. She barely registers them. Her gaze has already found the eastward lane that slopes downward, where the tidy shopfronts give way to older stonework and the gutter channels run deeper. The air changes as she descends — cooler, carrying the faint mineral tang of standing water and something darker beneath it, organic and stale.
+
+The drain entrance is set into a retaining wall at the bottom of the slope, where the commercial district's runoff channels converge into a single arched tunnel. An iron grate, taller than a man, bars the mouth — but one of its hinges has pulled loose from the stone, leaving a gap wide enough for a person in armor to squeeze through. Moss clings to the masonry. The trickle of wastewater disappears into the dark beyond the arch, and the echo of each drop comes back distorted, suggesting depth. From somewhere inside, a low, wet sound — not quite a growl, not quite a groan — reverberates up through the stone.
+
+Darkness stops three paces from the grate. Her gauntleted hand tightens on the rim of her shield. She has found the place. She has followed Kazuma's order to the letter. All that remains is to stand here and wait.
+
+She shifts her weight from one foot to the other. The gap in the grate is right there. The darkness beyond it seems to breathe.
+
+[Darkness]
+I am a Crusader. I was given an order. Find the entrance. Do not go in alone. Wait for the rest of the party. That is... that is what I shall do. (She plants her shield before her like a barricade, voice trembling with forced resolve.)
+

@@ -124,20 +124,38 @@ Then output the sentinel line verbatim on its own:
 <<<RHAPSODE_JSON>>>
 Then raw JSON (no fences). Use ONLY straight ASCII double quotes (") for all keys
 and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
-{"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
- "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}],
- "speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],
+{"speech_turns":[{"character":"Name","line":"the actual words spoken, verbatim, in this character's voice","action":"brief stage action, optional"}],
  "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
  "active_cast":["present NPC names"]}
 
 RULES:
 - Never narrate unperformed Player actions. May foreshadow options.
-- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns).
-- entities: the canonical subject(s) this fact is about. Use the EXACT name from the Cast for any NPC -- never a title, synonym, or description ("Warden Elara Voss", not "the warden"). For the player character (the "you" of the narration), ALWAYS use "Player". Coin a new string only for a genuinely new, unnamed thing/place/faction with no Cast entry; once you name it, reuse that exact string every time. This is how a fact reaches the right character's memory -- inconsistent names splinter one subject into several.
-- audience: which characters perceive this fact (by name). Omit/[] for a public beat everyone present perceives. Name a narrow audience only when something is private -- a fact only one character learns or witnesses. This decides who knows what; the unlisted stay ignorant. (This never means writing dialogue in the prose.)
+- PRESENCE IS HARD: the Cast header lists who is on-stage vs off-stage. Do NOT teleport, summon, or invent an off-stage character into this beat because the player calls their name. If the player addresses someone who is not on-stage, show that they are absent (empty doorway, no answer, player talking to air) and continue with whoever IS present. Speech_turns and active_cast may only include on-stage living NPCs.
 - speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
-- active_cast: the living NPCs on-screen in this beat. [] if the player is alone. This is presence for THIS beat only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.)RHAPSODE";
+- active_cast: the living NPCs on-screen in this beat. [] if the player is alone. This is presence for THIS beat only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.
+- Do NOT author transitions or new_nodes here; a follow-up pass handles the world graph.)RHAPSODE";
+}
+
+std::string build_narrator_graph_instructions() {
+    return R"RHAPSODE(GRAPH_UPDATE: You author world-graph updates for THIS beat only.
+You are given the beat's narration (and optional speech). Do not rewrite prose or dialogue.
+
+TOOLS: You may call query_graph(entity) to resolve existing node ids before transitioning them.
+Do NOT call query_mind or query_history unless required to disambiguate a node id.
+
+Output ONLY the sentinel line, then raw JSON (no fences, no prose). Use ONLY straight ASCII
+double quotes (") for all keys and strings -- never smart/curly quotes:
+<<<RHAPSODE_JSON>>>
+{"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
+ "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}]}
+
+RULES:
+- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the beat introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns). Use [] if nothing structural changed.
+- Ground every fact and transition in the provided narration/speech. Do not invent events absent from this beat.
+- entities: the canonical subject(s) this fact is about. Use the EXACT Cast name for NPCs; for the player ALWAYS use "Player".
+- audience: omit/[] for a public beat; name a narrow audience only for private knowledge.
+- transitions: resolve or retarget existing nodes that this beat supersedes; [] if none.)RHAPSODE";
 }
 
 }  // namespace rhapsode

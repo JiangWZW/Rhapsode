@@ -1,0 +1,29 @@
+{
+  "critique": "",
+  "end_reason": "MaxTurns",
+  "narrative": {
+    "cast_gaps": 0,
+    "empty_beats": 0,
+    "findings": [
+      "No narrative heuristic failures detected"
+    ],
+    "length_collapse": 0.14796747967479676,
+    "repetition_score": 0.1152807958164907
+  },
+  "reliability": {
+    "errors": 0,
+    "log_markers": [],
+    "server_exit_code": 0,
+    "timeouts": 0,
+    "turn_ms": [
+      347675.9803,
+      424534.9702,
+      431721.6658,
+      451676.5644,
+      627239.0146,
+      465031.5716
+    ],
+    "turns_completed": 6,
+    "turns_requested": 6
+  }
+}

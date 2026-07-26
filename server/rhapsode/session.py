@@ -186,6 +186,9 @@ async def run_session(ws: WebSocket) -> None:
 
     session = _setup_ws_session()
     await _send_seed_messages(ws, session.story, session.scene, session.is_resuming)
+    # Signal ready-for-input. Eval runner (and UI status) wait on this; undo
+    # already emits the same frame after reseeding.
+    await ws.send_json({"type": "status", "state": "idle"})
 
     try:
         while True:

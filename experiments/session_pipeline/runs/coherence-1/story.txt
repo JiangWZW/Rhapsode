@@ -1,0 +1,91 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 1  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=4
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I push back from the table with a sigh, ignoring Aqua's sobbing and Megumin's napkin blueprints. "Whatever quest you're reading, Darkness — your trembling is making it weird and we're not taking it." I head toward Luna, who looks like she's about to hand me either a lifeline or a headache. Probably both.
+
+[Narrator]
+You weave between the scattered chairs and sticky tabletops, leaving Aqua's blubbering and Megumin's increasingly elaborate napkin diagrams behind you. The morning light slants through the guild hall's tall windows, catching dust motes and the faint steam rising from someone's forgotten breakfast ale.
+
+Luna watches your approach the way a soldier watches a lit fuse — professionally composed, fully aware of the inevitable explosion, and quietly praying it takes someone else's desk with it. She sets down the quill she was using to annotate a ledger that, from the thickness of its spine, is mostly dedicated to your party's tab.
+
+Behind you, Darkness makes a strangled sound — something between a protest and a whimper — as her coveted Brutal Alligator posting vanishes from her grasp. She slumps forward onto the table, causing Aqua's fourth mug to wobble dangerously. The other adventurers in the hall pointedly study their own drinks.
+
+Luna folds her hands on the counter. Her smile is the exact temperature of a handshake from someone who has already calculated the damages.
+
+[Luna]
+Good morning. Before you ask — yes, there is something. Before you accept — no, nobody else will take it. And before you negotiate — the reward is non-negotiable, because your tab has exceeded the guild's annual budget for, and I quote, 'miscellaneous structural repairs.' (folds her hands with the serene finality of someone who has already lost)
+
+[Player]
+"Alright, Luna. You've got that 'congratulations, you've been volunteered' look. What's the quest, and more importantly — how badly is it going to hurt?"
+
+[Narrator]
+Luna's smile doesn't waver. It never does. But you've been coming to this counter long enough to notice the faint twitch at the corner of her left eye — the one that appears whenever your party's tab crosses her desk, which is every time your party crosses her desk.
+
+She slides a parchment across the counter with the kind of delicate, deliberate motion usually reserved for defusing bombs. The quest seal is already broken. Someone else opened it, read it, and quietly put it back.
+
+The Brutal Alligator subjugation. Sewers beneath Axel. Grapple-and-drown specialists. The same quest Darkness was panting over five minutes ago.
+
+Luna folds her hands atop the counter and keeps her voice low enough that the other adventurers — all pointedly not looking in your direction — won't overhear. Not that they need to. Every single one of them already knows exactly which quest she's holding.
+
+[Luna]
+The Brutal Alligator subjugation. I am told their jaws can crush plate armor. The sewers are dark, flooded, and no one else will go near them. Your party's tab currently exceeds the guild's annual structural repair budget, so this quest is no longer optional. (slides the parchment closer, her professional smile tightening)
+
+[Player]
+I stare at the parchment, then at Luna's serene smile, then back at the parchment.
+
+"Let me get this straight. My party can't pay its tab. The only quest available is sewer alligators that specialize in drowning people. And the reward is already spent before we even swing a sword." I glance over my shoulder at Aqua sobbing into her fourth ale, Megumin passed out on her napkin diagrams, and Darkness hyperventilating into her gauntlets.
+
+"Just out of curiosity — at what point did the guild stop seeing us as adventurers and start seeing us as a creative form of debt collection?"
+
+[Narrator]
+Luna's smile doesn't crack. It's been through worse than your incredulity — it's been through three fiscal quarters of your party's expense reports. She taps the parchment with the very tip of her index finger, rotating it so the guild seal catches the morning light.
+
+Behind you, Aqua's sobbing hitches into something wetter and more accusatory, the kind of noise that usually precedes a public meltdown. A chair scrapes. Darkness makes a strangled sound halfway between a whimper and a prayer — the sound of a woman watching her dream of being dragged underwater by a giant reptile slip through her fingers. Megumin remains face-down on her napkin blueprints, dead to the world, a faint trail of drool inking through her Explosion diagrams.
+
+Luna folds her hands atop the counter. The gesture is serene. It is also, unmistakably, the gesture of someone who has already filed the paperwork.
+
+[Luna]
+That summarizes the situation with admirable clarity. The Brutal Alligator subjugation is the only open quest suited to your party's... unique capabilities. The reward covers your tab to the last eris. I have already applied it. (folds her hands, serene and immovable)
+
+[Aqua]
+Kazumaaaa! This is YOUR fault! If you hadn't dragged me to this miserable world, I wouldn't be drinking this cheap swill while you doom us to poverty! (slams her mug down from the table, ale sloshing)
+
+[Darkness]
+The Brutal Alligator... it grapples its prey, you know. Drags you beneath the water. You can't breathe — can't fight — completely at its mercy — and you just... refused it... (voice cracking with barely contained longing and despair)
+
+[Player]
+Luna's smile doesn't waver, but her left eye twitches.
+
+"Approximately two months ago, when Aqua's purification flood collapsed the east wall of the guild kitchen. The structural repair fund was never the same." She taps the ledger. "Nor was the soup."
+
+[Narrator]
+Luna's ledger lies open between you like an indictment, columns of numbers you can't dispute and a total that could finance a small duchy. The guild hall chatters on around you — the clink of tankards, the scrape of chairs, the low murmur of adventurers who have the good sense not to make eye contact with your table. Behind you, Aqua's sobbing has subsided into wet, hiccuping resentment, the kind that precedes a dramatic public accusation. Megumin remains face-down on her napkin blueprints, one small hand still clutching a quill that's left a trail of ink across her cheek. Darkness hasn't moved from her seat, but you can feel her gaze boring into the back of your skull — equal parts disappointment that you rejected the alligator quest and lingering hope that Luna might still find a way to make this worse.
+
+Luna closes the ledger with a soft, final thump. Dust motes dance in the sunbeam between you.
+

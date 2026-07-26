@@ -1,0 +1,229 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 3  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=6
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I hold up a hand to the others. "Darkness, you're practically vibrating. Take Aqua and Megumin and go scout those sewers. Luna wants a word, and honestly, one conversation at a time is all I can handle before noon."
+
+I push back from the table and head toward the reception desk, leaving them to sort out who carries the torch.
+
+[Narrator]
+Aqua's mug freezes halfway to her lips. Her eyes go wide and wet with the first shimmer of tears. The sewers. You are sending her to the *sewers*. Before noon. Without you.
+
+Darkness, by contrast, looks like you just handed her a birthday present wrapped in mortal peril. Her gauntlets clench the table's edge, and a flush creeps up her neck at the thought of Brutal Alligators lurking in those dark, filthy tunnels — creatures famous for grappling their prey and dragging it under.
+
+Megumin opens one eye. The other remains hidden beneath her eyepatch as she slumps against the table, her legs still useless from this morning's dawn Explosion. She cannot walk to the sewers. She cannot walk to the door. She could, at best, be rolled.
+
+You push back from the table before any of them can muster a full objection, and make your way across the guild hall toward the reception desk.
+
+Behind you, a chair scrapes. Darkness is already standing, breathless with barely contained enthusiasm. Aqua is wailing something about divine dignity and filth. Megumin, with the weary patience of the party's sole voice of reason, appears to be negotiating the logistics of being carried.
+
+Luna watches your approach from behind the desk. Her professional smile is fixed in place, but her eyes track you the way a clerk tracks a lit fuse rolling toward a powder keg. She already knows how this conversation ends — she has known since she saw your party's tab this morning — and she is already sorry.
+
+[Aqua]
+The SEWERS?! I am a goddess! A GODDESS, Kazuma! You cannot simply dispatch me into raw sewage like some sort of — of plumbing implement! (slams her mug down, sloshing ale across the table)
+
+[Darkness]
+The sewers. Where Brutal Alligators lurk in the dark, waiting to ambush unwary adventurers... to coil around them and drag them beneath the murky water, helpless and— I mean, yes. A Crusader must scout ahead. It is my duty. (already on her feet, gauntlets trembling slightly)
+
+[Megumin]
+An excellent plan. Truly. Send the archwizard who cannot feel her own legs into a labyrinth of filth. I shall contribute by being carried like a sack of potatoes and offering tactical criticism from approximately knee height. (still slumped dramatically against the table, one hand raised as if delivering a grand proclamation)
+
+[Luna]
+Good morning. Your party's debt now exceeds the annual budget of several small villages. I have a quest. I am... sorry. (folds her hands on the counter, smile tightening at the corners)
+
+[Player]
+I reach the desk and plant both palms on the worn wood. "Alright, Luna. You've got that look — the one that says 'I'm about to ruin someone's day and I've already decided it's yours.' Let's hear it."
+
+[Narrator]
+Luna's professional smile doesn't waver, but something behind her eyes tightens — the expression of a woman who has learned, through long and bitter experience, exactly how much paperwork one adventuring party can generate. She glances past you at the now-empty table where Aqua left a small lake of spilled ale, then back to you with the resigned weariness of someone who has already started filling out the incident report in her head.
+
+She reaches below the counter and produces a ledger thick enough to stop a sword. The cover is worn soft from handling. She opens it to a page marked with a crimson ribbon, turns it to face you, and taps a single figure at the bottom with a manicured nail. The number is long enough that it takes you a moment to count the digits.
+
+[Player]
+I lean over the ledger, find the number at the bottom, and stare at it for a long, hollow moment. "That's... that's not a debt. That's a national deficit with my name on it."
+
+[Narrator]
+Luna doesn't flinch. She's done the math already — probably did it three times, late last night, hoping the numbers would somehow come out different. They never do.
+
+She turns the ledger back toward herself with the practiced efficiency of someone who has learned not to dwell on the horror. One finger traces down the column of fines, stopping at a line item that just says *"Explosion (unpermitted, downtown) — See Attached (pages 4–17)."* Her professional smile holds steady, but there's a flicker behind it — something almost sympathetic, buried under layers of bureaucratic exhaustion.
+
+Then she reaches beneath the counter and produces a single quest parchment. The paper is yellowed. The ink is faded. This thing has been sitting on the board for a very, very long time.
+
+[Luna]
+I am so very sorry. That is not a joke. However, I do have a quest that would... substantially reduce this balance. No one else will take it. No one else ever has. (slides the yellowed parchment across the counter toward you)
+
+[Player]
+I drag my eyes away from the debt figure and pick up the yellowed parchment. "Alright. What's the catch? If no one's taken this in... how many years exactly?"
+
+[Narrator]
+Luna's eyes flick to the parchment in your hands, then away — toward the window, toward the morning light, toward anywhere that isn't the yellowed relic you're now holding. For the first time all morning, her professional smile falters. Not into guilt, exactly. Something closer to embarrassment.
+
+She busies her hands with the ledger, closing it, stacking it, aligning its corners with the edge of the desk. When she finally looks back at you, there's something almost human behind the receptionist mask. The expression of a woman who has handed this same parchment to seventeen different adventurers across seventeen different years, and watched every single one of them slide it back across the counter with the same look of dawning horror.
+
+The paper crackles as your thumb brushes the date stamp in the corner. The ink is so faded it's nearly ghosted into the fibers. You have to squint to even make out the year.
+
+She doesn't sugarcoat it. Luna has never sugarcoated anything in her life — sugarcoating requires optimism, and optimism requires not knowing exactly how poorly things can go. She folds her hands on the desk, her posture straight and proper, and delivers the facts the way a surgeon delivers a prognosis.
+
+[Luna]
+Forty-seven years. The catch is... well, the catch is why it's been forty-seven years. It's a purification request for an old shrine in the mountains east of town. The last party that tried came back two weeks later with half their members and wouldn't speak of what they saw. The five parties before that didn't come back at all. (Her voice stays level, but her knuckles are white where her hands clasp together.)
+
+[Luna]
+The pay would clear your debt entirely. That's why I'm showing it to you. I'm not... I wouldn't normally. But you're the only party in Axel reckless enough to maybe survive it, and I thought you deserved to at least know the option exists. (She meets your eyes and holds them. The sympathy is real, even if it's buried under three layers of bureaucratic exhaustion.)
+
+[Player]
+I stare at the faded date stamp a moment longer, then let out a slow breath. "Forty-seven years. Seventeen attempts. And you're offering this to the guy whose party includes a goddess who cries over spilled ale, a pervert crusader, and a wizard who collapses after one spell."
+
+I don't put the parchment down.
+
+"What exactly is *at* that shrine?"
+
+[Narrator]
+Luna doesn't answer right away. Instead she reaches across the counter and gently — almost reverently — takes the parchment back from your hands. She doesn't look at it. She's probably memorized every word by now.
+
+She sets it down between you, smoothing its curled edges with the heel of her palm. The gesture is careful, precise, the same way she aligns the corners of her ledger. But her hand lingers on the parchment a moment too long.
+
+When she finally meets your eyes, the professional smile is gone. What's left is something rawer — the expression of a woman who has been carrying a secret she never wanted to keep, and is too tired to keep pretending it doesn't weigh on her.
+
+She draws a slow breath through her nose, and you realize she's not stalling anymore. She's steeling herself.
+
+[Player]
+I don't look away. I don't put the parchment down either.
+
+[Narrator]
+Luna meets your eyes — really meets them, not the professional once-over she gives every adventurer who darkens her counter. There are faint lines at the corners of her eyes that you've never noticed before. Lines that didn't come from squinting at ledgers.
+
+Her palm flattens against the parchment. The hand is trembling, just barely. She's not trying to hide it anymore.
+
+She draws a breath that catches somewhere in her throat, and for a moment she looks less like a guild receptionist and more like someone standing at the edge of something she's been walking away from for nearly half her life.
+
+[Luna]
+I was seventeen. My party — four of us, all C-rank, all convinced we were invincible — took this quest because no one else would. We thought that was the same thing as being ready. (Her voice is quieter than you've ever heard it, stripped of every scrap of professional polish.)
+
+[Luna]
+Only two of us came back down that mountain. And I've spent every year since — forty-seven of them — sitting behind this counter, watching other adventurers, wondering if I should have died up there too. (She doesn't look away. Her jaw is set, but her eyes are wet.)
+
+============================================================
+## Off-stage — konosuba_f0_0 (Axel Town — The Adventurer's Guild)
+turn=5  intention=Scout the sewers beneath Axel for Brutal Alligators and other lurking dangers
+
+[Narrator]
+The guild hall's heavy oak doors slam shut behind them, and the noise of midday adventurers — clinking mugs, bawdy laughter, the creak of the quest board — fades to a muffled hush. Outside, Axel bakes under a cloudless sky. The cobblestones shimmer with heat. A vegetable cart rattles past, the donkey giving the party a wide, wary berth. Every merchant and housewife they pass shrinks toward the opposite side of the street. None of them make eye contact.
+
+Darkness carries Megumin piggyback, the archwizard's crimson cloak draped over both of them like a shared banner of defeat. Megumin's arms loop limply around Darkness's neck, her chin resting on the crusader's pauldron. Her legs dangle uselessly, swaying with each armored footfall. Chomusuke pads alongside, tail twitching.
+
+Aqua walks ahead — or tries to. Her sandals slap the cobblestones with the wounded dignity of a deposed empress. Her scepter drags behind her, scraping a jagged line in the dust. She is still holding her fourth mug of ale, somehow, and takes a defiant swig mid-stride.
+
+The street slopes downward as they leave the market square. Here the buildings grow older, their foundations sinking into damp earth. A moss-furred drainage culvert gapes in the shadow of a disused well-house — iron bars rusted orange, bolted into stonework that predates the guild's own charter. The air around it is cool and rank, thick with the mineral breath of underground water. Something below gurgles.
+
+Darkness stops. Her breathing has gone shallow. She stares at the culvert's dark mouth with the reverence of a pilgrim at a shrine.
+
+[Narrator]
+The old quarter's well-house slumps against its own timbers like a drunk at closing time. Moss eats the mortar between the stones. The drainage culvert gapes beneath it — a mouth of rusted iron bars set into the foundation, exhaling breath that is wet and dark and wrong. The gurgle comes again, something thick moving through water just beyond the light. Aqua stops dead ten paces out.
+
+Darkness carries Megumin on her back, the archwizard's arms looped around her neck, Chomusuke perched atop Megumin's hat like a soot-colored gargoyle. Megumin's legs dangle uselessly, her boots skimming the cobblestones with each step. The Crusader's breathing has gone shallow — not from the weight, which her adamantite-hardened body barely registers, but from the sound. The gurgle. She stares at the bars the way a starving woman stares at a locked pantry.
+
+She sets Megumin down against the well-house's sagging wall, then approaches the culvert. Her gauntlets close around two bars. Rust flakes under her grip. She braces a boot against the stone and pulls. The iron groans, ancient mortar crumbling, and with a shriek of tortured metal the entire grate tears free from its housing and clatters into the street. The darkness beyond is absolute and wet and breathing, and Darkness's shoulders tremble — not with fear.
+
+[Narrator]
+The darkness inside the culvert is absolute — not the soft darkness of a moonless night but the thick, wet black of a throat that has swallowed nothing but runoff and rot for centuries. The stench hits in layers: first the sour bite of stagnant water, then something gamier beneath, reptile-musk and old carrion. A stone stair descends from the broken lip of the culvert into murky water that laps at the third step down. Phosphorescent mold streaks the arched brick in faint green whorls, just enough to see by.
+
+Darkness hoists Megumin higher against her shoulder plate — the archwizard's legs dangle uselessly, her staff clacking against the Crusader's greaves with every step. Megumin has insisted on keeping her eyepatch in place despite the gloom, which means she can see precisely nothing out of her left eye and keeps turning her whole head like an owl.
+
+Aqua remains ten paces back, clutching her scepter to her chest. Her lower lip trembles. The Feather Mantle ruffles in a breeze that isn't there — a nervous divine tic.
+
+The gurgle comes again, closer now, and this time it resolves into something with shape: a low, thrumming growl that vibrates up through the soles of their boots, and then the water at the base of the stairs ripples. Two yellow eyes open in the dark, slit-pupiled, set wide on a head the size of a market barrel. The Brutal Alligator hauls itself onto the third submerged step with a clawed foreleg thick as a man's thigh, water sluicing off its armored hide. It does not charge. It watches. It has been watching since they opened the grate.
+
+Darkness makes a sound that is somewhere between a Crusader's battle cry and a woman stifling a moan with her gauntlet. She takes a step toward the stairs. Megumin, still draped over her shoulder, bangs her staff against the back of Darkness's helmet.
+
+[Megumin]
+Darkness! You are carrying a master of Explosion magic like a sack of turnips! At least set me down somewhere with a view before you hurl yourself into that thing's jaws! (bangs her staff against Darkness's helmet from her position slung over the Crusader's shoulder)
+
+[Darkness]
+It's — it's already at the stairs. Waiting. For us. For me. Do you see the size of those forelegs? The way the water runs off its scales? It could drag me under in a single motion and I would be utterly helpless — (voice dropping to a breathless murmur, grip tightening on her sword without drawing it)
+
+[Aqua]
+KAZUMAAAA! There's a MONSTER! A huge one! I'm not going in there! I'm a goddess, not sewer bait! This is YOUR fault for making us do this alone! (shouting back toward the empty street above, even though Kazuma is blocks away at the guild hall)
+
+[Narrator]
+The water deepens with every step. Darkness's greaves scrape against something soft at the bottom — decades of silt, maybe, or something that was once alive and now simply isn't. She doesn't slow. The tunnel curves ahead, a bend in the stone throat, and beyond it the gurgling resolves into something rhythmic. A breathing. A waiting.
+
+Megumin's arms tighten around Darkness's shoulders. The archwizard's chin digs into the Crusader's pauldron. She cannot see what lies ahead, but she can feel the water pulse — a displacement, something large shifting its weight in the dark.
+
+Two yellow eyes open at the bend. They hang there, unblinking, each the size of a fist, reflecting nothing but the faintest glimmer from the culvert mouth behind them. The water between the creature and the two adventurers goes very still. Then the eyes begin to drift forward, slow and certain, and the ridge of a snout breaks the surface — gray-green hide studded with old scars, algae growing in the cracks between scales, teeth that interlock like a dozen ivory daggers.
+
+Darkness stops breathing. Not from fear. Her gauntlets tremble against her shield. The alligator is massive — easily twelve feet from snout to tail-tip, filling the tunnel like a cork in a bottle — and it is looking directly at her.
+
+It lunges.
+
+The water explodes. Darkness has just enough time to plant her feet before the jaws close around her midsection, adamantite shrieking against enamel, and then she is being pulled — dragged forward through the muck, her heels carving twin furrows in the silt, the pressure around her ribs exquisite and unbearable and exactly what she came for. Megumin shrieks something lost in the spray. The alligator rolls, a death-spiral, and Darkness goes under, shield clanging against the stone wall, bubbles churning the surface into foam.
+
+[Darkness]
+H-haah... the jaws... they're crushing me... d-don't help! Don't you dare help! This is— this is my duty as a Crusader! (Her voice rises from underwater, breathless and trembling with unmistakable ecstasy as the alligator thrashes.)
+
+[Megumin]
+Darkness, you absolute degenerate! This is not the time for your— Kazuma! Aqua! Someone! The alligator is real and it is very large and Darkness is enjoying it far too much! (Clinging desperately to a crumbling stone ledge at the tunnel's edge, legs still useless beneath her.)
+
+[Narrator]
+The splashing recedes. Not quickly — the alligator is too large, Darkness too armored, the tunnel too narrow for a clean escape — but steadily, inevitably, each churn of that muscular tail dragging the death-roll farther around the bend. Megumin hears it all from her ledge: the wet grinding of teeth on adamantite, the suck of silt releasing boots, and beneath both, a sound she would rather not identify as Darkness's breath hitching in unmistakable rapture.
+
+The water settles. The tunnel goes quiet except for the drip of condensation and the distant, rhythmic gurgle of something large breathing through its throat.
+
+Megumin's fingers cramp against the stone. Her legs remain dead weight beneath her, cold water lapping at her thighs. The darkness presses in — the same absolute black that swallowed Darkness whole — and she cannot see the bend in the tunnel, cannot see the stairs back to the surface, cannot see anything at all.
+
+Above, at the mouth of the culvert, Aqua has been pacing. The sound of splashing and Megumin's sharp cry a moment ago has turned her pacing into frozen stillness. She stands at the top of the stone stairs, the noon sunlight at her back a perfect rectangle of warmth and safety, staring into the throat that just swallowed her party's Crusader.
+
+[Megumin]
+Aqua! The alligator — it has Darkness! It's dragging her deeper into the tunnel! I can't move, my legs won't — Aqua, get down here! (shouting up the tunnel toward the distant rectangle of daylight, voice cracking on the last word)
+
+[Aqua]
+I-I am a goddess! I do not wade through sewage! This is Kazuma's fault for sending us here — Kazumaaaa! ...Kazuma isn't here. Oh no. Oh no, oh no, oh no... (trembling at the top of the stairs, fists clenched, staring down into the black water)
+
+============================================================
+## Off-stage — konosuba_f0_0_f9_0 (Axel Town — The Adventurer's Guild)
+turn=1  intention=Endure and escape the Brutal Alligator's jaws while being dragged into the depths of the sewer
+
+[Narrator]
+The alligator's jaws clamp around Darkness's torso like a vice of living iron, and yet — even through the crushing pressure, even through the filth-choked water battering her face — her body sings. The death-roll had stopped some time ago, replaced by a steady, undulating tow through the black tunnel. Her adamantite breastplate groans but does not yield. The beast's conical teeth scrape uselessly across the enchanted metal, finding no purchase, no flesh, no kill.
+
+The tunnel widens. The water deepens.
+
+Darkness feels herself dragged downward, a sharp descent into a vaulted chamber where the sewer's architecture gives way to something older — rough-hewn stone, a collapsed foundation, a subterranean pool fed by dripping groundwater. The alligator plunges, taking her to the bottom, and holds her there.
+
+The weight of water above her. The pressure in her lungs. The absolute darkness behind her eyelids. Every nerve in her body screams not in panic but in a kind of religious ecstasy. She could die here. She could truly, finally, be destroyed — and the thought sends a shudder of guilty bliss through her that has nothing to do with the cold.
+
+But her lungs begin to burn. Her Crusader endurance is legendary, Adamantite-grade, but even she needs air. Instinct fires beneath the ecstasy. Her gauntleted hands find the alligator's upper jaw and *push*.
+
+Nothing happens. Her arms tremble. Her accuracy is a joke. But raw strength — that she has. Slowly, creakingly, the jaws separate by inches. Bubbles rush past her face. The alligator thrashes in surprise, then — with a final, contemptuous heave — releases her entirely, retreating to the far side of the pool with a low, rumbling growl. It has realized it cannot eat her. It has settled for watching.
+
+Darkness erupts from the water, gasping, dragging herself onto a shelf of broken stonework that forms a crude shore. The chamber reeks of old death. Bones litter the floor — some human, some animal, all stripped clean. High above, a single drainage grate admits a whisper of gray light, barely enough to see by. The alligator's eyes reflect that light from across the pool: two amber coals, patient and hateful.
+
+She is alive. She is free of its jaws. She is also in its lair, unarmed, alone, and trembling — though not, she realizes with a hot flush of shame, entirely from fear.
+
+[Darkness]
+Hah... hah... it... it let go... I was... I was down there so long... the pressure... the darkness... I thought I might actually... (Her voice cracks into a breathless, flustered murmur. She presses a gauntleted hand to her chest, feeling her racing heart.)
+

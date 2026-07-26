@@ -1,0 +1,88 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 1  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=4
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I sigh, push my chair back, and trudge over to Luna, leaving Darkness to her... moment at the quest board. "Please tell me you're about to offer us a quest that pays well and involves zero property damage liability."
+
+[Narrator]
+Luna looks up from her ledger as you approach, and for just a moment her professional smile tightens at the corners — the expression of a woman who has processed your party's damage reports more times than she cares to count. She sets her quill down with the careful, deliberate motion of someone steeling herself.
+
+Her gaze flicks past you to the quest board, where Darkness is still frozen in place, one hand extended toward a posting, her face flushed crimson at whatever scenario her imagination has conjured. Luna's eye twitches almost imperceptibly before she refocuses on you.
+
+She opens a drawer and pulls out a single parchment, the edges slightly yellowed — a quest that has clearly been sitting there for a while, passed over by every other adventurer in the guild.
+
+[Luna]
+That depends entirely on whether your party can exercise restraint. Which, historically speaking... (lets the sentence hang, then slides the parchment across the counter toward you)
+
+[Luna]
+The good news: it pays fifteen thousand eris. The bad news: it involves the sewers. A Brutal Alligator has been nesting down there. The city guard can't reach it, and every other adventurer with the skill to handle it has suddenly remembered urgent business elsewhere. (folds her hands together, smile unwavering but apologetic)
+
+[Player]
+I stare at the parchment for a long moment, then glance back at my party — Aqua sobbing into her fourth ale, Megumin furiously sketching explosion runes, Darkness practically vibrating at the quest board. "Fifteen thousand," I mutter, turning back to Luna. "You do realize my arch-wizard blew her load at sunrise, my crusader is currently aroused by the words 'grapple' and 'drag underwater,' and my healer is three beers away from trying to purify the sewer water into wine."
+
+[Narrator]
+Luna's smile doesn't waver, but something behind her eyes flickers — pity, maybe, or the exhausted recognition of a woman who has long since stopped being surprised by anything your party does. She glances past you again. Aqua has graduated from sobbing into her ale to shaking the empty mug upside-down over her open mouth, hoping for a droplet that isn't coming. Megumin's quill has snapped and she is now scratching explosion runes directly into the tabletop with the broken nib. Darkness is reading the Brutal Alligator notice for what must be the fifth time, her breath fogging the parchment.
+
+Luna turns back to you. Her expression says she has done the math on your party's combat readiness and arrived at the same answer you have. She slides the quest parchment across the counter anyway.
+
+[Player]
+I sigh and grab the parchment before I can talk myself out of it. "Fine. But if the sewer system collapses, I'm blaming Darkness for headbutting a support beam in excitement."
+
+[Narrator]
+The parchment crackles in your grip, its cheap fiber rough against your fingertips. For a moment the guild hall seems to hold its breath — or maybe that is just the silence that falls over your own table.
+
+Luna blinks. Once. Twice. Then her professional smile returns with something almost genuine tucked into its corners — surprise, perhaps, or the faintest glimmer of respect. She reaches beneath the counter and produces a second, thicker document: the official contract, complete with a crude anatomical sketch of a Brutal Alligator and several paragraphs of liability waivers in very small print. She slides it toward you with the practiced efficiency of someone who has been waiting weeks for anyone — anyone at all — to sign it.
+
+Behind you, Darkness makes a noise. It is not a word, exactly. More of a choked gasp that starts noble and ends somewhere deeply compromising. Her gauntleted fingers are pressed against her breastplate, her cheeks flushed the color of her family crest.
+
+Megumin looks up from the wreckage of her second snapped quill. Her crimson eyes narrow first at the parchment in your hands, then at the ink-stained disaster zone that was once a perfectly good sketch of an explosion radius diagram. The math, even incomplete, suggests a blast zone roughly four times the size of the sewer system.
+
+Aqua finally gives up on the empty mug and lets it clatter onto the table. She squints at you, at Luna, at the contract. The gears turn slowly behind her eyes — and then her face crumples into fresh outrage.
+
+[Luna]
+I'll need you to initial here, here, and here — the last one acknowledges that the Guild is not responsible for drowning, mauling, sewer-gas poisoning, or structural collapse resulting from... any magic you may employ. (taps each line with a manicured fingernail, her smile unwavering)
+
+[Darkness]
+The sewer system... dark, cramped, nowhere to run... if the alligator grapples me against the wall and I cannot break free, I will have no choice but to endure every— (voice dropping to a breathless murmur, eyes glazing over)
+
+[Aqua]
+Kazumaaaa! You signed it?! Without even asking me?! I'm a goddess, not a sewer rat! Do you have any idea what that water will do to my divine complexion?! (shooting to her feet, jabbing an accusatory finger at you)
+
+[Megumin]
+A sewer is no place for Explosion. The confined space would amplify the blast wave exponentially — which is to say, it would be glorious. But I have already cast today. You will have to carry me down there, Kazuma. (crosses her arms with a solemn nod, as if this is perfectly reasonable)
+
+[Player]
+I take the quill and initial each line Luna indicates, my signature getting progressively more cramped as I go. "If I die down there, Aqua, you're resurrecting me for free. Consider it payback for every drink you've put on my tab."
+
+[Narrator]
+Luna pulls the signed parchment across the counter with the crisp efficiency of a woman who has learned never to leave important documents within the party's blast radius. The ink gleams wet under the guild hall's amber lantern light — your cramped initials trailing down the liability waivers like a confession. She blows on the parchment once, twice, then files it into a drawer already swollen with folders bearing your party's name. The drawer sticks. She has to shove it shut with her hip.
+
+The creak of the drawer carries across the silent hall. At your table, Aqua's empty mug clatters to the floorboards and rolls in a lazy semicircle. She doesn't pick it up. She's staring at you with the slow-dawning horror of someone who just realized she is now contractually obligated to do her job. Megumin has stopped sketching entirely — her quill frozen mid-rune, ink pooling into a black starburst on the tabletop. Only Darkness moves: she turns from the quest board with her cheeks flushed and her gauntlets clasped together, the way a pilgrim might approach a shrine.
+
+Luna folds her hands on the counter and meets your eyes. Behind that professional smile, you catch the unmistakable gleam of a woman who has already started calculating how many forms she will need when this inevitably goes wrong. The lantern above her desk flickers — just a draft, probably. Just a draft.
+
