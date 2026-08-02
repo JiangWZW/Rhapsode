@@ -116,8 +116,8 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
 TEST_CASE("Narrator instructions remain byte-identical across the refactor",
           "[narrator_prompt][characterization]") {
     const std::string beat = build_narrator_instructions();
-    REQUIRE(beat.size() == 3036);
-    REQUIRE(prompt_hash(beat) == 0xbda3188c79baae87ULL);
+    REQUIRE(beat.size() == 3170);
+    REQUIRE(prompt_hash(beat) == 0xdd97b2e1a1689252ULL);
 
     const std::string graph = build_narrator_graph_instructions();
     REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
@@ -405,15 +405,15 @@ TEST_CASE("TurnExecutor returns associated generic turn effects",
             R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":[]})");
     });
     weaver.set_interval(1);
-    weaver.set_llm_callback([&](const std::string&) {
+    weaver.set_llm_callback([&](const std::string& prompt) {
+        if (prompt.find("NO LONGER TRUE") != std::string::npos) {
+            return std::string{"{\"superseded\":[{\"id\":"} +
+                std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
+                R"(}],"reason":"newer state"})";
+        }
         return std::string{"{\"connect\":[{\"from\":"} +
             std::to_string(old_id) + ",\"to\":" + std::to_string(new_id) +
             R"(,"weight":0.8,"reason":"state"}],"disconnect":[],"reweight":[]})";
-    });
-    weaver.set_local_llm_callback([&](const std::string&) {
-        return std::string{"{\"superseded\":[{\"id\":"} +
-            std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
-            R"(}],"reason":"newer state"})";
     });
 
     const TurnResult result = executor.run_player_turn(scene, "Look.");
@@ -586,13 +586,13 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
             R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":["Scout"]})");
     });
     weaver.set_interval(1);
-    weaver.set_llm_callback([&](const std::string&) {
+    weaver.set_llm_callback([&](const std::string& prompt) {
+        if (prompt.find("NO LONGER TRUE") != std::string::npos) {
+            events.push_back("expiry");
+            return std::string{R"({"superseded":[],"reason":"current"})"};
+        }
         events.push_back("weave");
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
-    });
-    weaver.set_local_llm_callback([&](const std::string&) {
-        events.push_back("expiry");
-        return std::string{R"({"superseded":[],"reason":"current"})"};
     });
     executor.set_reflection_llm_callback([&](const std::string&) {
         events.push_back("reflection");
@@ -675,12 +675,11 @@ TEST_CASE("Story surfaces off-stage outputs when they merge into the active scen
     story.set_lifecycle_callback(
         [](const std::string&, const std::string& user, const ReadToolCallback&) {
             const json context = json::parse(user.substr(user.find('{')));
-            if (context["scene_id"] == "away") {
+            if (context["advanced_scene_id"] == "away") {
                 return std::string{
-                    R"({"fork":null,"merge_into":"root","conclude":null,"exited":[]})"};
+                    R"({"ops":[{"op":"merge","from":"away","into":"root","reason":"reunion"}]})"};
             }
-            return std::string{
-                R"({"fork":null,"merge_into":null,"conclude":null,"exited":[]})"};
+            return std::string{R"({"ops":[]})"};
         });
 
     const auto outputs = story.advance_scene("Act.");
@@ -692,7 +691,44 @@ TEST_CASE("Story surfaces off-stage outputs when they merge into the active scen
     REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
 }
 
-TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lifecycle]") {
+TEST_CASE("Board lifecycle merges a fork after the main step without advancing it",
+          "[story][lifecycle]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    int away_narrations = 0;
+    configure_story(story,
+        [&](const std::string& id, const std::string&, const std::string&) {
+            if (id == "away") ++away_narrations;
+            return response(id == "root"
+                ? "Scout stands beside you at the gate."
+                : "Away should not run.");
+        });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Reach the player") != nullptr);
+    story.set_scheduler_callback([](const std::string&, const std::string&,
+                                    const ReadToolCallback&) {
+        return std::string{"away"};
+    });
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string& user, const ReadToolCallback&) {
+            const json context = json::parse(user.substr(user.find('{')));
+            if (context["advanced_scene_id"] == "root") {
+                return std::string{
+                    R"({"ops":[{"op":"merge","from":"away","into":"root","reason":"co-presence"}]})"};
+            }
+            return std::string{R"({"ops":[]})"};
+        });
+
+    story.advance_scene("I meet the scout.");
+    REQUIRE(away_narrations == 0);
+    REQUIRE(story.get_scene("away") == nullptr);
+    REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
+    REQUIRE(story.scene_count() == 1);
+}
+
+TEST_CASE("Story applies lifecycle fork ops without a World queue", "[story][lifecycle]") {
     World world;
     world.enter_character("root", Character{"Player", "The player", true});
     world.enter_character("root", Character{"Scout", "Careful", false});
@@ -706,10 +742,12 @@ TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lif
         REQUIRE(json::parse(read_tool("list_scenes", "{}"))[0]["scene_id"] ==
                 "root");
         const json context = json::parse(user.substr(user.find('{')));
+        REQUIRE(context["advanced_scene_id"] == "root");
         REQUIRE(context["dialogue"].size() == 1);
         REQUIRE(context["dialogue"][0]["speaker"] == "Scout");
-        REQUIRE(context["other_storylines"].empty());
-        return std::string{R"({"fork":{"cast":["Scout"],"driving_intention":"Scout ridge"},"merge_into":null,"conclude":null,"exited":[]})"};
+        REQUIRE(context.contains("storylines"));
+        return std::string{
+            R"({"ops":[{"op":"fork","parent":"root","cast":["Scout"],"driving_intention":"Scout ridge"}]})"};
     });
     story.advance_scene("Go.");
     REQUIRE(story.scene_count() == 2);
@@ -718,7 +756,87 @@ TEST_CASE("Story applies lifecycle verdicts without a World queue", "[story][lif
     REQUIRE(story.world().find_in_scene("root", "Scout") == nullptr);
 }
 
-TEST_CASE("Lifecycle policy rejects contradictory verdicts",
+TEST_CASE("Board lifecycle skips fork for a non-advanced parent",
+          "[story][lifecycle]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    world.enter_character("root", Character{"Guard", "Watchful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story, [](const std::string&, const std::string&, const std::string&) {
+        return response("Quiet.");
+    });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Patrol") != nullptr);
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string&, const ReadToolCallback&) {
+            return std::string{
+                R"({"ops":[{"op":"fork","parent":"away","cast":["Scout"],"driving_intention":"Deeper"}]})"};
+        });
+    story.advance_scene("Wait.");
+    REQUIRE(story.scene_count() == 2);
+    REQUIRE(story.get_scene("away") != nullptr);
+}
+
+TEST_CASE("Board lifecycle skips stale merge targets and keeps earlier ops",
+          "[story][lifecycle]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    world.enter_character("root", Character{"Guard", "Watchful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story, [](const std::string&, const std::string&, const std::string&) {
+        return response("Together at the gate.");
+    });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Reach gate") != nullptr);
+    REQUIRE(story.fork_scene(
+        "root", "side", {"Guard"}, "Flank") != nullptr);
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string& user, const ReadToolCallback&) {
+            const json context = json::parse(user.substr(user.find('{')));
+            if (context["advanced_scene_id"] != "root")
+                return std::string{R"({"ops":[]})"};
+            return std::string{
+                R"({"ops":[{"op":"merge","from":"away","into":"root","reason":"a"},)"
+                R"({"op":"merge","from":"away","into":"side","reason":"stale"}]})"};
+        });
+    story.advance_scene("Meet them.");
+    REQUIRE(story.get_scene("away") == nullptr);
+    REQUIRE(story.get_scene("side") != nullptr);
+    REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
+}
+
+TEST_CASE("Board lifecycle applies merge before fork in one response",
+          "[story][lifecycle]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Scout", "Careful", false});
+    world.enter_character("root", Character{"Guard", "Watchful", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story, [](const std::string&, const std::string&, const std::string&) {
+        return response("Scout rejoins; Guard is sent ahead.");
+    });
+    REQUIRE(story.fork_scene(
+        "root", "away", {"Scout"}, "Return") != nullptr);
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string& user, const ReadToolCallback&) {
+            const json context = json::parse(user.substr(user.find('{')));
+            if (context["advanced_scene_id"] != "root")
+                return std::string{R"({"ops":[]})"};
+            // Intentionally fork-first in JSON; engine sorts merge first.
+            return std::string{
+                R"({"ops":[{"op":"fork","parent":"root","cast":["Guard"],"driving_intention":"Scout ahead"},)"
+                R"({"op":"merge","from":"away","into":"root","reason":"reunion"}]})"};
+        });
+    story.advance_scene("Split and reunite.");
+    REQUIRE(story.get_scene("away") == nullptr);
+    REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
+    REQUIRE(story.scene_count() == 2);
+    REQUIRE(story.world().find_in_scene("root", "Guard") == nullptr);
+}
+
+TEST_CASE("Lifecycle policy rejects malformed board ops",
           "[story][lifecycle]") {
     BeatSummary beat;
     beat.scene_id = "root";
@@ -733,13 +851,53 @@ TEST_CASE("Lifecycle policy rejects contradictory verdicts",
     };
 
     REQUIRE_FALSE(decide(
-        R"({"fork":null,"merge_into":"away","conclude":"done","exited":[]})"));
+        R"({"ops":[{"op":"merge","from":"","into":"root"}]})"));
     REQUIRE_FALSE(decide(
-        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":"done","exited":[]})"));
+        R"({"ops":[{"op":"fork","parent":"root","cast":["Scout"],"driving_intention":""}]})"));
     REQUIRE_FALSE(decide(
-        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":null,"exited":["scout"]})"));
-    REQUIRE(decide(
-        R"({"fork":{"cast":["Scout"],"driving_intention":"Go"},"merge_into":null,"conclude":null,"exited":["Guard"]})"));
+        R"({"ops":[{"op":"fork","parent":"root","cast":["Player"],"driving_intention":"Go"}]})"));
+    REQUIRE(decide(R"({"ops":[]})"));
+    auto ok = decide(
+        R"({"ops":[{"op":"fork","parent":"root","cast":["Scout"],"driving_intention":"Go"}]})");
+    REQUIRE(ok);
+    REQUIRE(ok->ops.size() == 1);
+    REQUIRE(ok->ops[0].kind == LifecycleOp::Kind::Fork);
+}
+
+TEST_CASE("Scheduler advances a starved off-stage scene within the cap",
+          "[story][scheduler]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"A", "One", false});
+    world.enter_character("root", Character{"B", "Two", false});
+    world.enter_character("root", Character{"C", "Three", false});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story,
+        [](const std::string& id, const std::string&, const std::string&) {
+            return response(id + " advances.");
+        });
+    REQUIRE(story.fork_scene("root", "a", {"A"}, "A") != nullptr);
+    REQUIRE(story.fork_scene("root", "b", {"B"}, "B") != nullptr);
+    REQUIRE(story.fork_scene("root", "c", {"C"}, "C") != nullptr);
+    // No LLM picks — starvation alone must fill the cap after enough turns.
+    story.set_scheduler_callback([](const std::string&, const std::string&,
+                                    const ReadToolCallback&) {
+        return std::string{};
+    });
+    story.set_lifecycle_callback(
+        [](const std::string&, const std::string&, const ReadToolCallback&) {
+            return std::string{R"({"ops":[]})"};
+        });
+
+    for (int i = 0; i < 3; ++i)
+        story.advance_scene("Idle.");
+    REQUIRE(story.active_scene()->turn_index == 3);
+    const int off =
+        (story.get_scene("a") ? story.get_scene("a")->turn_index : 0) +
+        (story.get_scene("b") ? story.get_scene("b")->turn_index : 0) +
+        (story.get_scene("c") ? story.get_scene("c")->turn_index : 0);
+    REQUIRE(off >= 2);
+    REQUIRE(off <= 4);  // cap 2 per player turn across 2 starved turns max here
 }
 
 TEST_CASE("Story rejects an unknown active scene", "[story][invariant]") {
@@ -879,7 +1037,7 @@ TEST_CASE("Weaver queue prioritizes groups and applies supersession",
     const auto new_id = add_fact(graph, "Gate open", "Gate", 5);
     Weaver weaver(graph);
     std::vector<std::string> prompts;
-    weaver.set_local_llm_callback([&](const std::string& prompt) {
+    weaver.set_llm_callback([&](const std::string& prompt) {
         prompts.push_back(prompt);
         if (prompt.find("Gate closed") != std::string::npos)
             return std::string{"{\"superseded\":[{\"id\":"} +
@@ -906,7 +1064,7 @@ TEST_CASE("Weaver stop leaves undrained groups queued", "[weaver][work_queue]") 
     std::promise<void> started;
     std::promise<void> release;
     auto release_future = release.get_future().share();
-    weaver.set_local_llm_callback([&](const std::string&) {
+    weaver.set_llm_callback([&](const std::string&) {
         started.set_value();
         release_future.wait();
         return std::string{R"({"superseded":[],"reason":"current"})"};

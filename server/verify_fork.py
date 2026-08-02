@@ -52,26 +52,32 @@ class Script:
 
     def lifecycle(self, _instructions: str, user: str, _read_tool) -> str:
         context = json.loads(user[user.find("{"):])
-        scene_id = context["scene_id"]
-        verdict = {
-            "fork": None,
-            "merge_into": None,
-            "conclude": None,
-            "exited": [],
-        }
-        if self.mode == "fork" and scene_id == self.root_id:
-            verdict["fork"] = {
+        advanced = context.get("advanced_scene_id") or context.get("scene_id")
+        ops: list[dict] = []
+        if self.mode == "fork" and advanced == self.root_id:
+            ops.append({
+                "op": "fork",
+                "parent": self.root_id,
                 "cast": ["Sergeant Maren"],
                 "driving_intention": INTENTION,
-            }
+            })
             self.mode = "idle"
-        elif self.mode == "conclude" and scene_id != self.root_id:
-            verdict["conclude"] = "the flanking route paid off"
+        elif self.mode == "conclude" and advanced and advanced != self.root_id:
+            ops.append({
+                "op": "conclude",
+                "scene_id": advanced,
+                "reason": "the flanking route paid off",
+            })
             self.mode = "idle"
-        elif self.mode == "merge" and scene_id != self.root_id:
-            verdict["merge_into"] = self.root_id
+        elif self.mode == "merge" and advanced and advanced != self.root_id:
+            ops.append({
+                "op": "merge",
+                "from": advanced,
+                "into": self.root_id,
+                "reason": "co-presence with the player",
+            })
             self.mode = "idle"
-        return json.dumps(verdict)
+        return json.dumps({"ops": ops})
 
 
 def build_engine() -> tuple[Story, Script]:

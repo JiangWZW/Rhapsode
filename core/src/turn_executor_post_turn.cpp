@@ -44,20 +44,18 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
         WeaveResult weave;
         if (weaver_.active()) {
             if (weaver_.should_weave(turn)) {
-                log() << "  [post-turn] full graph weave (cloud)...\n"
-                      << std::flush;
+                log_info("weave") << "running turn=" << turn << "\n";
                 weave = weaver_.weave(turn, context);
-            } else {
-                log() << "  [post-turn] quick graph weave (local)...\n"
-                      << std::flush;
-                weave = weaver_.weave_local(turn, context);
             }
             if (!weaver_.expiry_queue_empty()) {
+                log_info("expiry") << "draining turn=" << turn << "\n";
                 const auto expiry = weaver_.drain_expiry_queue(turn);
                 for (const auto& operation : expiry) {
                     if (const Node* node = world_.graph().get_node(operation.id))
                         result.expired_nodes.push_back(*node);
                 }
+                if (!expiry.empty())
+                    log_info("expiry") << "expired=" << expiry.size() << "\n";
             }
         }
 
@@ -69,31 +67,35 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
                 process_text_downsampling(
                     scene.downsampling, scene.history, downsampler_cb_);
                 const int after = scene.downsampling.summarized_up_to;
-                log() << "  [downsampler] summarized_up_to " << before
+                log_debug("downsampler") << "summarized_up_to " << before
                       << " -> " << after << "\n";
                 const auto rendered = render_text_downsampling(scene.downsampling);
                 if (!rendered.empty())
-                    log() << "  [downsampler] story_so_far (" << rendered.size()
+                    log_debug("downsampler") << "story_so_far (" << rendered.size()
                           << " chars): " << rendered.substr(0, 200)
                           << (rendered.size() > 200 ? "..." : "") << "\n";
             } catch (const std::exception& error) {
-                log() << "  [downsampler] process_turn failed: "
-                      << error.what() << "\n";
+                log_warn("downsampler") << "process_turn failed: "
+                      << error.what() << "\n" << std::flush;
             }
         }
 
         if (!weave.connected.empty() || !weave.disconnected.empty() ||
             !weave.reweighted.empty()) {
-            log() << "  [weave] +" << weave.connected.size()
+            log_info("weave") << "+" << weave.connected.size()
                   << " -" << weave.disconnected.size()
-                  << " ~" << weave.reweighted.size() << "\n";
+                  << " ~" << weave.reweighted.size()
+                  << " nodes=" << weave.analysis.live_node_count
+                  << " edges=" << weave.analysis.active_edge_count << "\n";
         }
     } catch (const std::exception& error) {
         result = {};
-        log() << "  [post-turn] work failed: " << error.what() << "\n";
+        log_error("turn") << "post-turn failed: " << error.what() << "\n"
+                          << std::flush;
     } catch (...) {
         result = {};
-        log() << "  [post-turn] work failed with an unknown exception\n";
+        log_error("turn") << "post-turn failed with unknown exception\n"
+                          << std::flush;
     }
     return result;
 }

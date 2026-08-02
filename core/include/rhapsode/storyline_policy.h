@@ -27,7 +27,10 @@ struct SceneSummary {
     bool player_present = false;
     std::string driving_intention;
     float charge = 0.0f;
+    /// Short snippet for list_scenes / tool payloads (~240 bytes).
     std::string last_narration;
+    /// Longer snippet for board lifecycle checks only (~1200 bytes).
+    std::string recent_narration;
 };
 
 struct BeatSummary {
@@ -41,19 +44,26 @@ struct BeatSummary {
     std::vector<SceneSummary> storylines;
 };
 
-struct LifecycleDecision {
-    struct Fork {
-        std::vector<std::string> cast;
-        std::string driving_intention;
-    };
+struct LifecycleOp {
+    enum class Kind { Merge, Conclude, Fork, Exit };
 
-    std::optional<std::string> conclude_reason;
-    std::optional<std::string> merge_into;
-    std::optional<Fork> fork;
-    std::vector<std::string> exited;
+    Kind kind = Kind::Exit;
+    std::string from;                 // merge
+    std::string into;                 // merge
+    std::string scene_id;             // conclude / exit / fork parent
+    std::string reason;               // conclude / merge
+    std::vector<std::string> cast;    // fork / exit
+    std::string driving_intention;    // fork
+};
+
+struct LifecycleDecision {
+    std::vector<LifecycleOp> ops;
 };
 
 std::string serialize_scene_summaries(
+    const std::vector<SceneSummary>& summaries);
+/// Compact board section for the narrator turn state.
+std::string format_live_storylines_board(
     const std::vector<SceneSummary>& summaries);
 std::string request_off_stage_scene(const SchedulerCallback& callback,
                                     const ReadToolCallback& read_tool);

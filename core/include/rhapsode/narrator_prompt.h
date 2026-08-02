@@ -18,6 +18,7 @@ std::string build_narrator_graph_instructions();
 std::string build_narrator_turn_state(
     const std::vector<SceneMessage>& history,
     const SceneData& scene,
-    const World& world);
+    const World& world,
+    const std::string& live_storylines_board = {});
 
 }  // namespace rhapsode

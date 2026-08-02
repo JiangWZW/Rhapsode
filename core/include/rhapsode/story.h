@@ -92,7 +92,6 @@ public:
     void set_llm_callback(LLMCallback cb);
     void set_narrator_llm_callback(NarratorLLMCallback cb);
     void set_weaver_llm_callback(LLMCallback cb);
-    void set_weaver_local_llm_callback(LLMCallback cb);
     void set_weaver_interval(int turns);
     WeaveResult weave_scene(const std::string& scene_id);
     void set_history_window(size_t normal, size_t resume);
@@ -122,7 +121,14 @@ private:
 
     struct LifecycleApplyResult {
         int applied = 0;
+        /// Set when an op merges the scene that just stepped into another.
         std::optional<std::string> merged_into;
+    };
+
+    struct StepResult {
+        std::vector<SceneMessage> outputs;
+        LifecycleApplyResult lifecycle;
+        bool ok = false;
     };
 
     SceneData* adopt_scene(SceneData scene);
@@ -138,13 +144,14 @@ private:
         const std::string& parent_id,
         const std::vector<std::string>& names,
         const std::string& driving_intention) const;
-    std::string pick_off_stage_scene();
+    std::vector<std::string> pick_off_stage_scenes();
     LifecycleApplyResult apply_lifecycle(const std::string& scene_id,
                                          const std::string& player_input);
+    StepResult step_scene(const std::string& scene_id,
+                          const std::string& input,
+                          bool autonomous);
     std::string make_autonomous_cue(const std::string& scene_id) const;
     void sync_memory(const TurnResult& result);
-    // Empty unless the off-stage beat merged into the active scene.
-    std::vector<SceneMessage> advance_off_stage_scene();
     int revert_scene_turns(SceneData& scene, int count);
 
     // Stable allocation keeps TurnExecutor's World reference valid through Story

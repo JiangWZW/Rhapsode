@@ -1,0 +1,123 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 2  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=4
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+"Darkness, Aqua — you two go check the sewer entrance. Scouting only. Aqua, your water magic might actually be useful for once, and Darkness, you can... enjoy yourself. I'll register the quest with Luna and we'll catch up."
+
+[Narrator]
+Aqua sets her fourth mug down with a hollow *thunk* and stares at you like you've just asked her to scrub a latrine with her own scepter. The morning light catching the foam on her upper lip somehow makes the expression worse.
+
+Darkness, by contrast, has gone very still. Her gauntlets clench against the tabletop, and a deep flush is already climbing her neck — you can practically hear her imagination sprinting ahead to dark water, crushing jaws, the exquisite helplessness of being dragged under while her party is too far away to save her. Her breath catches audibly.
+
+Megumin doesn't even lift her cheek from the table. One crimson eye opens halfway, tracking the conversation with the weary resignation of a fourteen-year-old who vaporized a hillside at dawn and now can't feel her own spine. She exhales something that might be a laugh, or just the last of her mana leaving her body.
+
+Across the hall, Luna is already watching your table with the fixed, pleasant smile of a woman who knows exactly which quest you're about to claim and has been waiting all morning for someone — anyone — desperate enough to take it.
+
+[Aqua]
+The sewers?! Kazumaaaa, I am a goddess! A goddess does not wade through other people's filth just because you're too lazy to— wait. You said my water magic might actually be useful. ...Fine. But you're buying me the expensive wine when we get back. Not the cheap stuff. The bottle with the gold foil. (crosses her arms, then uncrosses them as the compliment registers — preening despite herself)
+
+[Darkness]
+The sewers. Where the Brutal Alligators are. You want me to go first. Alone with Aqua. Into a confined underground passage where anything could be lying in ambush, where I'd have no choice but to throw myself between danger and a goddess who can't fight... Kazuma, this is — this is an outrageously irresponsible order and I accept it completely. (already rising from her seat, cheeks flushed, breath quickening with every word)
+
+[Megumin]
+While you two charge into the dark to be grappled by reptiles, I shall remain here and guard this table. With my body. Which is currently fused to this bench by the sacred exhaustion of a true explosion master. Do not wait for me. (does not move; one finger lifts weakly from the table in a gesture that might be a salute)
+
+[Player]
+"Megumin, guard the table with your life. I'm going to make sure those two haven't already gotten themselves eaten."
+
+I push back from the table and head for the door, ignoring whatever Luna was about to say, and make my way toward the sewer entrance.
+
+[Narrator]
+You push back from the table. The legs scrape across worn floorboards, and Luna's head snaps up from behind the counter — she was mid-sentence, a parchment already half-extended toward you, her professional smile frozen in the act of dying.
+
+The door swings open. Axel's morning light floods the threshold, dusty and golden, and then you're through it, the heavy oak thudding shut behind you. Luna's outstretched hand hangs in the air for a beat too long before it drops to her side. The parchment curls inward on itself like a dead leaf.
+
+Megumin remains exactly where she is, slumped sideways in her chair with one arm draped dramatically over the table. Chomusuke has materialized from somewhere and is kneading the small of her back. She cannot feel her legs. She cannot stand. She cannot chase after you. Her crimson eyes track the closed door with an expression that is sixty percent outrage and forty percent something she would never, ever name aloud.
+
+Luna turns to look at her. Then at the door. Then back at Megumin. The silence in the guild hall is the special kind that only follows after one of *your* parties — the other adventurers at distant tables are very pointedly not watching, the way people don't watch a cart crash into a fruit stand.
+
+[Megumin]
+He left me! Me, the foremost genius of the Crimson Demon Clan, reduced to a table-guardian while those two go gallivanting toward certain digestive peril! The indignity sears hotter than my Explosion's afterglow! (attempts to rise, gets approximately two inches off the chair, and collapses back down with a wheeze)
+
+[Luna]
+He didn't even let me finish. I had the quest scroll. Right here. In my hand. That man has walked away from me four times this week and it's only Tuesday. (lets the parchment drop onto the counter, her professional smile twitching at the corner)
+
+[Player]
+I come to a stop in front of the open grate, the sewer's damp breath rolling up over my boots. I kneel at the edge and focus, letting my Enemy Detection skill hum through the darkness below.
+
+"...Alright. Let's see what's waiting for us down there."
+
+[Narrator]
+Your boots scuff against the stone lip of the open grate as you come to a halt. The air here is thick with mildew and something older — stagnant water that hasn't seen sunlight in decades. Aqua stands a deliberate three paces back from the edge, her feather mantle pulled tight around her shoulders like a shawl against the cold, though the morning isn't cold at all. Darkness is right at the rim, one armored boot nearly over the drop, gripping her sword hilt with both hands. Neither of them has noticed you yet.
+
+You kneel. The skill hums to life behind your eyes — a prickling pressure that reaches down into the dark like an outstretched hand. For a moment there's nothing but the drip of water echoing up from somewhere deep. Then the pings start.
+
+Three of them. Large. The first two are clustered together maybe thirty yards down the main tunnel, sluggish — basking, probably. The third is moving. Slow, sinuous, the signature dragging itself through the water toward the junction directly below the grate. Each ping carries the distinct oily weight of predation: cold-blooded, patient, hungry. Definitely Brutal Alligators. Definitely big ones. Your skill can't tell you much more than that — size and number and direction — but you've been at this long enough to know what "big and moving toward the only entrance" means.
+
+[Aqua]
+Well?! Don't just kneel there making dramatic faces, Kazuma! How many are down there? If it's more than one I'm not going first. I refuse. A goddess does not wade into — ugh, this smell is going to stick to my robes for weeks, I just know it. (She pinches her nose with two fingers and leans forward just enough to peer into the darkness, then immediately recoils.)
+
+[Darkness]
+Three... you're sensing three, aren't you? I can tell by the way your jaw tightened. Kazuma, please — please tell me they're the kind that grab you from below and drag you under before you can scream. (Her voice starts formal and breathless, then drops to something almost reverent. She shifts her weight forward, the grate groaning under her boot.)
+
+[Player]
+I rise from my knee, dusting the grit off my hands. "Three of them. Two are lounging thirty yards down — lazy, for now. The third one's moving toward the junction right below us." I glance back at Aqua, still pinching her nose three paces back. "Aqua, go back to the guild and grab rope and lanterns. If we're going in, we're not doing it blind."
+
+[Narrator]
+Aqua's pinched fingers drop from her nose. For the first time since you arrived at the grate, something other than theatrical disgust flickers across her face — it takes you a beat to recognize it as hope. The feather mantle settles around her shoulders as she straightens, already half-turned back toward the guild.
+
+Darkness has not moved. She remains at the rim of the grate, gauntlets locked around her sword hilt, staring down into the dark like a woman staring into a lover's window. Her breath comes shallow and uneven, and when she finally lifts her gaze to you, her cheeks are flushed a deep, splotchy crimson that has nothing to do with the morning chill.
+
+The sewer below gurgles. Something heavy scrapes against stone — the junction alligator, restless.
+
+[Aqua]
+Finally! A job actually suited to my station — sending a mere mortal to carry things! You stay right here and don't you dare follow me down there while I'm gone! (Already backing away from the grate, jabbing a finger toward Kazuma and Darkness.)
+
+[Darkness]
+I'll... I'll stand guard. Right here. Above the grate. While we wait. Alone. If anything should happen to surface and seize me before she returns, you mustn't blame yourself, Kazuma. (Voice dropping to a breathless murmur, fingers tightening around the sword hilt.)
+
+============================================================
+## Off-stage — konosuba_f4_0 (Axel Town — The Adventurer's Guild)
+turn=1  intention=Retrieve rope and lanterns from the Adventurer's Guild and return to the sewer grate.
+
+[Narrator]
+The guild hall doors swing open under Aqua's palm with more force than she intended — or exactly the force she intended, because a goddess does not enter quietly. The afternoon light cuts a bright wedge across the floorboards, catching the dust motes that hang above the empty tables. Most of the morning adventurers have already cleared out. The only signs of life are a half-extended quest scroll drooping from Luna's hand behind the counter and the small, motionless heap of crimson robes face-down at the party's usual table, one pale cheek pressed flat against the wood grain.
+
+Luna hasn't moved. The scroll is still frozen exactly where Kazuma left it — halfway across the counter, the wax seal unbroken, the registration form beneath it bearing three incomplete signatures. Her polite receptionist smile is locked in place like a door that's been slammed too many times.
+
+Megumin makes a sound that might be breathing or might be the death rattle of a collapsed lung. A tiny pool of drool has collected near the corner of her mouth. One eye cracks open as Aqua's sandals slap past.
+
+[Aqua]
+Luna! I need rope and lanterns. The good rope. And more than one lantern. This is official divine logistics for a sacred sewer subjugation, so put it on Kazuma's tab. (strides toward the counter, feather mantle fluttering behind her)
+
+[Luna]
+Of course. Your party's tab is already... substantial. Would you like to complete the quest registration while you're here, or should I just add the rope to the growing list of things your party walks away from? (glances down at the frozen scroll, jaw tightening)
+
+[Megumin]
+Aqua... you abandoned me! I unleash my ultimate magic at dawn for the glory of the Crimson Demon Clan and you all sneak off to battle sewer alligators without me! I could have been legendary! (lifts her head two inches from the table, voice cracking with outrage before her face thuds back down)
+

@@ -35,7 +35,8 @@ configure_logging()
 
 def _critique_llm(prompt: str) -> str:
     model = os.environ.get("RHAPSODE_PLAYER_MODEL")
-    return complete([{"role": "user", "content": prompt}], model=model)
+    return complete(
+        [{"role": "user", "content": prompt}], model=model, stage="critique")
 
 
 def _resolve(path: str | Path, base: Path = HERE) -> Path:

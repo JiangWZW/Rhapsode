@@ -98,7 +98,7 @@ def test_read_tools_expire_when_the_lifecycle_call_returns():
         retained.append(read_tool)
         assert json.loads(read_tool("list_scenes", "{}"))[0]["scene_id"] == "root"
         return json.dumps({
-            "fork": None, "merge_into": None, "conclude": None, "exited": [],
+            "ops": [],
         })
 
     story.set_lifecycle_callback(lifecycle)

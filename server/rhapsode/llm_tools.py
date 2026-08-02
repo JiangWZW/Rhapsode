@@ -3,14 +3,74 @@ the engine's call-scoped read function."""
 
 import json
 import logging
+import os
 
 from rhapsode.llm import complete, complete_with_tools
+from rhapsode.llm_profile import infer_narrator_phase
 
 log = logging.getLogger(__name__)
 
 
-def call_llm(prompt: str) -> str:
-    return complete([{"role": "user", "parts": [{"text": prompt}]}])
+def _base_model() -> str | None:
+    return os.environ.get("RHAPSODE_MODEL")
+
+
+def _pro_model() -> str | None:
+    return os.environ.get("RHAPSODE_NARRATOR_MODEL") or _base_model()
+
+
+def call_llm(
+    prompt: str,
+    *,
+    stage: str = "llm",
+    model: str | None = None,
+    thinking: bool | None = None,
+    phase: str = "",
+) -> str:
+    return complete(
+        [{"role": "user", "parts": [{"text": prompt}]}],
+        model=model,
+        thinking=thinking,
+        stage=stage,
+        phase=phase,
+    )
+
+
+def make_llm_callback(
+    stage: str,
+    *,
+    model: str | None = None,
+    thinking: bool | None = None,
+):
+    """Plain completion callback. model/thinking resolve at call time if None
+    is passed for model — callers should pass explicit thinking for non-narrator
+    stages so they do not inherit RHAPSODE_DEEPSEEK_THINKING."""
+    def _call(prompt: str) -> str:
+        return call_llm(
+            prompt,
+            stage=stage,
+            model=model if model is not None else _base_model(),
+            thinking=thinking,
+        )
+    return _call
+
+
+def make_weaver_callback():
+    """Weave + expiry: base (flash) model, thinking off."""
+    def _call(prompt: str) -> str:
+        head = prompt[:600].lower()
+        stage = "expiry" if ("expir" in head or "valid_until" in head) else "weave"
+        return call_llm(
+            prompt, stage=stage, model=_base_model(), thinking=False)
+    return _call
+
+
+def make_reflection_callback():
+    """Character reflection: narrator/pro model, thinking on."""
+    def _call(prompt: str) -> str:
+        return call_llm(
+            prompt, stage="reflection", model=_pro_model(), thinking=True)
+    return _call
 
 
 NARRATOR_TOOLS = [
@@ -97,7 +157,7 @@ def make_narrator_callback():
     """
     def narrator(scene_id: str, instructions: str, turn_state: str, read_tool) -> str:
         def dispatch(name: str, args: dict) -> str:
-            log.info("[narrator %s] tool: %s %s", scene_id, name,
+            log.debug("[narrator %s] tool: %s %s", scene_id, name,
                      json.dumps(args or {}, ensure_ascii=False))
             return read_tool(name, json.dumps(args or {}))
 
@@ -105,5 +165,9 @@ def make_narrator_callback():
             {"role": "system", "parts": [{"text": instructions}]},
             {"role": "user", "parts": [{"text": turn_state}]},
         ]
-        return complete_with_tools(messages, NARRATOR_TOOLS, dispatch)
+        return complete_with_tools(
+            messages, NARRATOR_TOOLS, dispatch,
+            stage=f"narrator:{scene_id}",
+            phase=infer_narrator_phase(instructions),
+        )
     return narrator

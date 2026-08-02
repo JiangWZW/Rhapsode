@@ -107,14 +107,14 @@ std::vector<ExpiryOp> Weaver::check_group(
           "{\"superseded\": [{\"id\": <old>, \"by\": <newer>}], \"reason\": \"...\"}\n"
           "If all are still true: {\"superseded\": [], \"reason\": \"all current\"}\n";
 
-    if (!local_llm_cb_) {
-        log() << "  [expiry] no local LLM callback -- skipping group\n";
+    if (!llm_cb_) {
+        log() << "  [expiry] no LLM callback -- skipping group\n";
         return {};
     }
 
     std::string response;
     try {
-        response = local_llm_cb_(sanitize_utf8(os.str()));
+        response = llm_cb_(sanitize_utf8(os.str()));
     } catch (const std::exception& e) {
         log() << "  [expiry] LLM call failed: " << e.what() << "\n";
         return {};

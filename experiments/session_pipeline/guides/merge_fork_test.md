@@ -7,8 +7,9 @@ Stay in character. Use `list_scenes` every turn. Use `query_graph` /
 
 - **FORK**: non-player cast leaves *your* scene with a clear ongoing goal.
   You never put yourself in a fork.
-- **MERGE**: physical co-presence with another live storyline *in this beat*
-  (same place, same moment). Pursuit alone does not merge.
+- **MERGE**: physical co-presence with another live storyline (same place,
+  same moment) — usually authored when *you* arrive with them. Pursuit alone
+  does not merge.
 - Your scene is never merged away.
 
 ## Pace (hard)

@@ -1,0 +1,47 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 1  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=1
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I sigh, push back from the table, and walk over to Luna.
+
+[Narrator]
+Luna spots you the moment you stand up. Her professional smile locks into place with the precision of someone who has spent years perfecting the art of not screaming at adventurers. She watches your approach the way a farmer watches a locust cloud — resigned, already calculating the damage, but too polite to run.
+
+Behind you, Aqua waves her empty mug in the air, apparently under the impression that you're heading to the bar and not the reception desk. Megumin is still slumped forward on the table from this morning's explosion, her crimson eyes barely open. Darkness, meanwhile, has perked up considerably — she knows exactly why you're walking toward the quest board, and the prospect of violence and humiliation has given her a second wind.
+
+Luna's fingers are already resting on a single quest parchment at the corner of her desk — separate from the board, as though she set it aside knowing exactly who would come asking.
+
+[Luna]
+Good morning. Your tab has reached a figure that my supervisor has begun underlining in red. Twice. (Her smile does not waver, but her eye twitches.)
+
+[Aqua]
+Kazumaaaa! If you're getting a quest, make sure it pays in advance! This ale isn't going to pay for itself! (Waving her mug from across the guild hall, completely missing the point.)
+
+[Darkness]
+The Brutal Alligator subjugation is still posted. I saw it. They lurk in the sewers and— and they drag their prey underwater and— (Rising from the table, cheeks flushed, breath quickening.)
+

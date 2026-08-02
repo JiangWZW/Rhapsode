@@ -1,0 +1,26 @@
+{
+  "critique": "",
+  "end_reason": "MaxTurns",
+  "narrative": {
+    "cast_gaps": 0,
+    "empty_beats": 0,
+    "findings": [
+      "No saves/world.json — narrative metrics skipped"
+    ],
+    "length_collapse": 0.0,
+    "repetition_score": 0.0
+  },
+  "reliability": {
+    "errors": 0,
+    "log_markers": [],
+    "server_exit_code": 0,
+    "timeouts": 0,
+    "turn_ms": [
+      76083.4358,
+      112898.5404,
+      48657.8102
+    ],
+    "turns_completed": 3,
+    "turns_requested": 3
+  }
+}

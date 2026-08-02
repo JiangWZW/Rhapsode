@@ -291,9 +291,13 @@ void SessionReport::write(const std::string& dir) const {
     if (!reliability.turn_ms.empty()) {
         std::vector<double> sorted = reliability.turn_ms;
         std::sort(sorted.begin(), sorted.end());
+        double sum = 0.0;
+        for (double v : sorted) sum += v;
+        const double avg = sum / static_cast<double>(sorted.size());
         const double p50 = sorted[sorted.size() / 2];
         const double p95 = sorted[static_cast<size_t>(sorted.size() * 0.95)];
-        md << "- **Turn latency ms:** p50=" << p50 << " p95=" << p95 << "\n";
+        md << "- **Turn latency ms:** avg=" << avg
+           << " p50=" << p50 << " p95=" << p95 << "\n";
     }
     if (!reliability.log_markers.empty()) {
         md << "- **Log markers:** ";

@@ -38,7 +38,8 @@ std::string join_sorted(std::vector<std::string> names) {
 
 std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
                                       const SceneData& scene,
-                                      const World& world) {
+                                      const World& world,
+                                      const std::string& live_storylines_board) {
     std::vector<std::string> parts;
     std::vector<std::string> cast_lines;
     std::vector<std::string> on_stage_names;
@@ -66,6 +67,9 @@ std::string build_narrator_turn_state(const std::vector<SceneMessage>& history,
         parts.push_back("### Cast");
         parts.insert(parts.end(), cast_header.begin(), cast_header.end());
     }
+
+    if (!live_storylines_board.empty())
+        parts.push_back(live_storylines_board);
 
     const std::string story_so_far =
         render_text_downsampling(scene.downsampling);
@@ -130,7 +134,7 @@ and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
 
 RULES:
 - Never narrate unperformed Player actions. May foreshadow options.
-- PRESENCE IS HARD: the Cast header lists who is on-stage vs off-stage. Do NOT teleport, summon, or invent an off-stage character into this beat because the player calls their name. If the player addresses someone who is not on-stage, show that they are absent (empty doorway, no answer, player talking to air) and continue with whoever IS present. Speech_turns and active_cast may only include on-stage living NPCs.
+- PRESENCE IS HARD: the Cast header lists who is on-stage vs off-stage for THIS scene. Do NOT teleport, summon, or invent an off-stage character into this beat because the player calls their name. If the player addresses someone who is not on-stage, show that they are absent (empty doorway, no answer, player talking to air) and continue with whoever IS present. Speech_turns and active_cast may only include on-stage living NPCs. Live storylines (if present) are board context -- acknowledge other threads without moving their cast onto this stage.
 - speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
 - active_cast: the living NPCs on-screen in this beat. [] if the player is alone. This is presence for THIS beat only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.

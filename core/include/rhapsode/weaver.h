@@ -45,15 +45,12 @@ public:
     bool uses_graph(const WorldGraph& graph) const noexcept { return &graph_ == &graph; }
 
     void set_llm_callback(LLMCallback cb);
-    void set_local_llm_callback(LLMCallback cb);
     void set_interval(int turns);
     bool active() const noexcept { return active_; }
     bool should_weave(int turn_index) const;
 
-    /// Full weave using the cloud LLM (called on should_weave turns).
+    /// Graph edge audit using the weaver LLM (called on should_weave turns).
     WeaveResult weave(int turn_index, const std::string& scene_context = "");
-    /// Lightweight weave using the local LLM on non-full-weave turns.
-    WeaveResult weave_local(int turn_index, const std::string& scene_context = "");
 
     // -- Entity-group expiry detector --
 
@@ -62,7 +59,7 @@ public:
     void rebuild_expiry_queue(
         const std::vector<std::string>& priority_entities = {});
 
-    /// Drain the expiry queue, one local-LLM call per entity group.
+    /// Drain the expiry queue, one LLM call per entity group.
     /// Loops until queue empty or stop_expiry_drain() is called.
     /// Thread-safe with stop_expiry_drain().
     std::vector<ExpiryOp> drain_expiry_queue(int turn_index);
@@ -75,15 +72,13 @@ public:
 private:
     WorldGraph& graph_;
     LLMCallback llm_cb_;
-    LLMCallback local_llm_cb_;
     int interval_ = 3;
     bool active_ = false;
 
     std::string build_prompt(const std::string& scene_context) const;
     WeaveResult parse_and_apply(const std::string& llm_response,
                                 int turn_index);
-    WeaveResult weave_impl(int turn_index, const std::string& scene_context,
-                           LLMCallback& cb, const char* label);
+    WeaveResult weave_impl(int turn_index, const std::string& scene_context);
 
     // Selection RNG (mutable: not part of observable Weaver state)
     mutable std::mt19937 rng_{std::random_device{}()};

@@ -12,7 +12,7 @@ from fastapi.responses import Response
 
 from rhapsode._core import Story, analyze_graph
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
-from rhapsode.llm_tools import call_llm
+from rhapsode.llm_tools import make_weaver_callback
 
 log = logging.getLogger(__name__)
 
@@ -218,7 +218,7 @@ def weave_endpoint():
     story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
-    story.set_weaver_llm_callback(call_llm)
+    story.set_weaver_llm_callback(make_weaver_callback())
     result = story.weave_scene(scene.scene_id)
     story.save(SAVES_DIR)
     return {

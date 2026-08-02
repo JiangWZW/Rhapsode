@@ -2,6 +2,23 @@
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
 
+## [2026-08-02] research | DeepSeek V4 latency / streaming / cache
+
+- Captured exploration notes: streaming mechanics and Rhapsode sketch; why `max_tokens` is a hard stop not a “hurry” signal; Context Caching on Disk as prefix/KV-related reuse and why dates must leave the prompt front.
+- New page: [research/deepseek-v4-latency-streaming-cache.md](research/deepseek-v4-latency-streaming-cache.md).
+- Added `RHAPSODE_LLM_PROFILE` JSONL profiler (`server/rhapsode/llm_profile.py`) for per-call wall_ms + usage/cache/reasoning + beat/graph phase.
+
+## [2026-08-02] implementation | Board-scoped lifecycle check
+
+- After every scene step, lifecycle sees the whole board and may emit merge/conclude/fork/exit ops
+  for any storyline (fork still restricted to the scene that just stepped).
+- Removed the per-scene `merge_into` verdict that required co-presence only in the fork's own prose —
+  merges can now land on the same turn as a main-scene reunion.
+- Unified player and off-stage advance into `Story::step_scene`; scheduler picks up to two off-stage
+  scenes with a staleness starvation guard.
+- Narrator turn state includes a live-storylines board section; autonomous cues no longer ask the
+  fork to re-author Player arrival for merge.
+
 ## [2026-07-22] implementation | Storyline lifecycle continuity
 
 - Fork now validates canonical non-Player cast and intention, asks the narrator for one

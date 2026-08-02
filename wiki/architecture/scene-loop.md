@@ -73,10 +73,12 @@ Python adapters do not capture Story, and retained use after the call throws
 `Read tool callback is no longer active`. C++ dispatches only the existing read tools: graph, mind,
 history, and live-storyline summaries.
 
-`storyline_policy` builds a plain BeatSummary containing the completed narration and dialogue. Its
-`other_storylines` payload excludes the scene being judged. The lifecycle callback may inspect the
-same read tools before returning a plain LifecycleDecision; contradictory terminal/fork/exit
-combinations are rejected before Story applies anything.
+`storyline_policy` builds a plain BeatSummary for the scene that just stepped, plus a full
+board of live storyline rows (`recent_narration` for lifecycle only; `list_scenes` keeps the
+short `last_narration`). The lifecycle callback returns an ordered op list
+(`merge` / `conclude` / `fork` / `exit`) that may target any storyline; Story applies each op
+independently after revalidation (merge first). Forks are restricted to the just-advanced scene.
+The scheduler may pick up to two off-stage scenes per turn, with a staleness starvation guard.
 
 Fork and merge use the narrator callback outside normal turn execution to synthesize continuity.
 Both validate the response before changing scenes or membership. Conclusion makes no extra LLM

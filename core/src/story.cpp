@@ -227,12 +227,13 @@ SceneData* Story::fork_scene(const std::string& parent_id,
 
     SceneData* adopted = adopt_scene(std::move(child));
     *world_ = std::move(next_world);
-    log() << "  [fork] scene '" << parent_id << "' -> '" << new_id << "' with cast [";
+    std::ostringstream cast_line;
     for (size_t i = 0; i < resolved_cast->size(); ++i) {
-        if (i) log() << ", ";
-        log() << (*resolved_cast)[i];
+        if (i) cast_line << ", ";
+        cast_line << (*resolved_cast)[i];
     }
-    log() << "]\n";
+    log_info("story") << "fork from=" << parent_id << " to=" << new_id
+                      << " cast=[" << cast_line.str() << "]\n";
     return adopted;
 }
 
@@ -286,7 +287,7 @@ bool Story::conclude_scene(const std::string& id, const std::string& reason) {
     scene_closures_.push_back(std::move(closure));
     *world_ = std::move(next_world);
     scenes_.erase(it);
-    log() << "  [story] conclude scene '" << id << "': " << clean_reason << "\n";
+    log_info("story") << "conclude scene=" << id << ": " << clean_reason << "\n";
     if (active_scene_id_ == id)
         active_scene_id_ = scenes_.front()->scene_id;
     return true;
@@ -351,7 +352,7 @@ bool Story::merge_scene(const std::string& from_id, const std::string& into_id) 
         [&](const auto& scene) { return scene->scene_id == from_id; });
     scenes_.erase(it);
     if (active_scene_id_ == from_id) active_scene_id_ = into_id;
-    log() << "  [story] merge scene '" << from_id << "' -> '" << into_id << "'\n";
+    log_info("story") << "merge from=" << from_id << " into=" << into_id << "\n";
     return true;
 }
 
@@ -399,6 +400,8 @@ SceneSummary Story::summarize_scene(const SceneData& scene) const {
         if (it->role != Role::Assistant) continue;
         // Byte-substr mid codepoint breaks nlohmann dump() (UTF-8 type_error.316).
         summary.last_narration = truncate_utf8_ellipsis(it->content, 240);
+        // Board lifecycle payload only — keeps list_scenes payloads small.
+        summary.recent_narration = truncate_utf8_ellipsis(it->content, 1200);
         break;
     }
     return summary;
@@ -596,10 +599,6 @@ void Story::set_narrator_llm_callback(NarratorLLMCallback cb) {
 
 void Story::set_weaver_llm_callback(LLMCallback cb) {
     weaver_->set_llm_callback(std::move(cb));
-}
-
-void Story::set_weaver_local_llm_callback(LLMCallback cb) {
-    weaver_->set_local_llm_callback(std::move(cb));
 }
 
 void Story::set_weaver_interval(int turns) { weaver_->set_interval(turns); }

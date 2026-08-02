@@ -151,8 +151,6 @@ void bind_story(py::module_& m) {
              py::arg("cb"))
         .def("set_weaver_llm_callback", &Story::set_weaver_llm_callback,
              py::arg("cb"))
-        .def("set_weaver_local_llm_callback", &Story::set_weaver_local_llm_callback,
-             py::arg("cb"))
         .def("set_weaver_interval", &Story::set_weaver_interval,
              py::arg("turns"))
         .def("weave_scene", &Story::weave_scene, py::arg("scene_id"))

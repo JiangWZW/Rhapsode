@@ -10,6 +10,6 @@ turns = 3
 host = "127.0.0.1"
 port = "8080"
 ws_path = "/ws"
-turn_timeout_s = 1200
-open_timeout_s = 1200
+turn_timeout_s = 1800
+open_timeout_s = 120
 saves_dir = ""   # empty = <repo>/server/saves

@@ -10,6 +10,7 @@ history, graph, mind, and live-scene tools before returning its decision.
 """
 
 import json
+import os
 
 from rhapsode.llm import complete_with_tools
 from rhapsode.llm_tools import NARRATOR_TOOLS
@@ -20,8 +21,10 @@ def make_lifecycle_callback():
         def dispatch(name: str, args: dict) -> str:
             return read_tool(name, json.dumps(args or {}))
 
+        # Base model + thinking off — do not inherit RHAPSODE_DEEPSEEK_THINKING.
         return complete_with_tools([
             {"role": "system", "parts": [{"text": instructions}]},
             {"role": "user", "parts": [{"text": user}]},
-        ], NARRATOR_TOOLS, dispatch)
+        ], NARRATOR_TOOLS, dispatch, model=os.environ.get("RHAPSODE_MODEL"),
+           thinking=False, stage="lifecycle", phase="verdict")
     return lifecycle

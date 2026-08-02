@@ -1,0 +1,75 @@
+# Story transcript
+
+Active scene: konosuba
+Live storylines: 1  Concluded: 0
+
+============================================================
+## Main — konosuba (Axel Town — The Adventurer's Guild)
+turn=2
+
+[Narrator]
+Another beautiful morning in Axel — which means another morning of being broke.
+
+You sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.
+
+Aqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. "Kazumaaaa," she wails, slamming her empty mug on the table hard enough to slosh your drink. "We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!"
+
+"We're broke BECAUSE you keep drinking," you mutter, but she's already flagging down the waitress for another round on your tab.
+
+Megumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.
+
+Darkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.
+
+"K-Kazuma," she stammers, not turning around. "There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater..."
+
+She's trembling. That's not fear.
+
+Luna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.
+
+[Player]
+I sigh, push back from the table, and walk over to Luna.
+
+[Narrator]
+Luna spots you the moment you stand up. Her professional smile locks into place with the precision of someone who has spent years perfecting the art of not screaming at adventurers. She watches your approach the way a farmer watches a locust cloud — resigned, already calculating the damage, but too polite to run.
+
+Behind you, Aqua waves her empty mug in the air, apparently under the impression that you're heading to the bar and not the reception desk. Megumin is still slumped forward on the table from this morning's explosion, her crimson eyes barely open. Darkness, meanwhile, has perked up considerably — she knows exactly why you're walking toward the quest board, and the prospect of violence and humiliation has given her a second wind.
+
+Luna's fingers are already resting on a single quest parchment at the corner of her desk — separate from the board, as though she set it aside knowing exactly who would come asking.
+
+[Luna]
+Good morning. Your tab has reached a figure that my supervisor has begun underlining in red. Twice. (Her smile does not waver, but her eye twitches.)
+
+[Aqua]
+Kazumaaaa! If you're getting a quest, make sure it pays in advance! This ale isn't going to pay for itself! (Waving her mug from across the guild hall, completely missing the point.)
+
+[Darkness]
+The Brutal Alligator subjugation is still posted. I saw it. They lurk in the sewers and— and they drag their prey underwater and— (Rising from the table, cheeks flushed, breath quickening.)
+
+[Player]
+I pull a heavy coin purse from my jacket and drop it on Luna's desk with a solid thunk. "The tab—all of it. Owning the rights to my portable magic tank idea finally paid off. Put the rest toward this year's dining costs before my party drinks us into the poorhouse."
+
+[Narrator]
+Luna's hand stops mid-reach for the ledger. She stares at the coin purse as though it might detonate.
+
+It doesn't. It just sits there — heavy, bulging, undeniably real — on her carefully organized desk. She blinks. Once. Twice. Behind you, the clatter of Aqua's empty mug hitting the table is the only sound in the sudden vacuum where your party's ambient chaos used to be.
+
+Luna's professional smile hasn't moved, but something behind her eyes has short-circuited. She reaches for the purse with the slow, reverent caution of someone disarming a trap. The weight of it registers in her wrist — her fingers tighten. She opens the drawstring, peers inside, and goes very still.
+
+From your table, Aqua has already risen, swaying slightly, her divine senses apparently attuned to the precise frequency of money being spent on her behalf.
+
+Megumin pushes herself upright on wobbly arms, crimson eyes fixed on the purse with the intensity she normally reserves for Explosion incantations. Darkness sets down the quest flyer she'd been clutching — the one with the Brutal Alligator illustration — and turns toward the desk with a complicated expression, as though the sudden eradication of the party's debt has just removed her favorite excuse to suffer nobly.
+
+Luna closes the purse. Her smile twitches at the corners — not the practiced, weary smile of a guild receptionist, but something smaller and more genuine, the expression of a woman who just watched a miracle occur in triplicate-carbon paperwork and isn't sure the gods allow such things.
+
+[Luna]
+This… covers it. All of it. The red underlines. The supervisor's notes. Even the supplementary damages from last month's cabbage incident. (She sets the purse down with both hands, as if it might evaporate if she lets go.)
+
+[Aqua]
+KAZUMA! You had money this whole time?! I've been drinking the cheap ale! The CHEAP ale! Do you have any idea what that does to a goddess's palate?! (She storms over, then stops short, eyes locked on the purse with naked avarice.)
+
+[Megumin]
+The portable magic tank… You actually sold it to that masked devil? I thought you were joking. You are always joking. (She sways to her feet, gripping the table edge, legs still unreliable after dawn's Explosion.)
+
+[Darkness]
+The tab… paid in full. I see. Then I suppose there is no longer any urgent financial need for us to accept the Brutal Alligator quest. None at all. How… practical. (Her voice cracks slightly on 'practical,' the quest flyer crumpling in her gauntleted grip.)
+

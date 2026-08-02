@@ -8,15 +8,24 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from collections.abc import Callable
 from pathlib import Path
 
 from rhapsode._core import Story
-from rhapsode.llm import complete_with_tools
-from rhapsode.llm_tools import NARRATOR_TOOLS
+from rhapsode.llm import complete
 
 log = logging.getLogger("rhapsode.player")
+
+
+def _player_model() -> str:
+    """Resolve at call time so dotenv is already loaded; never fall back to pro."""
+    return (
+        os.environ.get("RHAPSODE_PLAYER_MODEL")
+        or os.environ.get("RHAPSODE_MODEL")
+        or "deepseek-v4-flash"
+    )
 
 _META_RE = re.compile(
     r"(chatgpt|knowledge cutoff|as an ai|i will adhere|"
@@ -158,16 +167,6 @@ def make_player_llm(
         scene_id = story.active_scene_id or ""
         situation = _situation_block(story, scene_id)
 
-        def dispatch(name: str, args: dict) -> str:
-            log.info(
-                "[player] tool: %s %s",
-                name,
-                json.dumps(args or {}, ensure_ascii=False),
-            )
-            return story.dispatch_tool(
-                scene_id, name, json.dumps(args or {}, ensure_ascii=False)
-            )
-
         user_prompt = prompt
         if last_action["text"]:
             user_prompt += (
@@ -184,6 +183,8 @@ def make_player_llm(
             and ch.in_scene(scene_id)
         ]
 
+        model = _player_model()
+
         def once(extra: str = "") -> str:
             system = _build_system(protocol, story, guide_text, situation)
             if extra:
@@ -192,7 +193,13 @@ def make_player_llm(
                 {"role": "system", "parts": [{"text": system}]},
                 {"role": "user", "parts": [{"text": user_prompt}]},
             ]
-            return complete_with_tools(messages, NARRATOR_TOOLS, dispatch).strip()
+            # One-shot flash, thinking OFF. Situation already embeds list_scenes /
+            # on-stage cast — no tool loop (that was burning minutes on pro).
+            log.info("[player] decide model=%s thinking=False", model)
+            return complete(
+                messages, model=model, thinking=False, stage="player",
+                phase="decide",
+            ).strip()
 
         action = once()
         if _is_bad_action(action, on_stage_names):

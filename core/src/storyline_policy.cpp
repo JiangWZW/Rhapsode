@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <sstream>
 #include <unordered_set>
 
 #include "rhapsode/json_util.h"
@@ -13,64 +14,51 @@ namespace {
 
 const std::string kSchedulerInstructions =
     "You are the scene scheduler for a parallel-storyline engine. The player's "
-    "scene has just advanced. Exactly one OFF-STAGE storyline may advance this "
+    "scene has just advanced. Up to TWO OFF-STAGE storylines may advance this "
     "turn while the others rest.\n"
     "Call list_scenes to see every live storyline. Weigh each off-stage row by "
     "its charge (how urgent its driving intention is), staleness (how many beats "
     "since it last advanced -- higher means overdue), and whether it is "
     "converging on the player. Drill in with query_graph or query_mind if a row "
     "is ambiguous.\n"
-    "Then call advance_scene exactly once with the scene_id of the single most "
-    "deserving off-stage storyline. Never pick the scene where player_present is "
-    "true. If nothing off-stage deserves a beat, call advance_scene with an empty "
-    "scene_id.";
+    "Then call advance_scene once per storyline you want advanced this turn "
+    "(at most 2). Never pick the scene where player_present is true. Prefer the "
+    "most overdue / highest-charge scenes. If nothing off-stage deserves a beat, "
+    "call advance_scene once with an empty scene_id.";
 
 const std::string kLifecycleInstructions =
     "You are the lifecycle director of a story that runs PARALLEL storylines. "
-    "After each beat you decide whether that beat changed the set of live "
-    "storylines for the scene just advanced.\n"
-    "- FORK: one or more NON-PLAYER characters leave the scene carrying an ongoing "
-    "goal or unresolved stake -- a party splits, a subgroup is dispatched, someone "
-    "storms off with a purpose, or the player walks away leaving companions behind "
-    "(fork the ones LEFT BEHIND). The player NEVER leaves their own storyline; "
-    "never put \"Player\" in a fork.\n"
-    "- MERGE: retire THIS scene by folding it into another live storyline. Set "
-    "merge_into to that storyline's scene_id from other_storylines. "
-    "merge_into ALWAYS means \"end the scene you are judging now and move its cast "
-    "into the target\"; it NEVER means \"absorb the other scene into this one\" "
-    "and it NEVER means \"send the player into a fork.\" "
-    "Require physical co-presence in THIS beat's narration (same place, same "
-    "moment) -- not pursuit, not shouting across a distance, not merely knowing "
-    "where the others are.\n"
-    "- CONCLUDE: this scene's driving intention is fulfilled or dead -- end it.\n"
-    "- EXIT: a character simply leaves with no ongoing thread worth following (a "
-    "passing NPC the group walked away from). They leave the cast; no new "
-    "storyline.\n"
-    "If the cast includes \"Player\", this is the player's OWN storyline:\n"
-    "- merge_into MUST be null. Always. Even when this beat's narration shows the "
-    "player reuniting with an off-stage cast -- do NOT merge the player scene into "
-    "a fork. The off-stage storyline merges into the player scene when THAT scene "
-    "advances.\n"
-    "- conclude MUST be null. The player storyline always continues.\n"
-    "- Only fork (companions leaving) or exit may apply.\n"
-    "If the cast does NOT include \"Player\":\n"
-    "- When THIS beat shows co-presence with the player storyline (other_storylines "
-    "row with player_present=true, or narration shows the Player arriving / standing "
-    "with this cast), set merge_into to that player storyline's scene_id. Prefer "
-    "merge over forking further or continuing alone.\n"
-    "- The same rule applies when reuniting with any other non-player storyline: "
-    "fold THIS scene into theirs via merge_into, never the reverse from a scene "
-    "you are not judging.\n"
-    "Most beats change NOTHING. Act only on a concrete change in THIS beat -- never "
-    "on mood, a passing aside, or characters merely staying together.\n"
-    "Use query_history, query_graph, or query_mind when the beat does not contain "
-    "enough evidence to decide.\n"
-    "Reply with ONLY JSON (use null / [] for anything that does not apply):\n"
-    "{\"fork\": {\"cast\": [names], \"driving_intention\": \"one sentence\"} | null, "
-    "\"merge_into\": \"scene_id\" | null, \"conclude\": \"reason\" | null, "
-    "\"exited\": [names]}";
+    "After EVERY scene step you review the WHOLE board and decide whether any "
+    "live storyline should fork, merge, conclude, or exit characters.\n"
+    "You receive: advanced_scene_id (the scene that just stepped), its full new "
+    "narration/dialogue/player_action, and a row for EVERY live storyline "
+    "(cast, intention, recent_narration).\n"
+    "- MERGE: fold a NON-PLAYER storyline into another live one. "
+    "{\"op\":\"merge\",\"from\":\"<scene_id>\",\"into\":\"<scene_id>\","
+    "\"reason\":\"...\"}. "
+    "from MUST NOT contain the Player. Prefer merge when board evidence shows "
+    "co-presence (same place, same moment) -- including when the just-advanced "
+    "scene's narration puts the Player with another storyline's cast, or when "
+    "a fork's recent_narration shows the Player arriving. "
+    "merge means retire `from` and move its cast into `into`.\n"
+    "- CONCLUDE: a storyline's driving intention is fulfilled or dead -- end it. "
+    "{\"op\":\"conclude\",\"scene_id\":\"...\",\"reason\":\"...\"}. "
+    "Never conclude the storyline that contains the Player.\n"
+    "- FORK: NON-PLAYER characters leave the JUST-ADVANCED scene with an ongoing "
+    "goal. {\"op\":\"fork\",\"parent\":\"<advanced_scene_id>\",\"cast\":[names],"
+    "\"driving_intention\":\"one sentence\"}. "
+    "parent MUST equal advanced_scene_id. Never put Player in cast.\n"
+    "- EXIT: a character leaves a storyline with no thread worth following. "
+    "{\"op\":\"exit\",\"scene_id\":\"...\",\"names\":[names]}.\n"
+    "Most steps change NOTHING. Return {\"ops\":[]} unless there is concrete "
+    "evidence in this step's narration or the board rows.\n"
+    "Use query_history, query_graph, query_mind, or list_scenes when needed.\n"
+    "Reply with ONLY JSON:\n"
+    "{\"ops\":[ ... ]}";
 
 nlohmann::json scene_summary_json(const SceneSummary& summary) {
+    // list_scenes / tool payload: keep last_narration short. recent_narration is
+    // board-check only (see board_storyline_json).
     nlohmann::json row;
     row["scene_id"] = sanitize_utf8(summary.scene_id);
     row["title"] = sanitize_utf8(summary.title);
@@ -88,6 +76,12 @@ nlohmann::json scene_summary_json(const SceneSummary& summary) {
     return row;
 }
 
+nlohmann::json board_storyline_json(const SceneSummary& summary) {
+    nlohmann::json row = scene_summary_json(summary);
+    row["recent_narration"] = sanitize_utf8(summary.recent_narration);
+    return row;
+}
+
 std::vector<std::string> string_values(const nlohmann::json& values) {
     std::vector<std::string> result;
     if (!values.is_array()) return result;
@@ -95,6 +89,62 @@ std::vector<std::string> string_values(const nlohmann::json& values) {
         if (value.is_string()) result.push_back(value.get<std::string>());
     }
     return result;
+}
+
+int op_sort_key(LifecycleOp::Kind kind) {
+    switch (kind) {
+        case LifecycleOp::Kind::Merge: return 0;
+        case LifecycleOp::Kind::Conclude: return 1;
+        case LifecycleOp::Kind::Fork: return 2;
+        case LifecycleOp::Kind::Exit: return 3;
+    }
+    return 9;
+}
+
+std::optional<LifecycleOp> parse_op(const nlohmann::json& element) {
+    if (!element.is_object()) return std::nullopt;
+    const std::string kind = str::trim(element.value("op", ""));
+    LifecycleOp op;
+    if (kind == "merge") {
+        op.kind = LifecycleOp::Kind::Merge;
+        op.from = str::trim(element.value("from", ""));
+        op.into = str::trim(element.value("into", ""));
+        op.reason = str::trim(element.value("reason", ""));
+        if (op.from.empty() || op.into.empty() || op.from == op.into)
+            return std::nullopt;
+        return op;
+    }
+    if (kind == "conclude") {
+        op.kind = LifecycleOp::Kind::Conclude;
+        op.scene_id = str::trim(element.value("scene_id", ""));
+        op.reason = str::trim(element.value("reason", ""));
+        if (op.scene_id.empty() || op.reason.empty()) return std::nullopt;
+        return op;
+    }
+    if (kind == "fork") {
+        op.kind = LifecycleOp::Kind::Fork;
+        op.scene_id = str::trim(element.value("parent", ""));
+        op.cast = string_values(element.value("cast", nlohmann::json::array()));
+        op.driving_intention = str::trim(element.value("driving_intention", ""));
+        if (op.scene_id.empty() || op.cast.empty() ||
+            op.driving_intention.empty()) {
+            return std::nullopt;
+        }
+        std::unordered_set<std::string> seen;
+        for (const auto& name : op.cast) {
+            if (!seen.insert(str::to_lower(name)).second) return std::nullopt;
+            if (str::iequals(name, "Player")) return std::nullopt;
+        }
+        return op;
+    }
+    if (kind == "exit") {
+        op.kind = LifecycleOp::Kind::Exit;
+        op.scene_id = str::trim(element.value("scene_id", ""));
+        op.cast = string_values(element.value("names", nlohmann::json::array()));
+        if (op.scene_id.empty() || op.cast.empty()) return std::nullopt;
+        return op;
+    }
+    return std::nullopt;
 }
 
 }  // namespace
@@ -107,11 +157,36 @@ std::string serialize_scene_summaries(
     return rows.dump();
 }
 
+std::string format_live_storylines_board(
+    const std::vector<SceneSummary>& summaries) {
+    if (summaries.empty()) return {};
+    std::ostringstream os;
+    os << "### Live storylines\n";
+    for (const auto& summary : summaries) {
+        os << "- " << summary.scene_id;
+        if (summary.player_present) os << " [PLAYER]";
+        os << " cast=[";
+        for (size_t i = 0; i < summary.cast.size(); ++i) {
+            if (i) os << ", ";
+            os << summary.cast[i];
+        }
+        os << "]";
+        if (!summary.driving_intention.empty())
+            os << " intention=" << summary.driving_intention;
+        if (!summary.last_narration.empty())
+            os << " last=" << summary.last_narration;
+        os << "\n";
+    }
+    return os.str();
+}
+
 std::string request_off_stage_scene(const SchedulerCallback& callback,
                                     const ReadToolCallback& read_tool) {
     if (!callback) return {};
     return str::trim(callback(
-        kSchedulerInstructions, "Pick the next off-stage scene to advance.",
+        kSchedulerInstructions,
+        "Pick up to two off-stage scenes to advance (call advance_scene "
+        "once per pick).",
         read_tool));
 }
 
@@ -121,12 +196,13 @@ std::optional<LifecycleDecision> request_lifecycle_decision(
     if (!callback) return std::nullopt;
 
     nlohmann::json context;
-    context["scene_id"] = sanitize_utf8(summary.scene_id);
+    context["advanced_scene_id"] = sanitize_utf8(summary.scene_id);
     context["title"] = sanitize_utf8(summary.title);
     nlohmann::json cast = nlohmann::json::array();
     for (const auto& name : summary.cast)
         cast.push_back(sanitize_utf8(name));
     context["cast"] = std::move(cast);
+    context["player_present"] = summary.player_present;
     context["player_action"] = summary.player_action
         ? nlohmann::json(sanitize_utf8(*summary.player_action))
         : nlohmann::json(nullptr);
@@ -142,27 +218,13 @@ std::optional<LifecycleDecision> request_lifecycle_decision(
         context["dialogue"].push_back(std::move(row));
     }
     nlohmann::json storylines = nlohmann::json::array();
-    for (const auto& storyline : summary.storylines) {
-        if (storyline.scene_id == summary.scene_id) continue;
-        storylines.push_back(scene_summary_json(storyline));
-    }
-    context["other_storylines"] = std::move(storylines);
+    for (const auto& storyline : summary.storylines)
+        storylines.push_back(board_storyline_json(storyline));
+    context["storylines"] = std::move(storylines);
 
-    std::string decide =
-        "Decide the lifecycle verdict for the beat just authored:\n" +
+    const std::string decide =
+        "Decide lifecycle ops for the board after this step:\n" +
         context.dump(2);
-    const bool player_scene = std::any_of(
-        summary.cast.begin(), summary.cast.end(),
-        [](const std::string& name) { return str::iequals(name, "Player"); });
-    if (player_scene) {
-        decide += "\n\nReminder: cast includes Player — merge_into and conclude "
-                  "MUST be null. Reunion with a fork is handled when that fork "
-                  "advances (it merges into this scene).";
-    } else {
-        decide += "\n\nReminder: non-player scene — if THIS beat shows co-presence "
-                  "with the player storyline, set merge_into to that scene_id "
-                  "(fold THIS scene into theirs). Never invent the reverse.";
-    }
 
     const std::string raw = callback(
         kLifecycleInstructions, decide, read_tool);
@@ -176,54 +238,29 @@ std::optional<LifecycleDecision> request_lifecycle_decision(
     if (!verdict.is_object()) return std::nullopt;
 
     LifecycleDecision decision;
-    if (const auto it = verdict.find("conclude");
-        it != verdict.end() && it->is_string() && !it->get<std::string>().empty()) {
-        decision.conclude_reason = it->get<std::string>();
+    const auto ops_it = verdict.find("ops");
+    if (ops_it == verdict.end()) {
+        // Missing "ops" key: treat as a no-op (covers `{}` and `{"reasoning":...}`).
+        return decision;
     }
-    if (const auto it = verdict.find("merge_into");
-        it != verdict.end() && it->is_string() && !it->get<std::string>().empty()) {
-        decision.merge_into = it->get<std::string>();
-    }
-    if (const auto it = verdict.find("fork");
-        it != verdict.end() && it->is_object()) {
-        LifecycleDecision::Fork fork;
-        fork.cast = string_values(it->value("cast", nlohmann::json::array()));
-        fork.driving_intention = str::trim(
-            it->value("driving_intention", ""));
-        decision.fork = std::move(fork);
-    }
-    if (const auto it = verdict.find("exited"); it != verdict.end())
-        decision.exited = string_values(*it);
+    if (!ops_it->is_array()) return std::nullopt;
 
-    const int terminal_actions =
-        static_cast<int>(decision.conclude_reason.has_value()) +
-        static_cast<int>(decision.merge_into.has_value());
-    if (terminal_actions > 1 ||
-        (terminal_actions == 1 &&
-         (decision.fork.has_value() || !decision.exited.empty()))) {
-        return std::nullopt;
+    for (const auto& element : *ops_it) {
+        auto op = parse_op(element);
+        if (!op) return std::nullopt;
+        decision.ops.push_back(std::move(*op));
     }
-    if (decision.fork) {
-        if (decision.fork->cast.empty() ||
-            decision.fork->driving_intention.empty()) {
-            return std::nullopt;
-        }
-        std::unordered_set<std::string> forked;
-        for (const auto& name : decision.fork->cast) {
-            if (!forked.insert(str::to_lower(name)).second)
-                return std::nullopt;
-        }
-        for (const auto& name : decision.exited) {
-            if (forked.count(str::to_lower(name)) > 0)
-                return std::nullopt;
-        }
-    }
+
+    std::stable_sort(decision.ops.begin(), decision.ops.end(),
+        [](const LifecycleOp& a, const LifecycleOp& b) {
+            return op_sort_key(a.kind) < op_sort_key(b.kind);
+        });
     return decision;
 }
 
 std::string build_autonomous_cue(const SceneSummary& summary) {
     std::string cue =
-        "[Off-stage beat: the player is elsewhere. Advance THIS storyline by one "
+        "[Off-stage step: the player is elsewhere. Advance THIS storyline by one "
         "meaningful step toward its goal, and record what changes as facts.]";
     if (!summary.driving_intention.empty())
         cue += "\nDriving intention: " + summary.driving_intention;
@@ -231,10 +268,8 @@ std::string build_autonomous_cue(const SceneSummary& summary) {
         cue += "\nLast we saw: " + summary.last_narration;
     cue += "\nIf this storyline's cast has physically reached another storyline's "
            "location (co-presence, not mere pursuit), author that arrival in this "
-           "beat. If the Player has arrived and is with this cast, make that reunion "
-           "explicit in the narration so lifecycle can merge THIS scene into the "
-           "player's storyline (never the reverse). Do not call tools to merge; "
-           "lifecycle decides afterward.";
+           "step. Do not call tools to merge; the board lifecycle check decides "
+           "afterward.";
     return cue;
 }
 

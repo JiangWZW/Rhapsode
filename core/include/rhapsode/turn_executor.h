@@ -59,6 +59,10 @@ public:
     }
     void set_history_window(size_t normal, size_t resume);
     void set_resuming(bool value) { resuming_ = value; }
+    /// Optional board context pushed into narrator turn state for one turn.
+    void set_live_storylines_board(std::string board) {
+        live_storylines_board_ = std::move(board);
+    }
 
 private:
     enum class OutputBucket { Narration, Dialogue };
@@ -129,6 +133,11 @@ private:
     size_t window_size_ = 8;
     size_t resume_window_size_ = 12;
     bool resuming_ = false;
+    std::string live_storylines_board_;
+
+    // Running wall-time stats across successful turns on this executor.
+    int timed_turns_ = 0;
+    double turn_ms_sum_ = 0.0;
 };
 
 }  // namespace rhapsode

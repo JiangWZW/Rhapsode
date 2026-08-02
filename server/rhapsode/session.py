@@ -15,7 +15,10 @@ from rhapsode._core import (
     Annotator, MemorySystem, SceneData, SceneMessage, Story,
 )
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
-from rhapsode.llm_tools import call_llm, make_narrator_callback
+from rhapsode.llm_tools import (
+    make_llm_callback, make_narrator_callback, make_reflection_callback,
+    make_weaver_callback,
+)
 from rhapsode.scheduler import make_scheduler_callback
 from rhapsode.lifecycle import make_lifecycle_callback
 from rhapsode.memory import register_callbacks
@@ -54,14 +57,13 @@ def _sync_graph_to_memory(story: Story, memory: MemorySystem) -> None:
 
 def _configure_story(story: Story, *, resuming: bool) -> None:
     """Configure callbacks on the Story-owned native runtime."""
-    story.set_llm_callback(call_llm)
+    story.set_llm_callback(make_llm_callback("death", thinking=False))
     story.set_narrator_llm_callback(make_narrator_callback())
-    story.set_weaver_llm_callback(call_llm)
-    story.set_weaver_local_llm_callback(call_llm)
+    story.set_weaver_llm_callback(make_weaver_callback())
     story.set_resuming(resuming)
     story.set_scheduler_callback(make_scheduler_callback())
     story.set_lifecycle_callback(make_lifecycle_callback())
-    story.set_downsampler_callback(call_llm)
+    story.set_downsampler_callback(make_llm_callback("downsample", thinking=False))
     story.set_saves_dir(SAVES_DIR)
 
 
@@ -101,7 +103,7 @@ def _setup_ws_session() -> WsSession:
 
     _sync_graph_to_memory(story, memory)
     # Story keeps reflection configuration outside the persisted World value.
-    story.set_reflection_llm_callback(call_llm)
+    story.set_reflection_llm_callback(make_reflection_callback())
 
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())

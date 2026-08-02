@@ -8,15 +8,19 @@ from rhapsode import _core
 def test_public_binding_surface_matches_owned_runtime_design():
     expected = {
         "Annotator", "Character", "CharacterMemory",
-        "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EntitySpan",
-        "ExpiryOp", "GraphAnalysis", "MemorySystem", "Node",
-        "NodeState", "Rejection", "Role", "SceneData", "SceneMessage",
+        "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EndReason",
+        "EntitySpan", "ExpiryOp", "GraphAnalysis", "MemorySystem",
+        "NarrativeMetrics", "Node",
+        "NodeState", "Rejection", "ReliabilityMetrics", "Role", "SceneData",
+        "SceneMessage", "SessionEvalConfig", "SessionEvalRunner", "SessionReport",
         "Story", "WeaveOp", "WeaveResult",
         "Weaver", "World", "WorldGraph", "analyze_graph",
     }
     assert {name for name in dir(_core) if not name.startswith("_")} == expected
     assert not hasattr(_core, "Scene")
     assert not hasattr(_core, "SceneLoop")
+    assert not hasattr(_core.Weaver, "weave_local")
+    assert not hasattr(_core.Weaver, "set_local_llm_callback")
 
 
 def test_story_is_the_production_composition_surface():
@@ -25,17 +29,19 @@ def test_story_is_the_production_composition_surface():
         "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
         "fork_scene", "from_scenario_json_str", "get_scene", "has_save",
         "load_save", "load_scenario", "merge_scene", "note_advanced",
-        "revert_active_turns", "save", "scene_count", "scene_ids",
+        "render_transcript", "revert_active_turns", "save", "scene_count",
+        "scene_ids",
         "set_downsampler_callback", "set_history_window",
         "set_lifecycle_callback", "set_llm_callback",
         "set_memory", "set_reflection_llm_callback",
         "set_narrator_llm_callback", "set_resuming", "set_saves_dir",
         "set_scheduler_callback", "set_weaver_interval",
-        "set_weaver_llm_callback", "set_weaver_local_llm_callback",
+        "set_weaver_llm_callback",
         "to_scenario_json_str", "tool_list_scenes", "weave_scene", "world",
     }
     assert {name for name in dir(_core.Story) if not name.startswith("_")} == expected
     assert "bind_runtime" not in expected
+    assert "set_weaver_local_llm_callback" not in expected
 
 
 def test_scene_data_has_only_per_storyline_state():

@@ -9,6 +9,8 @@
 #include "rhapsode/world_analysis.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <exception>
 #include <utility>
 
@@ -244,6 +246,8 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
     TurnWork work;
     work.read_tool = std::move(read_tool);
 
+    set_log_context(scene.scene_id, scene.turn_index,
+                    autonomous ? "offstage" : "player");
     try {
         append_input_message(scene, text, autonomous);
         PostTurnResult completed = execute_turn(scene, work);
@@ -256,12 +260,14 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
         result.effects.expired_nodes = std::move(work.director_output.newly_expired);
         append_unique_nodes(result.effects.expired_nodes,
                             std::move(completed.expired_nodes));
+        clear_log_context();
         return result;
     } catch (...) {
         const auto original = std::current_exception();
         scene = scene_snapshot;
         world_ = world_snapshot;
         resuming_ = resuming_snapshot;
+        clear_log_context();
         std::rethrow_exception(original);
     }
 }
@@ -270,8 +276,7 @@ void TurnExecutor::append_input_message(SceneData& scene,
                                         const std::string& text,
                                         bool autonomous) {
     if (autonomous) {
-        log() << "\n[off-stage beat] advancing scene '" << scene.scene_id
-              << "' player-lessly\n" << std::flush;
+        log_debug("turn") << "off-stage cue scene=" << scene.scene_id << "\n";
     }
 
     SceneMessage message;
@@ -286,7 +291,11 @@ TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
     if (!llm_cb_) throw std::runtime_error("No LLM callback registered");
 
     const int turn = scene.turn_index;
-    log() << "\n====== Turn " << turn << " [" << scene.scene_id << "] ======\n";
+    const auto& ctx = log_context();
+    log_info("turn") << "begin scene=" << scene.scene_id
+                     << " id=" << turn
+                     << " kind=" << (ctx.kind.empty() ? "?" : ctx.kind) << "\n";
+    const auto t0 = std::chrono::steady_clock::now();
 
     const NarratorPrompt prompt = build_turn_prompt(scene);
     NarratorTurnResult result =
@@ -311,8 +320,18 @@ TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
         weaver_.rebuild_expiry_queue(priority);
     }
 
-    log() << "====== Turn " << turn << " done ======\n" << std::flush;
-    return run_post_turn(scene, turn);
+    PostTurnResult completed = run_post_turn(scene, turn);
+    const double ms = std::chrono::duration<double, std::milli>(
+                          std::chrono::steady_clock::now() - t0)
+                          .count();
+    ++timed_turns_;
+    turn_ms_sum_ += ms;
+    const double avg = turn_ms_sum_ / static_cast<double>(timed_turns_);
+    log_info("turn") << "end scene=" << scene.scene_id << " id=" << turn
+                     << " ms=" << static_cast<long long>(std::lround(ms))
+                     << " avg=" << static_cast<long long>(std::lround(avg))
+                     << "\n";
+    return completed;
 }
 
 void TurnExecutor::emit_output(SceneData& scene,
@@ -329,7 +348,7 @@ void TurnExecutor::emit_dialogue(SceneData& scene,
                                  int turn,
                                  const std::vector<SpeechCue>& cues,
                                  TurnWork& work) {
-    log() << "[4/4] Emit authored dialogue...\n" << std::flush;
+    log_debug("narrator") << "emit dialogue cues=" << cues.size() << "\n";
     for (const auto& cue : cues) {
         std::string spoken = str::trim(cue.field("line"));
         const std::string action = str::trim(cue.field("action"));
@@ -352,16 +371,16 @@ void TurnExecutor::confirm_deaths(const std::vector<DeathCandidate>& candidates,
             const auto response = llm_cb_(sanitize_utf8(prompt));
             if (is_affirmative_yes_response(response)) {
                 if (world_.mark_character_dead(candidate.character_name))
-                    log() << "  [dead] " << candidate.character_name
-                          << " (confirmed by LLM)\n";
+                    log_info("turn") << "dead " << candidate.character_name
+                                     << " (confirmed)\n";
             } else {
-                log() << "  [death-scan] " << candidate.character_name
-                      << " -- keyword match but LLM says alive\n";
+                log_debug("turn") << "death-scan " << candidate.character_name
+                                  << " -- keyword match but alive\n";
             }
         } catch (const std::exception& error) {
-            log() << "  [death-scan] LLM confirmation failed for "
-                  << candidate.character_name << ": " << error.what()
-                  << " -- skipping (fail-safe)\n";
+            log_warn("turn") << "death-scan failed for "
+                             << candidate.character_name << ": " << error.what()
+                             << " -- skipping\n" << std::flush;
         }
     }
 }

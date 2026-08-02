@@ -290,11 +290,6 @@ void Weaver::set_llm_callback(LLMCallback cb) {
     active_ = true;
 }
 
-void Weaver::set_local_llm_callback(LLMCallback cb) {
-    local_llm_cb_ = std::move(cb);
-    active_ = true;
-}
-
 void Weaver::set_interval(int turns) {
     interval_ = turns > 0 ? turns : 1;
     active_ = true;
@@ -337,7 +332,7 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
         !llm_response.empty() && j.empty();
 
     if (parse_failed) {
-        log() << "  [weave] parse FAILED: JSON extraction failed — "
+        log_warn("weave") << "parse FAILED: JSON extraction failed — "
               << "response preview "
               << truncate_utf8_ellipsis(llm_response, 300) << "\n";
     }
@@ -380,27 +375,22 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
 // ---------------------------------------------------------------------------
 
 WeaveResult Weaver::weave(int turn_index, const std::string& scene_context) {
-    return weave_impl(turn_index, scene_context, llm_cb_, "cloud");
+    return weave_impl(turn_index, scene_context);
 }
 
-WeaveResult Weaver::weave_local(int turn_index, const std::string& scene_context) {
-    return weave_impl(turn_index, scene_context, local_llm_cb_, "local");
-}
-
-WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
-                                LLMCallback& cb, const char* label) {
+WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context) {
     GraphAnalysis pre = analyze(graph_);
 
     if (pre.live_node_count < 2) {
         return empty_weave_result(pre);
     }
 
-    if (!cb) {
-        log() << "  [weave] no " << label << " LLM callback -- skipping\n";
+    if (!llm_cb_) {
+        log() << "  [weave] no LLM callback -- skipping\n";
         return empty_weave_result(pre);
     }
 
-    log() << "  [weave] turn=" << turn_index << " label=" << label << "\n";
+    log() << "  [weave] turn=" << turn_index << "\n";
     log() << "  [weave] before: "
           << pre.live_node_count << " nodes, "
           << pre.active_edge_count << " active edges, "
@@ -409,7 +399,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
     auto prompt = build_prompt(scene_context);
     log() << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
           << " prompt_chars=" << prompt.size()
-          << " — calling " << label << " LLM...\n"
+          << " — calling LLM...\n"
           << std::flush;
 
     if (weave_log_verbose()) {
@@ -420,10 +410,10 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
 
     std::string response;
     try {
-        response = cb(sanitize_utf8(prompt));
+        response = llm_cb_(sanitize_utf8(prompt));
     } catch (const std::exception& e) {
-        log() << "  [weave] " << label << " LLM call FAILED: " << e.what() << "\n";
-        write_weave_artifact(turn_index, label, prompt, "",
+        log_warn("weave") << "LLM call FAILED: " << e.what() << "\n" << std::flush;
+        write_weave_artifact(turn_index, "weave", prompt, "",
                              std::string("exception: ") + e.what());
         return empty_weave_result(pre);
     }
@@ -431,11 +421,9 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
     log() << "  [weave] response_chars=" << response.size() << "\n";
 
     if (response.empty()) {
-        log() << "  [weave] " << label
-              << " LLM returned empty response "
-              << "(see [local_llm:weave] lines above for HTTP details)\n";
-        write_weave_artifact(turn_index, label, prompt, response,
-                             "empty response from local LLM callback");
+        log_warn("weave") << "LLM returned empty response\n" << std::flush;
+        write_weave_artifact(turn_index, "weave", prompt, response,
+                             "empty response");
         return empty_weave_result(pre);
     }
 
@@ -452,7 +440,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context,
             << " connect=" << result.connected.size()
             << " disconnect=" << result.disconnected.size()
             << " reweight=" << result.reweighted.size();
-    write_weave_artifact(turn_index, label, prompt, response, summary.str());
+    write_weave_artifact(turn_index, "weave", prompt, response, summary.str());
 
     return result;
 }

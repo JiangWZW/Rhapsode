@@ -64,3 +64,16 @@ def test_message_conversions_are_pure():
         {"role": "user", "content": "hello"},
         {"role": "model", "content": "hi"},
     ]
+
+
+def test_bump_max_tokens_doubles_until_cap():
+    assert llm._bump_max_tokens(65536) == 131072
+    assert llm._bump_max_tokens(131072) is None
+    assert llm._bump_max_tokens(80000) == 131072
+
+
+def test_deepseek_extra_body_defaults_enabled(monkeypatch):
+    monkeypatch.delenv("RHAPSODE_DEEPSEEK_THINKING", raising=False)
+    assert llm._deepseek_extra_body() == {"thinking": {"type": "enabled"}}
+    monkeypatch.setenv("RHAPSODE_DEEPSEEK_THINKING", "disabled")
+    assert llm._deepseek_extra_body() == {"thinking": {"type": "disabled"}}

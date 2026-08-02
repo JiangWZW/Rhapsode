@@ -1,0 +1,2 @@
+19:55:59 INFO  llm: DeepSeek thinking=enabled
+19:55:59 INFO  llm: LLM provider: deepseek (model=deepseek-v4-flash, tool_model=deepseek-v4-pro)

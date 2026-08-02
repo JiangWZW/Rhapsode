@@ -196,19 +196,21 @@ std::vector<Rejection> validate_beat_plan(
 }
 
 void log_narrator_phase(std::string_view phase, const std::string& raw) {
-    log() << "  [narrator] phase=" << phase << " response=" << raw.size()
-          << " chars\n" << std::flush;
+    log_info("narrator") << "phase=" << phase << " response=" << raw.size()
+                         << " chars\n" << std::flush;
     if (!verbose_logging_enabled()) return;
-    log() << "--- NARRATOR " << phase << " RESPONSE ---\n" << raw
-          << "\n--- END NARRATOR " << phase << " RESPONSE ---\n" << std::flush;
+    log_debug("narrator") << "--- NARRATOR " << phase << " RESPONSE ---\n" << raw
+                          << "\n--- END NARRATOR " << phase << " RESPONSE ---\n"
+                          << std::flush;
 }
 
 void log_rejections(std::string_view label, int attempt,
                     const std::vector<Rejection>& rejections) {
-    log() << "  [retry] " << label << " attempt " << attempt << "/"
-          << kMaxNarratorAttempts << ": " << rejections.size() << " issue(s)\n";
+    log_info("narrator") << "retry " << label << " attempt " << attempt << "/"
+                         << kMaxNarratorAttempts << ": " << rejections.size()
+                         << " issue(s)\n";
     for (const auto& r : rejections)
-        log() << "    - " << r.fact << " -- " << r.reason << "\n";
+        log_info("narrator") << "  - " << r.fact << " -- " << r.reason << "\n";
     log() << std::flush;
 }
 
@@ -239,8 +241,8 @@ void merge_graph_into_beat_plan(nlohmann::json& beat_plan,
                                 const nlohmann::json& graph_plan) {
     if (!beat_plan.is_object()) beat_plan = nlohmann::json::object();
     if (!graph_plan.is_object() || graph_plan.empty()) {
-        log() << "  [narrator] phase=graph parse empty -- using []\n"
-              << std::flush;
+        log_info("narrator") << "phase=graph parse empty -- using []\n"
+                             << std::flush;
     }
     beat_plan["transitions"] = json_array_or_empty(graph_plan, "transitions");
     beat_plan["new_nodes"] = json_array_or_empty(graph_plan, "new_nodes");
@@ -249,7 +251,8 @@ void merge_graph_into_beat_plan(nlohmann::json& beat_plan,
 }  // namespace
 
 TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene) {
-    log() << "[1/4] Building merged prompt...\n" << std::flush;
+    log_info("narrator") << "[1/4] building prompt scene=" << scene.scene_id
+                         << "\n" << std::flush;
 
     const size_t win = resuming_ ? resume_window_size_ : window_size_;
     const std::vector<SceneMessage> history = snapshot_history(scene.history, win);
@@ -257,12 +260,15 @@ TurnExecutor::NarratorPrompt TurnExecutor::build_turn_prompt(SceneData& scene) {
 
     NarratorPrompt prompt;
     prompt.instructions = build_narrator_instructions();
-    prompt.turn_state = build_narrator_turn_state(history, scene, world_);
+    prompt.turn_state = build_narrator_turn_state(
+        history, scene, world_, live_storylines_board_);
+    live_storylines_board_.clear();
 
     ++scene.turn_index;
 
-    log() << "  [prompt] instructions=" << prompt.instructions.size()
-          << " turn_state=" << prompt.turn_state.size() << " chars\n" << std::flush;
+    log_debug("narrator") << "prompt instructions=" << prompt.instructions.size()
+                          << " turn_state=" << prompt.turn_state.size()
+                          << " chars\n" << std::flush;
     if (verbose_logging_enabled()) {
         log() << "--- NARRATOR INSTRUCTIONS ---\n" << prompt.instructions << "\n"
               << "--- NARRATOR TURN STATE ---\n" << prompt.turn_state << "\n"
@@ -309,7 +315,8 @@ void TurnExecutor::register_new_characters(SceneData& scene,
 TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     SceneData& scene, int turn, const NarratorPrompt& prompt,
     DirectorOutput& director_output, const ReadToolCallback& read_tool) {
-    log() << "[2/4] Calling narrative LLM...\n" << std::flush;
+    log_info("narrator") << "[2/4] beat LLM scene=" << scene.scene_id << "\n"
+                         << std::flush;
 
     NarratorTurnResult result;
     std::vector<Rejection> rejections;
@@ -332,6 +339,8 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     }
 
     // Phase B — transitions / new_nodes from the committed beat (single call).
+    log_info("narrator") << "[2b/4] graph LLM scene=" << scene.scene_id << "\n"
+                         << std::flush;
     auto raw_graph = call_narrator(
         scene, build_narrator_graph_instructions(),
         build_graph_turn_state(prompt.turn_state, result.prose, result.plan),
@@ -342,7 +351,8 @@ TurnExecutor::NarratorTurnResult TurnExecutor::run_narrator_with_retry(
     (void)ignored_prose;
     merge_graph_into_beat_plan(result.plan, graph_plan);
 
-    log() << "[3/4] Applying graph...\n" << std::flush;
+    log_info("narrator") << "[3/4] applying graph scene=" << scene.scene_id
+                         << "\n" << std::flush;
     director_output = director_.apply_planned_turn(turn, result.plan);
     register_new_characters(scene, turn, result.plan);
 

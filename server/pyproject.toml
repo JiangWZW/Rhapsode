@@ -9,9 +9,6 @@ dependencies = [
     "python-dotenv",
     "chromadb",
     "sentence-transformers",
-    "httpx",
-    "json-repair",
-    "jinja2",
 ]
 
 [project.optional-dependencies]

@@ -35,12 +35,9 @@ void bind_runtime(py::module_& m) {
     py::class_<Weaver>(m, "Weaver")
         .def(py::init<WorldGraph&>(), py::arg("graph"), py::keep_alive<1, 2>())
         .def("set_llm_callback",       &Weaver::set_llm_callback)
-        .def("set_local_llm_callback", &Weaver::set_local_llm_callback)
         .def("set_interval",           &Weaver::set_interval, py::arg("turns"))
         .def("should_weave",           &Weaver::should_weave, py::arg("turn_index"))
         .def("weave",                  &Weaver::weave,
-             py::arg("turn_index"), py::arg("scene_context") = "")
-        .def("weave_local",            &Weaver::weave_local,
              py::arg("turn_index"), py::arg("scene_context") = "")
         .def("rebuild_expiry_queue",   &Weaver::rebuild_expiry_queue,
              py::arg("priority_entities") = std::vector<std::string>{})
