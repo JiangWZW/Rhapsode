@@ -1,4 +1,8 @@
 # Session eval pipeline defaults. CLI flags override these values.
+#
+# Logging: run.py spawns uvicorn by default and tees server stdout into
+# <out_dir>/console.log, plus llm_profile.jsonl for per-hop timings.
+# Use CLI --attach only when reusing an external server (no console capture).
 
 [player]
 protocol = "protocol.md"

@@ -63,9 +63,70 @@ def _dot_to_svg_response(dot: str) -> Response:
 
 def _safe_render_thoughts(mem) -> str:
     try:
-        return mem.render_thoughts([]) or "(no live thoughts yet)"
+        return mem.render_thoughts([]) or "(no live beliefs yet)"
     except UnicodeDecodeError:
-        return "(thoughts unavailable: invalid UTF-8 in belief data)"
+        return "(beliefs unavailable: invalid UTF-8 in belief data)"
+
+
+def _mind_snapshot(mem) -> dict:
+    """Core + streams + compact beliefs for debug JSON/HTML."""
+    core = ""
+    streams: list = []
+    try:
+        raw = mem.render_mind_query()
+        payload = json.loads(raw) if isinstance(raw, str) else {}
+        core = str(payload.get("core") or "")
+        streams = payload.get("streams") or []
+        if not isinstance(streams, list):
+            streams = []
+    except Exception:  # noqa: BLE001 -- fall back to partial fields
+        try:
+            core = mem.core_text or ""
+        except Exception:  # noqa: BLE001
+            core = ""
+        try:
+            data = json.loads(mem.to_json_str())
+            streams = [
+                s for s in (data.get("streams") or [])
+                if isinstance(s, dict) and s.get("status", "active") == "active"
+            ]
+        except Exception:  # noqa: BLE001
+            streams = []
+    return {
+        "core": core,
+        "streams": streams,
+        "beliefs": _safe_render_thoughts(mem),
+        "active_stream_count": getattr(mem, "active_stream_count", len(streams)),
+    }
+
+
+def _format_streams_html(streams: list) -> str:
+    if not streams:
+        return "<p class='muted'>(no active monologue streams)</p>"
+    blocks = []
+    for stream in streams:
+        if not isinstance(stream, dict):
+            continue
+        sid = html.escape(str(stream.get("id") or "?"))
+        focus = html.escape(str(stream.get("focus") or ""))
+        lines = stream.get("recent_lines") or stream.get("lines") or []
+        line_bits = []
+        if isinstance(lines, list):
+            for line in lines[-5:]:
+                if not isinstance(line, dict):
+                    continue
+                turn = line.get("turn", "?")
+                text = html.escape(str(line.get("text") or ""))
+                line_bits.append(f"<li><span class='turn'>t{turn}</span> {text}</li>")
+        body = (
+            f"<ul class='lines'>{''.join(line_bits)}</ul>"
+            if line_bits else "<p class='muted'>(empty — listening)</p>"
+        )
+        blocks.append(
+            f"<div class='stream'><div class='stream-head'>"
+            f"<strong>{sid}</strong> — {focus}</div>{body}</div>"
+        )
+    return "".join(blocks) or "<p class='muted'>(no active monologue streams)</p>"
 
 
 def _find_character_memory(world, name: str):
@@ -97,16 +158,22 @@ def graph_svg():
 
 @router.get("/characters")
 def characters_endpoint():
-    """List characters with a mind, and their current inner state."""
+    """List characters with a mind: core, streams, and factual beliefs."""
     story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
-    return {
-        "characters": [
-            {"name": name, "interior": _safe_render_thoughts(mem)}
-            for name, mem in story.world().character_memories.items()
-        ]
-    }
+    characters = []
+    for name, mem in story.world().character_memories.items():
+        snap = _mind_snapshot(mem)
+        characters.append({
+            "name": name,
+            "core": snap["core"],
+            "streams": snap["streams"],
+            "beliefs": snap["beliefs"],
+            # Backward-compatible alias
+            "interior": snap["beliefs"],
+        })
+    return {"characters": characters}
 
 
 @router.get("/character/{name}/graph.dot", response_class=Response)
@@ -133,9 +200,23 @@ def character_graph_svg(name: str):
     return _dot_to_svg_response(mem.beliefs.to_dot())
 
 
+@router.get("/character/{name}/mind")
+def character_mind_endpoint(name: str):
+    """JSON mind snapshot: core, active streams, compact beliefs."""
+    story, scene = _load_saved_state()
+    if scene is None:
+        return {"error": "no active scene"}
+    mem = _find_character_memory(story.world(), name)
+    if mem is None:
+        return {"error": f"no character '{name}'"}
+    snap = _mind_snapshot(mem)
+    snap["name"] = mem.name
+    return snap
+
+
 @router.get("/minds", response_class=Response)
 def minds_endpoint():
-    """Debug view: every character's inner state + belief graph on one page."""
+    """Debug view: core, monologue streams, beliefs text, and belief graph SVG."""
     story, scene = _load_saved_state()
     if scene is None:
         return Response("<h1>no active scene</h1>", media_type="text/html", status_code=404)
@@ -144,20 +225,29 @@ def minds_endpoint():
         "<html><head><meta charset='utf-8'><title>Character minds</title><style>",
         "body{background:#1e1e2e;color:#cdd6f4;font-family:'Segoe UI',sans-serif;margin:24px}",
         "h1{color:#cdd6f4} h2{color:#f9e2af;border-bottom:1px solid #45475a;padding-bottom:4px}",
-        ".state{color:#a6adc8;font-style:italic;white-space:pre-wrap;margin:8px 0 12px}",
+        "h3{color:#89b4fa;font-size:14px;margin:16px 0 6px;text-transform:uppercase;"
+        "letter-spacing:.04em}",
+        ".core,.beliefs{color:#a6adc8;white-space:pre-wrap;margin:8px 0 12px;"
+        "padding:10px;background:#313244;border-radius:6px}",
+        ".stream{margin:8px 0 12px;padding:10px;background:#313244;border-radius:6px;"
+        "border-left:3px solid #cba6f7}",
+        ".stream-head{color:#cba6f7;margin-bottom:6px}",
+        ".lines{margin:0;padding-left:18px;color:#cdd6f4}",
+        ".lines .turn{color:#6c7086;margin-right:6px}",
+        ".muted{color:#6c7086;font-style:italic}",
         ".mind{margin-bottom:48px}",
-        # Render the SVG at its natural size inside a scrollable box.  Clamping
-        # to the page width (max-width:100%) shrank large graphs to illegibility
-        # and made browser zoom useless -- it just re-fit to the viewport.
         ".graphwrap{overflow:auto;max-height:85vh;border:1px solid #45475a;"
         "border-radius:6px;resize:vertical}",
         "svg{display:block;background:#1e1e2e}",
         ".legend{font-size:12px;color:#6c7086;margin-bottom:24px}",
         "</style></head><body><h1>Character minds</h1>",
-        "<p class='legend'>green = current belief / perception &nbsp;|&nbsp; "
-        "blue = superseded (history) &nbsp;|&nbsp; yellow = foreshadowed</p>",
+        "<p class='legend'>Core = continuity sheet (not thoughts) &nbsp;|&nbsp; "
+        "Streams = rendered subtext &nbsp;|&nbsp; "
+        "Graph: green = live belief/perception &nbsp;|&nbsp; "
+        "blue = superseded &nbsp;|&nbsp; yellow = foreshadowed</p>",
     ]
     for name, mem in story.world().character_memories.items():
+        snap = _mind_snapshot(mem)
         try:
             dot = mem.beliefs.to_dot()
         except Exception as exc:  # noqa: BLE001 -- one bad mind must not 500 the page
@@ -175,10 +265,20 @@ def minds_endpoint():
                 svg = f"<pre>{html.escape(svg)}</pre>"
         except Exception as exc:  # noqa: BLE001 -- one bad mind must not 500 the page
             svg = f"<pre>belief graph unavailable: {html.escape(str(exc))}</pre>"
-        state = _safe_render_thoughts(mem)
+
+        core_html = (
+            html.escape(snap["core"])
+            if snap["core"] else "(empty continuity sheet)"
+        )
+        beliefs_html = html.escape(snap["beliefs"])
         parts.append(
             f"<div class='mind'><h2>{html.escape(name)}</h2>"
-            f"<div class='state'>{html.escape(state)}</div>"
+            f"<h3>Core</h3><div class='core'>{core_html}</div>"
+            f"<h3>Monologue streams "
+            f"({html.escape(str(snap.get('active_stream_count', 0)))} active)</h3>"
+            f"{_format_streams_html(snap['streams'])}"
+            f"<h3>Factual beliefs</h3><div class='beliefs'>{beliefs_html}</div>"
+            f"<h3>Belief graph</h3>"
             f"<div class='graphwrap'>{svg}</div></div>"
         )
     parts.append("</body></html>")

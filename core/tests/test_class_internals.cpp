@@ -93,20 +93,31 @@ TEST_CASE("Director result retains graph changes and context",
     REQUIRE(output.context_blocks == std::vector<std::string>{"The road is clear."});
 }
 
-TEST_CASE("CharacterMemory reflection preserves the successful pipeline",
+TEST_CASE("CharacterMemory monologue update writes knows and stream lines",
           "[character_memory][characterization]") {
     CharacterMemory memory("Scout");
     memory.seed_belief("The gate is shut", {"Gate"}, 0);
     memory.route_fact("The gate has opened", {"Gate"}, 1);
 
-    memory.reflect_perceptions(1, "Careful", [](const std::string&) {
-        return std::string{
-            R"({"thoughts":[{"id":0,"thought":"I can finally leave.","weight":7,"relation":"evidence"}]})"};
-    });
+    memory.update_monologues(1, "Careful", "The gate swings open.",
+        [](const std::string&) {
+            return std::string{
+                R"({"appends":[{"stream_id":"self","text":"Finally — a way out."}],"ops":[],"knows":[{"fact":"I can finally leave.","entities":["Gate"],"weight":7,"relation":"evidence"}],"core_revision":null})"};
+        });
 
     const std::string view = memory.view_of({"Gate"});
     REQUIRE(view.find("The gate is shut") != std::string::npos);
     REQUIRE(view.find("I can finally leave.") != std::string::npos);
+    REQUIRE(memory.active_stream_count() >= 1);
+    bool has_line = false;
+    for (const auto& stream : memory.streams()) {
+        if (stream.id != "self") continue;
+        for (const auto& line : stream.lines) {
+            if (line.text.find("way out") != std::string::npos)
+                has_line = true;
+        }
+    }
+    REQUIRE(has_line);
     for (const auto& node : memory.beliefs().all_nodes())
         REQUIRE(node.type != "perception");
 }

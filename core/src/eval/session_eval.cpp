@@ -75,6 +75,21 @@ public:
             FILE_ATTRIBUTE_NORMAL, nullptr);
         if (log_handle == INVALID_HANDLE_VALUE) return false;
 
+        // Kill-on-close job so cmd.exe → python → uvicorn children die with us.
+        HANDLE job = CreateJobObjectW(nullptr, nullptr);
+        if (!job) {
+            CloseHandle(log_handle);
+            return false;
+        }
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if (!SetInformationJobObject(job, JobObjectExtendedLimitInformation,
+                                     &limits, sizeof(limits))) {
+            CloseHandle(job);
+            CloseHandle(log_handle);
+            return false;
+        }
+
         STARTUPINFOW si{};
         si.cb = sizeof(si);
         si.dwFlags = STARTF_USESTDHANDLES;
@@ -86,11 +101,23 @@ public:
         PROCESS_INFORMATION pi{};
         const BOOL ok = CreateProcessW(
             nullptr, wcmd.data(), nullptr, nullptr, TRUE,
-            CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+            CREATE_NO_WINDOW | CREATE_SUSPENDED, nullptr, nullptr, &si, &pi);
         CloseHandle(log_handle);
-        if (!ok) return false;
+        if (!ok) {
+            CloseHandle(job);
+            return false;
+        }
+        if (!AssignProcessToJobObject(job, pi.hProcess)) {
+            TerminateProcess(pi.hProcess, 1);
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            CloseHandle(job);
+            return false;
+        }
+        ResumeThread(pi.hThread);
         CloseHandle(pi.hThread);
         process_ = pi.hProcess;
+        job_ = job;
         pid_ = pi.dwProcessId;
         return true;
     }
@@ -108,16 +135,23 @@ public:
     }
 
     void stop() {
-        if (!process_) return;
-        if (alive()) TerminateProcess(process_, 1);
-        WaitForSingleObject(process_, 5000);
-        CloseHandle(process_);
-        process_ = nullptr;
+        // Closing the job kills the whole process tree (cmd + uvicorn children).
+        if (job_) {
+            CloseHandle(job_);
+            job_ = nullptr;
+        }
+        if (process_) {
+            if (alive()) TerminateProcess(process_, 1);
+            WaitForSingleObject(process_, 5000);
+            CloseHandle(process_);
+            process_ = nullptr;
+        }
         pid_ = 0;
     }
 
 private:
     HANDLE process_ = nullptr;
+    HANDLE job_ = nullptr;
     DWORD pid_ = 0;
 };
 #else
@@ -295,7 +329,9 @@ EndReason SessionEvalRunner::run() {
         }
     } else {
         std::ofstream(log_path, std::ios::trunc)
-            << "[session_eval] no server_cmd; attaching to existing server\n";
+            << "[session_eval] no server_cmd; attaching to existing server\n"
+            << "[session_eval] WARNING: server stdout is NOT captured here. "
+               "Pass server_cmd so LLM timings land in console.log.\n";
     }
 
     EndReason reason = EndReason::MaxTurns;

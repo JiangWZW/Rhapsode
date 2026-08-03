@@ -120,7 +120,8 @@ sentence like "Now I have the context" or "Let me write the response."
 
 TOOLS: You have tools to query the world state before writing. Use them proactively:
 - query_graph(entity): trace an entity's timeline -- where they are, what happened to them, what's expired. Query key entities (Player, present NPCs) before narrating to avoid continuity errors.
-- query_mind(character): understand what a character is thinking/feeling before writing their speech.
+- query_mind(character): read core (continuity), active monologue streams (subtext),
+  and compact factual beliefs before writing their speech.
 - query_history(query): recall specific past events when you need continuity.
 Query first, then write. Do NOT guess when you can query. A node with valid_until=-1 is still true; valid_until=N was true until turn N.
 

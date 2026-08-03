@@ -96,34 +96,11 @@ if /i "%GO%"=="n" (
     goto :end_fail
 )
 
-set "STARTED_BACKEND=0"
+rem Pipeline owns the server (spawn → console.log). Free the port if a stale
+rem uvicorn is still listening so we do not silently attach without logs.
 powershell -NoProfile -Command ^
-  "try { Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction Stop | Out-Null; exit 0 } catch { exit 1 }"
-if errorlevel 1 (
-    echo.
-    echo  Backend not on :%PORT% — starting it in a new window...
-    start "Rhapsode Backend" /D "%ROOT%server" "%PY%" -m uvicorn rhapsode.app:app --host %HOST% --port %PORT%
-    set "STARTED_BACKEND=1"
-
-    echo  Waiting for backend...
-    set "READY=0"
-    for /l %%i in (1,1,60) do (
-        if "!READY!"=="0" (
-            powershell -NoProfile -Command ^
-              "try { Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction Stop | Out-Null; exit 0 } catch { exit 1 }"
-            if not errorlevel 1 set "READY=1"
-            if "!READY!"=="0" timeout /t 1 /nobreak >nul
-        )
-    )
-    if "!READY!"=="0" (
-        echo ERROR: backend did not open port %PORT% within 60s.
-        goto :end_fail
-    )
-    echo  Backend is up.
-) else (
-    echo.
-    echo  Backend already listening on :%PORT%.
-)
+  "Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+timeout /t 1 /nobreak >nul
 
 set "GUIDE_ARGS="
 if not "%GUIDE%"=="" set "GUIDE_ARGS=--guide %GUIDE%"
@@ -132,6 +109,7 @@ set "CRITIQUE_ARGS="
 if "%CRITIQUE%"=="1" set "CRITIQUE_ARGS=--critique"
 
 echo.
+echo  Spawning backend via run.py (stdout → %OUT_DIR%\console.log) ...
 cd /d "%PIPE%"
 "%PY%" run.py --turns %TURNS% --host %HOST% --port %PORT% --out-dir "%OUT_DIR%" %GUIDE_ARGS% %CRITIQUE_ARGS%
 set "EC=!ERRORLEVEL!"
@@ -139,13 +117,10 @@ set "EC=!ERRORLEVEL!"
 echo.
 if !EC!==0 (
     echo  Done. Report: %OUT_DIR%\report.md
+    echo  Server log:   %OUT_DIR%\console.log
+    echo  LLM profile:  %OUT_DIR%\llm_profile.jsonl
 ) else (
-    echo  Finished with exit code !EC!. See %OUT_DIR%\report.md / console.log
-)
-if "%STARTED_BACKEND%"=="1" (
-    echo.
-    echo  Backend was started by this script and is still running in its window.
-    echo  Close that window when you are finished.
+    echo  Finished with exit code !EC!. See %OUT_DIR%\report.md / console.log / llm_profile.jsonl
 )
 echo.
 pause

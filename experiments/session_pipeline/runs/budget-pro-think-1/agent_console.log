@@ -1,5 +1,0 @@
-19:29:28 INFO  llm: DeepSeek thinking=enabled
-19:29:28 INFO  llm: LLM provider: deepseek (model=deepseek-v4-flash, tool_model=deepseek-v4-pro)
-19:29:34 INFO  player: [player] tool: list_scenes {}
-19:29:34 INFO  player: [player] tool: query_mind {"character": "Player"}
-19:29:36 INFO  player: [player] tool: query_mind {"character": "Kazuma"}

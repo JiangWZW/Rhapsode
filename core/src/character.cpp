@@ -9,6 +9,8 @@ void to_json(nlohmann::json& j, const Character& c)
         {"description", c.description},
         {"is_player", c.is_player}
     };
+    if (!c.core.empty())
+        j["core"] = c.core;
     if (!c.dialogue_instructions.empty())
         j["dialogue_instructions"] = c.dialogue_instructions; 
     if (!c.example_dialogue.empty())
@@ -24,6 +26,7 @@ void from_json(const nlohmann::json& j, Character& c)
 {
     j.at("name").get_to(c.name);
     j.at("description").get_to(c.description);
+    c.core = j.value("core", "");
     c.is_player = j.value("is_player", false);
     c.dialogue_instructions = j.value("dialogue_instructions", "");
     c.example_dialogue = j.value("example_dialogue", std::vector<std::string>{});

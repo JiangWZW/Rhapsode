@@ -16,12 +16,27 @@ _shared_model: SentenceTransformer | None = None
 _shared_client: chromadb.ClientAPI | None = None
 
 
+def _load_embedding_model() -> SentenceTransformer:
+    """Prefer the local HF cache — never block startup on hub HEAD timeouts."""
+    try:
+        model = SentenceTransformer(EMBEDDING_MODEL, local_files_only=True)
+        log.info("Embedding model ready (local cache).")
+        return model
+    except Exception as exc:
+        log.warning(
+            "Local cache miss for %s (%s); fetching from HuggingFace once.",
+            EMBEDDING_MODEL, exc,
+        )
+        model = SentenceTransformer(EMBEDDING_MODEL)
+        log.info("Embedding model ready (downloaded).")
+        return model
+
+
 def warmup_model() -> None:
     global _shared_model
     if _shared_model is None:
         log.info("Loading embedding model %s ...", EMBEDDING_MODEL)
-        _shared_model = SentenceTransformer(EMBEDDING_MODEL)
-        log.info("Embedding model ready.")
+        _shared_model = _load_embedding_model()
 
 
 def _get_client(chroma_path: str = "./chroma") -> chromadb.ClientAPI:

@@ -59,7 +59,10 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
             }
         }
 
-        world_.reflect_perceptions(turn, reflection_llm_cb_);
+        const std::string beat_stimulus = format_graph_seed(
+            history, "Beat", kGraphSeedMaxMessageChars);
+        world_.update_monologues(
+            scene.scene_id, turn, beat_stimulus, reflection_llm_cb_);
 
         if (downsampler_cb_) {
             try {

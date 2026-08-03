@@ -33,3 +33,6 @@ third_party/_cache/
 # IDE / editor
 .cursor/
 wiki/.obsidian/
+
+# Session / autoplay eval artifacts (local only)
+experiments/session_pipeline/runs/

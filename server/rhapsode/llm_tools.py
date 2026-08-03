@@ -66,10 +66,10 @@ def make_weaver_callback():
 
 
 def make_reflection_callback():
-    """Character reflection: narrator/pro model, thinking on."""
+    """On-stage monologue updater: narrator/pro model, thinking on."""
     def _call(prompt: str) -> str:
         return call_llm(
-            prompt, stage="reflection", model=_pro_model(), thinking=True)
+            prompt, stage="monologue", model=_pro_model(), thinking=True)
     return _call
 
 
@@ -97,8 +97,8 @@ NARRATOR_TOOLS = [
     {
         "name": "query_mind",
         "description": (
-            "Get a character's current thoughts, beliefs, emotional state, "
-            "and dialogue voice."
+            "Inspect a character's mind: continuity core, active monologue "
+            "streams (subtext), compact factual beliefs, and dialogue voice."
         ),
         "parameters": {
             "type": "object",

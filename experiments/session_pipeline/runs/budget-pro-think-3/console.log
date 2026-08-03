@@ -1,2 +1,0 @@
-[session_eval] no server_cmd; attaching to existing server
-[session_eval] fatal: connect: 由于目标计算机积极拒绝，无法连接。 [system:10061 at D:\cursor-workspace\Rhapsode\third_party\boost\boost/asio/detail/win_iocp_socket_service.hpp:629:5 in function 'connect']

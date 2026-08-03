@@ -10,7 +10,11 @@ namespace rhapsode {
 struct Character
 {
     std::string name;
+    /// Short Cast / roster blurb (stats, role). Kept lean for narrator turn state.
     std::string description;
+    /// Optional deep continuity sheet for CharacterMemory core. If empty at
+    /// bootstrap, `description` is used. Not shown in Cast headers.
+    std::string core;
     std::string dialogue_instructions;
     std::vector<std::string> example_dialogue;
     std::string role;

@@ -12,6 +12,7 @@
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
 #include "rhapsode/scene_history.h"
+#include "rhapsode/str_util.h"
 
 namespace rhapsode {
 
@@ -50,6 +51,12 @@ World build_world(const nlohmann::json& scenario,
         if (!character_value.contains("initial_memory")) continue;
 
         CharacterMemory memory(name);
+        const std::string core_seed = [&]() {
+            const std::string authored = character_value.value("core", "");
+            if (!str::trim(authored).empty()) return authored;
+            return character_value.value("description", "");
+        }();
+        memory.ensure_bootstrap(core_seed);
         const auto& initial_memory = character_value["initial_memory"];
         const auto& beliefs =
             initial_memory.value("beliefs", nlohmann::json::array());

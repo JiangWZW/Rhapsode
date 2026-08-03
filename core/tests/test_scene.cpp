@@ -309,11 +309,11 @@ TEST_CASE("World death mutation clears all membership", "[world]") {
     REQUIRE(scout->scene_ids.empty());
 }
 
-TEST_CASE("New World memories accept call-scoped reflection configuration",
+TEST_CASE("New World memories accept call-scoped monologue configuration",
           "[world][character_memory]") {
     World world;
     int calls = 0;
-    const LLMCallback reflection = [&](const std::string&) {
+    const LLMCallback monologue = [&](const std::string&) {
         ++calls;
         return std::string{"not json"};
     };
@@ -322,16 +322,16 @@ TEST_CASE("New World memories accept call-scoped reflection configuration",
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.reflect_perceptions(2, reflection);
+    world.update_monologues("root", 2, "Beat", monologue);
     REQUIRE(calls == 1);
 }
 
-TEST_CASE("Loaded World memories accept call-scoped reflection configuration",
+TEST_CASE("Loaded World memories accept call-scoped monologue configuration",
           "[world][character_memory][persistence]") {
     World world;
     world.enter_character("root", Character{"Scout", "Careful", false});
     int calls = 0;
-    const LLMCallback reflection = [&](const std::string&) {
+    const LLMCallback monologue = [&](const std::string&) {
         ++calls;
         return std::string{"not json"};
     };
@@ -340,7 +340,7 @@ TEST_CASE("Loaded World memories accept call-scoped reflection configuration",
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.reflect_perceptions(2, reflection);
+    world.update_monologues("root", 2, "Beat", monologue);
     REQUIRE(calls == 1);
 }
 
@@ -596,7 +596,7 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
     });
     executor.set_reflection_llm_callback([&](const std::string&) {
         events.push_back("reflection");
-        return std::string{R"({"thoughts":[]})"};
+        return std::string{R"({"appends":[],"ops":[],"knows":[]})"};
     });
     executor.set_downsampler_callback([&](const std::string&) {
         events.push_back("downsample");

@@ -1,13 +1,0 @@
-INFO:     Started server process [53452]
-INFO:     Waiting for application startup.
-15:37:36 INFO  rhapsode.memory: Loading embedding model BAAI/bge-base-en-v1.5 ...
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 66364.51it/s]
-15:37:42 INFO  rhapsode.memory: Embedding model ready.
-15:37:43 INFO  rhapsode.fable: Loading FABLE NER model ...
-Loading weights:   0%|          | 0/200 [00:00<?, ?it/s]Loading weights: 100%|██████████| 200/200 [00:00<00:00, 22097.96it/s]
-15:37:44 INFO  rhapsode.fable: FABLE ready.
-INFO:     Application startup complete.
-ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8080): [winerror 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.

@@ -97,8 +97,12 @@ Character& World::add_new_character(const std::string& scene_id,
           << " | \"" << added.description.substr(0, 80) << "\"\n";
 
     if (!added.is_player && character_memories_.find(added.name) == character_memories_.end()) {
-        character_memories_.emplace(added.name, CharacterMemory(added.name));
-        log() << "  [cast]   memory created (empty -- learns by perception)\n";
+        CharacterMemory memory(added.name);
+        const std::string core_seed =
+            !str::trim(added.core).empty() ? added.core : added.description;
+        memory.ensure_bootstrap(core_seed);
+        character_memories_.emplace(added.name, std::move(memory));
+        log() << "  [cast]   memory created (core+bootstrap stream)\n";
     }
     return added;
 }
@@ -218,10 +222,22 @@ void World::route_perceptions(const std::string& scene_id,
           << " perception(s) routed to " << minds.size() << " mind(s)\n" << std::flush;
 }
 
-void World::reflect_perceptions(int turn, const LLMCallback& llm_callback) {
-    for (auto& [name, memory] : character_memories_) {
-        memory.reflect_perceptions(
-            turn, character_description(name), llm_callback);
+void World::update_monologues(const std::string& scene_id,
+                              int turn,
+                              const std::string& beat_stimulus,
+                              const LLMCallback& llm_callback) {
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        it->second.update_monologues(
+            turn,
+            !str::trim(character.core).empty() ? character.core
+                                               : character.description,
+            beat_stimulus, llm_callback);
     }
 }
 
@@ -271,8 +287,20 @@ World World::from_json(const nlohmann::json& j) {
         if (!character.is_player &&
             w.character_memories_.find(character.name) ==
                 w.character_memories_.end()) {
-            w.character_memories_.emplace(
-                character.name, CharacterMemory(character.name));
+            CharacterMemory memory(character.name);
+            const std::string core_seed =
+                !str::trim(character.core).empty() ? character.core
+                                                   : character.description;
+            memory.ensure_bootstrap(core_seed);
+            w.character_memories_.emplace(character.name, std::move(memory));
+        } else if (!character.is_player) {
+            auto it = w.character_memories_.find(character.name);
+            if (it != w.character_memories_.end()) {
+                const std::string core_seed =
+                    !str::trim(character.core).empty() ? character.core
+                                                       : character.description;
+                it->second.ensure_bootstrap(core_seed);
+            }
         }
     }
     return w;

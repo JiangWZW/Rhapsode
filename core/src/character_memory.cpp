@@ -19,7 +19,9 @@ namespace rhapsode {
 // ---------------------------------------------------------------------------
 
 CharacterMemory::CharacterMemory(std::string name)
-    : character_name_(std::move(name)) {}
+    : character_name_(std::move(name)) {
+    ensure_bootstrap("");
+}
 
 // ---------------------------------------------------------------------------
 // Subjective belief graph (beliefs_)
@@ -285,21 +287,70 @@ void CharacterMemory::route_fact(const std::string& fact,
 
 nlohmann::json CharacterMemory::to_json() const {
     nlohmann::json j;
-    j["name"]         = character_name_;
+    j["name"] = character_name_;
     j["belief_graph"] = beliefs_.to_json();
+    j["core"] = nlohmann::json{
+        {"text", core_.text},
+        {"revised_at", core_.revised_at},
+    };
+    nlohmann::json streams = nlohmann::json::array();
+    for (const auto& stream : streams_) {
+        nlohmann::json row;
+        row["id"] = stream.id;
+        row["focus"] = stream.focus;
+        row["status"] = stream.status;
+        row["parent_id"] = stream.parent_id;
+        row["closed_reason"] = stream.closed_reason;
+        row["closed_summary"] = stream.closed_summary;
+        nlohmann::json lines = nlohmann::json::array();
+        for (const auto& line : stream.lines) {
+            lines.push_back({{"turn", line.turn}, {"text", line.text}});
+        }
+        row["lines"] = std::move(lines);
+        streams.push_back(std::move(row));
+    }
+    j["streams"] = std::move(streams);
+    j["stream_seq"] = stream_seq_;
     return j;
 }
 
 CharacterMemory CharacterMemory::from_json(const nlohmann::json& j) {
     CharacterMemory cm(j.value("name", ""));
 
-    // The subjective belief graph is the whole persisted mind.  Legacy saves
-    // may still carry a "memories"/"edges" stream plus "self_state"/"next_id"/
-    // "reflection_countdown" from the removed retrieval subsystem; those keys
-    // are simply ignored on load (old saves open without crashing).
     if (j.contains("belief_graph"))
         cm.beliefs_ = WorldGraph::from_json(j["belief_graph"]);
 
+    if (j.contains("core") && j["core"].is_object()) {
+        cm.core_.text = j["core"].value("text", "");
+        cm.core_.revised_at = j["core"].value("revised_at", -1);
+    }
+
+    cm.streams_.clear();
+    if (j.contains("streams") && j["streams"].is_array()) {
+        for (const auto& row : j["streams"]) {
+            if (!row.is_object()) continue;
+            MonologueStream stream;
+            stream.id = row.value("id", "");
+            stream.focus = row.value("focus", "");
+            stream.status = row.value("status", "active");
+            stream.parent_id = row.value("parent_id", "");
+            stream.closed_reason = row.value("closed_reason", "");
+            stream.closed_summary = row.value("closed_summary", "");
+            if (row.contains("lines") && row["lines"].is_array()) {
+                for (const auto& line : row["lines"]) {
+                    if (!line.is_object()) continue;
+                    stream.lines.push_back({
+                        line.value("turn", 0),
+                        line.value("text", ""),
+                    });
+                }
+            }
+            if (!stream.id.empty())
+                cm.streams_.push_back(std::move(stream));
+        }
+    }
+    cm.stream_seq_ = j.value("stream_seq", 0);
+    cm.ensure_bootstrap("");
     return cm;
 }
 

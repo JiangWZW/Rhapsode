@@ -1,6 +1,30 @@
+## [2026-08-03] content | Konosuba cores from local novels
+
+- Rewrote Aqua / Megumin / Darkness / Luna / Wiz `core` sheets using Yen Press Vol.1 text under `D:/cursor-workspace/Konosuba` (plus corpus scenes for Wiz’s cemetery introduction), not wiki paraphrase alone.
+- Cores stay third-person continuity analysis; Cast `description` remains short.
+
+
 # Rhapsode wiki — log
 
 Append-only timeline of wiki and project evolution. Newest entries at the **top**.
+
+## [2026-08-02] content | Deep CharacterCore for Konosuba
+
+- Scenario characters may author a deep `core` sheet separate from short Cast `description`.
+- Konosuba NPCs (Aqua, Megumin, Darkness, Luna, Wiz) now have soul-level core analyses; bootstrap prefers `core` over `description`.
+
+## [2026-08-02] implementation | Minds debug views for monologue streams
+
+- `/minds`, `/characters`, and new `/character/{name}/mind` show CharacterCore + active monologue streams + factual beliefs; belief-graph SVG unchanged.
+- `render_mind_query` pybind now returns a JSON string (was unconvertible `nlohmann::json`).
+
+## [2026-08-02] implementation | Monologue streams + character core
+
+- Replaced forced `reflect_perceptions` (Thought-per-subject) with on-stage **monologue updater**: actor-framed streams (subtext), optional `knows[]` into the belief graph (factual LTM), rare core revision.
+- CharacterCore = continuity sheet (not a thought stream); bootstrap stream required (may be empty); fork/merge/conclude with min 1 / max 5 active.
+- Perceptions are prompt stimulus only (not auto-promoted). `query_mind` returns core + streams + compact beliefs.
+- Design page: [architecture/monologue-streams.md](architecture/monologue-streams.md). Older character-system / memory-system reflection claims are stale relative to this.
+- Verified: Catch2 `[character_memory]` / post-turn tests green; autoplay `runs/monologue-streams-1` 2 turns, MaxTurns, 0 errors; stage=`monologue` on DeepSeek pro; saves show cores, forked streams with lines, live perceptions consumed, sparse `knows` beliefs.
 
 ## [2026-08-02] research | DeepSeek V4 latency / streaming / cache
 
@@ -616,3 +640,4 @@ Append-only timeline of wiki and project evolution. Newest entries at the **top*
 
 - Created `AGENTS.md`, `raw/sources.md`, `wiki/index.md`, starter pages.
 - Adopted Karpathy LLM Wiki pattern.
+

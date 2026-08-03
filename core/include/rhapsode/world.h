@@ -45,12 +45,15 @@ public:
                                     int valid_until);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
-    /// Route objective nodes into the minds that perceived them in one scene.
+    /// Route objective nodes into on-stage (or audience) minds as perception stimulus.
     void route_perceptions(const std::string& scene_id,
                            const std::vector<Node>& nodes,
                            int turn);
-    /// Reflect every mind that has pending perceptions. Minds with none are a no-op.
-    void reflect_perceptions(int turn, const LLMCallback& llm_callback);
+    /// On-stage monologue updater (streams + optional knows[]). Replaces reflect LLM.
+    void update_monologues(const std::string& scene_id,
+                           int turn,
+                           const std::string& beat_stimulus,
+                           const LLMCallback& llm_callback);
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
 

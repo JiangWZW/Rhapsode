@@ -23,8 +23,11 @@ watch(() => props.messages.length, async () => {
       <h2 class="scene-title">The Story So Far</h2>
     </div>
     <div ref="el" class="story-scroll">
-      <div v-if="messages.length === 0" class="narration-block">
+      <div v-if="messages.length === 0 && !processing" class="narration-block">
         <p class="sp">The adventure awaits. Type below to begin your journey...</p>
+      </div>
+      <div v-else-if="messages.length === 0 && processing" class="narration-block thinking">
+        <p class="sp">Loading the story...</p>
       </div>
       <template v-for="(msg, i) in messages" :key="i">
         <!-- NPC spoken line(s) synthesized locally -->

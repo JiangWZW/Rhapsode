@@ -1,261 +1,66 @@
 #include "rhapsode/character_memory.h"
+
+#include <algorithm>
+#include <cctype>
+#include <sstream>
+#include <unordered_set>
+
+#include <nlohmann/json.hpp>
+
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/str_util.h"
 
-#include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
-
 namespace rhapsode {
-
 namespace {
 
-// Case-insensitive identity test for two entity strings.  Exact equality only.
-// The narrator is the sole identity authority: it emits canonical subjects
-// (exact Cast names, "Player"), so the same referent always arrives as the same
-// string.  Substring/containment is deliberately NOT used -- it both falsely
-// merges distinct names that share a token ("Ash" vs "Ashenmoor", any
-// "...captain...") and misses true aliases with no shared substring.  Identity
-// is decided once at the source, never re-guessed here.
-bool entity_matches(const std::string& a_lower, const std::string& b_lower) {
-    return !a_lower.empty() && a_lower == b_lower;
-}
-
-// Strip a label the model parroted back from the prompt ("My belief:",
-// "Belief:", "My updated belief:", "My inner state:") so it never lands in the
-// stored fact.  Only strips a short leading "<label>:" that mentions belief/state.
-std::string strip_echoed_label(std::string s) {
-    auto a = s.find_first_not_of(" \t\n\r\"");
-    if (a == std::string::npos) return {};
-    s = s.substr(a);
-    auto colon = s.find(':');
-    if (colon != std::string::npos && colon <= 24) {
-        std::string label = str::to_lower(s.substr(0, colon));
-        if (label.find("belief") != std::string::npos ||
-            label.find("inner state") != std::string::npos) {
-            auto rest = s.find_first_not_of(" \t\"", colon + 1);
-            return rest == std::string::npos ? std::string() : s.substr(rest);
-        }
-    }
-    return s;
-}
-
-// -- reflect_perceptions helpers ----------------------------------------------
-// One batched LLM call per character forms a Thought per subject, rates its
-// felt-pressure, and classifies its relation to priors.  These helpers keep
-// perceptions and buckets aligned by index through prompt -> parse -> apply.
+struct WeightTuning {
+    float reinforce = 1.0f;
+    float decay = 0.9f;
+    float cull_floor = 0.05f;
+    float weight_cap = 10.0f;
+    int touch_hops = 3;
+};
 
 struct Perception {
-    std::uint64_t id;
+    std::uint64_t id = 0;
     std::string fact;
     std::vector<std::string> entities;
 };
 
-struct ReflectionBucket {
-    std::string subject;
-    std::vector<std::uint64_t> prior_ids;      // live beliefs about this subject
-    std::string prior_text;
-    std::vector<std::size_t> perception_idxs;  // perceptions routed to this subject
+struct KnowFact {
+    std::string fact;
+    std::vector<std::string> entities;
+    float weight = 5.0f;
+    std::string kind = "evidence";  // evidence | tension
 };
 
-struct ParsedThought {
-    std::size_t bucket_index;
-    std::string belief;
-    int weight;
-    std::string kind;  // "tension" or "evidence"
-};
-
-struct WeightTuning {
-    int   touch_hops = 3;
-    float weight_cap = 10.0f;
-    float reinforce  = 1.0f;
-    float decay      = 0.9f;
-    float cull_floor = 0.05f;
-};
-
-std::vector<Perception> gather_unreflected_perceptions(
-    const WorldGraph& beliefs) {
-    std::vector<Perception> perceptions;
+std::vector<Perception> gather_active_perceptions(const WorldGraph& beliefs) {
+    std::vector<Perception> out;
     beliefs.for_each([&](const Node& n) {
-        if (n.type == "perception" && n.state == NodeState::Active)
-            perceptions.push_back({n.id, n.fact, n.entities});
+        if (n.type != "perception" || n.state != NodeState::Active) return;
+        if (n.valid_until != -1) return;
+        out.push_back({n.id, n.fact, n.entities});
     }, false);
-    return perceptions;
+    return out;
 }
 
-// Entity-less perceptions fold under a synthetic "(world)" subject so general
-// news still becomes belief.
-std::unordered_map<std::string, std::vector<std::size_t>>
-group_perceptions_by_subject(const std::vector<Perception>& perceptions) {
-    std::unordered_map<std::string, std::vector<std::size_t>> by_subject;
-    for (std::size_t i = 0; i < perceptions.size(); ++i) {
-        const auto& p = perceptions[i];
-        if (p.entities.empty()) {
-            by_subject["(world)"].push_back(i);
-        } else {
-            for (const auto& e : p.entities) by_subject[e].push_back(i);
-        }
-    }
-    return by_subject;
-}
-
-// Prior Thoughts about each subject are NEVER superseded: contradictory
-// Thoughts coexist and are kept as tension.
-std::vector<ReflectionBucket> build_reflection_buckets(
-    const WorldGraph& beliefs,
-    const std::vector<Perception>& perceptions,
-    const std::unordered_map<std::string, std::vector<std::size_t>>& by_subject)
-{
-    std::vector<ReflectionBucket> buckets;
-    buckets.reserve(by_subject.size());
-    for (const auto& [subject, perception_indices] : by_subject) {
-        ReflectionBucket bucket;
-        bucket.subject = subject;
-        bucket.perception_idxs = perception_indices;
-        const std::string subject_key = str::to_lower(subject);
-        beliefs.for_each([&](const Node& n) {
-            if (n.type != "belief" || n.state != NodeState::Active) return;
-            for (const auto& e : n.entities) {
-                if (entity_matches(str::to_lower(e), subject_key)) {
-                    bucket.prior_ids.push_back(n.id);
-                    bucket.prior_text += "- " + n.fact + "\n";
-                    return;
-                }
-            }
-        }, false);
-        buckets.push_back(std::move(bucket));
-    }
-    return buckets;
-}
-
-std::string build_reflection_prompt(
-    const std::string& character_name,
-    const std::string& description,
-    const std::vector<ReflectionBucket>& buckets,
-    const std::vector<Perception>& perceptions)
-{
-    std::string prompt =
-        "You are " + character_name + ".\n"
-        + (description.empty() ? std::string() : "Who I am: " + description + "\n") +
-        "I have just perceived new things about several subjects. For EACH "
-        "subject below, in ONE terse first-person sentence -- how I would "
-        "actually think it, not prose -- say what this now makes me think or "
-        "feel about it. Do not tidy it: if it sits uneasily with what I already "
-        "think, let it. Rate how much it presses on me from 1 (settled or "
-        "trivial) to 10 (unbearably charged). Say whether the new thought "
-        "CONTRADICTS what I already thought (\"tension\") or EXTENDS / supports "
-        "it (\"evidence\").\n\nSubjects:\n";
-    for (std::size_t bucket_index = 0;
-         bucket_index < buckets.size(); ++bucket_index) {
-        const auto& bucket = buckets[bucket_index];
-        prompt += "[" + std::to_string(bucket_index) + "] "
-               + bucket.subject + "\n";
-        if (bucket.prior_text.empty())
-            prompt += "  What I already think: (nothing in particular yet)\n";
-        else
-            prompt += "  What I already think:\n" + bucket.prior_text;
-        prompt += "  What I just perceived:\n";
-        for (const auto perception_index : bucket.perception_idxs)
-            prompt += "  - " + perceptions[perception_index].fact + "\n";
-    }
-    prompt +=
-        "\nRespond with ONLY a JSON object in exactly this shape, with one entry "
-        "per subject id above:\n"
-        "{\"thoughts\":[{\"id\":0,\"thought\":\"...\",\"weight\":7,"
-        "\"relation\":\"tension\"}]}\n"
-        "Use only straight ASCII double quotes.";
-    return prompt;
-}
-
-std::vector<ParsedThought> parse_reflection_response(
-    const std::string& raw, std::size_t bucket_count)
-{
-    std::vector<ParsedThought> thoughts;
-    const nlohmann::json parsed = try_parse_json(raw);
-    const auto it = parsed.find("thoughts");
-    if (it == parsed.end() || !it->is_array())
-        return thoughts;
-    for (const auto& value : *it) {
-        if (!value.is_object()) continue;
-        const std::size_t bucket_index = static_cast<std::size_t>(
-            json_number<int>(value, "id", -1));
-        if (bucket_index >= bucket_count) continue;
-        std::string belief =
-            strip_echoed_label(sanitize_utf8(value.value("thought", "")));
-        if (belief.empty()) continue;
-        const int weight =
-            std::clamp(json_number<int>(value, "weight", 5), 1, 10);
-        const std::string relation =
-            str::to_lower(value.value("relation", "evidence"));
-        const std::string kind =
-            (relation.find("tension") != std::string::npos ||
-             relation.find("contradict") != std::string::npos)
-                ? "tension" : "evidence";
-        thoughts.push_back(
-            {bucket_index, std::move(belief), weight, kind});
-    }
-    return thoughts;
-}
-
-// Creates belief nodes + tension/evidence edges to priors and perceptions.
-std::vector<std::uint64_t> apply_reflection_thoughts(
-    WorldGraph& beliefs,
-    int turn,
-    const std::vector<ReflectionBucket>& buckets,
-    const std::vector<Perception>& perceptions,
-    const std::vector<ParsedThought>& thoughts)
-{
-    std::vector<std::uint64_t> new_thought_ids;
-    for (const auto& thought : thoughts) {
-        const ReflectionBucket& bucket = buckets[thought.bucket_index];
-        Node belief;
-        belief.fact = sanitize_utf8(thought.belief);
-        belief.type = "belief";
-        belief.state = NodeState::Active;
-        belief.entities = (bucket.subject == "(world)")
-                             ? std::vector<std::string>{}
-                             : std::vector<std::string>{bucket.subject};
-        belief.created_at = turn;
-        belief.valid_until = -1;
-        belief.weight = static_cast<float>(thought.weight);
-        const std::uint64_t new_id = beliefs.add_node(std::move(belief)).id;
-        new_thought_ids.push_back(new_id);
-
-        for (const auto prior_id : bucket.prior_ids)
-            beliefs.add_relation(
-                new_id, prior_id, 1.0f, turn, thought.kind);
-        for (const auto perception_index : bucket.perception_idxs)
-            beliefs.add_relation(new_id, perceptions[perception_index].id,
-                                 1.0f, turn, "evidence");
-    }
-    return new_thought_ids;
-}
-
-// Mark consolidated perceptions as no longer live (kept as history, not
-// re-reflected next turn).
 void consolidate_perceptions(WorldGraph& beliefs,
                              const std::vector<Perception>& perceptions,
-                             int turn)
-{
+                             int turn) {
     for (const auto& perception : perceptions)
         beliefs.set_valid_until(perception.id, turn);
 }
 
-// Weight lives by reinforce-vs-decay (the only writer of Thought weight).
-// Each new Thought touches its local neighborhood and reinforces it; Thoughts
-// left untouched this pass decay.  Below the cull floor a Thought is retired
-// from the live pool.  Returns the cull count.
 int apply_reinforce_decay(WorldGraph& beliefs, int turn,
-                          const std::vector<std::uint64_t>& new_thought_ids,
+                          const std::vector<std::uint64_t>& new_ids,
                           const WeightTuning& tuning,
-    const std::string& character_name)
-{
+                          const std::string& character_name) {
     std::unordered_set<std::uint64_t> touched;
-    for (const auto new_thought_id : new_thought_ids) {
-        touched.insert(new_thought_id);
+    for (const auto new_id : new_ids) {
+        touched.insert(new_id);
         for (const auto neighbor_id :
-             beliefs.neighbors_within(new_thought_id, tuning.touch_hops)) {
+             beliefs.neighbors_within(new_id, tuning.touch_hops)) {
             touched.insert(neighbor_id);
             Node* neighbor = beliefs.get_node(neighbor_id);
             if (neighbor && neighbor->type == "belief") {
@@ -265,13 +70,13 @@ int apply_reinforce_decay(WorldGraph& beliefs, int turn,
             }
         }
     }
-    std::vector<std::uint64_t> live_thoughts;
+    std::vector<std::uint64_t> live;
     beliefs.for_each([&](const Node& n) {
         if (n.type == "belief" && n.state == NodeState::Active)
-            live_thoughts.push_back(n.id);
+            live.push_back(n.id);
     }, false);
     int culled = 0;
-    for (const auto belief_id : live_thoughts) {
+    for (const auto belief_id : live) {
         if (touched.count(belief_id)) continue;
         Node* belief = beliefs.get_node(belief_id);
         if (!belief) continue;
@@ -287,52 +92,355 @@ int apply_reinforce_decay(WorldGraph& beliefs, int turn,
     return culled;
 }
 
+std::string extract_json_object(const std::string& raw) {
+    const auto start = raw.find('{');
+    const auto end = raw.rfind('}');
+    if (start == std::string::npos || end == std::string::npos || end <= start)
+        return {};
+    return raw.substr(start, end - start + 1);
+}
+
+std::string build_monologue_prompt(
+    const std::string& name,
+    const CharacterCore& core,
+    const std::vector<MonologueStream>& streams,
+    const std::string& description,
+    const std::string& beat_stimulus,
+    const std::vector<Perception>& perceptions,
+    const std::string& prior_beliefs) {
+    std::ostringstream os;
+    os <<
+        "You are the actor for ONE character after a public story beat (a \"take\").\n"
+        "The narrator already wrote the stage action and spoken lines. You do not.\n"
+        "You hold continuity and, when needed, improvise private subtext.\n\n"
+        "Layers:\n"
+        "- CORE = character bible / continuity sheet (who you are): a deep "
+        "durable analysis of identity — NOT a thought stream, NOT first-person "
+        "self-talk. Do not append thoughts to core.\n"
+        "- STREAMS = the only place for self-aware / in-the-moment interiority. "
+        "Focus = objective/through-line. Appends = subtext for this take.\n"
+        "- KNOWS = durable subjective facts for the belief graph (what you will still "
+        "know later). Empty knows is normal.\n"
+        "- Most takes: listen. Empty appends and ops:[] are correct acting.\n\n"
+        "Rules:\n"
+        "1. No-op is success (background / unpressured / only listening).\n"
+        "2. Do not re-narrate the scene. Do not write dialogue.\n"
+        "3. Improvise reaction WITHOUT breaking character or inventing other minds.\n"
+        "4. Noticing a fact != needing a stream line or a knows entry.\n"
+        "5. Fork/merge/conclude shift objectives — prefer ops:[]. Never drop the last "
+        "active stream. Max " << CharacterMemory::kMaxActiveStreams << " active.\n"
+        "6. Reply with ONLY JSON.\n\n"
+        "Character: " << name << "\n";
+    if (!description.empty())
+        os << "Seed description: " << description << "\n";
+    os << "CORE (continuity sheet):\n"
+       << (core.text.empty() ? "(empty — may set core_revision once if needed)"
+                             : core.text)
+       << "\n\nActive streams:\n";
+    for (const auto& stream : streams) {
+        if (stream.status != "active") continue;
+        os << "- id=" << stream.id << " focus=" << stream.focus << "\n";
+        const int start = stream.lines.size() > 3
+            ? static_cast<int>(stream.lines.size()) - 3 : 0;
+        for (int i = start; i < static_cast<int>(stream.lines.size()); ++i)
+            os << "    t" << stream.lines[i].turn << ": " << stream.lines[i].text
+               << "\n";
+    }
+    if (!prior_beliefs.empty())
+        os << "\nPrior factual beliefs (compact):\n" << prior_beliefs << "\n";
+    os << "\nThis take (given circumstances):\n"
+       << (beat_stimulus.empty() ? "(none)" : beat_stimulus) << "\n";
+    if (!perceptions.empty()) {
+        os << "\nRouted perceptions (stimulus only — commit via knows if lasting):\n";
+        for (const auto& perception : perceptions)
+            os << "- #" << perception.id << " " << perception.fact << "\n";
+    }
+    os << "\nJSON schema:\n"
+          "{\"appends\":[{\"stream_id\":\"...\",\"text\":\"...\"}],"
+          "\"ops\":[{\"op\":\"fork\",\"parent\":\"...\",\"focus\":\"...\","
+          "\"opening\":\"optional\"}|"
+          "{\"op\":\"merge\",\"from\":\"...\",\"into\":\"...\","
+          "\"reason\":\"...\",\"synthesis\":\"...\"}|"
+          "{\"op\":\"conclude\",\"stream_id\":\"...\",\"reason\":\"...\","
+          "\"closure\":\"...\"}],"
+          "\"knows\":[{\"fact\":\"...\",\"entities\":[\"Name\"],\"weight\":5,"
+          "\"relation\":\"evidence\"}],"
+          "\"core_revision\":null}\n";
+    return os.str();
+}
+
+std::vector<std::uint64_t> apply_knows(
+    WorldGraph& beliefs, int turn,
+    const std::vector<KnowFact>& knows,
+    const std::vector<Perception>& perceptions) {
+    std::vector<std::uint64_t> new_ids;
+    for (const auto& item : knows) {
+        if (item.fact.empty()) continue;
+        Node belief;
+        belief.fact = sanitize_utf8(item.fact);
+        belief.type = "belief";
+        belief.state = NodeState::Active;
+        belief.entities = item.entities;
+        belief.created_at = turn;
+        belief.valid_until = -1;
+        belief.weight = std::clamp(item.weight, 1.0f, 10.0f);
+        const std::uint64_t new_id = beliefs.add_node(std::move(belief)).id;
+        new_ids.push_back(new_id);
+        for (const auto& perception : perceptions) {
+            bool overlap = item.entities.empty();
+            for (const auto& entity : item.entities) {
+                for (const auto& pe : perception.entities) {
+                    if (str::iequals(entity, pe)) overlap = true;
+                }
+            }
+            if (overlap || item.entities.empty())
+                beliefs.add_relation(
+                    new_id, perception.id, 1.0f, turn, "evidence");
+        }
+    }
+    return new_ids;
+}
+
 }  // namespace
 
-void CharacterMemory::reflect_perceptions(int turn, const std::string& description,
-                                          const LLMCallback& llm_callback) {
+void CharacterMemory::ensure_bootstrap(const std::string& core_text_if_empty) {
+    if (core_.text.empty() && !core_text_if_empty.empty())
+        core_.text = sanitize_utf8(core_text_if_empty);
+    if (active_stream_count() > 0) return;
+    MonologueStream stream;
+    stream.id = "self";
+    stream.focus = "ambient self";
+    stream.status = "active";
+    streams_.push_back(std::move(stream));
+}
+
+int CharacterMemory::active_stream_count() const {
+    int count = 0;
+    for (const auto& stream : streams_)
+        if (stream.status == "active") ++count;
+    return count;
+}
+
+MonologueStream* CharacterMemory::find_stream(const std::string& id) {
+    for (auto& stream : streams_)
+        if (stream.id == id) return &stream;
+    return nullptr;
+}
+
+const MonologueStream* CharacterMemory::find_stream(const std::string& id) const {
+    for (const auto& stream : streams_)
+        if (stream.id == id) return &stream;
+    return nullptr;
+}
+
+std::string CharacterMemory::alloc_stream_id(const std::string& parent_id,
+                                            int turn) {
+    ++stream_seq_;
+    return parent_id + "_f" + std::to_string(turn) + "_" +
+           std::to_string(stream_seq_);
+}
+
+nlohmann::json CharacterMemory::render_mind_query(
+    std::size_t max_belief_chars, std::size_t max_line_chars) const {
+    nlohmann::json result;
+    result["core"] = sanitize_utf8(
+        truncate_utf8(core_.text, static_cast<int>(max_belief_chars / 2)));
+    nlohmann::json active = nlohmann::json::array();
+    for (const auto& stream : streams_) {
+        if (stream.status != "active") continue;
+        nlohmann::json row;
+        row["id"] = stream.id;
+        row["focus"] = stream.focus;
+        nlohmann::json lines = nlohmann::json::array();
+        const int start = stream.lines.size() > 3
+            ? static_cast<int>(stream.lines.size()) - 3 : 0;
+        for (int i = start; i < static_cast<int>(stream.lines.size()); ++i) {
+            nlohmann::json line;
+            line["turn"] = stream.lines[i].turn;
+            line["text"] = sanitize_utf8(truncate_utf8(
+                stream.lines[i].text, static_cast<int>(max_line_chars)));
+            lines.push_back(std::move(line));
+        }
+        row["recent_lines"] = std::move(lines);
+        active.push_back(std::move(row));
+    }
+    result["streams"] = std::move(active);
+    result["beliefs"] = sanitize_utf8(
+        truncate_utf8(render_thoughts({}), static_cast<int>(max_belief_chars)));
+    return result;
+}
+
+void CharacterMemory::update_monologues(
+    int turn,
+    const std::string& description,
+    const std::string& beat_stimulus,
+    const LLMCallback& llm_callback) {
+    ensure_bootstrap(description);
     if (!llm_callback) {
         log() << "  [char_mem:" << character_name_
-              << "] reflect skip: no reflection LLM callback\n" << std::flush;
+              << "] monologue skip: no LLM callback\n" << std::flush;
         return;
     }
 
-    auto perceptions = gather_unreflected_perceptions(beliefs_);
-    if (perceptions.empty()) {
-        log() << "  [char_mem:" << character_name_
-              << "] reflect skip: no new perceptions\n" << std::flush;
-        return;
-    }
-
-    auto by_subject = group_perceptions_by_subject(perceptions);
-    auto buckets    = build_reflection_buckets(beliefs_, perceptions, by_subject);
-    auto prompt     = build_reflection_prompt(
-        character_name_, description, buckets, perceptions);
+    auto perceptions = gather_active_perceptions(beliefs_);
+    const std::string prior = truncate_utf8(render_thoughts({}), 800);
+    const std::string prompt = build_monologue_prompt(
+        character_name_, core_, streams_, description, beat_stimulus,
+        perceptions, prior);
 
     std::string raw;
     try {
         raw = llm_callback(prompt);
     } catch (const std::exception& ex) {
         log() << "  [char_mem:" << character_name_
-              << "] reflect_perceptions failed: " << ex.what() << "\n";
-        raw.clear();
+              << "] update_monologues failed: " << ex.what() << "\n";
+        consolidate_perceptions(beliefs_, perceptions, turn);
+        return;
     }
 
-    std::vector<std::uint64_t> new_thought_ids;
-    if (!raw.empty()) {
-        auto thoughts = parse_reflection_response(raw, buckets.size());
-        new_thought_ids = apply_reflection_thoughts(
-            beliefs_, turn, buckets, perceptions, thoughts);
+    nlohmann::json parsed = try_parse_json(raw);
+    if (parsed.is_null() || !parsed.is_object()) {
+        const auto sliced = extract_json_object(raw);
+        if (!sliced.empty()) parsed = try_parse_json(sliced);
+    }
+
+    std::vector<std::uint64_t> new_belief_ids;
+
+    if (parsed.is_object()) {
+        if (parsed.contains("core_revision") && parsed["core_revision"].is_string()) {
+            const std::string revision =
+                str::trim(sanitize_utf8(parsed["core_revision"].get<std::string>()));
+            if (!revision.empty()) {
+                core_.text = revision;
+                core_.revised_at = turn;
+            }
+        }
+
+        // merges then concludes then forks
+        if (parsed.contains("ops") && parsed["ops"].is_array()) {
+            std::vector<nlohmann::json> merges, concludes, forks;
+            for (const auto& op : parsed["ops"]) {
+                if (!op.is_object()) continue;
+                const std::string kind = str::to_lower(op.value("op", ""));
+                if (kind == "merge") merges.push_back(op);
+                else if (kind == "conclude") concludes.push_back(op);
+                else if (kind == "fork") forks.push_back(op);
+            }
+            for (const auto& op : merges) {
+                const std::string from_id = op.value("from", "");
+                const std::string into_id = op.value("into", "");
+                auto* from = find_stream(from_id);
+                auto* into = find_stream(into_id);
+                if (!from || !into || from == into) continue;
+                if (from->status != "active" || into->status != "active") continue;
+                const std::string synthesis =
+                    str::trim(sanitize_utf8(op.value("synthesis", "")));
+                if (!synthesis.empty())
+                    into->lines.push_back({turn, synthesis});
+                from->status = "closed";
+                from->closed_reason = str::trim(op.value("reason", "merged"));
+                from->closed_summary = synthesis.empty()
+                    ? from->closed_reason : synthesis;
+                log() << "  [char_mem:" << character_name_
+                      << "] stream merge " << from_id << " -> " << into_id << "\n";
+            }
+            for (const auto& op : concludes) {
+                const std::string stream_id = op.value("stream_id", "");
+                auto* stream = find_stream(stream_id);
+                if (!stream || stream->status != "active") continue;
+                if (active_stream_count() <= 1) {
+                    log() << "  [char_mem:" << character_name_
+                          << "] skip conclude " << stream_id
+                          << " (would empty streams)\n";
+                    continue;
+                }
+                stream->status = "closed";
+                stream->closed_reason = str::trim(op.value("reason", "concluded"));
+                stream->closed_summary =
+                    str::trim(sanitize_utf8(op.value("closure", "")));
+                log() << "  [char_mem:" << character_name_
+                      << "] stream conclude " << stream_id << "\n";
+            }
+            for (const auto& op : forks) {
+                if (active_stream_count() >= kMaxActiveStreams) {
+                    log() << "  [char_mem:" << character_name_
+                          << "] skip fork (at cap)\n";
+                    continue;
+                }
+                const std::string parent_id = op.value("parent", "");
+                auto* parent = find_stream(parent_id);
+                if (!parent || parent->status != "active") continue;
+                const std::string focus =
+                    str::trim(sanitize_utf8(op.value("focus", "")));
+                if (focus.empty()) continue;
+                MonologueStream child;
+                child.id = alloc_stream_id(parent_id, turn);
+                child.focus = focus;
+                child.parent_id = parent_id;
+                child.status = "active";
+                const std::string opening =
+                    str::trim(sanitize_utf8(op.value("opening", "")));
+                if (!opening.empty())
+                    child.lines.push_back({turn, opening});
+                log() << "  [char_mem:" << character_name_
+                      << "] stream fork " << parent_id << " -> " << child.id
+                      << "\n";
+                streams_.push_back(std::move(child));
+            }
+        }
+
+        if (parsed.contains("appends") && parsed["appends"].is_array()) {
+            for (const auto& append : parsed["appends"]) {
+                if (!append.is_object()) continue;
+                const std::string stream_id = append.value("stream_id", "");
+                const std::string text =
+                    str::trim(sanitize_utf8(append.value("text", "")));
+                if (text.empty()) continue;
+                auto* stream = find_stream(stream_id);
+                if (!stream || stream->status != "active") continue;
+                stream->lines.push_back({turn, text});
+            }
+        }
+
+        if (parsed.contains("knows") && parsed["knows"].is_array()) {
+            std::vector<KnowFact> knows;
+            for (const auto& value : parsed["knows"]) {
+                if (!value.is_object()) continue;
+                KnowFact item;
+                item.fact = str::trim(sanitize_utf8(value.value("fact", "")));
+                if (item.fact.empty()) continue;
+                if (value.contains("entities") && value["entities"].is_array()) {
+                    for (const auto& entity : value["entities"])
+                        if (entity.is_string())
+                            item.entities.push_back(entity.get<std::string>());
+                }
+                item.weight = static_cast<float>(
+                    std::clamp(json_number<int>(value, "weight", 5), 1, 10));
+                const std::string relation =
+                    str::to_lower(value.value("relation", "evidence"));
+                item.kind =
+                    (relation.find("tension") != std::string::npos ||
+                     relation.find("contradict") != std::string::npos)
+                        ? "tension" : "evidence";
+                knows.push_back(std::move(item));
+            }
+            new_belief_ids = apply_knows(beliefs_, turn, knows, perceptions);
+            // tension: link new knows that requested tension against newest prior
+            // (simple: skip cross-link complexity; evidence edges to perceptions done)
+        }
+    } else {
+        log() << "  [char_mem:" << character_name_
+              << "] monologue unparseable -- no-op apply\n";
     }
 
     consolidate_perceptions(beliefs_, perceptions, turn);
-    int culled = apply_reinforce_decay(
-        beliefs_, turn, new_thought_ids, WeightTuning{}, character_name_);
+    apply_reinforce_decay(
+        beliefs_, turn, new_belief_ids, WeightTuning{}, character_name_);
+    ensure_bootstrap(description);
 
-    log() << "  [char_mem:" << character_name_ << "] reflected "
-          << perceptions.size() << " perception(s) into "
-          << new_thought_ids.size() << " thought(s), culled "
-          << culled << " faded\n" << std::flush;
+    log() << "  [char_mem:" << character_name_ << "] monologue done appends/ops "
+          << "knows=" << new_belief_ids.size()
+          << " streams_active=" << active_stream_count() << "\n" << std::flush;
 }
 
 }  // namespace rhapsode

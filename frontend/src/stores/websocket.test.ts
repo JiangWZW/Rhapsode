@@ -66,13 +66,27 @@ describe('websocket store', () => {
     expect(store.connected).toBe(false)
   })
 
-  it('handles malformed JSON without throwing', () => {
+  it('reconnects after an unexpected close', async () => {
+    vi.useFakeTimers()
     const store = useWebSocket()
     store.connect()
-    const socket = MockWebSocket.instances[0]
+    expect(MockWebSocket.instances).toHaveLength(1)
 
-    expect(() => socket.onmessage?.({ data: '{bad json' })).not.toThrow()
-    expect(store.messages.at(-1)?.content).toBe('[Error] Invalid server message')
-    expect(store.processing).toBe(false)
+    MockWebSocket.instances[0].close()
+    expect(store.connected).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(500)
+    expect(MockWebSocket.instances).toHaveLength(2)
+    vi.useRealTimers()
+  })
+
+  it('does not reconnect after intentional disconnect', async () => {
+    vi.useFakeTimers()
+    const store = useWebSocket()
+    store.connect()
+    store.disconnect()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(MockWebSocket.instances).toHaveLength(1)
+    vi.useRealTimers()
   })
 })

@@ -102,13 +102,29 @@ void bind_graph(py::module_& m) {
         .def("view_of",           &CharacterMemory::view_of, py::arg("subjects"))
         .def("route_fact",        &CharacterMemory::route_fact,
              py::arg("fact"), py::arg("entities"), py::arg("turn"))
-        .def("reflect_perceptions", &CharacterMemory::reflect_perceptions,
-             py::arg("turn"), py::arg("description"), py::arg("callback"))
+        .def("ensure_bootstrap",  &CharacterMemory::ensure_bootstrap,
+             py::arg("core_text_if_empty"))
+        .def("update_monologues", &CharacterMemory::update_monologues,
+             py::arg("turn"), py::arg("description"), py::arg("beat_stimulus"),
+             py::arg("callback"))
         .def("render_thoughts",   &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
+        .def("render_mind_query", [](const CharacterMemory& memory,
+                                     std::size_t max_belief_chars,
+                                     std::size_t max_line_chars) {
+                return memory.render_mind_query(max_belief_chars, max_line_chars)
+                    .dump();
+             },
+             py::arg("max_belief_chars") = 1200,
+             py::arg("max_line_chars") = 400)
         .def_property_readonly("beliefs", [](const CharacterMemory& memory) {
              return memory.beliefs();
         })
+        .def_property_readonly("core_text", [](const CharacterMemory& memory) {
+             return memory.core().text;
+        })
+        .def_property_readonly("active_stream_count",
+             &CharacterMemory::active_stream_count)
         .def("to_json_str", [](const CharacterMemory& self) { return self.to_json().dump(2); })
         .def_static("from_json_str", [](const std::string& s) {
             return CharacterMemory::from_json(nlohmann::json::parse(s));

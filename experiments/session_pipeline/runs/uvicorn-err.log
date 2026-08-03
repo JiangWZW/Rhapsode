@@ -1,19 +1,0 @@
-INFO:     Started server process [146880]
-INFO:     Waiting for application startup.
-21:10:40 INFO  memory: Loading embedding model BAAI/bge-base-en-v1.5 ...
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 23348.62it/s]
-21:10:47 INFO  memory: Embedding model ready.
-21:10:47 INFO  fable: Loading FABLE NER model ...
-Loading weights:   0%|          | 0/200 [00:00<?, ?it/s]Loading weights: 100%|██████████| 200/200 [00:00<00:00, 79384.95it/s]
-21:10:49 INFO  fable: FABLE ready.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8080 (Press CTRL+C to quit)
-INFO:     127.0.0.1:10932 - "WebSocket /ws" [accepted]
-21:11:07 INFO  memory: MemorySystem callbacks registered for scene konosuba
-21:11:07 INFO  session: === FRESH START === scene_id=konosuba graph=13 hist=1
-21:11:08 INFO  session:   [memory] Synced 13 graph nodes to ChromaDB (0 expired)
-INFO:     connection open
-21:11:33 INFO  turn: begin scene=konosuba id=0 kind=player
-21:11:36 INFO  llm: DeepSeek thinking=enabled
-21:11:36 INFO  llm: LLM provider: deepseek (model=deepseek-v4-flash, tool_model=deepseek-v4-pro)

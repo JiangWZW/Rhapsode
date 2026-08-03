@@ -8,6 +8,7 @@ import logging
 log = logging.getLogger(__name__)
 
 _pipe = None
+FABLE_MODEL = "SaladTechnologies/fable-base"
 
 LABEL_MAP = {
     "CHA": "character",
@@ -20,20 +21,48 @@ LABEL_MAP = {
 }
 
 
+def _load_fable_pipeline():
+    from transformers import (
+        AutoModelForTokenClassification,
+        AutoTokenizer,
+        pipeline,
+    )
+
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(
+            FABLE_MODEL, local_files_only=True)
+        model = AutoModelForTokenClassification.from_pretrained(
+            FABLE_MODEL, local_files_only=True)
+        pipe = pipeline(
+            "token-classification",
+            model=model,
+            tokenizer=tokenizer,
+            aggregation_strategy="simple",
+            device=-1,
+        )
+        log.info("FABLE ready (local cache).")
+        return pipe
+    except Exception as exc:
+        log.warning(
+            "Local cache miss for %s (%s); fetching from HuggingFace once.",
+            FABLE_MODEL, exc,
+        )
+        pipe = pipeline(
+            "token-classification",
+            model=FABLE_MODEL,
+            aggregation_strategy="simple",
+            device=-1,
+        )
+        log.info("FABLE ready (downloaded).")
+        return pipe
+
+
 def warmup_fable() -> None:
     global _pipe
     if _pipe is not None:
         return
-    from transformers import pipeline
-
     log.info("Loading FABLE NER model ...")
-    _pipe = pipeline(
-        "token-classification",
-        model="SaladTechnologies/fable-base",
-        aggregation_strategy="simple",
-        device=-1,
-    )
-    log.info("FABLE ready.")
+    _pipe = _load_fable_pipeline()
 
 
 def make_ner_callback():

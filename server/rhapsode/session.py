@@ -130,8 +130,13 @@ def _scene_ws_payload(msg: SceneMessage) -> dict:
 
 async def _send_seed_messages(ws: WebSocket, story: Story,
                               scene: SceneData, is_resuming: bool = False):
-    cap = 8 if is_resuming else None
+    # Resume used to cap at 8, which looked like an empty game after long runs.
+    cap = 120 if is_resuming else None
     seeds = story.display_timeline(scene.scene_id, cap)
+    log.info(
+        "Seeding client timeline scene=%s resume=%s messages=%d (cap=%s)",
+        scene.scene_id, is_resuming, len(seeds), cap,
+    )
     for msg in seeds:
         role = msg.role.name.lower()
         if role == "assistant":
@@ -186,7 +191,18 @@ async def run_session(ws: WebSocket) -> None:
     """
     await ws.accept()
 
-    session = _setup_ws_session()
+    loop = asyncio.get_event_loop()
+    try:
+        # Heavy load/save must not block the event loop — a multi-minute setup
+        # after accept used to leave the browser on an empty story panel (and
+        # with no reconnect, it stayed empty forever).
+        session = await loop.run_in_executor(None, _setup_ws_session)
+    except Exception as exc:
+        log.exception("Session setup failed")
+        await ws.send_json({"type": "error", "detail": f"Session setup failed: {exc}"})
+        await ws.close()
+        return
+
     await _send_seed_messages(ws, session.story, session.scene, session.is_resuming)
     # Signal ready-for-input. Eval runner (and UI status) wait on this; undo
     # already emits the same frame after reseeding.
@@ -208,7 +224,7 @@ async def run_session(ws: WebSocket) -> None:
             await ws.send_json({"type": "status", "state": "processing"})
 
             try:
-                outputs = await asyncio.get_event_loop().run_in_executor(
+                outputs = await loop.run_in_executor(
                     None, session.story.advance_scene, text)
             except Exception as exc:
                 log.exception("Turn failed")

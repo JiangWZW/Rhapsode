@@ -146,7 +146,12 @@ std::string query_character_mind(const World& world,
     result["character"] = memory->first;
     if (found_character)
         result["voice"] = found_character->build_prompt__dialogue_voice();
-    result["thoughts"] = memory->second.render_thoughts({});
+    const auto mind = memory->second.render_mind_query();
+    result["core"] = mind.value("core", "");
+    result["streams"] = mind.value("streams", nlohmann::json::array());
+    result["beliefs"] = mind.value("beliefs", "");
+    // Backward-compatible alias for older tooling.
+    result["thoughts"] = result["beliefs"];
     return result.dump();
 }
 
