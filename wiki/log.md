@@ -1,3 +1,17 @@
+## [2026-08-04] implementation | Early-deliver narrator (advance_player / complete_turn)
+
+- Split Story turn: `advance_player` returns player-beat outputs; `complete_turn` runs post-turn
+  (weave/expiry/reflection/downsample), lifecycle, off-stage, save.
+- FastAPI streams beat outputs before `complete_turn`; status stays `processing` until finish.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md),
+  [architecture/python-server.md](architecture/python-server.md),
+  [architecture/system-overview.md](architecture/system-overview.md).
+
+## [2026-08-04] research | Role-play PDF archive + comprehensive report
+
+- Downloaded 39 PDFs to `raw/papers/llm-roleplay/` (wiki survey + scaffolding finds); extracted text + digests.
+- Wrote [llm-roleplay-comprehensive-report.md](research/llm-roleplay-comprehensive-report.md): taxonomy, support/contradiction for frontier-API scaffolding, closest cousins (IBSEN/BookWorld/TTM/…), ranked steal list, Konosuba-style gaps.
+
 ## [2026-08-03] content | Konosuba cores from local novels
 
 - Rewrote Aqua / Megumin / Darkness / Luna / Wiz `core` sheets using Yen Press Vol.1 text under `D:/cursor-workspace/Konosuba` (plus corpus scenes for Wiz’s cemetery introduction), not wiki paraphrase alone.

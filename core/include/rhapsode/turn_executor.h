@@ -19,6 +19,8 @@ struct DeathCandidate;
 struct TurnResult {
     std::string scene_id;
     int completed_turn = 0;
+    /// Pre-increment turn index; argument for run_post_turn.
+    int post_turn_index = -1;
     std::vector<SceneMessage> outputs;
     struct Effects {
         std::vector<Node> created_nodes;
@@ -28,8 +30,9 @@ struct TurnResult {
 
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
 
-// Executes one complete turn against Story-owned state. TurnExecutor borrows
-// Story's World and graph services and retains no SceneData between calls.
+// Executes the player beat against Story-owned state. Story runs post-turn.
+// TurnExecutor borrows Story's World and graph services and retains no SceneData
+// between calls.
 class TurnExecutor {
 public:
     TurnExecutor(World& world, Director& director, Weaver& weaver);
@@ -38,6 +41,9 @@ public:
                                ReadToolCallback read_tool = {});
     TurnResult run_autonomous_turn(SceneData& scene, const std::string& focus,
                                    ReadToolCallback read_tool = {});
+    /// Post-turn phase: weave, expiry drain, reflection, downsampling.
+    /// Returns nodes expired during expiry drain.
+    std::vector<Node> run_post_turn(SceneData& scene, int turn) noexcept;
     std::string synthesize_merge_context(
         const SceneData& source, const SceneData& target,
         ReadToolCallback read_tool = {});
@@ -85,21 +91,18 @@ private:
         std::vector<SpeechCue> cues;
     };
 
-    struct PostTurnResult {
-        std::vector<Node> expired_nodes;
-    };
-
     struct TurnWork {
         std::vector<SceneMessage> outputs;
         DirectorOutput director_output;
         ReadToolCallback read_tool;
+        int post_turn_index = -1;
     };
 
     TurnResult run_turn(SceneData& scene, const std::string& text, bool autonomous,
                         ReadToolCallback read_tool);
     void append_input_message(SceneData& scene, const std::string& text,
                               bool autonomous);
-    PostTurnResult execute_turn(SceneData& scene, TurnWork& work);
+    void execute_turn(SceneData& scene, TurnWork& work);
     NarratorPrompt build_turn_prompt(SceneData& scene);
     std::string call_narrator(const SceneData& scene,
                               const std::string& instructions,
@@ -118,7 +121,6 @@ private:
                      OutputBucket bucket, TurnWork& work);
     void confirm_deaths(const std::vector<DeathCandidate>& candidates,
                         const std::string& narration);
-    PostTurnResult run_post_turn(SceneData& scene, int turn) noexcept;
     World& world_;
     Director& director_;
     Weaver& weaver_;

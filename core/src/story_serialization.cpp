@@ -141,6 +141,7 @@ bool Story::has_save(const std::string& saves_dir) const {
 }
 
 void Story::load_save(const std::string& saves_dir) {
+    pending_turn_.reset();
     std::ifstream world_input(world_path(saves_dir));
     if (!world_input.is_open())
         throw std::runtime_error("No world save in: " + saves_dir);

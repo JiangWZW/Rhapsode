@@ -105,7 +105,10 @@ public:
     }
     void set_saves_dir(const std::string& dir) { saves_dir_ = dir; }
 
-    std::vector<SceneMessage> advance_scene(const std::string& player_input);
+    /// Player beat only; defers post-turn. Pair with complete_turn().
+    std::vector<SceneMessage> advance_player(const std::string& player_input);
+    /// Post-turn, lifecycle, off-stage, save. Requires a prior advance_player().
+    std::vector<SceneMessage> complete_turn();
     int revert_active_turns(int count);
 
     bool has_save(const std::string& saves_dir) const;
@@ -131,6 +134,12 @@ private:
         bool ok = false;
     };
 
+    struct PendingTurn {
+        std::string scene_id;
+        std::string player_input;
+        int post_turn_index = -1;
+    };
+
     SceneData* adopt_scene(SceneData scene);
     SceneDrive derive_intention(const SceneData& scene) const;
     SceneSummary summarize_scene(const SceneData& scene) const;
@@ -147,6 +156,11 @@ private:
     std::vector<std::string> pick_off_stage_scenes();
     LifecycleApplyResult apply_lifecycle(const std::string& scene_id,
                                          const std::string& player_input);
+    TurnResult run_beat(const std::string& scene_id, const std::string& input,
+                        bool autonomous);
+    LifecycleApplyResult finish_beat(const std::string& scene_id,
+                                     const std::string& player_input,
+                                     int post_turn_index);
     StepResult step_scene(const std::string& scene_id,
                           const std::string& input,
                           bool autonomous);
@@ -161,6 +175,7 @@ private:
     std::vector<SceneClosure> scene_closures_;
     std::string active_scene_id_;
     int beat_clock_ = 0;
+    std::optional<PendingTurn> pending_turn_;
 
     SchedulerCallback scheduler_cb_;
     LifecycleCallback lifecycle_cb_;

@@ -581,6 +581,7 @@ int Story::revert_scene_turns(SceneData& scene, int count) {
 }
 
 int Story::revert_active_turns(int count) {
+    pending_turn_.reset();
     SceneData* scene = active_scene();
     if (!scene) throw std::runtime_error("Story::revert_active_turns: no active scene");
     const int reverted = revert_scene_turns(*scene, count);
@@ -604,6 +605,9 @@ void Story::set_weaver_llm_callback(LLMCallback cb) {
 void Story::set_weaver_interval(int turns) { weaver_->set_interval(turns); }
 
 WeaveResult Story::weave_scene(const std::string& scene_id) {
+    if (pending_turn_)
+        throw std::runtime_error(
+            "Story::weave_scene: complete_turn pending from advance_player");
     const SceneData* scene = get_scene(scene_id);
     if (!scene) throw std::invalid_argument("Unknown scene: " + scene_id);
     return weaver_->weave(scene->turn_index);

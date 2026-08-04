@@ -51,17 +51,6 @@ private:
     bool& running_;
 };
 
-void append_unique_nodes(std::vector<Node>& destination,
-                         std::vector<Node> source) {
-    for (auto& node : source) {
-        const auto duplicate = std::find_if(
-            destination.begin(), destination.end(),
-            [&](const Node& existing) { return existing.id == node.id; });
-        if (duplicate == destination.end())
-            destination.push_back(std::move(node));
-    }
-}
-
 nlohmann::json scene_continuity_context(const SceneData& scene,
                                         const World& world) {
     nlohmann::json context;
@@ -250,16 +239,15 @@ TurnResult TurnExecutor::run_turn(SceneData& scene,
                     autonomous ? "offstage" : "player");
     try {
         append_input_message(scene, text, autonomous);
-        PostTurnResult completed = execute_turn(scene, work);
+        execute_turn(scene, work);
 
         TurnResult result;
         result.scene_id = scene.scene_id;
         result.completed_turn = scene.turn_index;
+        result.post_turn_index = work.post_turn_index;
         result.outputs = std::move(work.outputs);
         result.effects.created_nodes = std::move(work.director_output.new_nodes);
         result.effects.expired_nodes = std::move(work.director_output.newly_expired);
-        append_unique_nodes(result.effects.expired_nodes,
-                            std::move(completed.expired_nodes));
         clear_log_context();
         return result;
     } catch (...) {
@@ -286,8 +274,7 @@ void TurnExecutor::append_input_message(SceneData& scene,
     append_history_message(scene.history, std::move(message));
 }
 
-TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
-                                                        TurnWork& work) {
+void TurnExecutor::execute_turn(SceneData& scene, TurnWork& work) {
     if (!llm_cb_) throw std::runtime_error("No LLM callback registered");
 
     const int turn = scene.turn_index;
@@ -320,7 +307,7 @@ TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
         weaver_.rebuild_expiry_queue(priority);
     }
 
-    PostTurnResult completed = run_post_turn(scene, turn);
+    work.post_turn_index = turn;
     const double ms = std::chrono::duration<double, std::milli>(
                           std::chrono::steady_clock::now() - t0)
                           .count();
@@ -331,7 +318,6 @@ TurnExecutor::PostTurnResult TurnExecutor::execute_turn(SceneData& scene,
                      << " ms=" << static_cast<long long>(std::lround(ms))
                      << " avg=" << static_cast<long long>(std::lround(avg))
                      << "\n";
-    return completed;
 }
 
 void TurnExecutor::emit_output(SceneData& scene,

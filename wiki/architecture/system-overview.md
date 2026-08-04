@@ -53,15 +53,18 @@ See [[architecture/cpp-data-model]] and [[architecture/scene-loop]].
 
 ## Turn flow
 
-1. The WebSocket endpoint receives player text and calls `Story.advance_scene()` off the asyncio
-   event loop.
-2. Story executes the active player scene through TurnExecutor.
+1. The WebSocket endpoint receives player text and calls `Story.advance_player()` off the asyncio
+   event loop, then streams those SceneMessages so the client can read while post-turn runs.
+2. Story executes the active player beat through TurnExecutor (narrator through expiry rebuild).
 3. The narrator may use graph, mind, history, and storyline read tools through a call-scoped
    function.
-4. Story validates and applies a lifecycle decision.
-5. The scheduler may select one off-stage storyline; Story executes it through the same boundary.
+4. `Story.complete_turn()` runs post-turn (weave / expiry / reflection / downsample), then
+   validates and applies a lifecycle decision.
+5. The scheduler may select off-stage storylines; Story executes them through the same beat+finish
+   boundary.
 6. Story synchronizes external semantic memory and persists the complete aggregate when configured.
-7. Emitted SceneMessages return to the WebSocket and Vue client.
+7. Any additional merge/off-stage SceneMessages stream after `complete_turn`; status returns to
+   `idle` only then.
 
 ## Graph and minds
 

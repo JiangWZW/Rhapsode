@@ -164,7 +164,9 @@ void bind_story(py::module_& m) {
              py::arg("cb"))
         .def("set_memory", &Story::set_memory, py::arg("memory"))
         .def("set_saves_dir", &Story::set_saves_dir, py::arg("dir"))
-        .def("advance_scene", &Story::advance_scene, py::arg("player_input"),
+        .def("advance_player", &Story::advance_player, py::arg("player_input"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("complete_turn", &Story::complete_turn,
              py::call_guard<py::gil_scoped_release>())
         .def("revert_active_turns", &Story::revert_active_turns, py::arg("count"))
         .def("has_save", &Story::has_save, py::arg("saves_dir"))

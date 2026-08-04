@@ -36,3 +36,6 @@ wiki/.obsidian/
 
 # Session / autoplay eval artifacts (local only)
 experiments/session_pipeline/runs/
+
+# Local paper PDF archive (large; keep on disk, not in git)
+raw/papers/

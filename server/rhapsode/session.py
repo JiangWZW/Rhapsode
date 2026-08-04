@@ -1,7 +1,6 @@
 """The play session: construct the engine and its Python callbacks, then run the
-/ws loop. All turn sequencing -- player beat, scheduler, off-stage beat, memory
-sync, persistence -- lives in the C++ engine behind `Story.advance_scene`; this
-module only builds the pieces, streams output, and handles the socket."""
+/ws loop. Turn sequencing lives in C++ (`advance_player` + `complete_turn`);
+this module streams player outputs between those calls and handles the socket."""
 
 import asyncio
 import json
@@ -185,9 +184,8 @@ async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
 async def run_session(ws: WebSocket) -> None:
     """Accept the socket and drive turns until the client disconnects.
 
-    Each turn is a single `story.advance_scene(text)` call: the engine runs the
-    player beat, any staged lifecycle ops, one scheduled off-stage beat, memory
-    sync, and persistence, and returns the player-facing outputs to stream.
+    Each turn: `advance_player` (stream outputs), then `complete_turn` (post-turn,
+    lifecycle, off-stage, save) and stream any merge extras.
     """
     await ws.accept()
 
@@ -222,17 +220,28 @@ async def run_session(ws: WebSocket) -> None:
                 continue
 
             await ws.send_json({"type": "status", "state": "processing"})
-
+            more: list = []
             try:
                 outputs = await loop.run_in_executor(
-                    None, session.story.advance_scene, text)
+                    None, session.story.advance_player, text)
             except Exception as exc:
                 log.exception("Turn failed")
                 await ws.send_json({"type": "error", "detail": str(exc)})
                 await ws.send_json({"type": "status", "state": "idle"})
                 continue
 
-            await _stream_outputs(ws, session.annotator, outputs)
+            try:
+                await _stream_outputs(ws, session.annotator, outputs)
+            finally:
+                try:
+                    more = await loop.run_in_executor(
+                        None, session.story.complete_turn)
+                except Exception as exc:
+                    log.exception("Turn failed")
+                    await ws.send_json({"type": "error", "detail": str(exc)})
+
+            if more:
+                await _stream_outputs(ws, session.annotator, more)
             await ws.send_json({"type": "status", "state": "idle"})
 
     except WebSocketDisconnect:

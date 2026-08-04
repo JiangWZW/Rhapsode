@@ -99,7 +99,8 @@ def check(label: str, condition: bool) -> None:
 def verify_conclude() -> None:
     story, script = build_engine()
     script.mode = "fork"
-    story.advance_scene("Send Maren through the tunnels.")
+    story.advance_player("Send Maren through the tunnels.")
+    story.complete_turn()
     children = [scene_id for scene_id in story.scene_ids()
                 if scene_id != script.root_id]
     check("fork creates an off-stage storyline", len(children) == 1)
@@ -108,18 +109,21 @@ def verify_conclude() -> None:
     check("fork moves its cast", maren is not None and maren.in_scene(child))
 
     script.mode = "conclude"
-    story.advance_scene("Hold the line.")
+    story.advance_player("Hold the line.")
+    story.complete_turn()
     check("off-stage lifecycle can conclude itself", story.scene_count() == 1)
 
 
 def verify_merge() -> None:
     story, script = build_engine()
     script.mode = "fork"
-    story.advance_scene("Send Maren through the tunnels.")
+    story.advance_player("Send Maren through the tunnels.")
+    story.complete_turn()
     child = next(scene_id for scene_id in story.scene_ids()
                  if scene_id != script.root_id)
     script.mode = "merge"
-    story.advance_scene("Wait for Maren's signal.")
+    story.advance_player("Wait for Maren's signal.")
+    story.complete_turn()
     maren = story.world().find_character("Sergeant Maren")
     check("merge retires the source", child not in story.scene_ids())
     check("merge returns cast to the survivor",

@@ -34,9 +34,9 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 
 }  // namespace
 
-TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
+std::vector<Node> TurnExecutor::run_post_turn(
     SceneData& scene, int turn) noexcept {
-    PostTurnResult result;
+    std::vector<Node> expired_nodes;
     const auto history = snapshot_history(scene.history, window_size_);
     const std::string context =
         format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
@@ -52,7 +52,7 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
                 const auto expiry = weaver_.drain_expiry_queue(turn);
                 for (const auto& operation : expiry) {
                     if (const Node* node = world_.graph().get_node(operation.id))
-                        result.expired_nodes.push_back(*node);
+                        expired_nodes.push_back(*node);
                 }
                 if (!expiry.empty())
                     log_info("expiry") << "expired=" << expiry.size() << "\n";
@@ -92,15 +92,15 @@ TurnExecutor::PostTurnResult TurnExecutor::run_post_turn(
                   << " edges=" << weave.analysis.active_edge_count << "\n";
         }
     } catch (const std::exception& error) {
-        result = {};
+        expired_nodes.clear();
         log_error("turn") << "post-turn failed: " << error.what() << "\n"
                           << std::flush;
     } catch (...) {
-        result = {};
+        expired_nodes.clear();
         log_error("turn") << "post-turn failed with unknown exception\n"
                           << std::flush;
     }
-    return result;
+    return expired_nodes;
 }
 
 }  // namespace rhapsode

@@ -25,7 +25,8 @@ def test_public_binding_surface_matches_owned_runtime_design():
 
 def test_story_is_the_production_composition_surface():
     expected = {
-        "active_scene", "active_scene_id", "advance_scene", "beat_clock",
+        "active_scene", "active_scene_id", "advance_player", "beat_clock",
+        "complete_turn",
         "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
         "fork_scene", "from_scenario_json_str", "get_scene", "has_save",
         "load_save", "load_scenario", "merge_scene", "note_advanced",

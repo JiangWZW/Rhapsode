@@ -1,7 +1,7 @@
 """Composition root: builds the FastAPI app, warms models on startup, mounts the
 read-only graph/inspection endpoints, and exposes the /ws session loop.
 
-Turn sequencing lives in the C++ engine (Story.advance_scene); Python is a thin
+Turn sequencing lives in the C++ engine (advance_player + complete_turn); Python is a thin
 transport + LLM-adapter layer, split across the modules this file wires together:
   - config       : paths + logging
   - llm_tools    : narrator tool schemas + the LLM tool-use adapter

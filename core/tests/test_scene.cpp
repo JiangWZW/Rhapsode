@@ -75,6 +75,13 @@ void configure_story(Story& story, TestNarratorCallback narrator) {
         });
 }
 
+std::vector<SceneMessage> play_turn(Story& story, const std::string& input) {
+    auto outs = story.advance_player(input);
+    auto more = story.complete_turn();
+    outs.insert(outs.end(), more.begin(), more.end());
+    return outs;
+}
+
 std::filesystem::path temp_dir(const std::string& prefix) {
     const auto path = std::filesystem::temp_directory_path() /
         (prefix + std::to_string(
@@ -419,9 +426,13 @@ TEST_CASE("TurnExecutor returns associated generic turn effects",
     const TurnResult result = executor.run_player_turn(scene, "Look.");
     REQUIRE(result.scene_id == "root");
     REQUIRE(result.completed_turn == 1);
+    REQUIRE(result.post_turn_index >= 0);
     REQUIRE(result.effects.created_nodes.size() == 1);
-    REQUIRE(result.effects.expired_nodes.size() == 1);
-    REQUIRE(result.effects.expired_nodes.front().id == old_id);
+    REQUIRE(result.effects.expired_nodes.empty());
+
+    const auto expired = executor.run_post_turn(scene, result.post_turn_index);
+    REQUIRE(expired.size() == 1);
+    REQUIRE(expired.front().id == old_id);
     const auto edges = world.graph().all_edges();
     REQUIRE(std::any_of(edges.begin(), edges.end(), [&](const EdgeInfo& edge) {
         return edge.from_id == old_id && edge.to_id == new_id &&
@@ -528,7 +539,7 @@ TEST_CASE("TurnExecutor autonomous turns remain associated with their SceneData"
     REQUIRE(result.outputs.front().content == "Narration for second.");
 }
 
-TEST_CASE("TurnExecutor completes post-turn work before returning",
+TEST_CASE("TurnExecutor blocks until run_post_turn finishes",
           "[turn_executor][post_turn]") {
     using namespace std::chrono_literals;
     World world;
@@ -551,14 +562,18 @@ TEST_CASE("TurnExecutor completes post-turn work before returning",
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
     });
 
+    const TurnResult beat = executor.run_player_turn(scene, "Wait.");
+    REQUIRE(beat.completed_turn == 1);
+    REQUIRE(beat.post_turn_index >= 0);
+
     auto running = std::async(std::launch::async, [&] {
-        return executor.run_player_turn(scene, "Wait.");
+        return executor.run_post_turn(scene, beat.post_turn_index);
     });
     started.get_future().wait();
     REQUIRE(running.wait_for(20ms) == std::future_status::timeout);
     release.set_value();
     REQUIRE(running.wait_for(2s) == std::future_status::ready);
-    REQUIRE(running.get().completed_turn == 1);
+    REQUIRE_NOTHROW(running.get());
 }
 
 TEST_CASE("TurnExecutor preserves post-turn callback order",
@@ -603,7 +618,10 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
         return std::string{"summary"};
     });
 
-    REQUIRE(executor.run_player_turn(scene, "Look.").completed_turn == 1);
+    const TurnResult beat = executor.run_player_turn(scene, "Look.");
+    REQUIRE(beat.completed_turn == 1);
+    REQUIRE(events == std::vector<std::string>{"narrator", "narrator"});
+    executor.run_post_turn(scene, beat.post_turn_index);
     REQUIRE(events == std::vector<std::string>{
         "narrator", "narrator", "weave", "expiry", "reflection", "downsample"});
 }
@@ -631,6 +649,62 @@ TEST_CASE("TurnExecutor post-turn failures remain non-fatal",
     REQUIRE(result.completed_turn == 1);
     REQUIRE(result.outputs.front().content == "Time passes.");
     REQUIRE(scene.turn_index == 1);
+    REQUIRE_NOTHROW(executor.run_post_turn(scene, result.post_turn_index));
+}
+
+TEST_CASE("Story delivers player outputs before weave runs",
+          "[story][advance_player][post_turn]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    add_fact(world.graph(), "Gate shut", "Gate", 1);
+    add_fact(world.graph(), "Torch lit", "Torch", 1);
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story, [](const std::string&, const std::string&,
+                              const std::string&) {
+        return response("Time passes.");
+    });
+    story.set_weaver_interval(1);
+    bool weave_ran = false;
+    story.set_weaver_llm_callback([&](const std::string&) {
+        weave_ran = true;
+        return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
+    });
+
+    const auto outputs = story.advance_player("Wait.");
+    REQUIRE(outputs.front().content == "Time passes.");
+    REQUIRE_FALSE(weave_ran);
+    const auto more = story.complete_turn();
+    REQUIRE(weave_ran);
+    REQUIRE(more.empty());
+}
+
+TEST_CASE("Story pending-turn guards reject unsafe calls",
+          "[story][advance_player]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    Story story = Story::from_data(basic_scene(), std::move(world));
+    configure_story(story, [](const std::string&, const std::string&,
+                              const std::string&) {
+        return response("Beat.");
+    });
+
+    REQUIRE_THROWS_AS(story.complete_turn(), std::runtime_error);
+
+    REQUIRE(story.advance_player("One.").front().content == "Beat.");
+    REQUIRE_THROWS_AS(story.advance_player("Two."), std::runtime_error);
+    REQUIRE_THROWS_AS(story.weave_scene("root"), std::runtime_error);
+
+    story.revert_active_turns(1);
+    REQUIRE_THROWS_AS(story.complete_turn(), std::runtime_error);
+    REQUIRE_NOTHROW(story.advance_player("Again."));
+    REQUIRE_NOTHROW(story.complete_turn());
+
+    const auto directory = temp_dir("rhapsode-pending-clear-");
+    story.save(directory.string());
+    REQUIRE_NOTHROW(story.advance_player("Pending."));
+    story.load_save(directory.string());
+    REQUIRE_THROWS_AS(story.complete_turn(), std::runtime_error);
+    std::filesystem::remove_all(directory);
 }
 
 TEST_CASE("Story keeps player outputs separate from off-stage turns",
@@ -649,7 +723,7 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
                                     const ReadToolCallback&) {
         return std::string{"away"};
     });
-    const auto outputs = story.advance_scene("Act.");
+    const auto outputs = play_turn(story, "Act.");
     REQUIRE(outputs.size() == 1);
     REQUIRE(outputs.front().content == "Player beat.");
     REQUIRE(story.get_scene("away")->history.back().content == "Away beat.");
@@ -682,7 +756,7 @@ TEST_CASE("Story surfaces off-stage outputs when they merge into the active scen
             return std::string{R"({"ops":[]})"};
         });
 
-    const auto outputs = story.advance_scene("Act.");
+    const auto outputs = play_turn(story, "Act.");
     REQUIRE(outputs.size() == 2);
     REQUIRE(outputs[0].content == "Player beat.");
     REQUIRE(outputs[1].content ==
@@ -721,7 +795,7 @@ TEST_CASE("Board lifecycle merges a fork after the main step without advancing i
             return std::string{R"({"ops":[]})"};
         });
 
-    story.advance_scene("I meet the scout.");
+    play_turn(story, "I meet the scout.");
     REQUIRE(away_narrations == 0);
     REQUIRE(story.get_scene("away") == nullptr);
     REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
@@ -749,7 +823,7 @@ TEST_CASE("Story applies lifecycle fork ops without a World queue", "[story][lif
         return std::string{
             R"({"ops":[{"op":"fork","parent":"root","cast":["Scout"],"driving_intention":"Scout ridge"}]})"};
     });
-    story.advance_scene("Go.");
+    play_turn(story, "Go.");
     REQUIRE(story.scene_count() == 2);
     REQUIRE(story.get_scene("root_f0_0") != nullptr);
     REQUIRE(story.world().find_in_scene("root_f0_0", "Scout") != nullptr);
@@ -773,7 +847,7 @@ TEST_CASE("Board lifecycle skips fork for a non-advanced parent",
             return std::string{
                 R"({"ops":[{"op":"fork","parent":"away","cast":["Scout"],"driving_intention":"Deeper"}]})"};
         });
-    story.advance_scene("Wait.");
+    play_turn(story, "Wait.");
     REQUIRE(story.scene_count() == 2);
     REQUIRE(story.get_scene("away") != nullptr);
 }
@@ -801,7 +875,7 @@ TEST_CASE("Board lifecycle skips stale merge targets and keeps earlier ops",
                 R"({"ops":[{"op":"merge","from":"away","into":"root","reason":"a"},)"
                 R"({"op":"merge","from":"away","into":"side","reason":"stale"}]})"};
         });
-    story.advance_scene("Meet them.");
+    play_turn(story, "Meet them.");
     REQUIRE(story.get_scene("away") == nullptr);
     REQUIRE(story.get_scene("side") != nullptr);
     REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
@@ -829,7 +903,7 @@ TEST_CASE("Board lifecycle applies merge before fork in one response",
                 R"({"ops":[{"op":"fork","parent":"root","cast":["Guard"],"driving_intention":"Scout ahead"},)"
                 R"({"op":"merge","from":"away","into":"root","reason":"reunion"}]})"};
         });
-    story.advance_scene("Split and reunite.");
+    play_turn(story, "Split and reunite.");
     REQUIRE(story.get_scene("away") == nullptr);
     REQUIRE(story.world().find_in_scene("root", "Scout") != nullptr);
     REQUIRE(story.scene_count() == 2);
@@ -890,7 +964,7 @@ TEST_CASE("Scheduler advances a starved off-stage scene within the cap",
         });
 
     for (int i = 0; i < 3; ++i)
-        story.advance_scene("Idle.");
+        play_turn(story, "Idle.");
     REQUIRE(story.active_scene()->turn_index == 3);
     const int off =
         (story.get_scene("a") ? story.get_scene("a")->turn_index : 0) +
@@ -911,11 +985,11 @@ TEST_CASE("Story undo preserves the owned runtime", "[story][undo]") {
     configure_story(story, [](const std::string&, const std::string&, const std::string&) {
         return response("Moment advances.");
     });
-    story.advance_scene("Forward.");
+    play_turn(story, "Forward.");
     REQUIRE(story.active_scene()->turn_index == 1);
     REQUIRE(story.revert_active_turns(1) == 1);
     REQUIRE(story.active_scene()->turn_index == 0);
-    story.advance_scene("Again.");
+    play_turn(story, "Again.");
     REQUIRE(story.active_scene()->turn_index == 1);
 }
 
@@ -926,10 +1000,10 @@ TEST_CASE("Story load reuses its configured runtime", "[story][persistence]") {
     });
     const auto directory = temp_dir("rhapsode-story-reuse-");
     story.save(directory.string());
-    story.advance_scene("First.");
+    play_turn(story, "First.");
     story.load_save(directory.string());
     REQUIRE(story.active_scene()->turn_index == 0);
-    story.advance_scene("Second.");
+    play_turn(story, "Second.");
     REQUIRE(story.active_scene()->turn_index == 1);
     std::filesystem::remove_all(directory);
 }
@@ -958,7 +1032,7 @@ TEST_CASE("Story move assignment preserves its configured runtime",
         });
 
     destination = std::move(source);
-    const auto outputs = destination.advance_scene("Open it.");
+    const auto outputs = play_turn(destination, "Open it.");
 
     REQUIRE(read_source_world);
     REQUIRE(outputs.size() == 1);

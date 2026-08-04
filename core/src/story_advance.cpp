@@ -339,30 +339,56 @@ void Story::sync_memory(const TurnResult& result) {
     }
 }
 
+TurnResult Story::run_beat(const std::string& scene_id, const std::string& input,
+                           bool autonomous) {
+    SceneData* scene = get_scene(scene_id);
+    if (!scene) throw std::runtime_error("Story::run_beat: unknown scene: " + scene_id);
+    executor_->set_live_storylines_board(
+        format_live_storylines_board(summarize_scenes()));
+    ReadToolLease read_tools(make_read_tool_context(*this, scene_id));
+    return autonomous
+        ? executor_->run_autonomous_turn(*scene, input, read_tools.callback)
+        : executor_->run_player_turn(*scene, input, read_tools.callback);
+}
+
+Story::LifecycleApplyResult Story::finish_beat(const std::string& scene_id,
+                                               const std::string& player_input,
+                                               int post_turn_index) {
+    SceneData* scene = get_scene(scene_id);
+    if (!scene)
+        throw std::runtime_error("Story::finish_beat: unknown scene: " + scene_id);
+    std::vector<Node> expired =
+        executor_->run_post_turn(*scene, post_turn_index);
+    if (memory_ && !expired.empty()) {
+        try {
+            memory_->sync_expired(expired);
+        } catch (const std::exception& error) {
+            log_warn("memory") << "post-turn sync failed: " << error.what()
+                               << "\n" << std::flush;
+        }
+    }
+    LifecycleApplyResult lifecycle = apply_lifecycle(scene_id, player_input);
+    if (lifecycle.applied) {
+        log_debug("lifecycle") << "applied " << lifecycle.applied
+              << " op(s) after scene=" << scene_id << "\n";
+    }
+    note_advanced(scene_id);
+    return lifecycle;
+}
+
 Story::StepResult Story::step_scene(const std::string& scene_id,
                                     const std::string& input,
                                     bool autonomous) {
     StepResult step;
-    SceneData* scene = get_scene(scene_id);
-    if (!scene) return step;
+    if (!get_scene(scene_id)) return step;
 
     try {
-        executor_->set_live_storylines_board(
-            format_live_storylines_board(summarize_scenes()));
-        ReadToolLease read_tools(make_read_tool_context(*this, scene_id));
-        TurnResult result = autonomous
-            ? executor_->run_autonomous_turn(*scene, input, read_tools.callback)
-            : executor_->run_player_turn(*scene, input, read_tools.callback);
+        TurnResult result = run_beat(scene_id, input, autonomous);
         const int completed_turn = result.completed_turn;
         step.outputs = std::move(result.outputs);
         sync_memory(result);
-        step.lifecycle = apply_lifecycle(
-            scene_id, autonomous ? std::string{} : input);
-        if (step.lifecycle.applied) {
-            log_debug("lifecycle") << "applied " << step.lifecycle.applied
-                  << " op(s) after scene=" << scene_id << "\n";
-        }
-        note_advanced(scene_id);
+        step.lifecycle = finish_beat(scene_id, autonomous ? std::string{} : input,
+                                     result.post_turn_index);
         if (autonomous) {
             log_info("scheduler") << "advanced scene=" << scene_id
                   << " turn=" << completed_turn << "\n";
@@ -375,16 +401,29 @@ Story::StepResult Story::step_scene(const std::string& scene_id,
     return step;
 }
 
-std::vector<SceneMessage> Story::advance_scene(const std::string& player_input) {
+std::vector<SceneMessage> Story::advance_player(const std::string& player_input) {
+    if (pending_turn_)
+        throw std::runtime_error(
+            "Story::advance_player: complete_turn pending from prior beat");
     SceneData* active = active_scene();
-    if (!active) throw std::runtime_error("Story::advance_scene: no active scene");
-    const std::string player_scene_id = active->scene_id;
+    if (!active) throw std::runtime_error("Story::advance_player: no active scene");
+    const std::string scene_id = active->scene_id;
 
-    StepResult player = step_scene(player_scene_id, player_input, false);
-    if (!player.ok)
-        throw std::runtime_error("Story::advance_scene: player step failed");
-    std::vector<SceneMessage> outputs = std::move(player.outputs);
+    TurnResult result = run_beat(scene_id, player_input, false);
+    sync_memory(result);
+    pending_turn_ = PendingTurn{scene_id, player_input, result.post_turn_index};
+    return std::move(result.outputs);
+}
 
+std::vector<SceneMessage> Story::complete_turn() {
+    if (!pending_turn_)
+        throw std::runtime_error("Story::complete_turn: no pending advance_player");
+    PendingTurn pending = *pending_turn_;
+    pending_turn_.reset();
+
+    finish_beat(pending.scene_id, pending.player_input, pending.post_turn_index);
+
+    std::vector<SceneMessage> outputs;
     const auto picks = pick_off_stage_scenes();
     for (const auto& scene_id : picks) {
         if (!get_scene(scene_id)) {

@@ -76,7 +76,8 @@ def test_read_tools_expire_when_the_narrator_call_returns():
 
     story.set_llm_callback(lambda _prompt: "")
     story.set_narrator_llm_callback(narrator)
-    story.advance_scene("Wait.")
+    story.advance_player("Wait.")
+    story.complete_turn()
 
     with pytest.raises(RuntimeError, match="no longer active"):
         retained[0]("list_scenes", "{}")
@@ -102,7 +103,8 @@ def test_read_tools_expire_when_the_lifecycle_call_returns():
         })
 
     story.set_lifecycle_callback(lifecycle)
-    story.advance_scene("Wait.")
+    story.advance_player("Wait.")
+    story.complete_turn()
 
     with pytest.raises(RuntimeError, match="no longer active"):
         retained[0]("list_scenes", "{}")

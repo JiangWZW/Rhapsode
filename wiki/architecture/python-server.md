@@ -42,10 +42,12 @@ inside C++.
 
 1. Load the scenario and optional save.
 2. Configure callbacks and synchronize graph nodes to external memory.
-3. Receive player text.
-4. Run the complete `Story.advance_scene()` call on a worker thread.
-5. Stream returned SceneMessages to the client.
-6. Report exceptions without rebuilding the native runtime; TurnExecutor rollback keeps it usable.
+3. Receive player text; set status `processing`.
+4. Run `Story.advance_player()` on a worker thread; stream those SceneMessages.
+5. In `finally`, run `Story.complete_turn()` on a worker (post-turn, lifecycle, off-stage, save).
+6. Stream any merge/off-stage outputs; then set status `idle`.
+7. Report exceptions without rebuilding the native runtime; TurnExecutor rollback keeps it usable.
+   If `advance_player` succeeds, `complete_turn` must still run so a pending beat cannot leak.
 
 ## LLM adapters
 

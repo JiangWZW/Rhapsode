@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-08-02
+last_updated: 2026-08-04
 ---
 
 # Rhapsode wiki — index
@@ -52,6 +52,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 - [Narrator & mind weak points](research/narrator-and-mind-weakpoints.md) — analysis of an 18-turn siege session: the narrator has no dramaturgical spine, off-stage minds can't act, plus the `self_state` leak and reflection bugs
 - [Subplot lifecycle — craft research](research/subplot-lifecycle-craft-research.md) — WHEN and HOW to start/advance/end subplots: synthesis of writing craft (McKee, Truby, Snyder, Bell, Sanderson, Weiland, Laws), RPG design (Apocalypse World fronts, DramaSystem, Lazy DM, Alexandrian), and interactive narrative systems (storylets/QBN, Valve dialogue, RimWorld pacing, Façade)
 - [LLM role-playing survey](research/llm-roleplay-survey.md) — tuning LLMs for game characters, 19 papers reviewed with quality assessment (three waves: surface imitation, modular approaches, cognitive simulation)
+- [LLM role-play comprehensive report](research/llm-roleplay-comprehensive-report.md) — full read of 39 archived PDFs; monolith+scaffolding vs weight identity; steal list for Rhapsode
 - [DeepSeek V4 latency / streaming / cache](research/deepseek-v4-latency-streaming-cache.md) — streaming vs non-streaming TTFB, `max_tokens` vs `reasoning_effort`, disk prefix (KV-related) cache and prompt hygiene
 
 ### Foundational and adjacent research
