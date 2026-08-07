@@ -31,6 +31,7 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(SERVER / ".env")
 
+from injection import load_injections, seed_saves, wrap_player  # noqa: E402
 from player_agent import make_player_llm  # noqa: E402
 from rhapsode._core import EndReason, SessionEvalConfig, SessionEvalRunner  # noqa: E402
 from rhapsode.config import SCENARIO_PATH, configure_logging  # noqa: E402
@@ -107,6 +108,7 @@ def main() -> int:
     file_cfg = _load_config(cfg_path) if cfg_path.is_file() else {}
     player_cfg = file_cfg.get("player", {})
     run_cfg = file_cfg.get("run", {})
+    exp_cfg = file_cfg.get("experiment", {})
 
     default_saves = run_cfg.get("saves_dir") or str(SERVER / "saves")
     default_guide = player_cfg.get("guide", "")
@@ -162,6 +164,18 @@ def main() -> int:
         "--guide",
         default=str(default_guide),
         help="Experiment brief markdown (empty to disable)",
+    )
+    parser.add_argument(
+        "--inject",
+        default=str(exp_cfg.get("inject", "")),
+        help="TOML/JSON injection table ({turn,text,label}); scripted lines "
+             "replace the player LLM on those turns (see injection.py)",
+    )
+    parser.add_argument(
+        "--seed-saves",
+        default=str(exp_cfg.get("seed_saves", "")),
+        help="Copy saves from this dir into --saves-dir before the server "
+             "starts; existing saves are moved to a timestamped backup",
     )
     parser.add_argument(
         "--critique",
@@ -221,6 +235,13 @@ def main() -> int:
     cfg.turn_timeout_s = args.turn_timeout
     cfg.open_timeout_s = args.open_timeout
 
+    if args.seed_saves:
+        seed_src = Path(args.seed_saves)
+        if not seed_src.is_dir():
+            seed_src = config_dir / seed_src
+        seed_saves(seed_src, Path(args.saves_dir),
+                   log_path=out_path / "injections.log")
+
     player = make_player_llm(
         args.saves_dir,
         SCENARIO_PATH,
@@ -228,6 +249,12 @@ def main() -> int:
         guide_text=guide_text,
         empty_action=empty_action,
     )
+    if args.inject:
+        inject_path = _resolve(args.inject, config_dir)
+        table = load_injections(inject_path)
+        player = wrap_player(player, table,
+                             log_path=out_path / "injections.log")
+        print(f"injections={len(table)} turns={sorted(table)} from {inject_path}")
 
     runner = SessionEvalRunner(cfg)
     runner.set_player_llm(player)

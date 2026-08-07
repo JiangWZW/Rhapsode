@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 ---
 
 # Rhapsode wiki — index
@@ -50,6 +50,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 - [Memory systems survey](research/memory-systems-survey.md) — MemGPT, Graphiti, AriGraph, A-Mem, Mem0 v3
 - [Memory systems internals](research/memory-systems-internals.md) — Mem0 v3 and A-Mem implementation details
 - [Narrator & mind weak points](research/narrator-and-mind-weakpoints.md) — analysis of an 18-turn siege session: the narrator has no dramaturgical spine, off-stage minds can't act, plus the `self_state` leak and reflection bugs
+- [Motif collapse post-mortem (default-guide-300)](research/motif-collapse-default-guide-300.md) — why a closed self-feedback loop with bounded LLM-controlled memory locks onto a motif monopoly: code-verified loop structure, save forensics (summary evicted the plot, graph diluted it 50:1), reinforced-process formalization, falsifiable predictions, ranked fixes
 - [Subplot lifecycle — craft research](research/subplot-lifecycle-craft-research.md) — WHEN and HOW to start/advance/end subplots: synthesis of writing craft (McKee, Truby, Snyder, Bell, Sanderson, Weiland, Laws), RPG design (Apocalypse World fronts, DramaSystem, Lazy DM, Alexandrian), and interactive narrative systems (storylets/QBN, Valve dialogue, RimWorld pacing, Façade)
 - [LLM role-playing survey](research/llm-roleplay-survey.md) — tuning LLMs for game characters, 19 papers reviewed with quality assessment (three waves: surface imitation, modular approaches, cognitive simulation)
 - [LLM role-play comprehensive report](research/llm-roleplay-comprehensive-report.md) — full read of 39 archived PDFs; monolith+scaffolding vs weight identity; steal list for Rhapsode

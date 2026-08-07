@@ -1,3 +1,15 @@
+## [2026-08-05] research | Motif-collapse post-mortem of default-guide-300
+
+- Analyzed the 300-turn autoplay run: plot vocabulary → 0 by block 6 while "candle" saturates;
+  final mip summary covers only history messages 507–596 (turns 1–506 evicted); graph grew
+  18 → 1,007 nodes with expiry firing 5 times all run.
+- Framed as reinforced stochastic process (Pólya-urn lock-in in the summary bottleneck), not a
+  Banach fixed point; discriminating experiment = seed-variance rerun.
+- Wrote [motif-collapse-default-guide-300.md](research/motif-collapse-default-guide-300.md):
+  loop structure, forensics, formalization, predictions, ranked fixes (importance-based eviction,
+  pinned plot state, expiry repair, diegetic clock, dialogue feedback, collapse-sensitive metrics).
+- Incidental: working-tree `server/rhapsode/scheduler.py` / `config.py` are 0 bytes (truncation?).
+
 ## [2026-08-04] implementation | Early-deliver narrator (advance_player / complete_turn)
 
 - Split Story turn: `advance_player` returns player-beat outputs; `complete_turn` runs post-turn

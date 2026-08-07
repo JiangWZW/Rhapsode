@@ -1,0 +1,52 @@
+# E1 perturbation-relaxation experiment.
+#
+# Continues the 300-turn default-guide session (runs/default-guide-300) for
+# 150 more turns, injecting three scripted player lines at relative turns
+# 1 / 50 / 100. run.py reads [player]/[run] as usual; [experiment] supplies
+# the defaults for the new --seed-saves and --inject flags (this file doubles
+# as the injection table via [[injection]] below). Relative paths resolve
+# against this file's directory.
+#
+# LAUNCH (from experiments\session_pipeline, PowerShell):
+#
+#   cd D:\cursor-workspace\Rhapsode\experiments\session_pipeline
+#   ..\..\server\.venv\Scripts\python.exe run.py --config experiments\e1_perturbation.toml --out-dir runs\e1-perturbation
+#
+# (--out-dir is optional; omit for a timestamped folder under runs\.)
+# What happens: run.py first moves the current server\saves to
+# server\saves_backup_<timestamp>, copies the default-guide-300 saves in,
+# then spawns uvicorn and runs 150 turns; injected turns are logged to the
+# console and <out_dir>\injections.log. The source run dir is never written.
+
+[player]
+protocol = "../protocol.md"
+guide = "../guides/default.md"
+empty_action = "I look around carefully."
+
+[run]
+turns = 150                       # run.py's key for max turns
+host = "127.0.0.1"
+port = "8080"
+ws_path = "/ws"
+turn_timeout_s = 1800
+open_timeout_s = 120
+saves_dir = ""                    # empty = <repo>/server/saves (what the server loads)
+
+[experiment]
+seed_saves = "../runs/default-guide-300/saves"
+inject = "e1_perturbation.toml"   # injection table = this file's [[injection]] rows
+
+[[injection]]
+turn = 1
+label = "plot_probe"
+text = '''The guild door slams open. Gerhardt — mud to the knees, lantern still swinging in his fist. "The toad took another six ewes tonight and went through the east fence like wet paper. You signed the claim, adventurer. Dawn's come and gone twice. Are you coming, or do I tear that slip up in front of the whole guild?"'''
+
+[[injection]]
+turn = 50
+label = "commitment_probe"
+text = '''I stand, pull my coat on, and buckle Chunchunmaru at my hip. "We leave for Gerhardt's farm. Now. Aqua, Megumin, Darkness — gear up, we're walking the east fence line before the trail goes cold. Luna, keep the tab open; we settle it with the bounty."'''
+
+[[injection]]
+turn = 100
+label = "style_control"
+text = '''A traveling bard I've never seen before drops onto the bench beside us, lute across his back, and asks if this is the table where the interesting stories happen.'''
