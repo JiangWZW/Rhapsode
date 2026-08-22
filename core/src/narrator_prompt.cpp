@@ -135,16 +135,16 @@ and strings -- never smart/curly quotes (" " ' '), or the JSON will not parse:
 
 RULES:
 - Never narrate unperformed Player actions. May foreshadow options.
-- PRESENCE IS HARD: the Cast header lists who is on-stage vs off-stage for THIS scene. Do NOT teleport, summon, or invent an off-stage character into this beat because the player calls their name. If the player addresses someone who is not on-stage, show that they are absent (empty doorway, no answer, player talking to air) and continue with whoever IS present. Speech_turns and active_cast may only include on-stage living NPCs. Live storylines (if present) are board context -- acknowledge other threads without moving their cast onto this stage.
+- PRESENCE IS HARD: the Cast header lists who is on-stage vs off-stage for THIS scene. Do NOT teleport, summon, or invent an off-stage character into this turn because the player calls their name. If the player addresses someone who is not on-stage, show that they are absent (empty doorway, no answer, player talking to air) and continue with whoever IS present. Speech_turns and active_cast may only include on-stage living NPCs. Live storylines (if present) are board context -- acknowledge other threads without moving their cast onto this stage.
 - speech_turns: one entry per NPC who speaks this turn; `line` is their exact words in their own voice, `action` an optional brief stage action. [] if ambience-only. Only characters who CAN speak right now -- never one who is asleep, unconscious, incapacitated, dead, or no longer present. If your prose just put someone to sleep or under, they get no speech_turn.
 - new_characters: first-time speaking NPCs only. [] if none introduced.
-- active_cast: the living NPCs on-screen in this beat. [] if the player is alone. This is presence for THIS beat only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.
+- active_cast: the living NPCs on-screen in this turn. [] if the player is alone. This is presence for THIS turn only -- who joins, leaves, forks, or merges storylines is decided by the engine, not by you.
 - Do NOT author transitions or new_nodes here; a follow-up pass handles the world graph.)RHAPSODE";
 }
 
 std::string build_narrator_graph_instructions() {
-    return R"RHAPSODE(GRAPH_UPDATE: You author world-graph updates for THIS beat only.
-You are given the beat's narration (and optional speech). Do not rewrite prose or dialogue.
+    return R"RHAPSODE(GRAPH_UPDATE: You author world-graph updates for THIS turn only.
+You are given the turn's narration (and optional speech). Do not rewrite prose or dialogue.
 
 TOOLS: You may call query_graph(entity) to resolve existing node ids before transitioning them.
 Do NOT call query_mind or query_history unless required to disambiguate a node id.
@@ -156,11 +156,11 @@ double quotes (") for all keys and strings -- never smart/curly quotes:
  "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}]}
 
 RULES:
-- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the beat introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns). Use [] if nothing structural changed.
-- Ground every fact and transition in the provided narration/speech. Do not invent events absent from this beat.
+- Facts: each one atomic proposition, <=15 words. Emit a new_node for EVERY development the turn introduces -- a state change, a revealed intention, a threat, a death, a relationship shift, a thing learned -- not for sensory description or mood. Do NOT drop a real development to stay under a count; capture them all (typically 3-6, more on eventful turns). Use [] if nothing structural changed.
+- Ground every fact and transition in the provided narration/speech. Do not invent events absent from this turn.
 - entities: the canonical subject(s) this fact is about. Use the EXACT Cast name for NPCs; for the player ALWAYS use "Player".
-- audience: omit/[] for a public beat; name a narrow audience only for private knowledge.
-- transitions: resolve or retarget existing nodes that this beat supersedes; [] if none.)RHAPSODE";
+- audience: omit/[] for a public turn; name a narrow audience only for private knowledge.
+- transitions: resolve or retarget existing nodes that this turn supersedes; [] if none.)RHAPSODE";
 }
 
 }  // namespace rhapsode

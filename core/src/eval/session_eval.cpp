@@ -246,7 +246,7 @@ std::string build_player_prompt(const std::vector<WsMessage>& recent) {
         ss << "- " << content << "\n";
         ++count;
     }
-    if (count == 0) ss << "- (opening beat)\n";
+    if (count == 0) ss << "- (opening turn)\n";
     ss << "\nPlayer action:";
     return ss.str();
 }

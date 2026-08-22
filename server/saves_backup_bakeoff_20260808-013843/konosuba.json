@@ -1,0 +1,126 @@
+{
+  "charge": 0.0,
+  "dialogue": [
+    {
+      "content": "The pay is three hundred thousand eris. I am sorry. That is not a joke — the pay is real. It's the 'not being digested' part that keeps other parties away. (Slides the quest parchment toward the player, finger lingering on the reward figure.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:32:17Z"
+    },
+    {
+      "content": "Giant Toads... they swallow their prey whole, don't they? The thought of being trapped inside that warm, slimy darkness while my comrades watch helplessly... Kazuma, I must insist we take this quest! (Already halfway across the guild hall, face flushed, breathing uneven.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:32:17Z"
+    },
+    {
+      "content": "The fine print, as you put it, is that no other party in Axel will go near this quest. Five breeding pairs have been spotted in the eastern marsh. The farmers have already lost three goats and a very beloved cow. I am... authorized to waive the standard property-damage deposit, given the circumstances. (taps the parchment with one finger, her voice dropping to something almost conspiratorial)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:35:51Z"
+    },
+    {
+      "content": "Kazuma! As a Crusader, it is my sacred duty to protect the eastern farmlands! Those farmers — those innocent goats — we cannot abandon them to such vile creatures! (launches herself out of her chair and strides toward the counter, eyes blazing with fervor that is approximately ten percent civic duty and ninety percent something she will never admit out loud)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:35:51Z"
+    },
+    {
+      "content": "NO! No no no no no! Kazuma, do you remember what happened last time?! I was SLIMED! Swallowed whole! Do you have any idea what toad stomach acid does to divine hair?! (slams her mug down, beer sloshing onto the table, her voice climbing into a register usually reserved for small dogs and emergency sirens)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:35:51Z"
+    },
+    {
+      "content": "Three hundred thousand eris would cover approximately one-third of our current debt. I am merely stating a mathematical fact. Though if we accept, someone will have to carry me to the marsh, as my legs are currently on strike. (does not lift her cheek from the table, her voice muffled but carrying the weary authority of the party's sole remaining brain cell)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:35:51Z"
+    }
+  ],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": []
+      },
+      {
+        "max_snippets": 5,
+        "snippets": []
+      },
+      {
+        "max_snippets": 3,
+        "snippets": []
+      }
+    ],
+    "summarized_up_to": 0
+  },
+  "driving_intention": "",
+  "history": [
+    {
+      "content": "Another beautiful morning in Axel — which means another morning of being broke.\n\nYou sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.\n\nAqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. \"Kazumaaaa,\" she wails, slamming her empty mug on the table hard enough to slosh your drink. \"We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!\"\n\n\"We're broke BECAUSE you keep drinking,\" you mutter, but she's already flagging down the waitress for another round on your tab.\n\nMegumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.\n\nDarkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.\n\n\"K-Kazuma,\" she stammers, not turning around. \"There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater...\"\n\nShe's trembling. That's not fear.\n\nLuna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.",
+      "metadata": {},
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:31:05Z"
+    },
+    {
+      "content": "I push my chair back and head over to Luna, leaving the chaos behind. I lean on the counter, lowering my voice.\n\n\"Morning, Luna. What do you have for us that doesn't end with the town rebuilding something? And no alligator wrestling, please — I'd rather not spend today watching Darkness volunteer to be a chew toy.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:31:12Z"
+    },
+    {
+      "content": "Luna looks up from a stack of paperwork with the practiced smile of someone who has learned to expect the worst from every adventurer who approaches her counter — and yet still hopes, against all evidence, that today might be different. Her eyes flick past your shoulder to the table where Aqua is now gesturing wildly at a server for a fourth mug, Darkness has her face buried in her hands muttering something about sewers and grappling, and Megumin is slumped forward with her cheek flat against the wood, still too drained from her dawn Explosion to sit upright.\n\nThe smile tightens at the corners. She pulls a parchment from a stack separated from the main board — the stack she keeps for quests no one else will take, or no one else is stupid enough to take, which in Axel often amounts to the same thing.\n\n\"Giant Toads,\" she says, sliding it across the counter. \"Mating season is starting. The farmlands east of town need thinning before the population explodes and they start eating livestock. Or farmers.\" She pauses, finger still resting on the parchment. \"No sewers, no alligators, no structures to demolish. Just open fields and very large, very hungry amphibians.\"\n\nFrom across the hall, Darkness's chair scrapes backward so fast it topples over. The crusader is already on her feet, eyes glazed with a mixture of noble duty and something considerably less noble.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:32:17Z"
+    },
+    {
+      "content": "\"Hmm.\" I lean over the parchment, squinting at the reward line. \"Three hundred thousand for toad pest control. That's... suspiciously generous.\" I trace a finger over the estimate. \"Let me guess — the 'no casualties' clause in the fine print is what scares people off? Or is it that the toads are the size of houses and you need someone dumb enough to get eaten on purpose?\" My gaze flicks over my shoulder to where Darkness is practically vibrating. \"Well. Lucky for you, I happen to know a certified volunteer.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:34:38Z"
+    },
+    {
+      "content": "Luna's smile tightens at the corners — the faint, involuntary twitch of someone whose carefully crafted quest description has just been publicly dismantled in fifteen seconds flat. She folds her hands on the counter with the resigned dignity of a woman who has learned that lying to this particular party is more trouble than it's worth.\n\nAcross the room, your glance lands on Darkness. She has abandoned the pretense of burying her face in her hands and is now sitting ramrod-straight, fists clenched on the table, eyes locked on you with the feverish intensity of a hunting dog who has just seen her master reach for the leash. A faint blush crawls up her cheeks. She is practically vibrating. Aqua, by contrast, has gone pale — her fourth mug frozen halfway to her lips as the words \"Giant Toad\" finally penetrate her alcohol-fogged brain. Megumin, slumped bonelessly in her chair from her dawn Explosion, watches the tableau unfold with the exhausted detachment of the only person in the room still capable of basic pattern recognition.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:35:51Z"
+    }
+  ],
+  "intention_node_id": 0,
+  "intention_owner": "",
+  "last_advanced": 2,
+  "scene_id": "konosuba",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": 2
+}

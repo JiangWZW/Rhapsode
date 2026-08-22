@@ -1,9 +1,11 @@
-#include "rhapsode/turn_executor.h"
+#include "rhapsode/turn_pipeline.h"
 
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/scene_history.h"
+#include "rhapsode/story_data_ops.h"
 #include "rhapsode/text_downsampling.h"
+#include "rhapsode/weaver.h"
 #include "rhapsode/world.h"
 
 #include <utility>
@@ -34,24 +36,32 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 
 }  // namespace
 
-std::vector<Node> TurnExecutor::run_post_turn(
-    SceneData& scene, int turn) noexcept {
+std::vector<Node> process_post_turn(
+    StoryData& data, TurnServices& services, const std::string& scene_id,
+    int turn) noexcept {
     std::vector<Node> expired_nodes;
-    const auto history = snapshot_history(scene.history, window_size_);
+    SceneData* scene = find_scene(data, scene_id);
+    if (!scene) return expired_nodes;
+    World& world = data.world;
+    Weaver& weaver = services.weaver;
+    const auto history = snapshot_history(
+        scene->history, services.history_window);
     const std::string context =
-        format_graph_seed(history, scene.title, kGraphSeedMaxMessageChars);
+        format_graph_seed(history, scene->title, kGraphSeedMaxMessageChars);
     try {
         WeaveResult weave;
-        if (weaver_.active()) {
-            if (weaver_.should_weave(turn)) {
+        if (weaver.active()) {
+            if (weaver.should_weave(turn)) {
                 log_info("weave") << "running turn=" << turn << "\n";
-                weave = weaver_.weave(turn, context);
+                weave = weaver.weave(data.observations, turn, context);
             }
-            if (!weaver_.expiry_queue_empty()) {
+            if (!weaver.expiry_queue_empty()) {
                 log_info("expiry") << "draining turn=" << turn << "\n";
-                const auto expiry = weaver_.drain_expiry_queue(turn);
+                const auto expiry = weaver.drain_expiry_queue(
+                    data.observations, turn);
                 for (const auto& operation : expiry) {
-                    if (const Node* node = world_.graph().get_node(operation.id))
+                    if (const Node* node =
+                            data.observations.get_node(operation.id))
                         expired_nodes.push_back(*node);
                 }
                 if (!expiry.empty())
@@ -59,20 +69,20 @@ std::vector<Node> TurnExecutor::run_post_turn(
             }
         }
 
-        const std::string beat_stimulus = format_graph_seed(
-            history, "Beat", kGraphSeedMaxMessageChars);
-        world_.update_monologues(
-            scene.scene_id, turn, beat_stimulus, reflection_llm_cb_);
+        const std::string turn_stimulus = format_graph_seed(
+            history, "Turn", kGraphSeedMaxMessageChars);
+        world.update_monologues(
+            scene->scene_id, turn, turn_stimulus, services.reflection);
 
-        if (downsampler_cb_) {
+        if (services.downsampler) {
             try {
-                const int before = scene.downsampling.summarized_up_to;
+                const int before = scene->downsampling.summarized_up_to;
                 process_text_downsampling(
-                    scene.downsampling, scene.history, downsampler_cb_);
-                const int after = scene.downsampling.summarized_up_to;
+                    scene->downsampling, scene->history, services.downsampler);
+                const int after = scene->downsampling.summarized_up_to;
                 log_debug("downsampler") << "summarized_up_to " << before
                       << " -> " << after << "\n";
-                const auto rendered = render_text_downsampling(scene.downsampling);
+                const auto rendered = render_text_downsampling(scene->downsampling);
                 if (!rendered.empty())
                     log_debug("downsampler") << "story_so_far (" << rendered.size()
                           << " chars): " << rendered.substr(0, 200)

@@ -176,7 +176,9 @@ NarrativeMetrics compute_narrative(const fs::path& saves_dir) {
     }
 
     if (m.empty_beats > 0)
-        m.findings.push_back("Empty/near-empty assistant beats: " + std::to_string(m.empty_beats));
+        m.findings.push_back(
+            "Empty/near-empty assistant turns: " +
+            std::to_string(m.empty_beats));
     if (m.repetition_score >= 0.45)
         m.findings.push_back("High consecutive repetition score: " +
                              std::to_string(m.repetition_score));

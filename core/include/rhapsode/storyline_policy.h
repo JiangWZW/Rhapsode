@@ -33,7 +33,7 @@ struct SceneSummary {
     std::string recent_narration;
 };
 
-struct BeatSummary {
+struct TurnSummary {
     std::string scene_id;
     std::string title;
     std::vector<std::string> cast;
@@ -43,6 +43,10 @@ struct BeatSummary {
     std::vector<SceneMessage> dialogue;
     std::vector<SceneSummary> storylines;
 };
+
+// Transitional source-compatibility alias. New orchestration code uses
+// TurnSummary; serialized data and external callers can migrate separately.
+using BeatSummary = TurnSummary;
 
 struct LifecycleOp {
     enum class Kind { Merge, Conclude, Fork, Exit };
@@ -68,7 +72,7 @@ std::string format_live_storylines_board(
 std::string request_off_stage_scene(const SchedulerCallback& callback,
                                     const ReadToolCallback& read_tool);
 std::optional<LifecycleDecision> request_lifecycle_decision(
-    const BeatSummary& summary, const LifecycleCallback& callback,
+    const TurnSummary& summary, const LifecycleCallback& callback,
     const ReadToolCallback& read_tool);
 std::string build_autonomous_cue(const SceneSummary& summary);
 

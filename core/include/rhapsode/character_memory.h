@@ -61,7 +61,7 @@ public:
     // Consumes Active perceptions after the call. No separate reflect LLM.
     void update_monologues(int turn,
                            const std::string& description,
-                           const std::string& beat_stimulus,
+                           const std::string& turn_stimulus,
                            const LLMCallback& llm_callback);
 
     const WorldGraph& beliefs() const { return beliefs_; }

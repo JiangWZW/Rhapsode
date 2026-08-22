@@ -182,9 +182,9 @@ The file `graph.yaml` is a structured entity-relationship registry. It is a mach
 | Relation | Meaning | Example |
 |----------|---------|---------|
 | `owns` | A contains or manages B | Session owns PlotGraph |
-| `calls` | A invokes B at runtime | SceneLoop calls Director |
-| `depends-on` | A requires B to function | Director depends-on ResolvedMemory |
-| `feeds` | A's output is B's input | Director feeds prompt builder |
+| `calls` | A invokes B at runtime | Story calls TurnPipeline |
+| `depends-on` | A requires B to function | TurnPipeline depends-on TurnServices |
+| `feeds` | A's output is B's input | TurnPipeline feeds ActorProposal telemetry |
 | `informs` | External analysis A shaped design of B | talemate/retrieval-pipeline informs ResolvedMemory |
 | `supersedes` | A replaced B | (recorded in supersessions.yaml) |
 
@@ -325,10 +325,11 @@ Maps source files to their primary wiki pages.
 
 | Source File | Primary Wiki Pages |
 |---|---|
-| `core/include/rhapsode/scene_loop.h` | [[architecture/scene-loop]], [[architecture/cpp-data-model]] |
-| `core/include/rhapsode/director.h` | [[architecture/system-overview]], [[architecture/cpp-data-model]] |
-| `core/include/rhapsode/node.h`, `node_pool.h` | [[architecture/plot-graph]], [[architecture/cpp-data-model]] |
-| `core/include/rhapsode/scene.h`, `history.h` | [[architecture/cpp-data-model]] |
+| `core/include/rhapsode/turn_pipeline.h`, `core/src/turn_pipeline*.cpp` | [[architecture/scene-loop]], [[architecture/cpp-data-model]] |
+| `core/include/rhapsode/story_data.h`, `core/src/story_data_ops.cpp` | [[architecture/cpp-data-model]], [[architecture/system-overview]] |
+| `core/include/rhapsode/graph_plan.h`, `core/src/graph_plan.cpp` | [[architecture/plot-graph]], [[architecture/scene-loop]] |
+| `core/include/rhapsode/node.h`, `core/include/rhapsode/world_graph.h` | [[architecture/plot-graph]], [[architecture/cpp-data-model]] |
+| `core/include/rhapsode/scene_data.h`, `core/src/scene_history.cpp` | [[architecture/cpp-data-model]], [[architecture/scene-loop]] |
 | `core/include/rhapsode/memory_system.h` | [[architecture/memory-system]], [[architecture/cpp-data-model]] |
 | `core/src/memory_system.cpp` | [[architecture/memory-system]] |
 | `server/rhapsode/app.py` | [[architecture/python-server]] |
@@ -340,7 +341,7 @@ Maps source files to their primary wiki pages.
 | `frontend/src/` | [[architecture/vue-frontend]] |
 | `CMakeLists.txt` | [[architecture/stack]] |
 | `server/pyproject.toml` | [[architecture/stack]] |
-| `bindings/bind_rhapsode.cpp` | [[architecture/cpp-data-model]] |
+| `bindings/bind_rhapsode.cpp`, `bindings/bind_story.cpp` | [[architecture/cpp-data-model]], [[architecture/python-server]] |
 
 ## 10. Workflows
 

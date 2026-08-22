@@ -1,0 +1,1734 @@
+{
+  "charge": 0.0,
+  "dialogue": [
+    {
+      "content": "I-I wasn't going to volunteer! I was simply... assessing the threat profile! A crusader must know her enemies! The grappling and dragging is entirely incidental to my tactical analysis! (Her voice rises an octave with each sentence, face now fully crimson.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:40:18Z"
+    },
+    {
+      "content": "For your information, Kazuma, my dawn Explosion was flawlessly executed. The shockwave alone cleared three blocks of pigeons. To call that a 'daily budget' is to reduce art to accounting — a crime for which there is no forgiveness in any legal system, Crimson Demon or otherwise. (She brandishes the napkin like a courtroom exhibit, then wobbles and grabs the table edge.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:40:18Z"
+    },
+    {
+      "content": "Hey! You were about to say something to me and then you just walked away! Were you going to tell me to stop drinking? Because that would be discrimination against the divine! I'll have you know this is ceremonial — it's a purification ritual! (She points at you with theatrical accusation.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:40:18Z"
+    },
+    {
+      "content": "Good morning. I see your party is... as energetic as ever. (Her smile remains perfectly, terrifyingly serene.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:40:18Z"
+    },
+    {
+      "content": "I have not asked about a crater, a fountain, or a missing statue. Though I appreciate — genuinely — your proactive disclosure policy. (Her smile remains fixed, but one eyebrow lifts a fraction of an inch as she sets the scroll on the counter between them.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:44:02Z"
+    },
+    {
+      "content": "This is a Brutal Alligator subjugation request. The sewers beneath the commercial district. They've been breeding. The reward is forty thousand eris. I am sorry. (She slides the scroll forward with two fingers, the gesture of a woman who has handed doomed adventurers their last quest before.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:44:02Z"
+    },
+    {
+      "content": "You are, of course, correct. A divine drinking challenge, a grappling-based religious experience, and I suspect Miss Megumin would find some way to make the sewer ceiling open to the sky. (her smile tightens by that same one millimeter, but her voice stays warm)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:48:49Z"
+    },
+    {
+      "content": "I am very sorry. That is not a joke. The reward is forty thousand eris, your party's tab is currently... substantial... and you are the only adventurers in Axel who haven't already refused this quest. (slides the scroll across the counter toward you with both hands, like she's offering a sacred relic she personally finds terrifying)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:48:49Z"
+    },
+    {
+      "content": "They want the nest gone entirely. Every last egg. The merchants were very specific about the eggs. (taps the supplementary document with her fingernail, then folds her hands back atop the counter)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:51:25Z"
+    },
+    {
+      "content": "The sewer maintenance office keeps this schematic current — mostly. The main drainage artery runs east-west beneath the commercial district. The eastern outflow gate is where the shipments are blocked. That's where the last two parties entered. They didn't come back, so I can't tell you how many alligators are down there. Merchant reports mention at least three adults, but those reports are three weeks old and alligators breed. (traces the schematic with a steady finger, tapping junctions as she names them)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:54:45Z"
+    },
+    {
+      "content": "The merchant guild is offering forty thousand eris for full extermination — nest, eggs, everything. Their addendum is very specific about the eggs. Every single one destroyed. They added ten thousand to the hazard fee just to make that binding. (folds her hands atop the documents, meeting the Player's eyes with a steady, apologetic smile)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:54:45Z"
+    },
+    {
+      "content": "An edge?! My sacred purification magic is not an 'edge,' Kazuma — it's a divine instrument of absolute, cataclysmic annihilation! But I suppose even a goddess of my stature can lower herself to frontline duty. For now. As a favor. (Snatches her tankard back up for a victory sip, misses her mouth slightly, does not notice.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 5
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:58:26Z"
+    },
+    {
+      "content": "And the second group — you said two groups — that would be Megumin and myself, yes? Holding the rear junction, drawing the flanking assault, every fang and every claw converging while I stand alone in the dark with only my armor and my fa— (Her voice climbs in both pitch and temperature; she is half out of her chair, and the table leg beneath her grip has developed a visible crack.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 5
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:58:26Z"
+    },
+    {
+      "content": "Do not volunteer me for sewer-rearguard duty, Darkness. I have already delivered my Explosion to the dawn. My mana is not merely depleted — it is transcendentally exhausted. I am present in a strictly consultative capacity. (Does not open her other eye. Her voice is flat, freighted with the particular dignity of someone who cannot currently feel her legs.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 5
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:58:26Z"
+    },
+    {
+      "content": "Thirty to fifty alligators, six weeks from hatch to full maturity, all of them directly under the commercial district's foundations. A single survivor could restart the nest. That is why the bonus exists — ten thousand eris is cheaper than evacuating half the district when the tunnel ceilings start collapsing under the weight of a breeding colony. (Luna taps the sub-clause with her fingernail, then slides the document toward you so the fine print is legible.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:01:59Z"
+    },
+    {
+      "content": "Heads, tails, or any portion large enough that no one can argue the creature is still breathing. The eggs, however, must be destroyed on-site — the addendum is explicit. Crushed, burned, dissolved. No removal, no sale. The merchants added that clause after the last party tried to smuggle a clutch to a breeder in Elroad. (Her tone on the last sentence is flat — not judgment, exactly, but the weariness of a woman who has had to add too many sub-clauses to too many quests because of too many enterprising adventurers.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:01:59Z"
+    },
+    {
+      "content": "Three ales?! I'll have you know my tolerance is divine! A goddess doesn't get 'three ales in' — she gets ceremonially purified! And if anything, the ale sharpens my holy senses! (Slams her tankard again, then realizes it's empty and looks tragically into its depths.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "An archwizard who can't cast? Kazuma, you wound me with the precision of a man who has forgotten that Explosion is not merely a spell — it is a covenant! True, my mana lies dormant until dawn, but my tactical genius remains fully operational! I can still point dramatically at things! (Attempts to cross her arms, misses the first attempt, succeeds on the second with considerable focus.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "Y-you were about to say 'provoke,' weren't you? A crusader who'll provoke every monster in the sewer... You think I'd throw myself into danger and jeopardize the mission. Perhaps you're right — perhaps my very presence is a liability, and you should reconsider bringing me at all... (Voice drops to a breathless murmur; she is visibly disappointed when she realizes she's arguing herself out of the quest and quickly course-corrects.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "But as a Crusader of the Dustiness house, I swear I shall exercise restraint! Every alligator that bites me will be one that isn't biting you — that's simple arithmetic! (Slams her own gauntlet on the table, rattling the schematic, then realizes she's drawn attention and goes crimson.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "The quest is registered to your party. I'll mark it as accepted pending execution — you have seventy-two hours before the guild must re-post. The merchants won't like the delay, but the merchants aren't the ones going into the sewer. (Pen scratches once across the ledger. The receptionist-smile returns, but it's the smaller, realer one — the one that means she's not required to pretend.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "The guild kitchen keeps two. The large one is copper — heats fast, but the handle's loose. The small one is iron and older than I am, but it'll boil steady and it won't tip when she flails. (She is already reaching beneath the counter for a key, her tone matter-of-fact, as though she has been asked to sober up adventurers often enough to have a preferred kettle for the job.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 8
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:10:19Z"
+    },
+    {
+      "content": "Kazuma. Kazuma, you can't be serious. That's — that's alcohol abuse! Pouring cold water on a goddess is a Class-A celestial insult! I'll have you reported to the Axis Order tribunal! (She clutches her tankard to her chest like a shield, scooting her stool back two inches.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 8
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:10:19Z"
+    },
+    {
+      "content": "A goddess felled not by demon king nor undead horde, but by the humble kettle. Truly, the Crimson Demon archives will record this as the most pathetic defeat in Axis history. Do proceed. (She does not open her other eye, but the corner of her mouth twitches upward.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 8
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:10:19Z"
+    },
+    {
+      "content": "I cannot amend the merchant guild's contract. But I can note on the quest record that the party leader retains retreat authority pending an on-site assessment. If you return with evidence the nest exceeds the original scouting report, that addendum gives the guild grounds to open re-negotiation. (slides the blank addendum form toward the Player, her fingertip resting on the signature line)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:14:22Z"
+    },
+    {
+      "content": "A contingency clause. Luna, you are nearly as cunning as a Crimson Demon. (lifts her chin from her staff, a flicker of genuine respect crossing her exhausted features)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:14:22Z"
+    },
+    {
+      "content": "Wait — you're just going to let him write his own exit clause? He's not even an advanced class! I'm a goddess and I don't get custom paperwork! (gestures wildly at the addendum, nearly knocking over her tankard, then freezes as her own hand drifts too close to the kettle)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:14:22Z"
+    },
+    {
+      "content": "Fall back if the nest is larger than reported... That is... prudent. Undeniably prudent. (the word 'prudent' comes out like she is chewing on a lemon rind, her gauntlet stilling on the table)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:14:22Z"
+    },
+    {
+      "content": "One shot. You speak as though Explosion were a quiver of arrows, to be rationed across a long campaign. It is not. It is a single perfect syllable — the only one that matters. I have never needed, nor asked for, a second. (Her voice does not rise; it settles into the lower register she reserves for statements of doctrine, the staff crystal pulsing once in time with her heartbeat.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:18:41Z"
+    },
+    {
+      "content": "You're literally carried home after every single cast. Last week Kazuma had to drag you by the ankle up three flights of stairs because you face-planted in a drainage ditch. (She props her cheek on one fist, elbow on the table, the picture of divine skepticism.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:18:41Z"
+    },
+    {
+      "content": "The ditch was not my fault. The ditch was poorly positioned. And being carried is simply the ceremonial recessional — the world itself acknowledges the magnitude of what has passed by ensuring the caster is borne away in state. (She does not turn toward Aqua. Her eyes remain fixed on the player, fierce and unblinking.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:18:41Z"
+    },
+    {
+      "content": "Two?! TWO?! Kazumaaaa, that's not a send-off — that's a punishment! A goddess descending into a monster-infested sewer on your behalf deserves at LEAST a proper libation! Three minimum! Four if you want divine favor! (slams her tankard on the table, sloshing ale over the rim)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:22:08Z"
+    },
+    {
+      "content": "That potion was not found in a ditch. It was recovered from a drainage culvert with excellent mineral sedimentation, and its efficacy was perfectly adequate for post-cast recuperation. ...However. I will concede that Explosion magic of the caliber I intend to deploy merits a foundation more substantial than scavenged glassware. Very well. I accept your tribute. (tightens her grip on her staff, chin still elevated, but a faint pink reaches the tips of her ears)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:22:08Z"
+    },
+    {
+      "content": "I... I will eat as well. A crusader's shield-arm requires proper nourishment before holding a rearguard against unknown horrors in the dark. Though if the rations prove insufficient, I am prepared to endure. (voice wavers slightly on the word 'endure,' then firms)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:22:08Z"
+    },
+    {
+      "content": "You speak of my 'royal rear end' as though it were cargo, Kazuma, and yet you offer tribute before the casting. This is the correct instinct. The foremost genius of the Crimson Demon Clan does not march to annihilation on an empty stomach. I accept your terms — one meal, freely given, and in exchange you shall witness a single syllable so perfect that the sewer's darkness will remember the light for a century. (raps her staff once against the floorboards, a sharp punctuation that draws a brief glance from a nearby table before the guild hall's noise swallows it again.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:25:33Z"
+    },
+    {
+      "content": "Oh, so she gets a tribute meal and I get a two-drink ration? I'm the goddess here! I should be getting a feast! A parade! Instead I get — this. (gestures at her ale mug with wounded majesty, then takes a long, pointed drink anyway.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:25:33Z"
+    },
+    {
+      "content": "A pre-battle meal... It's proper. Traditional. A crusader's rite, really — the last warmth before the cold, the last light before the dark. I... I approve, Kazuma. Even if it does make everything feel rather... safe. (the word 'safe' escapes her lips with a faint, almost imperceptible note of disappointment.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:25:33Z"
+    },
+    {
+      "content": "Roast chicken. Not the stew. And a round of whatever passes for drinkable tonight — the goddess gets two, the arch-wizard gets as many as she wants, and I'm charging the crusader for anything she doesn't finish. (calls through the kitchen hatch, voice carrying the flat cadence of someone who has stopped being surprised by this party and settled into a kind of exasperated affection)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:29:43Z"
+    },
+    {
+      "content": "You understand the terms, then. A Crimson Demon does not accept cheap stew as pre-ritual tribute. The chicken is acceptable. The chicken is... noted. (still holding Kazuma's gaze, chin lifted, voice steady but with the faintest tremor of something that might be gratitude if she ever permitted herself to name it)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:29:43Z"
+    },
+    {
+      "content": "Oh, noted! The chicken is noted! Everyone hear that? Her chicken is noted. I'm getting two cups of whatever passes for drinkable and she gets a noted chicken. This is discrimination. This is anti-divine persecution with poultry. (arms crossed so tightly her sleeves are creasing, voice climbing toward its familiar operatic register)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:29:43Z"
+    },
+    {
+      "content": "I... will finish everything I'm given. Of course. It would be shameful to waste provisions before a descent. Though if the chicken is insufficient and someone grows faint in the tunnels, I would gladly surrender my portion. To suffer the pangs of hunger while holding the rear guard... (trails off, cheeks faintly pink, clearly now imagining herself starving heroically in a sewer while alligators fail to bite her)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:29:43Z"
+    },
+    {
+      "content": "This vessel of crisp-skinned providence shall be consecrated not with common appetite but with ritual acknowledgment. I, Megumin, foremost genius of the Crimson Demon Clan, accept this tribute. (Rises halfway from her chair, staff in one hand, the other pressed to her chest in a formal Crimson Demon salute — then immediately sits back down and begins tearing into a drumstick with both hands.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:37:51Z"
+    },
+    {
+      "content": "It's just a chicken. I've blessed temples that were less dramatic, and those were actual architectural achievements. (Takes a pointed sip of ale, watching Megumin with the particular resentment of someone who has been denied a third drink.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:37:51Z"
+    },
+    {
+      "content": "You asked for a kettle. That means... you really do mean to bring us all back. (Sets the kettle down gently, almost reverently, and her voice comes out smaller than she intended — a crack in the crusader's armor that has nothing to do with combat.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:37:51Z"
+    },
+    {
+      "content": "I— the stew is— of course. You're right. A crusader must maintain her strength. N-not that the cold bothers me. I've endured far worse. I could hold that kettle until dawn if the situation required it, my fingers aching, the heat slowly fading until— (Sets the kettle down with excessive care, picks up her spoon with the solemnity of someone taking up a sword, then loses the thread entirely and stares into the stew bowl with a face somewhere between gratitude and grief.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:40:38Z"
+    },
+    {
+      "content": "She was holding it like a holy relic. If the Explosion fails to detonate tomorrow, I will know whose dramatic sacrifice starved the moment of its proper narrative weight. (Tears off another bite of drumstick, chewing with theatrical pointedness, crimson eyes gleaming over the bone.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:40:38Z"
+    },
+    {
+      "content": "Finally. I thought we were going to have to bury her with it. 'Here lies Darkness, crusader of the Dustiness house, defeated in honorable combat by a kettle of hot water.' (Does not look up from her tankard graffiti, but the corner of her mouth twitches.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:40:38Z"
+    },
+    {
+      "content": "The Crimson Demon Clan's foremost Arch-Wizard acknowledges her directive. One Explosion. Not two, not a half-measure cantrip disguised as restraint — a single, perfect, absolute detonation delivered to the heart of the nest. The alligators will not know what erased them, only that the light was beautiful. (rises from her chair just enough to press one hand flat to her chest in a solemn oath, then sits back down with immense dignity — and immediately steadies herself on the table edge as the post-chicken exhaustion reminds her she is still, technically, a fourteen-year-old who collapsed an hour ago)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 18
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:45:52Z"
+    },
+    {
+      "content": "Oh, wonderful, the explosion maniac gets her dramatic moment. Do I get orders too, O great commander, or am I just supposed to stand in the sewer and look divine until you remember I exist? (tilts her empty tankard upside down to demonstrate its tragic emptiness, then glares at the resulting single droplet on the table as if it personally betrayed her)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 18
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:45:52Z"
+    },
+    {
+      "content": "The central nest... then we truly are committing to the deepest part of those tunnels. Where the walls drip and the darkness presses in and we won't know what's waiting until it's already upon us. (her spoon trembles slightly in her grip, sending a tiny ripple across the stew's surface — and the tremor is not entirely dread)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 18
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:45:52Z"
+    },
+    {
+      "content": "You would deny us even the dignity of a glorious last stand. You would make us promise to be... careful. To come back. Every one of us. (Her voice is low, almost accusatory, but the accusation is aimed at herself — at how badly she wants to make that promise and how much it terrifies her.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 19
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:48:54Z"
+    },
+    {
+      "content": "The Crimson Demon Clan does not scatter before lesser reptiles. But... I acknowledge the tactical merit. One hatch. One path. One Explosion. And one party that walks back into this guild hall to collect its reward — together. (She nods once, sharp and final, as though signing a treaty with the table itself.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 19
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:48:54Z"
+    },
+    {
+      "content": "...Fine. I'll keep everyone alive. That's literally my job, you know. Goddess of Water, Arch-Priestess, the one who actually heals you when you do something stupid. But if you're going to make speeches like that, at least let me have a third drink. Just one more. For morale. (She uncrosses her arms and jabs a finger toward you, but the jab wobbles at the end, and her voice cracks on the word 'morale.')",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 19
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:48:54Z"
+    },
+    {
+      "content": "You don't have to finish that sentence. Whatever it was — whatever it is — I am already bound to it. We all are. You made sure of that when you asked us to come back alive. (sets the spoon down carefully, aligning it with the edge of her bowl as though straightening a piece of armor)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 20
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:51:49Z"
+    },
+    {
+      "content": "Ugh. Are we doing this? Are we actually doing the heartfelt thing right now? Because I'm out of ale and I refuse to be emotionally vulnerable without at least a refill. (crosses her arms but doesn't look away from Kazuma, and her voice cracks just slightly on the word 'vulnerable')",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 20
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:51:49Z"
+    },
+    {
+      "content": "The Crimson Demon Clan does not require speeches to know when it has been seen. But... it is not unwelcome. (resumes chewing with studied indifference, though her cheeks are the same color as her eyes)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 20
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:51:49Z"
+    },
+    {
+      "content": "Kazuma... you would entrust Megumin's safety to me? Not as bait, not as a decoy — as her shield? I... I accept this duty. I will guard her with every plate of my armor and every drop of my blood. Though I confess, the thought of an Explosion so close that I might actually feel its heat... n-no, never mind! I am focused. Entirely focused. (voice cracks on the word 'shield'; hastily wipes her palm on her tabard as though the tremor were sweat and not sincerity)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 23
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:01:24Z"
+    },
+    {
+      "content": "I require no keeper! The Crimson Demon who mastered Explosion does not need a crusader shadow to ensure she points the correct end of her staff at the enemy! ...That said, if Darkness wishes to witness my single perfect cataclysm from the optimal vantage point, I shall permit it. As for the rations — I will have you know my consumption of roast chicken was tactical, not gluttonous. (sets down the drumstick with exaggerated precision, then immediately picks it back up)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 23
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:01:24Z"
+    },
+    {
+      "content": "You — you absolute idiot. You think you can just say something like that and expect me to — I'm a goddess, you know! I don't need some NEET telling me I matter! I already know I matter! ...but if you ever forget that I'm part of this, I'll flood your futon for a month. (Her voice cracks on 'forget.' She doesn't let go of his hand.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:09:16Z"
+    },
+    {
+      "content": "I have spent my whole life waiting for an oath worth swearing. Not to a house, or a title, or a god I was born under — but to someone who looked at me and saw a crusader instead of a... instead of what I was afraid I'd always be. You have my shield. Not because you asked. Because I am giving it. (Her voice is steady, the steadiest it has ever been. No blush. No tremor. Just steel.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:09:16Z"
+    },
+    {
+      "content": "The Crimson Demon Clan does not enter pacts lightly. But when an archmage of my caliber deems a party worthy of the title 'irreplaceable,' the declaration carries the weight of prophecy. So I, Megumin, foremost genius of the Crimson Demons, do hereby accept your terms: tea, blame, and the next impossible quest. ...Also, Kazuma, you are crushing my fingers. (Her voice is theatrical, but the last sentence comes out smaller and faster than the rest.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:09:16Z"
+    },
+    {
+      "content": "About that next round! Kazuma, I feel like we just shared a really profound emotional moment, and it seems unfair — spiritually unfair — to cap profound emotional moments at two drinks. That's not a goddess opinion, that's just basic arithmetic. (sits up, jabbing a finger at the kettle as though it's exhibit A in a trial)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:13:04Z"
+    },
+    {
+      "content": "The Crimson Demon Clan does not measure victory in tankards. We measure it in craters. ...That said, the quest pays fifty thousand eris before the hazard bonus, so your arithmetic may be correct for once, Aqua. (tilts her hat brim down with deliberate casualness, but the corner of her mouth twitches)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:13:04Z"
+    },
+    {
+      "content": "I — I would gladly forgo my share. For the party's funds. Or if Kazuma ordered me to abstain entirely, I would endure that privation with — with appropriate fortitude. (her gauntlet scrapes the table as she clasps her hands together, cheeks faintly pink, though the flush is confusing even to her)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:13:04Z"
+    },
+    {
+      "content": "The guild's policy on tabs is firm. But the guild's policy on toasts made over dented kettles is... less documented. I'll have to consult the precedent. (speaks without looking up from the ledger, but her pen has stopped moving, and the lamplight catches the corner of her mouth — not quite a smile, but no longer the thing she wears to get through a shift)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:13:04Z"
+    },
+    {
+      "content": "Well, obviously I'd be the one to get it, since SOMEONE cut me off at two and now owes me at LEAST one more round of proper divine libation— but also because I'm feeling generous. Don't read into it! (She jabs a finger toward the Player, but her voice cracks on 'generous' and she covers it by standing up too fast, knees bumping the table.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:16:42Z"
+    },
+    {
+      "content": "The Arch-Wizard does not fetch drinks. The Arch-Wizard is fetched FOR. However... in recognition of the pact just forged, I will permit a single exception. You may bring me water. I am told it pairs well with roast chicken. (She delivers this with a straight back and imperial poise, made slightly less imperial by the grease still shining on her chin.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:16:42Z"
+    },
+    {
+      "content": "As a Crusader of the Dustiness house, it would shame my name to let a goddess carry tankards while I sit idle. I shall accompany you, Aqua — not that I expect thanks! A noble's duty is its own reward, even when that duty involves... bar-top logistics. (She rises with such earnest, stiff-backed formality that her armor clanks, and she nearly knocks over the kettle with her hip before steadying it with both hands.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:16:42Z"
+    },
+    {
+      "content": "Your tab currently stands at five hundred and forty eris. Coins on the counter before the pours, please. I find that 'irreplaceable contracts' and 'irreplaceable collateral' are wonderfully synonymous. (She hasn't looked up from her ledger, but the corner of her mouth twitches — the professional equivalent of a wink.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:16:42Z"
+    },
+    {
+      "content": "Three ways between FOUR people?! Kazuma, that's not arithmetic either — that's just persecution! I'm a goddess! I don't share beverages! What's next, one straw for the whole party? (She slaps both palms on the table, rattling empty tankards.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:20:20Z"
+    },
+    {
+      "content": "The Arch-Wizard of Explosion already received her tribute. I shall observe this negotiation with dispassionate academic interest — and perhaps a sip of someone else's victory. (Her eyes glint beneath the hat brim, deadpan and deliberate.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:20:20Z"
+    },
+    {
+      "content": "If it helps the party's finances, I am prepared to forgo my share entirely. The warmth of camaraderie is... more than sufficient. (She says this with complete sincerity and only the faintest tremor of martyrdom.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:20:20Z"
+    },
+    {
+      "content": "Wait. WAIT. You're actually going to the bar? By yourself? For MY ale? Kazuma, if you think this makes up for the two-cup limit, you're even dumber than your Luck stat suggests — but I'm not going to stop you! Make sure it's the good ale! Not the cheap stuff! The one with the barley on the label! (rises halfway out of her chair, pointing imperiously, then sinks back down as she realizes she's giving orders to someone who's already walking away)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 30
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:28:12Z"
+    },
+    {
+      "content": "I-I could have fetched the round myself! As a Crusader, it is my duty to bear the burden of — of carrying tankards — and I am not too noble to ask, I simply... I was waiting for the appropriate moment... (her gauntleted fingers curl inward, clinking faintly against the table; she is addressing the space where Kazuma was sitting more than Kazuma himself)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 30
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:28:12Z"
+    },
+    {
+      "content": "Water for the Arch-Wizard. A libation of clarity and restraint, poured not by a servant but by the party leader himself. I accept this tribute with the grace befitting one who will soon carve a single perfect note into the sewer's darkness. See that it is cold. (does not turn her head; the brim of her hat tilts precisely one degree upward, and the curve at her mouth deepens by a matching degree)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 30
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:28:12Z"
+    },
+    {
+      "content": "The barley ale is the third tap from the left. And the cheapest thing that still counts as a drink is the house red — it's mostly water, but it comes in a cup. (delivers this with the same professional neutrality she uses for quest briefings, though her eyes crinkle at the corners)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 30
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:28:12Z"
+    },
+    {
+      "content": "T-the next round?! That's — I didn't — you said carry the tankards, not underwrite the entire — Kazuma, that's not fair trade, that's extortion with a smile! (Stumbling after the Player, armored boots catching on flagstones, face flushed with the double heat of being called noble and being charged for it.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 31
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:32:07Z"
+    },
+    {
+      "content": "Extortion is right. He's been practicing. On me. For years. (Slumped over the table, voice muffled by her own hair, not lifting her head.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 31
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:32:07Z"
+    },
+    {
+      "content": "The barley for your goddess, the house red for your crusader. And for you... I showed you which tap earlier. Unless you'd rather I choose. (Luna's hand rests on the third tankard, her eyebrow still raised, the private amusement from earlier still flickering at the corner of her mouth.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 32
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:36:50Z"
+    },
+    {
+      "content": "I— you said carry the tankards. You didn't say I'd be paying before I even reached the bar. (Darkness arrives at the counter slightly out of breath, one gauntleted hand gripping the bar's edge as if steadying herself against more than just the walk.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 32
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:36:50Z"
+    },
+    {
+      "content": "You know, most party leaders who try this sort of thing are just cheap. You're actually teaching her something. (Luna's voice is low, pitched for the space between the two of you; she doesn't look up from the pour, but the faint crinkle at her eye says she's decided to be impressed.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:41:28Z"
+    },
+    {
+      "content": "Is that my ale? Is that the barley one? Kazuma, if you got me the barley one after everything I've sacrificed for this party— (Aqua has half-risen from her chair, one finger pointed at the tankard as though identifying a suspect in a lineup.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:41:28Z"
+    },
+    {
+      "content": "The barley is for house pets and registered troublemakers, according to the guild charter Aqua definitely just invented. (Megumin does not lift her gaze from the kettle before her, but the arch tone carries across the hall with the precision of a girl who has been saving that line.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:41:28Z"
+    },
+    {
+      "content": "He told her I was paying. And now he's— he's paying himself. I don't understand what I'm supposed to feel. (Darkness's voice is low and genuinely bewildered, half to herself; her gauntleted fingers press flat against the tabletop as though testing whether it still holds weight.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:41:28Z"
+    },
+    {
+      "content": "No one's called me a barkeep before. I've poured a thousand rounds and no one's ever poured one back. Your first investment may have better returns than your quest history suggests. (Luna holds the tankard in both hands now, cradling it below her chin like something she's still deciding whether to believe.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 34
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:46:44Z"
+    },
+    {
+      "content": "You trailed off. You actually trailed off. A goddess gets rationed swill in a chipped tankard, a barkeep gets a speech and a dedicated pour of the house red, and the man who orchestrated the whole thing can't even finish his own sentence. (slams her empty tankard on the table, then immediately checks to see if anyone at the neighboring tables noticed)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 35
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:51:49Z"
+    },
+    {
+      "content": "The architect of our survival, undone by the weight of his own ellipsis. It would be tragic if it weren't so structurally revealing — he can budget coppers, assign roles, and negotiate retreat clauses, but the moment he must name himself, the sentence collapses. (does not look at you; addresses the chicken bones as if they are an audience)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 35
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:51:49Z"
+    },
+    {
+      "content": "He doesn't have to finish it. (quietly, to the wine, more to herself than to anyone else)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 35
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:51:49Z"
+    },
+    {
+      "content": "You have been circling the word 'home' for three sentences now, Kazuma. A man who cannot finish his own confession is a man who has not yet named the thing he is confessing to. Allow me: you have never had a table before. That is the end of your sentence. (Her voice carries no theatrical boom — just the quiet, surgical precision of a girl who has spent fourteen years learning that the only things worth naming are the ones that terrify you.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 36
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:56:29Z"
+    },
+    {
+      "content": "We already knew that, dummy. You didn't have to buy a kettle to say it. (She is still staring at the blurred face on her empty tankard. Her voice is smaller than usual — the complaint is there but the venom isn't, as if the words came out of habit and forgot to bring their sting.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 36
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:56:29Z"
+    },
+    {
+      "content": "You mentioned my memoir. That was not a jest — you were making an offering at the altar of posterity, and I have received it. The Chapter of the Ordinary will require careful composition. It is the hardest thing I have ever had to dignify with language. (Her voice is quieter than usual, the theatrical cadence restrained to something almost conversational — her fingers unlace and one hand drifts to the chicken bone, resting a fingertip on its curve.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 37
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:02:23Z"
+    },
+    {
+      "content": "I thought… I thought kindness was something done to you. Something you endured. But this isn't. This is just— you're not doing anything. You're just here. And I don't know what to do with that except… survive the sewer tomorrow and come back to the same table. (She doesn't look at you. Her eyes are fixed on her own gauntlets, and her voice — usually either formal or flustered — is neither, just raw and slightly too fast, like a confession she didn't plan to make.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 37
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:02:23Z"
+    },
+    {
+      "content": "…I still think barley ale is an insult to divinity. But. Um. It tastes better when you're the one who paid for it. (She says it to her tankard rather than to you. It is the closest thing to a thank-you she has ever managed without appending a complaint, and her cheeks are slightly pinker than the ale can account for.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 37
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:02:23Z"
+    },
+    {
+      "content": "A desk and a computer. These are the artifacts of the NEET — the solitary class, the unsung prelude. But every great saga requires a prelude, Kazuma. The Crimson Demon archives will note that your origin story was tragically under-decorated. No skulls. No candles. Not even a single ominous grimoire. (She says this with grave ceremony, but her fingers tap once, twice, against the table — a small, unconscious rhythm.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 38
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:06:35Z"
+    },
+    {
+      "content": "...you really didn't have anyone, did you? Back there. I knew you were a shut-in, but I thought — I don't know — I thought there'd be someone. A family. A friend. A... a cat or something. (She doesn't reach for her tankard. She doesn't complain. She just looks at you, and for once there is no performance in it.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 38
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:06:35Z"
+    },
+    {
+      "content": "Y-you... you absolute NEET! You can't just say something like that with a straight face and expect a goddess to— to just—! (tears spilling over now, voice cracking, pointing at Kazuma with the accusatory fury of someone who has just been emotionally ambushed and lacks the vocabulary for gratitude)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 39
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:10:43Z"
+    },
+    {
+      "content": "The speedrunner who sought a throne found instead a table. The shut-in whose kingdom was a desk and a cup-noodle has claimed his first true conquest: four souls who were already his before he knew how to name them. I shall record this moment under the heading 'The Toast That Preceded the Explosion.' (rises slightly from her chair, one hand pressed to her chest, the other extended in a declamatory gesture — but her voice catches on the last word, and the pose holds a beat too long to be pure performance)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 39
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:10:43Z"
+    },
+    {
+      "content": "Kazuma... I have trained my whole life to withstand every blow a monster can deliver. But you keep finding the one place I have no armor, and you don't even swing. You just... stand there. It's unbearable. (voice low and unsteady, gauntlets curling inward, not meeting his eyes — the flush now reaching her hairline)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 39
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:10:43Z"
+    }
+  ],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": [
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Player delivers vulnerable confession about never having a party or anyone to return for; party emotionally affected (Aqua tearful, Megumin honest gaze, Darkness reverent); player gives Darkness order to finish stew, orders three ales and kettle for return.",
+            "timestamp": 1786130095.9209347,
+            "turn_end": 47,
+            "turn_start": 45
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "New elements: Darkness's unfinished stew/abandoned spoon noted; her whetstone-spine straightening, gauntleted tremor, and silent nod as deeper knightly oath; Megumin's quiet drumstick pause and twitch (worth-protecting thaw), open rather than appraising gaze, finished second drumstick; Aqua's waiting (not sulking) role arithmetic and hands resting on table, hollowed stubbornness; Luna's frozen quill with trembling ink bead, abandoned glass, dried-ink ledger, and unprofessional stare; player's palm-up offer and tea-with-kettle pledge (all four, even Aqua's complaint) reframing kettle as scarred witness/landmark; party's shared held-breath guild hall atmosphere.",
+            "timestamp": 1786130328.766518,
+            "turn_end": 50,
+            "turn_start": 48
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Aqua half-stands, slaps her palm onto the player's, grips too tight with wet, furious eyes; Darkness sets her gauntlet over Aqua's with ceremonial precision, jaw set, not trusting herself to speak; Megumin—already standing—tilts hat back, places trembling hand on top with wax-sealing gravity; Luna's expression goes still and old, like a door she'd stopped knocking on. Player squeezes once, framing the next round's affordability as the first impossible quest.",
+            "timestamp": 1786130806.168241,
+            "turn_end": 53,
+            "turn_start": 51
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Party's linked hands separate slowly, warmth loss noted; kettle dent like closed eye; Aqua hides emotion with tankard, bright eyes; Darkness flexes gauntlets, hearth-like blush; Megumin sheaths hand ceremonially, hides crooked smile under hat; Luna stops pen, watches separation as witnessing unformable contract.",
+            "timestamp": 1786131044.4350517,
+            "turn_end": 56,
+            "turn_start": 54
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Aqua's tankard stops spinning, trapped with both palms, fish-gasping outrage; Megumin's catlike satisfaction with hat-dip acknowledgment; Darkness fondly watches Aqua's sputtering; Luna polishes same tankard for ten minutes, no longer pretending.",
+            "timestamp": 1786131568.7979157,
+            "turn_end": 59,
+            "turn_start": 57
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Aqua's protest dies into wonder; Darkness's ears flush sunset-stained-glass red, seen-and-mortified; Megumin's chin rests on steepled fingers with a memory-of-a-smile; Luna's empty tray tucked at hip, serene detachment at the party's course.",
+            "timestamp": 1786131868.8042984,
+            "turn_end": 62,
+            "turn_start": 60
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Player assigns Darkness the tab for tankards as a transaction; Darkness chases with urgent dignity, other adventurers glance; Aqua slumps without protest; Megumin watches with silent satisfaction; Luna privately jokes and expects cheap ale order; player orders barley ale for Aqua, watered wine for Megumin, self drink, and notes Darkness’s tab.",
+            "timestamp": 1786132432.6055093,
+            "turn_end": 65,
+            "turn_start": 63
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Luna files away a new puzzle piece about the party, pours Aqua's ales with practiced precision, sets the water-jug for Megumin, and notes Darkness's approaching self-taxed steps; Aqua cranes to track every pour.",
+            "timestamp": 1786132821.5256808,
+            "turn_end": 68,
+            "turn_start": 66
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Luna drinks on party coin; player salutes and frames quest vs transaction distinction, includes self in needing guild hall as refuge.",
+            "timestamp": 1786133590.809644,
+            "turn_end": 71,
+            "turn_start": 69
+          },
+          {
+            "merged_count": 1,
+            "promoted": false,
+            "source_mip": -1,
+            "text": "Megumin's steepled fingers descend one by one, closing-argument deliberateness; she catalogs player's unfinished sentences as \"things Kazuma cannot name,\" then opens that drawer and sets contents on the table; Aqua's tankard empty, dregs drying, catlike fixity on player's half-full tankard; Darkness's gauntlets creak with held-in feeling; kettle like a promise nobody asked for.",
+            "timestamp": 1786133593.6428916,
+            "turn_end": 74,
+            "turn_start": 72
+          }
+        ]
+      },
+      {
+        "max_snippets": 5,
+        "snippets": [
+          {
+            "merged_count": 2,
+            "promoted": false,
+            "source_mip": 0,
+            "text": "Player accepts quest, demands sobriety + kettle/cold water, adds exit-condition clause (fall back if nest exceeds report, re-negotiate, no wipe for payout); Luna gives blank incident-addendum form; Aqua silenced by kettle threat; Megumin reanimated by spectacle; Darkness conflicted over responsible plan.",
+            "timestamp": 1786130097.2793972,
+            "turn_end": 20,
+            "turn_start": 15
+          },
+          {
+            "merged_count": 2,
+            "promoted": false,
+            "source_mip": 0,
+            "text": "Player curtails Aqua's drinking, mandates Megumin eats; Megumin theatrical silence, regal composure; Darkness stirred by \"echoes\"; Aqua skeptical; Luna alert; Megumin appraising gaze; Darkness structured breathing.",
+            "timestamp": 1786130807.4690764,
+            "turn_end": 26,
+            "turn_start": 21
+          },
+          {
+            "merged_count": 2,
+            "promoted": false,
+            "source_mip": 0,
+            "text": "Player pays 5 coppers for roast chicken, praises Megumin; Luna privately pleased, Megumin’s door opens, Aqua denied third drink, Darkness accepts poultry; player calls party theirs, declares shared meal ensures survival; Luna delivers chicken/stew/bread/kettle; Megumin reverent, Aqua resentful, Darkness calmly inspects kettle; Luna confirms meal’s meaning.",
+            "timestamp": 1786131570.7034853,
+            "turn_end": 32,
+            "turn_start": 27
+          },
+          {
+            "merged_count": 2,
+            "promoted": false,
+            "source_mip": 0,
+            "text": "Darkness blushes pink and unarmored, gently sets kettle down; Megumin watches with cataloging awareness; Aqua draws crude frowning face in condensation, mutters \"finally\"; Luna’s mask tightens but hints party might survive; player calls out Darkness’s stomach, frames eating as bargain; final plan set—Megumin one explosion no warnings, Darkness on point take hits and return all, Aqua must reach party no sulking, kettle as commitment symbol, Luna notes authority implying return.",
+            "timestamp": 1786132434.1589243,
+            "turn_end": 38,
+            "turn_start": 33
+          },
+          {
+            "merged_count": 2,
+            "promoted": false,
+            "source_mip": 0,
+            "text": "Survival framed as party commitment; self-deprecating toast; post-mission drinking pledge; emotional responses (Darkness depth, Megumin respect, Aqua resolve, Luna smile drop); tactical role assignment; player leaves for ale.",
+            "timestamp": 1786133592.235237,
+            "turn_end": 44,
+            "turn_start": 39
+          }
+        ]
+      },
+      {
+        "max_snippets": 3,
+        "snippets": [
+          {
+            "merged_count": 1,
+            "promoted": true,
+            "source_mip": 1,
+            "text": "Darkness disappointed at denied alligator grapple opportunity; Megumin wobbles exhausted; Aqua indignantly sloshes ale; Luna braces for the party's approach with dread.",
+            "timestamp": 1786125202.8841548,
+            "turn_end": 2,
+            "turn_start": 0
+          },
+          {
+            "merged_count": 4,
+            "promoted": false,
+            "source_mip": 1,
+            "text": "Luna details dire sewer quest (blocked trade, failed parties, breeding threat), stricter egg-destruction terms, proof requirements, two-group plan; Aqua listens, Megumin glares, Darkness reverent.",
+            "timestamp": 1786132435.159382,
+            "turn_end": 14,
+            "turn_start": 3
+          }
+        ]
+      }
+    ],
+    "summarized_up_to": 75
+  },
+  "driving_intention": "",
+  "history": [
+    {
+      "content": "Another beautiful morning in Axel — which means another morning of being broke.\n\nYou sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.\n\nAqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. \"Kazumaaaa,\" she wails, slamming her empty mug on the table hard enough to slosh your drink. \"We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!\"\n\n\"We're broke BECAUSE you keep drinking,\" you mutter, but she's already flagging down the waitress for another round on your tab.\n\nMegumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.\n\nDarkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.\n\n\"K-Kazuma,\" she stammers, not turning around. \"There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater...\"\n\nShe's trembling. That's not fear.\n\nLuna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.",
+      "metadata": {},
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:38:52Z"
+    },
+    {
+      "content": "I groan, pushing my chair back. \"Alright, alright. Darkness, you're not going anywhere near those alligators — you'll just end up as their chew toy and enjoy it way too much. Megumin, put the napkin down, you've already spent your daily explosion budget.\"\n\nI stand and stretch, glancing at the quest board. \"Let me see what Luna actually wants before we pick fights with sewer monsters. Aqua —\" I pause, watching her chug another mug, \"— just... keep drinking. It's literally the only thing you're good for right now.\"\n\nI walk over to Luna, keeping my voice low so the other adventurers don't hear. \"Alright, what's the catch? You never wave me over with that smile unless someone's filed a complaint or we owe the guild money.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:38:58Z"
+    },
+    {
+      "content": "Darkness's armored shoulders slump with a complexity of disappointment that only she could feel — the loss of a chance to be dragged underwater by sewer monsters registering somewhere between a denied holy pilgrimage and a canceled date. Her cheeks flush faintly as she opens her mouth, then closes it.\n\nMegumin crosses her arms, the napkin still clenched in one fist like a fallen banner. She opens her mouth — undoubtedly to deliver a speech about how her dawn Explosion was a work of art that mere economic concerns cannot diminish — but the fact that she wobbles slightly just sitting upright rather undercuts the rhetorical momentum.\n\nAqua blinks at you, fourth mug halfway to her lips, her expression shifting from bleary confusion to dawning indignation as she realizes you were about to give her an instruction and didn't even bother finishing the sentence. She sets the mug down with more force than necessary, sloshing cheap ale onto the table.\n\nLuna has been watching from behind the reception counter with the frozen, pleasant smile of a woman who has seen this exact party approach her desk approximately four hundred times and knows that whatever quest she offers them will end in property damage, tears, and a tab that somehow, against all laws of economics and nature, will never get paid. She straightens a stack of already-straight papers and braces herself.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:40:18Z"
+    },
+    {
+      "content": "I lean on the counter, keeping my voice low. \"Before you say anything — if it's about the crater near the bakery, that was Megumin. If it's about the fountain, that was Aqua. If it's about the missing statue, I have no idea what you're talking about and my hands are clean.\"\n\nI glance back at the table where Darkness is still staring at the quest board like it personally insulted her family honor. \"So what's the actual problem? Complaints, debts, or something actually useful?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:42:55Z"
+    },
+    {
+      "content": "Luna does not blink. She has been a guild receptionist for seven years — longer than any of her coworkers who quit to get married — and somewhere around year three she developed the ability to absorb a preemptive confession about property damage with the same serene expression she uses to stamp quest-completion forms. Her smile does not waver. It does, however, tighten by approximately one millimeter at each corner.\n\nShe reaches beneath the counter and produces a scroll. It is not the scroll for the crater near the bakery. It is not the scroll for the fountain. It is a different scroll entirely, yellowed at the edges, the kind that has been hanging on the board so long the parchment has begun to curl inward on itself like a dying spider.\n\nFrom the table behind you, Darkness makes a small, strangled sound — the kind of sound a dog makes when it sees its owner reach for the leash, and it knows the walk will be humiliating, and it wants that walk more than breath itself.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:44:02Z"
+    },
+    {
+      "content": "I glance back at Darkness, who has gone very still — that particular stillness that means she's already mentally committed to being dragged underwater by mutant reptiles. I sigh, running a hand through my hair.\n\n\"Look, Luna. I know what that scroll says before I even read it. The sewers, the alligators, the 'grapple and drag' — my party's going to see that as either a divine drinking challenge or a tactical fantasy. But we're broke, and the reward's the difference between sleeping in a bed and sleeping in the gutter.\"\n\nI push the scroll back toward her, just a little. \"Before I sign anything — is there anyone else in Axel actually qualified for this, or are we genuinely the best you've got right now?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:47:40Z"
+    },
+    {
+      "content": "Luna's smile holds steady through your entirely reasonable preamble — the kind of smile that has weathered confessions about craters, fountains, and statues now presumably enjoying an unauthorized vacation somewhere. She folds her hands atop the quest scroll, the parchment crinkling faintly under her fingertips. Behind you, the guild hall settles into that particular quiet that means the other adventurers are pretending very hard not to eavesdrop.\n\nAt your table, Darkness has not moved. Her gauntleted fingers curl against the wood grain like she's gripping the edge of a very narrow moral precipice. Aqua tilts her fourth mug — when did she get a fourth? — and watches the exchange with the serene disinterest of someone who assumes the universe will eventually remember she's a goddess and fix everything. Megumin has abandoned the napkin but now holds her staff across her lap like a scepter, chin lifted, radiating the energy of someone who has already contributed her daily masterpiece and will not be taking questions.\n\nLuna draws a breath so small you'd miss it if you weren't standing right in front of her. Then she nods once — the nod of a woman who has already calculated exactly how this quest will go wrong and filed the paperwork in advance.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:48:49Z"
+    },
+    {
+      "content": "I take the scroll and unroll it, scanning the official seal with practiced disinterest. Forty thousand eris. Brutal Alligator. Nest in the commercial-district sewers. The kind of job that sounds simple on paper and ends with me being swallowed headfirst while my party argues about who gets to be the hero.\n\n\"They want the nest cleared or just thinned?\" I ask, tapping the parchment. \"Because if they want it cleared, that changes the plan. I'm not going down there with a 'kill on sight' order and a party budget that's currently three empty mugs and a napkin full of explosion diagrams.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:50:23Z"
+    },
+    {
+      "content": "Luna's smile ticks upward by the faintest fraction — a micro-expression that, after seven years behind this counter, passes for a laugh. She reaches beneath the desk and retrieves a second document, this one bearing the merchant guild's seal in crimson wax, its edges worn soft from being consulted too many times over too many years.\n\n\"The commercial district hasn't had a shipment reach them by the eastern sewer entrance in three weeks,\" she says, tapping a line of cramped ledger-script with one manicured nail. Her tone remains light, conversational — the same voice she uses to explain late fees and resurrection paperwork. \"The merchants filed for full extermination. Twice.\" She does not elaborate on what happened to the first two parties who took the quest. The scroll's worn edges say enough.\n\nShe slides the supplementary document across the counter, and for just a moment her professional mask slips — a flicker of something tired behind the eyes, the weight of every adventurer who signed that scroll and never came back to collect. Then the smile is back in place, polished as the brass guild seal on her desk.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:51:25Z"
+    },
+    {
+      "content": "I glance back at my party — Aqua's fourth mug tilted dangerously, Megumin stroking her staff like a beloved pet, Darkness still crimson and gripping the table.\n\n\"Forty thousand sounds great,\" I say slowly, tapping the scroll. \"But I'm not dragging all three of them into a sewer nest without a plan. You got a layout of the tunnels down there? And how many of these gators are we talking — 'cleared the nest' or 'there's just one big angry one'?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:53:28Z"
+    },
+    {
+      "content": "Luna's smile does not falter, but something behind it shifts — the shift of a woman who has been asked, at last, a question she can answer with actual competence rather than damage-control. She sets the merchant guild document beside the quest scroll and turns to a low cabinet behind the counter, her movements unhurried and precise. From within she withdraws a third item: a yellowed municipal sewer schematic, its ink faded to brown, its edges annotated in at least four different hands — some of which, judging by the dates scrawled in the margins, belong to adventurers who never came back to collect their deposit.\n\nShe spreads it flat on the counter between you, weighting one corner with the quest scroll's seal-stamp and the other with an inkpot. Her finger — manicured, steady, the finger of someone who has pointed at bad news for seven years — traces the main drainage artery beneath the commercial district, then taps a junction near the eastern outflow.\n\n\"The merchant guild's shipments all route through here,\" she says, and her tone has lost its obligatory apology. She sounds, for the first time this morning, like a professional discussing a problem she has already categorized and filed. \"The eastern entrance has been impassable for three weeks. Two prior parties accepted this request. Neither returned to file a report.\" Her finger moves to a second junction, deeper in the grid. \"So the exact count is unknown.\"\n\nBehind you, Aqua's mug hits the table with the definitive thunk of someone who has just realized her drinking budget depends on sewer work. Megumin has stopped stroking her staff and is now leaning forward with the focused intensity of a girl mentally composing the battle-chant for an Explosion delivered underground. Darkness has not moved. Her grip on the table-edge has, if anything, tightened.\n\nLuna straightens, folding her hands once more atop the documents. Her smile is back — the one that means she is about to deliver the part nobody likes.\n\n\"The merchant guild filed for full extermination twice. Their addendum is specific: every egg must be destroyed. Not moved. Not sold. Destroyed.\" She pauses. \"That specificity cost them an extra ten thousand eris in hazard compensation. I leave it to you to decide why.\"",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:54:45Z"
+    },
+    {
+      "content": "I lean over the schematic, tracing the eastern outflow gate with my finger. \"Alright. We go in through the main artery here, but we don't push straight down the pipe like the last two parties did — that's how you get ambushed from three directions.\"\n\nI straighten up, glancing at the party behind me. \"We split into two groups. Aqua and I take the front — her holy magic's got an edge against beasts, and I can scout ahead without tripping traps. Megumin and Darkness take the rear, guarding our backs and covering the side junctions.\" I tap the eastern outflow gate. \"We clear the nest at the source, torch every egg, then fall back the way we came. No heroic charges, no explosions in enclosed spaces — unless things get really, really bad.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T17:56:46Z"
+    },
+    {
+      "content": "Your sentence doesn't so much end as get shouldered aside. Aqua's tankard hits the table with a wet crack that sloshes foam over her knuckles and onto the schematic's yellowed edge — Luna deftly rescues the parchment with two fingers, a motion so practiced it looks like reflex. The goddess herself is straightening on her stool, cheeks flushed with something that is only partly the fourth ale, her chin lifting to an angle that suggests she is about to deliver a proclamation. Behind her, Darkness has stopped breathing. Her knuckles are white around the table's rim, the wood groaning in a low, continuous note, and her eyes — wide, wet, almost reverent — are fixed on the back of your head as though you are a priest about to speak her absolution. Megumin stirs from the nest of her own arms with the slow gravity of a cat disturbed mid-nap, one crimson eye cracking open beneath the brim of her hat. She does not lift her head. She does not need to. The single visible pupil carries enough baleful judgment for a full council of wizards.\n\nLuna dabs the ale from the schematic with her sleeve — a tiny, economical motion — and returns her finger to the eastern outflow gate. She says nothing. Her expression suggests she has seen plans derailed before they left the table many times, and has learned not to invest in the first thirty seconds.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T17:58:26Z"
+    },
+    {
+      "content": "I tap the schematic once more, then look up at Luna. \"The egg addendum — you said they added ten thousand to make that binding. That's not about pests, that's about a breeding problem they're terrified of. What do they think's going to happen if those eggs hatch?\"\n\nI glance at Aqua, then back at Luna. \"And what's the exact wording on the corpse disposal? Do they want heads, or is 'gone' good enough?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:00:33Z"
+    },
+    {
+      "content": "Luna's gaze flicks to the merchant guild document — not to read it, because she has clearly memorized every clause, but because looking at the seal while speaking of unpleasant things is a habit she developed somewhere around year four. When she looks back at you, the receptionist-smile has thinned into something sharper: the face of a woman who has spent seven years translating merchant panic into actionable quest parameters, and who recognizes that you, for all your party's chaos, just asked the right question.\n\nShe taps the crimson wax seal with one fingernail, a dry little click.\n\n\"The merchants aren't afraid of the alligators you can see. They're afraid of the ones you can't — the ones that hatch in the dark and grow to full size before anyone notices.\" She rotates the document so you can read the addendum yourself, her finger tracking to a sub-clause near the bottom. \"Brutal Alligators reach maturity in six weeks. A single clutch is twelve to twenty eggs. If the nest hatches and even half survive to adulthood, that's thirty to fifty full-grown predators in the pipe network directly beneath the commercial district.\" She pauses. \"The eastern entrance has been blocked for three weeks with just the current adult population. The merchants did the math.\"\n\nShe withdraws her hand and folds both atop the desk, the gesture somehow both prim and grim.\n\n\"As for disposal — the contract specifies 'proof of extermination.' That means heads, tails, or any other identifiable portion sufficient to confirm a kill. The egg clause has stricter terms: every egg must be accounted for and destroyed on site. No moving, no selling, no 'it probably got crushed when the tunnel collapsed.'\" Her eyes meet yours and hold. \"That addendum exists because the last party that accepted this quest thought they could sell the eggs to a monster-breeder in Elroad. The merchants found out before they even reached the sewer grate.\"\n\nBehind you, the soft creak of Aqua's stool tells you the goddess is listening — though whether she's following the logistics or just waiting for a moment to reclaim the spotlight is anyone's guess.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:01:59Z"
+    },
+    {
+      "content": "I nod at the answer, then tap the eastern outflow junction. \"Forty thousand for full extermination with the egg penalty riding on top — sounds less like adventure work and more like industrial sanitation.\" I thumb at Aqua, Megumin, and Darkness. \"We'll take it. But I'm not leading this party into the dark with a goddess who's three ales in, an archwizard who can't cast, and a crusader who'll probably try to *save* an alligator. Give me an hour to sober them up, then we go.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:04:50Z"
+    },
+    {
+      "content": "You don't get to finish the sentence.\n\nAqua's tankard hits the table a second time, but this one isn't foam — it's ceramic on wood with the unmistakable weight of a goddess who has just been called a liability to her face and processed it through four ales of indignation. She swivels on her stool with the slow, precarious dignity of someone who wants to stand but has forgotten how legs work.\n\nAcross the table, Megumin straightens — or tries to. What actually happens is that her spine makes a valiant effort, her elbows slip on a puddle of Aqua's earlier spill, and she catches herself on the table's edge with a grunt that she immediately tries to convert into a haughty exhale. It does not convert.\n\nDarkness, meanwhile, has gone very still. Not the stillness of offense — the stillness of a woman who heard the beginning of a word that might have been *provoke* or *protect* or *prostrate herself before tooth and claw* and is now suspended in the exquisite agony of not knowing which one you meant. Her gauntlets creak as her grip on the table edge tightens. Her cheeks are the color of a sunset she would deny having.\n\nLuna simply watches. Her pen hovers above the quest ledger — not writing, just waiting, with the expression of a woman who has seen adventuring parties implode over far less than a public inventory of their flaws and knows that this one, somehow, will not. The schematic still lies between you all, its yellowed edges curling where Aqua's ale soaked in.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:06:20Z"
+    },
+    {
+      "content": "I take a slow breath, then let it out. \"Alright. Fine. You're all coming.\" I push my tankard aside. \"But we're doing this sober, and we're doing it smart. That's not negotiable.\"\n\nI look at Luna. \"Any chance the guild has a kettle we can borrow? Or a bucket of cold water. Either works.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:08:43Z"
+    },
+    {
+      "content": "Luna's expression does not change so much as settle — the way a woman's face settles when she has been asked, for the first time in seven years, a question that implies the adventurer intends to survive. She places the rescued schematic flat beneath a clean tankard to weight it, then folds her hands on the counter with the quiet precision of someone who has just been reminded why she keeps the kettle polished.\n\nAcross the table, Aqua processes the words *bucket of cold water* with the slow, horrified recognition of a cat watching a bath being drawn. Her mouth opens. No sound emerges. She looks at you, then at the tankard still sweating in her grip, then back at you, betrayal crystallizing in her eyes like frost on a window. Megumin, slumped against the wall with her staff across her knees, cracks one crimson eye open — she has been pretending to nap, but the prospect of Aqua's suffering has apparently reanimated her beyond what mere mana exhaustion could suppress. Darkness, for her part, straightens on her stool with the faint, troubled frown of someone who has just watched a perfectly good suicide mission get sanded down into something *responsible*.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:10:19Z"
+    },
+    {
+      "content": "I glance at the schematic, then back at Luna. \"One more thing I want on the record — the party split on whatever we find down there. Aqua's heals keep us up, Megumin's our big stick even if she's on cooldown, and Darkness... well, she's the wall.\" I tap the clause about the eggs. \"But I'm the one who decides when we leave. If the nest's bigger than the report says, we fall back and re-negotiate. I'm not trading ten thousand eris for a party wipe.\"\n\nI let that settle, then add, quieter: \"You've kept that kettle polished for seven years. I'd rather not make you need it because I got cocky.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:12:48Z"
+    },
+    {
+      "content": "Luna's hands remain folded on the counter for a long moment — long enough that the silence between you and her becomes a separate presence, a small pocket of quiet carved out of the guild hall's ambient clatter. When she finally speaks, her voice carries none of the practiced apology she used to offer the quest. It is the voice of a woman who has watched two prior parties walk out those doors and never return, and who has decided, provisionally, to believe in a third.\n\nShe does not promise re-negotiation. She cannot — the merchant guild's seal is on the contract, not hers, and you both know it. But she reaches beneath the counter and retrieves a second sheet of paper: a guild incident-addendum form, blank and crisp, the kind filed when an adventurer reports a quest condition the original scouting failed to anticipate. She sets it beside the schematic without comment.\n\nFrom the corner of your vision, Megumin watches Luna produce the form with the narrow-eyed fascination of someone who recognizes bureaucracy being deployed as a weapon. Her chin rests on her staff, but her crimson eyes are sharp and alert. The exhaustion that flattened her against the table ten minutes ago has not vanished so much as been temporarily overruled by the spectacle of a guild receptionist bending procedure without bending the rules.\n\nAqua stares at the addendum form as if it were a personal insult. She opens her mouth. Then closes it. The kettle sits on the counter between you, steam still curling from its spout, and something about the presence of hot water ready to be deployed against her appears to have recalibrated her sense of timing.\n\nDarkness has been silent too long — a dangerous condition. Her gauntleted fingers drum once against the tabletop, and the sound is not impatience. It is the sound of a crusader who has been promised an ordeal and is watching it become a plan, and the plan is good, and good plans reduce the likelihood of being crushed beneath an alligator's jaws while her party screams her name, and she cannot decide whether to be relieved or bitterly disappointed.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:14:22Z"
+    },
+    {
+      "content": "I lean back, folding the addendum form once and tucking it into my coat. \"Right. Forty-eight hours, max, and that's only if the sewer's clear. If it's a warren, we're out before Megumin's explosion even echoes.\" I glance at her. \"No 'one more spell' heroics. You get one shot down there — make it count.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:17:06Z"
+    },
+    {
+      "content": "Megumin draws herself up to her full height — which is not, strictly speaking, very much height — but the gesture is regal, the chin lifted, the crimson eyes narrowing with the particular intensity of a girl who has been addressed as artillery and has chosen to receive it as a coronation. Her staff, which had been leaning against the table's edge, finds its way into her grip without her seeming to reach for it; one small hand closes around the worn wood, and the faint residual heat still radiating from the crystal at its crown makes the air above it shimmer.\n\nShe does not answer at once. She lets the silence stretch — not the uncomfortable silence of someone who has been put in her place, but the theatrical silence of a stage magician who knows the audience is finally paying attention.\n\nAcross the table, Darkness goes very still, her gauntlets creaking faintly as her fingers tighten on her own thighs. The word *echoes* has landed somewhere behind her ribs and is doing something complicated to her breathing.\n\nAqua opens her mouth, closes it, and settles for a deeply skeptical squint that suggests she is waiting to see whether Megumin's inevitable speech will be longer than the explosion itself.\n\nLuna, behind the counter, has stopped pretending to wipe the same spot on the wood. Her gaze moves between you and the archwizard with the quiet alertness of someone cataloguing the precise moment a plan either solidifies or detonates.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:18:41Z"
+    },
+    {
+      "content": "I sign the addendum with a flourish, pocketing my pen. \"Good. Now — first round's on me, but I'm cutting Aqua off after two.\" I slide a few coins toward Luna, then look at Megumin. \"And you. Real food before the big boom, not just a potion you found in someone's ditch.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:20:30Z"
+    },
+    {
+      "content": "The coins skid to a stop just short of Luna's folded hands — three small copper disks that rattle once against the counter's scarred wood and then lie still, catching the amber guild-hall light. Luna's fingers close over them with the mechanical efficiency of someone who has counted a thousand tabs and will count a thousand more, but her eyes linger on you a half-second longer than the transaction requires.\n\nAqua seizes the opening before the coins have even stopped ringing. The indignation arrives fully formed, as though she has been keeping it warm in her chest since the moment you said *two*. Her cheeks flush pink and her tankard — still half-full, somehow — swings toward you in a gesture that is less toast and more accusation.\n\nMegumin, meanwhile, has not moved. Her staff remains planted, her chin remains lifted, and the crimson of her eyes has cooled from coronation-fire to something more appraising. The word *ditch* hangs in the air between you and her like a minor hex, and for a moment her small jaw works silently — not searching for words, because Megumin never searches for words, but selecting among several competing declarations of wounded dignity.\n\nDarkness sets her own tankard down with the careful, weighted motion of a woman who has just realized no one is going to grapple her into a sewer wall tonight and has decided to process that disappointment through structured breathing. Her gaze drifts toward the schematic still pinned under Luna's tankard, then back to you, and something complicated flickers across her face — gratitude, perhaps, or the dawning recognition that a leader who budgets drinks and mandates food is a leader who might actually bring her back alive, which is its own particular kind of letdown.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:22:08Z"
+    },
+    {
+      "content": "I catch Megumin's eyes — still fierce, still unblinking — and I let the corner of my mouth twitch up, just a little. \"One shot. Got it. But even a single perfect syllable deserves a warm meal first, and I'm not dragging your royal rear end out of a sewer because you skipped breakfast. Deal?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:24:35Z"
+    },
+    {
+      "content": "Megumin does not look away. That is the first thing you notice — she has not looked away since you caught her eyes, and she does not look away now, even as your mouth twitches into that half-smile she has learned to distrust and respect in equal measure. Her grip on the staff shifts, fingers resettling along the worn wood with the deliberateness of someone who has decided something. The guild hall's noise — the clatter of tankards, the bark of a failed negotiation two tables over, the scrape of a chair — recedes around the two of you like water pulling back from a shore, leaving a small pocket of stillness that belongs only to this bargain.\n\nBehind her, Aqua has already claimed one of the ales and is nursing it with theatrical resentment, both hands cupped around the mug as though it were a holy relic someone had tried to steal. Darkness, seated with her back ramrod-straight, watches the exchange between you and Megumin with an expression that has shifted from reverent anticipation to something quieter — the face of a crusader who has just realized her commander intends to feed the troops before the siege, and is trying to decide whether that diminishes the glory or simply delays it.\n\nMegumin's chin lifts a fraction higher. The crimson of her eyes catches the amber light, and for just a moment she looks less like a fourteen-year-old girl and more like the thing she insists she is: a vessel for forces that do not fit inside a body.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:25:33Z"
+    },
+    {
+      "content": "I slide two more copper coins across the counter toward Luna without breaking eye contact with Megumin. \"Make it a roast chicken, not the cheap stew. She's earned the good stuff tonight.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:28:02Z"
+    },
+    {
+      "content": "The two copper coins land beside the first three with a softer chime — fresher mint, less scarred by circulation — and Luna's hand pauses halfway to them. A roast chicken in Axel runs six coppers on a slow night, eight when the butcher's wife is feeling optimistic. You've just put down five and called it roast chicken anyway, and Luna's arithmetic catches up with her face a moment before her fingers resume their motion: a faint flicker at the corner of her mouth, the professional smile developing a hairline crack through which something unpolished — surprised, maybe, or privately pleased — shows itself before she seals it over.\n\nMegumin's eyes still hold yours. The fierce, unblinking crimson has not wavered, but something in the set of her jaw shifts — the barest fractional release, the difference between a door locked against a siege and a door that has decided, provisionally, that the visitor may not be an enemy combatant. Her fingers, still wrapped around the staff, have gone still. The wood has stopped its restless creaking. Somewhere behind her, Aqua makes a noise like a kettle that has been told it will never boil again.\n\nDarkness rests her chin on her folded hands and watches the three of you — Kazuma and Megumin locked in their silent treaty, Aqua radiating the particular injustice of a goddess denied her third cup — with the soft, sighing expression of a woman who has accepted that tonight's prelude to mortal peril will involve precisely zero bite-marks and a considerable quantity of poultry.\n\nLuna scoops the coins into her palm with a practiced sweep, rises from her stool, and turns toward the kitchen hatch with the scroll still pinned under her elbow — a receptionist who has simultaneously closed a quest contract, opened a tab, and placed a dinner order in the span of ninety seconds, and who will not admit that any of it was unusual.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:29:43Z"
+    },
+    {
+      "content": "I finally break the stare and let out a breath, leaning back in my chair with a tired grin. \"Alright, alright. Fine. You want me to admit it? You all earned tonight's meal. Even you, Aqua — you're annoying, but you're our annoying goddess. We're going into that sewer as a party, and a party that eats together...\"\n\nI trail off, glancing at the assembled table — Aqua nursing her tankard with suspicious tears threatening, Megumin vibrating with barely-contained Explosion excitement, Darkness already practicing her noble suffering face.\n\n\"...a party that eats together gets through the night. That's all I'm saying. Don't make it weird.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:31:51Z"
+    },
+    {
+      "content": "The words hang in the amber guild-hall air, unfinished, and for a moment the only sound is the distant clatter of dice from the corner table where the junior adventurers are losing their copper over a game of Dragon Poker. Your gaze moves across them — Aqua first, because she is the one you just called annoying to her face and hers in the same breath, and she has stopped mid-swig with her tankard tilted at an angle that suggests she is still deciding whether to be insulted or included. Then Megumin, whose crimson eyes have finally softened at the edges, the roast-chicken tribute sitting on the counter between you like a treaty signed in rendered fat. Darkness last, because Darkness is always last in these moments — her gauntleted hands folded on the table, her expression the particular tangle of a woman who wanted to be crushed by alligators and is instead being handed belonging.\n\nLuna, behind the counter, counts your five copper with the slow, deliberate fingers of someone who is giving the party a moment she does not have to give them. She does not interrupt. She has been a guild receptionist long enough to know when a speech is happening, even one that trails off before the final word.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:33:12Z"
+    },
+    {
+      "content": "I lean back in my chair and watch the three of them for a long moment — Aqua sulking into her ale, Megumin practically glowing with barely-contained magical anticipation, Darkness lost in some heroic fantasy involving sewer water and inadequate armor. The weight of the day settles between my shoulder blades, but it's a familiar weight now.\n\nLuna reappears from the kitchen hatch with a tray — the roast chicken steaming under its own golden skin, three mugs of dark ale, a fourth smaller cup I don't bother inspecting too closely. She sets it down with a practiced economy of motion, and the scent hits me like a memory I didn't know I had.\n\n\"Right.\" I reach forward and tear off a leg with my bare hands, the grease slick on my fingers. \"Eat. Talk about something other than Explosion and sacrifice for five minutes. We've got a long walk to the sewers after this, and I want to remember tonight as the good part, not the part where I got pre-grief from a crusader and a lecture from a fourteen-year-old about ritual dignity.\"\n\nI take a bite. It's good. Better than good — it's the kind of food you eat when you've nearly died enough to appreciate it, which is a specific flavor all its own.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:35:54Z"
+    },
+    {
+      "content": "Luna sets the tray down on the scarred counter with the particular care of someone who has carried meals across a guild hall for years and knows exactly which boards creak under heel and which tankards wobble on a warped grain. The roast chicken occupies the center of the tray like a small, glistening throne — skin crackled brown and glazed with its own fat, a sprig of rosemary tucked into the cavity where the innards used to be, steam curling upward in lazy ribbons that catch the amber lantern-light and turn it gold. Beside it, three bowls of the stew you did not order for Megumin — potatoes cut into uneven chunks, carrots soft enough to crush with a spoon, broth dark with drippings and thick enough to coat the wooden ladle Luna has balanced across the rim of the smallest pot. A quarter-loaf of yesterday's bread, sliced thick and set on a chipped clay plate. And tucked behind the chicken, half-hidden by the curve of its breast, a small iron kettle, unadorned, slightly dented at the spout — the kind that holds enough water to fill two tankards and throws a satisfyingly sharp sound when dropped onto stone.\n\nLuna does not announce the meal. She simply folds her hands in front of her apron and steps back one pace — the guild receptionist's retreat, close enough to clear plates but far enough to pretend she is not watching. But she is watching. You catch it in the way her gaze flicks from Megumin's face to the chicken and back again, a small private arithmetic running behind her polite smile.\n\nMegumin has gone very still. Not the stillness of exhaustion — that slack-jawed wobble you've hauled out of a dozen ditches — but the stillness of a girl standing before an altar. Her crimson eyes are fixed on the chicken as though it might, at any moment, unfold some hidden sigil or speak a prophecy. Her staff leans against the table's edge, forgotten.\n\nAqua sets her tankard down with more force than necessary. The ale inside sloshes against the rim, and she glares at the chicken as though it has personally insulted her divine lineage.\n\nDarkness is the one who breaks the tableau. She reaches across the table — not for the bread or the stew, but for the kettle, her gauntleted fingers closing around its handle with the same solemn grip she uses to lift her sword. She turns it over in her hands, inspecting the dented spout, and something in her expression softens into an emotion that is neither arousal nor dread nor the peculiar alloy of the two she has been marinating in all evening. It is simply — quiet.\n\nLuna's gaze shifts to the kettle in Darkness's hands, then to you, and her smile does not change, but something behind it does — the way a locked door looks the same from the outside whether the room beyond it is empty or full.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:37:51Z"
+    },
+    {
+      "content": "I chew slowly, letting the grease and salt settle in my mouth, and I watch her over the drumstick — not Megumin with her crimson-eyed reverence, not Aqua with her wounded divinity, but Darkness. She's still holding the kettle like it's something holy, and there's a quiet there I don't quite know what to do with.\n\n\"Hey.\" I point the stripped bone at her, half-grinning. \"Finish that stew before you start crying into the kettle. I didn't pay extra for salted tears.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:39:43Z"
+    },
+    {
+      "content": "Darkness blinks, and the spell that held her breaks not with a crash but with a soft, almost imperceptible click — the sound of a kettle's handle adjusting in her grip as her fingers remember they exist. She looks down at the stew bowl in front of her as though she's never seen it before, then at the bone you're pointing at her, then at you, and the flush that rises from her collar to her hairline is not the deep, thrilled crimson of a woman imagining alligator teeth but something pinker and far less armored: caught, seen, known. The kettle descends to the table with a ceramic clunk that is gentler than it has any right to be, given the white-knuckled grip that preceded it.\n\nMegumin, halfway through a drumstick with the methodical intensity of someone who has decided that every calorie is a component of an Explosion yet to come, watches the exchange without comment — but her eyes, those crimson-alight eyes, flick from the bone in your hand to Darkness's face with the sharp, cataloging awareness of a girl who has spent years reading dramatic tension in her clan's overwrought theatricals and knows a character moment when she sees one. She tears off another bite of chicken and chews with the particular satisfaction of an audience member who did not pay for her seat.\n\nAqua, meanwhile, has been drawing a face in the condensation on her tankard — a crude, frowning face with an exaggerated pointy chin that is almost certainly meant to be you — and she caps it by pressing a single wet fingerprint onto the forehead. Petty vandalism complete, she looks up just long enough to register Darkness's blush and mutters something that might be \"finally\" under her breath before returning to her ale with the air of a deity who has decided to be extremely magnanimous about her persecution.\n\nLuna, still standing at the edge of the table with the empty tray tucked under her arm, watches the kettle find its way to the tabletop. Her smile doesn't change — it never does — but something behind it shifts, the way a receptionist's professional mask tightens when she sees a party that might actually survive long enough to file their own paperwork.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:40:38Z"
+    },
+    {
+      "content": "I grin at the bone I've stripped clean, then toss it onto my empty plate. \"And don't think I didn't notice you trying to weasel out of eating, either. Your 'gladly surrender my portion' routine barely holds up when your stomach just growled loud enough to echo off the guild's rafters.\"\n\nI lean forward, elbows on the table. \"Every mouthful you eat is a mouthful I don't have to haul you out of a sewer for. That's a bargain I'm willing to take, Darkness.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:42:10Z"
+    },
+    {
+      "content": "Darkness's mouth opens, then closes, then opens again — a fish gasping on the deck of a boat that has not, in fact, capsized yet. The kettle finally meets the table with a soft ceramic clack, and she draws the stew bowl toward her with both hands as though it were a shield someone has ordered her to raise. The steam curls past her cheeks, and the pink that was already climbing from her collar now owns her entire face — ears and all, the tips glowing through the gaps in her tousled blonde hair. She picks up the spoon with the hesitant reverence of a paladin lifting a relic she is not certain she is worthy to touch.\n\nAcross the table, Aqua has been watching this exchange with the narrow-eyed focus of someone who has just realized she is not, in fact, the center of the current drama and is already calculating how to re-center it. Her ale sloshes as she sets the tankard down with more force than necessary. Megumin, meanwhile, tears into a second piece of chicken with deliberate, audible crunches — each bite a small punctuation mark that says *I am still here, and my tribute is still being consumed, and you should be watching*.\n\nLuna stands behind the counter, wiping a glass with a cloth that has seen better decades. Her polite smile has softened into something less performative — the look of a woman watching a party that might, against all actuarial odds, actually care about each other. She does not interrupt. She has worked the guild desk long enough to know when a moment is still cooking.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:43:07Z"
+    },
+    {
+      "content": "I slide my plate aside and lean back in the chair, watching the three of them—each lost in their own ritual of this strange little meal. The kettle still sits between us, dented and unassuming, but somehow heavier than all the gold I've ever tried to steal.\n\n\"Alright. Here's the plan for tomorrow, and I'm not taking objections.\" I point at Megumin first. \"You get one explosion. ONE. Use it on the biggest, ugliest thing we find, and make it count. No premature detonations, no dramatic warnings, no screaming mid-battle unless something's actually about to eat us.\"\n\nI turn to Darkness, meeting her blush with a steady look. \"You're on point. Crusader's shield in front, take the hits—but remember we're going into that sewer to come back out. All of us.\"\n\nAnd finally Aqua, who's already opening her mouth to protest. \"And you, goddess—you handle undead and healing, which means you actually have to reach us. So quit sulking about drinks and start thinking about what we're gonna need beyond the first floor.\"\n\nI grab the kettle by its dented handle and lift it, the weight warm in my palm. \"We've got a good party here. Let's make tomorrow prove it.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:44:56Z"
+    },
+    {
+      "content": "The shift in the air is small but absolute — the difference between a dinner table and a war council, and the stripped drumstick bone still glistening on your plate is the only evidence that both can occupy the same scarred oak. Megumin straightens in her chair as though someone has pulled an invisible cord from the base of her spine to the guild hall rafters. Her crimson eyes, which a moment ago were burning holes in Darkness's stew bowl out of sheer proprietary jealousy over your attention, now fix on your raised finger with the intensity of a hawk that has spotted not prey but prophecy. The chicken grease on her lips catches the candlelight, and she does not wipe it away. A consecration is not to be interrupted by table manners.\n\nAqua's tankard hits the table with a dull, wet thunk — empty, of course, because a goddess does not nurse two drinks across an entire meal — and she opens her mouth to protest the developing hierarchy of who-gets-orders-first. But something about the set of your jaw, or perhaps the way Darkness has gone utterly still with a spoonful of stew halfway to her lips, makes her think better of it. She settles for crossing her arms and radiating the particular sulk of someone who has decided to let the slight accrue interest.\n\nBehind the counter, Luna has stopped pretending to polish the same tankard she's been holding for five minutes. The rag hangs limp in her grip. She's seen a hundred parties plan a hundred quests at these tables, and she knows the difference between bravado and the quiet, almost reluctant authority of someone who actually intends to come back.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:45:52Z"
+    },
+    {
+      "content": "I set the kettle back down with a soft clunk, letting the warmth of the handle linger in my palm a moment longer than necessary.\n\n\"And one more thing.\" I lean forward, eyes moving between the three of them. \"When we're down there—when it's dark and the walls are dripping and something big starts moving in the water—we don't scatter. We don't play hero. We stay together, and we come back up those stairs as a party. Every single one of us.\"\n\nI let that hang for a beat, then crack a grin. \"Because I didn't crawl out of the afterlife just to explain to Eris why her favorite adventurer went and got himself alligator-bait.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:47:40Z"
+    },
+    {
+      "content": "The guild hall settles into the quiet that follows a door closing on something private — and it is private, this huddle around a scarred oak table, even with half the room pretending not to watch. The kettle sits at the center like a fifth member of the party, its dent catching the amber lamplight, and for the space of three heartbeats nobody moves.\n\nDarkness is the first to break. Not with words — her gauntleted fingers curl around the edge of the table, and the wood creaks softly under the grip, and the sound is the sound of a knight who has just been given something she doesn't know how to hold. Her jaw works once, twice, and the pink that has been a permanent resident of her cheeks since the stew bowl arrived deepens into something less like embarrassment and more like a wound she didn't know she had. She looks at you the way someone looks at a shield that was handed to them before they knew they needed one.\n\nMegumin watches Darkness watch you, and there is a flicker in those crimson eyes — the momentary eclipse of theatrical instinct by something quieter, something closer to respect. Her chin lifts, not in defiance but in alignment, the way a blade aligns with a sheath. One hand drifts to the brim of her hat, not to remove it, but to adjust it. Settling herself. Settling into the plan.\n\nAqua has not touched the kettle since you set it down. Her arms are crossed tight across her chest, and her lower lip is doing the thing it does right before she either bursts into tears or says something impossibly petty. But neither happens. Instead she stares at the kettle — at the dent, at the faint ring of condensation it's leaving on the oak — and something behind her blue eyes shifts, softens, then hardens again into something that looks almost like resolve. Almost like a goddess who has remembered she's supposed to be one.\n\nBehind the counter, Luna has stopped pretending to polish the same tankard she's been holding for ten minutes. Her smile is still in place, but it has gone slack at the edges, the institutional face momentarily unstaffed. She blinks once, twice, as though the scene in front of her has been misfiled under comedy and she's only now realizing it belongs somewhere else entirely.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:48:54Z"
+    },
+    {
+      "content": "I lean back in my chair, letting the grin soften into something quieter as I watch them—Megumin still working through her second drumstick, Darkness gripping her spoon like it's a lifeline, Aqua radiating stubbornness from behind her empty tankard. The kettle's warmth has already faded from my palm, but the weight of what I said lingers in the air like the last wisps of steam.\n\n\"You know,\" I say, almost to myself, \"I spent my whole first life running from anything that looked like responsibility. And now here I am, the guy who has to keep a goddess, an explosion maniac, and a masochistic knight alive in a sewer full of overgrown lizards.\" I shake my head slowly. \"Truly, the afterlife has a sense of humor.\"\n\nMy eyes settle on Aqua first, then Megumin, then Darkness—each in turn, letting the silence stretch just long enough for them to feel seen.\n\n\"But I wouldn't have it any other way. So finish your stew, drink your ale, get whatever last-moment praying or dramatic posturing out of your systems. Tomorrow, we go down there and we do this. And when we come back up, Luna's going to have to break out her second-best tankards—because we're going to drink like we earned it.\"\n\nI pick up my own mug and raise it, not quite a toast, not quite a command—just an offering, held out in the dim lamplight of the guild hall.\n\n\"To tomorrow. To coming back. To being the bastards who walked into the dark and walked out the other side.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:50:51Z"
+    },
+    {
+      "content": "The words hang unfinished — not cut off by interruption, but simply set down, like a tool you realize you don't know how to use yet. Your chair creaks as you shift, and the sound fills the silence more completely than any battle cry ever could.\n\nAqua's empty tankard hits the table with more force than strictly necessary. She's been radiating stubbornness, yes, but the stubbornness has a new texture now — less petulant, more like someone gripping a handrail they didn't expect to need. Her eyes, blue as the waters she claims to govern, flick from your face to the dented kettle and back again, and something behind them is doing arithmetic she'd never admit to.\n\nMegumin pauses mid-bite, a shred of chicken still caught between her teeth, and watches you with the steady crimson focus she normally reserves for trajectory calculations. She says nothing, but her jaw works slowly, and the drumstick in her hand lowers by an inch.\n\nDarkness is the one who speaks first — not because she's found words, but because she's run out of places to hide from the ones she already has. The spoon trembles in her grip.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:51:49Z"
+    },
+    {
+      "content": "I hold my mug aloft, the lamplight catching the rim. Aqua is still sulking, but I see her fingers twitch toward her empty tankard like she wants to join the toast despite herself. Megumin's eyebrow rises—half mockery, half genuine warmth. Darkness lets out a breath she's been holding since the speech started.\n\nI lower the mug slowly, letting the moment settle.\n\n\"Right. So—orders for tomorrow. Aqua, you're our healer and our scout's worst nightmare with all that divine radiance. Megumin, one Explosion at the right moment, not a moment before. Darkness, you guide us through the tunnels without getting us lost in your own... enthusiasm for danger.\" I let the pause hang just long enough to make her blush. \"And me? I'll make sure we don't stumble into any more traps than necessary.\"\n\nI set the mug down with a soft thunk.\n\n\"Now, I'm going to get another ale before Luna decides we're too sober for our own good.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:54:30Z"
+    },
+    {
+      "content": "The guild hall has gone quieter than it has any right to be at this hour — fewer tankards clinking, fewer boots scraping, as though the other adventurers have sensed, with the animal instinct of people who survive on instinct, that something is happening at the corner table that doesn't want an audience. The kettle sits where you left it, its dent a small crater in the lamplight. Megumin's jaw works through the last of her drumstick with the methodical intensity of someone who has decided that finishing her meal is also a form of paying attention. Darkness hasn't moved her spoon an inch — it's still vertical in her fist, a tiny crusader's standard planted in cooling stew. And Aqua's fingers have stopped twitching toward her tankard long enough to curl into a loose fold of her sleeve, which is the closest thing to listening she's shown all evening.\n\nLuna, behind the counter, is pretending to sort quest scrolls. The same three scrolls she's been pretending to sort for the last ten minutes.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:55:23Z"
+    },
+    {
+      "content": "I push back from the table and stand, but I don't head for the bar yet. I look at the three of them—Aqua still gripping her empty tankard like a lifeline, Megumin with her hat brim tilted just so, Darkness with her spoon finally lowered to rest beside her bowl.\n\n\"You know,\" I say, and my voice is quieter than I meant it to be, \"back in my world, I never had a party. Never had anyone I needed to come back for.\" I scratch the back of my neck. \"I'm not saying I'm good at this. I'm saying—you three are the best thing that's happened to me since I died.\"\n\nI turn toward the counter before any of them can respond, because if I look at them another second I'm going to say something even more embarrassing. \"Luna! Two ales, and whatever these two reprobates want. The bill's on the guy who's going to save Axel tomorrow.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T18:57:28Z"
+    },
+    {
+      "content": "The guild hall holds its breath. Not the theatrical hush of a crowd awaiting a bard's chorus — something smaller, more fragile, the way a room goes still when a door you thought was locked swings open on its own. The lamplight doesn't flicker. The kettle's dent doesn't move. But the space between the four of you has thinned to something translucent, and when you rise from your chair, none of them look away.\n\nAqua's fingers, still wrapped around her empty tankard, have stopped their restless drumming. Her mouth is slightly open — not the pout she's been wearing all evening, but something unguarded, the expression of someone who has just realized she wasn't paying attention to the right thing. The lamplight catches the faintest shine at the corner of her eye, though she'd deny it with her last breath and probably three breaths after that.\n\nMegumin's hat brim tilts upward by a fraction of an inch — just enough that you can see both of her eyes now, crimson and unblinking, stripped of their usual theatrical squint. The chicken bone lies forgotten on her plate. She is not reaching for a new one. She is not deflecting. She is simply watching, and the watching itself is the most honest thing she's done all night.\n\nDarkness has set her spoon down beside her bowl with the kind of deliberate care a knight uses when laying down a sword. Both hands rest flat on the table now, and her breath comes shallow and slow, as though something immense is balanced on the next words you haven't said yet and the slightest tremor might send it crashing. She does not look away. None of them do.\n\nAnd the sentence you started — *never had anyone I needed to* — hangs in the air unfinished, a bridge with no far shore yet, waiting to see if you'll build it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T18:58:30Z"
+    },
+    {
+      "content": "I pause halfway to the counter, then turn back with one hand still raised toward Luna. The words I was about to shout die in my throat — I've seen those faces before, in the instant before a battle starts, but never like this.\n\n\"Darkness,\" I say, and my voice comes out steadier than I feel, \"you keep Megumin from blowing herself up with friendly fire, and I'll keep her from eating all the ration packs before we hit the central nest.\" I glance at the steam rising from her untouched stew. \"And that's an order, Crusader: finish your dinner. Cold stew's a bad way to start a fight.\"\n\nI hold up two fingers to Luna, then add a third. \"Three ales, and keep the kettle warm. We're going to need it when we get back.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:00:25Z"
+    },
+    {
+      "content": "Darkness's spoon lies abandoned beside her bowl, forgotten the instant you said her name. The way she sits up — spine straightening as though someone had run a whetstone down her vertebrae — has nothing to do with the crusader who fantasizes about alligator teeth and everything to do with the knight she might have been before the world taught her to want the wrong things. Her gauntleted fingers press flat against the table, and the lamplight catches the faint tremor in them before she stills it with an effort you can see her make.\n\nMegumin, for her part, processes the words *keep her from eating all the rations* with the slow, lethal dignity of a cat discovering its tail has been insulted. Her drumstick pauses halfway to her mouth, and the glare she levels at you across the greasy tabletop could strip paint from a barn. But beneath the theatrical outrage, the corner of her mouth twitches — because being worth protecting, even from herself, is not something the Crimson Demon genius quite knows how to despise.\n\nAqua's tankard hasn't moved, but her eyes have. They track from you to Darkness to Megumin and back, doing the arithmetic of being the only one in the room who hasn't been given a role yet, and the arithmetic comes out to something that looks less like sulking and more like waiting.\n\nAt the counter, Luna has stopped pretending to sort quest scrolls. Her quill hovers an inch above the ledger, a single bead of ink trembling at the nib, too heavy to hold but not yet ready to fall.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:01:24Z"
+    },
+    {
+      "content": "I lean back in my chair, letting the warmth of the guild hall settle around us like a worn blanket. \"You know what I miss? Not the NEET life — not really. But I miss the part where the stakes were just... my grades. Or how many hours I could sleep in. Now the stakes are you three, and somehow that's worse and better at the same time.\"\n\nI reach over and nudge the dented kettle toward the center of the table. \"That thing's been with us through every bad job and every worse plan. It's got more scars than I do. But it's still here. Still holding water. Still hasn't given up on us.\"\n\nI let the silence hang for a breath, then add, quieter: \"So when we come back — and we will — I'm going to make tea with it. All four of us. Even Aqua, who'll complain it's not alcohol.\"\n\nMy hand settles on the table between them, palm up, an offer rather than a demand.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:04:05Z"
+    },
+    {
+      "content": "The guild hall does not roar back to life. It stays at the volume of a held breath — of a room full of people who have all, at some point, set something precious down on a scarred table and waited to see if anyone would pick it up. The dented kettle sits at the center now, and the dent is no longer a crater but a landmark, the way a notch on a doorframe marks a child's height: proof that something happened here, something that changed the shape of the world.\n\nDarkness does not speak. Her gauntleted fingers uncurl from the spoon and flatten against the tabletop on either side of her bowl, and the way she exhales — long, slow, through the nose — is the breathing of someone standing at a battlement watching a rider approach with a banner she thought she'd never see again. Her lips part, close, part again, and then she simply nods, a single downward jerk of her chin that carries more weight than any oath she's ever sworn in a cathedral.\n\nMegumin's hat brim tilts upward by degrees, and the lamplight catches both crimson eyes. Not narrowed in appraisal this time. Open. The stew has cooled in front of her, the second drumstick reduced to a clean bone laid parallel to the first, and for a long moment she studies the kettle as though it were an artifact from a buried civilization whose language she is only now beginning to read.\n\nAqua's empty tankard hasn't moved, but her hands have. They've migrated from her lap to the table's edge, and her fingertips rest there — not drumming, not gripping, just resting, as though the wood itself has become something she needs to touch to believe is real. The stubbornness is still there, but it's been hollowed out from the inside, and what's filling the cavity is something she doesn't have a name for and wouldn't admit to if she did.\n\nLuna has stopped pretending to polish the same glass. It sits abandoned on the counter behind her, and her ledger lies open to a page where the ink has long since dried. She's watching the four of you with the expression of someone who has filed a thousand quest reports and has never once seen a party do what yours is doing now.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:05:36Z"
+    },
+    {
+      "content": "I keep my hand there, palm up, and let the offer just sit in the lamplight. The kettle's dent catches the flame, a small scar that's become familiar. \"That's the deal, then. We come back, we make tea, we fight about whose fault it was, and then we pick the next impossible quest like it's the easiest thing in the world.\"\n\nMy voice drops a little. \"Because honestly? I can't imagine doing any of it without you lunatics.\"\n\nI wait, not pushing, just letting the weight of the journey ahead settle between us like the steam that'll rise off that kettle when we finally get to use it.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:07:56Z"
+    },
+    {
+      "content": "The guild hall doesn't move. Your hand stays there, palm toward the rafters, an offer too small to be a contract and too heavy to be anything else. The lamplight pools in the kettle's dent like rainwater in a footprint — something that was here before you and will be here after, but for this one moment it's yours, all of you, and the silence says what none of you can.\n\nAqua moves first, because of course she does. She doesn't reach for your hand so much as she half-stands, wobbles, and slaps her palm down on top of yours with enough force to sting. Her eyes are wet and furious about it, the way a rainstorm is furious at the sun for making it visible. She holds on too tight.\n\nDarkness rises more slowly. Her gauntlet makes a sound against the table — metal on scarred wood, deliberate, ceremonial, the way a sword is laid at an altar. She doesn't grab. She sets her hand over Aqua's with the precision of someone who has spent years learning exactly how much force breaks things and exactly how much holds them together. Her jaw is set. She doesn't trust herself to speak first.\n\nMegumin is already standing — when did she stand? — and she tilts her hat back so the brim can't hide her face. She places her hand on top of the stack with the gravity of someone sealing a scroll with crimson wax, and her fingers are trembling just enough to prove she's mortal, just enough to prove she means it.\n\nLuna has stopped pretending to wipe the same glass. She stands behind the counter with the towel forgotten in her hand, and something in her expression has gone very still and very old, like a woman watching a door open that she'd long since stopped knocking on.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:09:16Z"
+    },
+    {
+      "content": "I look at their hands stacked on mine—Aqua's wet and trembling, Darkness's steady as stone, Megumin's shaking just enough to be real—and I let out a breath I didn't know I was holding.\n\n\"Good. Then it's settled.\" I squeeze once, gently, not letting go. \"First impossible quest: figuring out how to afford the next round without Luna cutting us off.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:11:33Z"
+    },
+    {
+      "content": "",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:13:04Z"
+    },
+    {
+      "content": "I glance down at the stack of hands and catch Aqua's eye. \"Also for the record? Blame can be shared. So can credit.\" I give her hand one extra squeeze before starting to pull mine free. \"Now let's actually test that 'irreplaceable' contract — who's getting the next round?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:15:02Z"
+    },
+    {
+      "content": "The hands come apart slowly, the way a knot unties itself when the rope decides it's ready. Yours slides free last, and the loss of warmth is immediate — not cold, exactly, but the absence of a pressure you hadn't noticed you'd been leaning into. The kettle remains, its dent catching the lamplight like a closed eye, and the guild hall exhales around you: a chair scrapes, someone coughs into a fist, the murmur of commerce and complaint picks up its interrupted rhythm. The moment doesn't end so much as loosen its grip, finger by finger, letting you all step back from the ledge without anyone having to admit there was a ledge at all.\n\nAqua snatches her hand back and immediately busies it with her empty tankard, turning it in circles on the scarred wood. Her eyes are too bright — the dust in here, really, someone should speak to the guild about the dust — but her chin comes up with that particular tilt that means she's about to say something she hopes will sound careless and will absolutely fail.\n\nDarkness flexes her gauntleted fingers once, twice, as though memorizing the sensation of being a steady weight rather than a trembling one. Her cheeks hold a faint flush, but it's not the breathless heat of her usual imaginings — it's simpler, warmer, the color of a hearth rather than a forge.\n\nMegumin withdraws her hand with the ceremonial gravity of a sword being sheathed, pressing it briefly to her chest before folding both arms into her cloak. The brim of her hat dips low enough to hide her eyes, but not low enough to hide the tiny, crooked smile tugging at the corner of her mouth — the smile of someone who has just been promised a future and is already composing the epic that will describe it.\n\nBehind the counter, Luna has not moved, but her pen has stopped scratching. She watches the four of you separate with the expression of someone who just witnessed a contract signed in a language the guild doesn't have forms for.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:16:42Z"
+    },
+    {
+      "content": "I catch Aqua's eye and can't help the smirk tugging at my mouth as she spins her empty tankard. \"You know, for a goddess, you're really bad at negotiating. 'Spiritually unfair'? That's not arithmetic, that's just you wanting another drink.\" I reach over and give the kettle a solid pat. \"Fine. One more round — but I'm splitting it three ways between the four of us, and nobody gets to complain about watered wine when I'm the one paying.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:18:59Z"
+    },
+    {
+      "content": "Aqua's tankard stops spinning. She traps it flat against the table with both palms and stares at you with the particular outrage of someone who has just been mathematically cornered and knows it. Her mouth opens, closes, opens again — a fish gasping for theological oxygen — and the blue of her eyes catches the lamplight in a way that suggests tears are being held in reserve, not yet deployed but fully mobilized.\n\nMegumin watches the exchange with the serene satisfaction of a cat who has just watched another cat walk into a door. She does not smile. She does not need to. The brim of her hat dips a quarter-inch, acknowledging the comedy while preserving the dignity of one who has already eaten roast chicken and need not debase herself further by begging for ale.\n\nDarkness folds her gauntlets on the table and watches Aqua's sputtering with an expression that might, on a less armored face, be called fond. The crusader has survived worse humiliations than watching someone else's — and unlike most, she doesn't seem to find Aqua's distress particularly funny, which is its own kind of insult.\n\nBehind the counter, Luna polishes the same tankard she's been polishing for ten minutes. She's not even pretending anymore.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:20:20Z"
+    },
+    {
+      "content": "I lean back in my chair, arms crossed, watching the three of them process the math like it's a puzzle box with no lid. \"Three ways, four people. That's the deal. Take it or I'm buying Luna a drink with the difference and telling everyone at the guild you got out-negotiated by a NEET with a dented kettle.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:22:14Z"
+    },
+    {
+      "content": "Aqua's mouth works soundlessly for three full seconds — a goddess reduced to long division by a NEET with a dented kettle, and the math is unkind. Her tankard lies flat on the table where she trapped it, empty as her negotiating position, and the blue of her eyes has shifted from held-back tears to something more dangerous: the particular outrage of someone who wants to argue but has run out of denominators. Across the table, Megumin's hat brim hasn't moved, but beneath it there is the distinct curve of a smile that knows exactly how much it costs to deliver a perfect ultimatum. Darkness sits very still — the word \"everyone\" lingering in the air where you planted it, the threat of guild-wide humiliation doing something complicated behind her steady expression that she is not, at this moment, equipped to examine. And Luna, behind her counter with a rag that has been wiping the same glass for the last ninety seconds, lets her professional smile twitch exactly once: her name, spoken in the same breath as \"drink\" and \"difference,\" lands somewhere between a threat and an invitation, and she is not entirely sure which side of the ledger to file it on.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:23:49Z"
+    },
+    {
+      "content": "I let the silence hang for one more beat, then push my chair back with a scrape that cuts through the chatter. \"Right. Since the Arch-Wizard needs her water and the crusader's too noble to ask, and the goddess is too busy fuming to remember she volunteered... I'll get the round myself. One ale for Aqua, one water for Megumin, one ale for Darkness — and for me, the cheapest thing that still counts as beer.\" I dig a few coins from my pouch and set them on the counter. \"Luna, keep the change. Consider it payment for all those years of 'tab's overdue, Kazuma.'\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:26:55Z"
+    },
+    {
+      "content": "The chair-scrape cuts through the guild hall chatter like a knife through gristle, and for a moment every head at every nearby table remembers why they gave this party a wide berth in the first place. You're on your feet before anyone can mount a counter-argument, and the four of them stare up at you with four distinct flavors of processing delay.\n\nAqua's tankard is still pinned flat to the table, her fingers white-knuckled around the pewter rim, and her eyes track your movement toward the bar with the wary calculation of a gazelle who has just watched the lion stand up and stretch. The protest is forming on her lips — it's always forming on her lips — but the arithmetic has locked the doors and thrown away the key, and what comes out instead is something closer to wonder.\n\nDarkness sits rigid, her ale untouched, her gauntlets resting palms-up on the table like an offering nobody asked for. The phrase \"too noble to ask\" landed somewhere in the vicinity of her collarbone and is still burrowing inward; the tips of her ears have gone the color of sunset through stained glass, and she is breathing with the careful rhythm of someone who has just been seen and doesn't know whether to be grateful or mortified.\n\nMegumin's chin rests on steepled fingers, the brim of her hat casting her eyes in shadow. The faintest curve tugs at the corner of her mouth — not quite a smile, more the memory of one, the expression of an Arch-Wizard who has witnessed a goddess reduced to long division by her own party leader and found it poetically proportionate.\n\nLuna, still standing at the table's edge with the empty tray tucked against her hip, watches your retreat with the serene detachment of a woman who has seen this party conduct business, theology, and beverage arbitration in the span of twelve minutes and has long since stopped being surprised by any of it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:28:12Z"
+    },
+    {
+      "content": "I pause mid-step and glance back at Darkness. \"You want to carry the tankards, fine — but you're paying for the next round. Fair trade for letting you be noble about it.\" I nod toward the bar and keep walking.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:30:49Z"
+    },
+    {
+      "content": "You don't wait for an answer. The nod is the period at the end of the sentence, and you're already turning back toward the bar, leaving Darkness with a half-formed protest dying in her throat and a transaction she didn't agree to but can't refuse.\n\nBehind you, a chair leg catches on flagstone. The sound is wood on stone and a sharp intake of breath, and then the heavy tread of armored boots scrambling to catch up — not running, because a Dustiness does not run across a guild-hall floor, but moving with the kind of urgent dignity that makes her pauldrons clank in double time. The other adventurers who'd been stealing glances at your table now find their drinks suddenly fascinating.\n\nAt the table, Aqua watches you walk away with the fixed, unblinking stare of someone memorizing a grudge. Her fingers drum once on the empty tankard — a single, petulant ripple of sound — and then she slumps back in her chair, chin sinking toward her collarbone, blue hair spilling across the table like a surrender flag run up at half-mast. Megumin, beside her, has not moved. The Arch-Wizard sits with her spine straight and her hands folded around her water cup as though it were a ceremonial chalice, and the faint curl at the corner of her mouth is the expression of someone watching a rival's spell fizzle out before the incantation is even complete. She says nothing. The satisfaction is louder that way.\n\nLuna has drifted back toward the bar herself, stationing herself at the near end of the counter with her tray tucked under one arm. She catches your eye as you approach and tilts her head a fraction of an inch toward the tap she already showed you — the cheap one, the one that won't embarrass your coin purse — and the ghost of a private joke flickers across her professional smile before it resettles into guild-receptionist neutrality.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:32:07Z"
+    },
+    {
+      "content": "I reach the bar and lean against it, catching Luna's eye. \"Two ales — the barley one for the goddess so she stops whining, plus one house red that's mostly water. And something for myself.\" I glance back at Darkness over my shoulder, adding quietly, \"She's picking up the tab.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:34:57Z"
+    },
+    {
+      "content": "Luna's hand is already moving before you finish speaking — three tankards from the rack beneath the counter, each the correct size for the drink it's about to receive, a reflex honed by years of matching vessels to vices. She fills the barley ale first, tilting the tankard against the tap with the practiced angle that minimizes head, and the foam crests exactly half an inch above the rim before settling. The house red follows, pale amber shot through with the thin light of a guild hall after noon, and she slides it next to the barley with the quiet efficiency of someone who has poured ten thousand drinks and will pour ten thousand more.\n\nThe sound of armored boots finds its rhythm behind you — not the panicked scramble of someone chasing, but the heavy, deliberate tread of a crusader who has decided to accept a transaction she never agreed to, and is walking toward her own taxation with a blush she cannot suppress.\n\nLuna's eyes flick from Darkness's approaching silhouette back to you, and something almost imperceptible shifts at the corner of her mouth — not quite a smile, but the ghost of professional amusement, the kind reserved for adventurers who surprise her by surviving their own chaos long enough to become interesting.\n\nThen she taps the third tankard — empty, still dry — and raises one eyebrow at you. The question is silent but legible: the cheapest thing that still counts as a drink. She waits.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:36:50Z"
+    },
+    {
+      "content": "I dig a few coins out of my pouch before Luna even pours, counting them onto the counter with exaggerated care — copper, copper, more copper. \"Actually, put this round on me. Aqua's ale, Megumin's water, my drink, and... well, Darkness can buy the next one.\" I slide the coins across the bar and lean in a little closer, voice dropping. \"She deserves the first taste of what nobility actually costs, don't you think?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:39:39Z"
+    },
+    {
+      "content": "Luna's fingers pause on the third tankard — not the theatrical freeze of someone caught off-guard, but the precise stillness of a woman who has just been handed a puzzle piece she didn't know was missing. The coins sit on the counter between you, copper stacking on copper with the self-conscious care of a man who counts every eris because every eris counts, and she lets the silence hold for one breath longer than professional courtesy requires.\n\nThen the corner of her mouth moves. It is not quite a smile — it's the expression of someone who has watched this party stumble through her guild hall for months, has pre-filed their death paperwork twice, has learned to brace for impact every time their table scrapes against flagstone — and is now watching their leader slide five coppers across the bar with a lesson plan tucked behind his teeth. She lifts the tankard of barley ale, sets it at the edge of the counter where the foam catches the lantern light, and reaches for the house red. The water-jug comes last, plain clay, no tankard at all — Megumin gets what Megumin needs, and Luna has been matching vessels to vices long enough to know the difference.\n\nBehind you, the scrape of a chair-leg and the unmistakable sound of Aqua craning her neck to track every pour.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:41:28Z"
+    },
+    {
+      "content": "I glance at the empty third tankard Luna still holds, then at the coins already resting on the counter. \"And that one's for you, actually — for knowing the difference between a goddess's ale, a wizard's water, and a crusader's lesson. A barkeep who pours with a purpose deserves a drink she didn't have to ask for.\"\n\nI nod toward the house red. \"Pour yourself a cup. Call it the party's first investment in morale.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:44:35Z"
+    },
+    {
+      "content": "She lifts the tankard. Not in a toast — Luna doesn't make toasts, hasn't had reason to make one since the last veteran retired and the guild hall became a revolving door of faces that stayed young while hers accumulated the fine lines of paperwork and late-night incident reports. She just holds it, the cheap red wine catching the lantern light at an angle that makes it look, for half a second, like something worth more than it is.\n\nAcross the guild hall, Aqua has stopped mid-complaint, her blue eyes tracking the tankard's arc with the focused outrage of a goddess who recognizes someone else receiving a beverage she was not offered. Megumin, chin still glistening faintly with chicken grease, watches with the flat, unreadable attention of a tactical observer who has filed the moment away for later analysis. Darkness sees it too — the receptionist drinking on the party's coin — and something complicated moves behind her expression, a half-formed recognition that the lesson she just received is not, apparently, hers alone.\n\nLuna drinks. One swallow, precise and economical, the way she does everything. Then she lowers the tankard and meets your eyes, and the professional smile is still there, but it's thinner now — not worn out, but translucent, like a window someone forgot to close all the way.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:46:44Z"
+    },
+    {
+      "content": "I raise my half-empty tankard in a small, sloppy salute toward Luna's. \"See? That's the difference between a quest and a proper transaction. Quests end in paperwork. This just ends in everyone getting what they actually needed.\" I take a long pull of the cheap ale, letting the barley bite the back of my throat before I set it down with a satisfied click. \"And in case you're wondering — yes, I'm including myself in that. I needed to remember what the inside of this hall feels like when it isn't a crime scene or a funeral prep.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:48:59Z"
+    },
+    {
+      "content": "The unfinished sentence hangs in the air like smoke from a candle just snuffed — there was a shape to it, the beginning of something that might have been admission or deflection or both, and now there is only the question of whether anyone will reach into the silence and pull it the rest of the way out.\n\nLuna doesn't. Her tankard remains exactly where you left it in her hand, the house red barely touched, and her expression has gone very still — not the professional stillness of the receptionist who has learned not to react when adventurers say strange things, but the private stillness of a woman who has just been given something and doesn't yet know whether it comes with terms.\n\nMegumin's water sits untouched before her, the condensation beading on the clay in a slow crawl toward the wood. She is watching you with the particular intensity of a Crimson Demon who has just witnessed a narrative pivot and is recalibrating her understanding of which act this is. The roast chicken has been reduced to a scaffolding of clean bones on her plate, and her fingers are steepled beneath her chin in a pose that is either deep thought or the prelude to a pronouncement.\n\nDarkness has not moved since you raised your tankard. Her own ale — the one she didn't pay for, the one that was bought with your coppers and a promise that she would cover the next round — sits in front of her like an equation she hasn't solved yet. Her gauntlets are folded on the table, the steel fingers interlaced as if in prayer, and her breathing has gone shallow in the way it does when she is trying very hard not to feel something that has nothing to do with pain.\n\nAqua's tankard is empty.\n\nShe has been nursing the barley ale with the grim discipline of someone who knows there won't be a third, and now the last of it is gone, and the dregs are drying in a thin amber film at the bottom of the clay, and she is staring at your half-full tankard with the fixity of a cat calculating the distance to a windowsill.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:51:49Z"
+    },
+    {
+      "content": "I let the ale settle, then tap the side of my tankard with one finger. \"You know what the funny thing is? I've been in this hall a hundred times. Died twice in that field out back. But this is the first time I've actually sat here without a quest ticking down or a bill to argue.\" I glance around the table — Megumin's steepled fingers, Darkness's folded gauntlets, Aqua's empty tankard — and something in my chest loosens. \"I think I forgot what that was supposed to feel like.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T19:54:01Z"
+    },
+    {
+      "content": "Your finger stills on the tankard's rim. The condensation has gone warm under your touch, and the face Aqua drew — that crude frowning mouth, those lopsided eyes — has blurred into something softer, almost wistful, as if the water itself has forgotten what it was supposed to resent. Darkness's gauntlets creak again, the sound of a crusader holding something in that has no business being held by gauntlets. Across the table, Megumin's steepled fingers descend one by one, each knuckle landing on the wood with the deliberateness of a closing argument.\n\nShe has been cataloging. She has been filing each unfinished sentence into the drawer marked *things Kazuma cannot name*. And now, with the roast chicken reduced to bones and the kettle gleaming like a promise nobody asked for but everyone needed, she opens that drawer and sets its contents on the table between you.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T19:56:29Z"
+    },
+    {
+      "content": "I look down at the tankard, then set it down gently. \"It feels like... this. Just this.\" I gesture vaguely at the table, at the bones, at the kettle. \"Warm ale, full stomachs, no one bleeding. A goddess complaining about barley ale. A crusader confused about kindness. A Crimson Demon filing everything away for her memoir.\"\n\nI pick up a chicken bone, twirl it once, and toss it back onto the plate. \"I'm not going to finish that sentence. Not tonight. But I'll tell you what I *did* figure out —\" I meet Luna's eyes across the bar, then let my gaze sweep the rest of them, \"...nobody gets to drink alone in my party.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T20:00:38Z"
+    },
+    {
+      "content": "The chicken bone lands with a hollow clatter against the earthenware plate — not the decisive crack of a gavel, but something softer, the sound of a door closing that no one is barring from the other side. The plate still holds a scatter of gristle and the stripped architecture of what was once a roast bird, and in the lantern-light it looks less like garbage than like evidence: something lived here, something ate here, something was here.\n\nMegumin's steepled fingers haven't moved. But her eyes — those cataloguing, appraising, memoir-writing eyes that have been filing every wince and word since the kettle first steamed — have gone still in a way that has nothing to do with cataloguing. Her crimson gaze rests on the tossed bone as if it were a punctuation mark in a language she thought she'd already mastered, and the stillness says she is rereading the sentence.\n\nDarkness's breathing has changed. The structured rhythm she built around the roast chicken — the crusader's discipline she wrapped around a meal like armor — has unstitched itself into something shallower, faster, a tide pulling back from a shore it wasn't ready to leave. Her gauntlets, still folded beside the kettle, gleam with the condensation of a hand that gripped metal too long and too hard. She is not looking at the bone. She is looking at you the way a shield looks at the hand that just set it down — wondering what it means to be set down, and whether being set down is the same as being kept.\n\nAqua's tankard is empty and she hasn't complained. This fact alone is the kind of anomaly that would normally trigger a theological inquiry from the Axis Order. Her finger rests on the rim, tracing the ghost of the frowning face that condensation has already begun to erase, and her mouth — that endless font of grievance and glory — is closed. Not sealed in resentment. Just… closed. As if she has found, for the first time since descending from the divine realm, that silence fits better than speech.\n\nLuna hasn't touched her wine since the last sip. The tankard is warm in her hand, the house red gone still, and her professional mask — the one she wears like a second spine — has cracked in a place so small that only someone looking for it would notice: a looseness at the corner of her mouth that is neither smile nor frown, just the exhaustion of a woman who has watched a hundred parties form and fracture and who now, against every ledger and every precedent, is watching one stitch itself together over chicken bones and cheap ale and a boy who can't finish his own sentences.\n\nThe kettle hums a low, steady note as the coals settle beneath it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:02:23Z"
+    },
+    {
+      "content": "I lean back in my chair, letting the weight of their words settle. The kettle's low hum is the only sound for a moment.\n\nThen I snort, scratching the back of my head. \"You know, Megumin, you're not wrong. I've never had a table before. In my old life, I had a desk. A computer. A bed I'd crawl out of to buy cup noodles.\"\n\nI pick up my tankard, then set it down without drinking. \"But a table? With people in it? That's new. And honestly? It terrifies me more than the Demon King did.\"\n\nI look at Aqua, at Darkness, at Megumin, and finally at Luna. \"So I'm going to keep not finishing that sentence. But I'll be here every night, buying the round, until I figure out what it's supposed to say.\"\n\nI lift the tankard in a toast—to no one in particular, but really to all of them. \"To the table. And to whoever's brave enough to keep sitting at it.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T20:04:56Z"
+    },
+    {
+      "content": "The unfinished sentence doesn't need finishing. It hangs there, half-formed, and somehow that makes it truer than anything you've said all evening — because a table with people at it is not something you can explain to someone who's never sat at one, and everyone at this table already knows.\n\nAqua's tankard has stopped sweating. The crude face she drew has blurred entirely now, just a smear of condensation that catches the lantern light like a watermark on old paper. She is staring at you with an expression that doesn't belong on her face — not the theatrical pout, not the prelude to a whine, but something smaller and older, the look of someone who's just realized she's been carrying a door handle for years without knowing what door it opened.\n\nMegumin's fingers have unstitched themselves. Her hands rest flat on the table now, palms down, as if she's pressing the moment into the grain of the wood for permanent archival. The red gleam in her eyes isn't the usual pyromaniac fire; it's something quieter, the light of a librarian who just found the missing first volume.\n\nDarkness has not moved at all. Her gauntlets are folded. Her breathing is even. But there's a tremor in her lower lip that she can't seem to swallow, and her eyes are fixed on the chicken bones as though they were scripture she is afraid to misinterpret.\n\nAnd Luna — Luna who has processed a thousand quest reports at this very guild hall, who has stamped \"completed\" on a hundred happy endings that belonged to other people — Luna is holding her tankard with both hands now, as if it were a stone she found in a river and doesn't know whether to keep or skip.\n\nThe kettle's hum has gone so low it's almost a purr.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:06:35Z"
+    },
+    {
+      "content": "I raise my tankard, letting the toast hang in the air for a moment before bringing it to my lips. The ale is lukewarm now, but it doesn't matter.\n\n\"When I first woke up in this world, I thought I'd speedrun it. Grab the Demon King's head, cash in, live like a king.\" I set the tankard down gently. \"Turns out the real loot was a communal dinner table at a guild hall in Axel.\"\n\nI look around at each of them. \"So thanks. For tolerating my unfinished sentences. And for not complaining about the ale.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T20:08:46Z"
+    },
+    {
+      "content": "The tankard settles on the scarred wood with a finality that somehow isn't final at all — just the soft thud of pewter finding its place among chicken bones and breadcrumbs and the quiet kettle that has become, without anyone's permission, the hearth of something none of you had a word for until this moment.\n\nAqua's eyes are wet. Not the theatrical waterworks of a goddess denied her third drink, but something smaller and more dangerous: the kind of tears that arrive without announcement, that catch even her off-guard. She blinks rapidly, twice, as if blinking could retroactively deny that they ever formed. Her lower lip trembles and she clamps down on it with the same reflexive indignation she brings to every insult — except there is no insult here, and the absence of one leaves her without a script. The crude face on her tankard is gone now, dissolved entirely into a faint smear of condensation, and she stares at the empty space where it used to be as though it took something of hers with it.\n\nMegumin does not blink. Her red eyes hold steady on you with the intensity of someone who has just watched a prophecy fulfill itself and is already composing the footnote. Her chin rests on her steepled fingers, and the faintest curve touches the corner of her mouth — not a smile, not yet, but the premonition of one, the way the sky changes pressure before the storm. The chicken bone you tossed still lies where it fell, and her gaze flicks to it once, as if confirming that the evidence matches the testimony.\n\nDarkness has stopped breathing. Not the theatrical breath-holding of a crusader bracing for impact, but the genuine article: a stillness so complete you can see the lantern-light trembling on her unarmored collarbone, the flush that started at her ears now spread to her cheeks and throat. Her gauntlets rest palms-up on the table like an offering she forgot she was making. She looks at you the way someone looks at a wound they didn't know they had until someone else named it — and named it not as damage but as a door.\n\nLuna is the last person you look at, and she is the only one who doesn't look back. She stares at her own tankard — the wine barely touched, the surface still as a mirror — and something in her face has come unmoored. The professional smile that lives in the corners of her mouth like furniture in a room too long occupied has gone slack, and beneath it is a woman who has processed a thousand quest-completion forms and never once been inside one. Her thumb traces the rim of the tankard once, absently, the way someone touches a photograph they aren't in.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T20:10:43Z"
+    }
+  ],
+  "intention_node_id": 0,
+  "intention_owner": "",
+  "last_advanced": 40,
+  "scene_id": "konosuba",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": 40
+}

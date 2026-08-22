@@ -96,7 +96,8 @@ json canonical_state(const Story& story) {
     value["scene_id"] = scene->scene_id;
     value["title"] = scene->title;
     value["turn_index"] = scene->turn_index;
-    value["world_graph"] = story.world().graph().to_json();
+    value["state_version"] = story.state_version();
+    value["world_graph"] = story.observations().to_json();
     value["characters"] = story.world().characters();
     value["history"] = scene->history;
     value["dialogue"] = scene->dialogue;
@@ -198,10 +199,12 @@ TEST_CASE("story: fork shares World without coupling SceneData to it",
     REQUIRE(story.world().find_in_scene("golden", "Alice") == nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
 
+    World detached = story.world_snapshot();
     Node node;
     node.fact = "A second gate appears";
-    story.world().graph().add_node(std::move(node));
-    REQUIRE(story.world().graph().size() == 3);
+    detached.graph().add_node(std::move(node));
+    REQUIRE(detached.graph().size() == 3);
+    REQUIRE(story.observations().size() == 2);
 }
 
 TEST_CASE("story: owns stable storyline records", "[substrate][story]") {
@@ -401,7 +404,7 @@ TEST_CASE("story: conclusion expires its intention and persists a compact closur
             manifest["scene_closures"]);
 }
 
-TEST_CASE("story: staleness tracks beats", "[substrate][story]") {
+TEST_CASE("story: staleness tracks turns", "[substrate][story]") {
     Story story = build_fixture();
     story.fork_scene("golden", "hunt", {"Bob"}, "Hunt");
     story.note_advanced("golden");
@@ -436,7 +439,7 @@ TEST_CASE("story: save/reload preserves scene collection", "[substrate][story]")
 TEST_CASE("substrate: fixture retains deterministic shape", "[substrate][golden]") {
     Story story = build_fixture();
     REQUIRE(story.world().characters().size() == 3);
-    REQUIRE(story.world().graph().size() == 2);
+    REQUIRE(story.observations().size() == 2);
     int alice_perceptions = 0;
     story.world().character_memories().at("Alice").beliefs().for_each(
         [&](const Node& node) { if (node.type == "perception") ++alice_perceptions; }, false);

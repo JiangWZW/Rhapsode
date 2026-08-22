@@ -151,6 +151,12 @@ void World::clear_scene_membership(const std::string& scene_id) {
 }
 
 void World::set_character_memory(CharacterMemory memory) {
+    if (const Character* character = find_character(memory.name())) {
+        const std::string core_seed =
+            !str::trim(character->core).empty() ? character->core
+                                                 : character->description;
+        memory.ensure_bootstrap(core_seed);
+    }
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
@@ -224,7 +230,7 @@ void World::route_perceptions(const std::string& scene_id,
 
 void World::update_monologues(const std::string& scene_id,
                               int turn,
-                              const std::string& beat_stimulus,
+                              const std::string& turn_stimulus,
                               const LLMCallback& llm_callback) {
     for (const auto& character : characters_) {
         if (character.is_player || character.dead ||
@@ -237,7 +243,7 @@ void World::update_monologues(const std::string& scene_id,
             turn,
             !str::trim(character.core).empty() ? character.core
                                                : character.description,
-            beat_stimulus, llm_callback);
+            turn_stimulus, llm_callback);
     }
 }
 
@@ -260,6 +266,7 @@ bool World::mark_character_dead(const std::string& name) {
 
 nlohmann::json World::to_json() const {
     nlohmann::json j;
+    j["state_version"]  = state_version_;
     j["world_graph"]    = world_graph_.to_json();
     j["characters"]     = characters_;
 
@@ -272,6 +279,7 @@ nlohmann::json World::to_json() const {
 
 World World::from_json(const nlohmann::json& j) {
     World w;
+    w.state_version_ = j.value("state_version", std::uint64_t{0});
     if (j.contains("world_graph")) {
         w.world_graph_ = WorldGraph::from_json(j.at("world_graph"));
     } else if (j.contains("node_pool")) {

@@ -1,94 +1,150 @@
 ---
-title: System overview
-last_updated: 2026-07-21
+title: Current executable system baseline
+last_updated: 2026-08-22
 confidence: verified
 tier: semantic
 sources:
+  - CMakeLists.txt
+  - core/CMakeLists.txt
   - core/include/rhapsode/story.h
-  - core/include/rhapsode/turn_executor.h
-  - core/include/rhapsode/world.h
+  - core/include/rhapsode/story_data.h
+  - core/include/rhapsode/turn_pipeline.h
+  - core/src/story.cpp
+  - core/src/story_advance.cpp
+  - core/src/turn_pipeline.cpp
+  - core/src/turn_pipeline_narrator.cpp
+  - core/src/turn_pipeline_post_turn.cpp
+  - bindings/bind_story.cpp
   - server/rhapsode/session.py
-  - server/rhapsode/app.py
-  - frontend/src
+  - server/rhapsode/llm_tools.py
+  - frontend/src/stores/websocket.ts
 related:
-  - "[[concepts/narrative-philosophy]]"
   - "[[architecture/cpp-data-model]]"
   - "[[architecture/scene-loop]]"
-  - "[[architecture/plot-graph]]"
   - "[[architecture/memory-system]]"
   - "[[architecture/python-server]]"
+  - "[[architecture/pragmatic-turn-transaction-refactor]]"
 tags:
+  - cpp-core
+  - python-server
+  - vue-frontend
   - cross-layer
 ---
 
-# System overview
+# Current executable system baseline
 
-Rhapsode is a local C++ narrative runtime wrapped by pybind11, a FastAPI WebSocket server, and a Vue
-frontend. The native Story aggregate is the authoritative playthrough state and use-case boundary.
+Rhapsode is a C++17 narrative runtime exposed through pybind11, hosted by a FastAPI WebSocket
+session, and displayed by a Vue client. One native `Story` owns one playthrough. Its core dependency
+shape has one public façade, two owned aggregates, and one turn function.
+
+## Dependency shape
 
 ```mermaid
-flowchart TD
-    UI["Vue frontend"] <-->|WebSocket| API["FastAPI session"]
-    API -->|owns/configures| Story
-    API --> LLM["LLM and Chroma adapters"]
-    Story --> World
-    Story --> Scenes["SceneData records"]
-    Story --> Director
-    Story --> Weaver
-    Story --> Executor["TurnExecutor"]
-    Executor -.->|call-scoped callbacks| LLM
-    World --> Graph["WorldGraph"]
-    World --> Minds["CharacterMemory"]
+flowchart LR
+    UI["Vue client"] <-->|"WebSocket JSON"| Session["Python WsSession"]
+    Session -->|"owns through pybind11"| Story["Story"]
+    Story -->|"owns"| Data["StoryData"]
+    Story -->|"owns"| Services["TurnServices"]
+    Story -->|"calls"| Execute["execute_turn"]
+    Execute -.->|"borrows"| Data
+    Execute -.->|"borrows"| Services
+    Data --> World["World: roster + character state"]
+    Data --> Scenes["SceneData records"]
+    Data --> Graph["WorldGraph observations"]
+    Services --> Weaver["Weaver"]
+    Services --> Memory["MemorySystem"]
+    Execute --> GraphPlan["apply_graph_plan"]
 ```
 
-## Native runtime
+`Story` is the API and composition root. `StoryData` contains playthrough data. `TurnServices`
+contains callbacks, configuration, and the stateful services used by turn operations.
+`execute_turn(StoryData&, TurnServices&, TurnInput)` handles both player and autonomous narrative
+turns.
 
-- Story owns World, SceneData records, Director, Weaver, and TurnExecutor.
-- World owns objective graph state, roster/membership, and character minds.
-- SceneData stores behavior-free per-storyline values.
-- TurnExecutor executes one synchronous transaction and returns generic effects.
-- Free-function modules implement policy, queries, scenario bootstrap, history, and downsampling.
+The C++ core has no `TurnExecutor` class and no `Director` class. Python still exports historical
+`Director(graph)` and `Weaver(graph)` objects for compatibility; their binding-only wrappers are not
+used by `Story`.
 
-See [[architecture/cpp-data-model]] and [[architecture/scene-loop]].
+## Turn and maintenance boundaries
 
-## Turn flow
+`Story::advance_player` invokes one `execute_turn` transaction. The function copies the current
+`World` and active `SceneData`, appends the exact input to the candidate scene, calls the narrator,
+stages output, checks `StoryData::transaction_version`, and commits the candidate World and scene.
 
-1. The WebSocket endpoint receives player text and calls `Story.advance_player()` off the asyncio
-   event loop, then streams those SceneMessages so the client can read while post-turn runs.
-2. Story executes the active player beat through TurnExecutor (narrator through expiry rebuild).
-3. The narrator may use graph, mind, history, and storyline read tools through a call-scoped
-   function.
-4. `Story.complete_turn()` runs post-turn (weave / expiry / reflection / downsample), then
-   validates and applies a lifecycle decision.
-5. The scheduler may select off-stage storylines; Story executes them through the same beat+finish
-   boundary.
-6. Story synchronizes external semantic memory and persists the complete aggregate when configured.
-7. Any additional merge/off-stage SceneMessages stream after `complete_turn`; status returns to
-   `idle` only then.
+`Story::complete_turn` performs work that is deliberately outside that transaction:
 
-## Graph and minds
+- graph weaving and expiry;
+- character monologue updates;
+- text downsampling;
+- lifecycle decisions;
+- selected autonomous scene turns;
+- saving.
 
-WorldGraph is the objective fact/relationship graph. Director applies the narrator's structured plan
-to it. Weaver periodically repairs and expires graph relationships.
+The split lets the server deliver the player-turn output before slower maintenance. It also means a
+successful `advance_player` is not rolled back when later maintenance or saving fails.
 
-Each non-player CharacterMemory owns a subjective WorldGraph. Routed perception and reflection
-populate it.
+## State and authority
 
-External MemorySystem/Chroma storage is an adapter owned at the Story/session boundary; World does
-not depend on it.
+| Data | Owner | Authority |
+|---|---|---|
+| Roster, membership, life status, character minds | `StoryData::world` | Coded state changed through World/Story operations |
+| Scene transcript and scheduling state | `StoryData::scenes` | Committed playthrough record |
+| Active scene, closures, turn clock | `StoryData` | Story lifecycle state |
+| Observation nodes and edges | `StoryData::observations` | Fallible semantic state; no direct mechanical authority |
+| Callbacks, Weaver queue, timing, resume state | `TurnServices` | Runtime service state, not story evidence |
+| `ActorProposal` and `TurnDecision` | `TurnResult::legacy_shadow` | Diagnostic only |
 
-## Engineering constraints
+The observation graph is physically separate from the live `World`. A standalone `World` still has a
+graph slot and `state_version` field so old saves and the historical Python `World` API remain
+compatible. `import_world` extracts those compatibility fields into `StoryData`; `snapshot_world`
+reattaches them only when saving or returning a detached Python snapshot.
 
-- one composition owner, no native manager hierarchy;
-- no internal asynchronous state or immediately joined background task;
-- rollback on foreground turn failure;
-- non-fatal post-turn maintenance failures;
-- durable JSON schema preserved across the architectural refactor;
-- Python cannot rewrite invariant-bearing SceneData or World containers;
-- no persistent Python callback captures of Story.
+## Read boundary
 
-## Future design
+Every model tool callback receives a `ReadToolLease` over a copied snapshot of World, observations,
+all live scenes, and scene summaries. The lease expires after the call. A retained callback cannot
+read future live state.
 
-Research pages describe richer graph triggers, companion cognition, and narrative planning. Those
-ideas are not part of the current runtime ownership model unless their pages explicitly say they are
-implemented.
+The native dispatcher supports graph, mind, history, attributed transcript, and scene-list queries.
+The production narrator schema currently advertises graph, mind, history, and scene-list queries;
+`query_transcript` remains a tested but unadvertised path.
+
+## Graph observations
+
+After the turn commit, a separate model call extracts graph transitions and new nodes.
+`apply_graph_plan` is a stateless function over an explicit `WorldGraph&`.
+
+Successful nodes may seed character perceptions. Extraction failure restores the committed World,
+scene, and prior observations while preserving the committed transcript.
+
+This boundary prevents graph output from directly killing a character or rewriting the committed
+turn. It does not prove the graph harmless: retrieval, perceptions, and later generation can still be
+biased by an incorrect observation.
+
+## Compatibility surface
+
+- Python still calls `Story.advance_player()` and `Story.complete_turn()`.
+- Python scene and World access returns detached values; it cannot mutate the live `StoryData`.
+- Old saves still store graph and version fields inside `world.json` and load through the compatibility
+  conversion.
+- `beat_clock` and a few persisted or diagnostic “beat” names remain compatibility aliases. New core
+  execution code uses “turn.”
+
+## Limitations
+
+- The narrator still authors prose, character dialogue, and live cast suggestions in one response.
+- `ActorProposal` and `TurnDecision` adapt that response after generation; characters do not yet own
+  their final lines.
+- Consequences are not declared before prose.
+- The transaction version covers committed turn/lifecycle mutations, not every derived graph,
+  summary, or service update.
+- `complete_turn` and multi-file saves have no all-or-nothing checkpoint.
+- Native tests establish mechanical behavior and containment, not 100- or 300-turn narrative
+  reliability.
+
+## See also
+
+- [[architecture/scene-loop]]
+- [[architecture/cpp-data-model]]
+- [[architecture/pragmatic-turn-transaction-refactor]]
+- [[architecture/python-server]]

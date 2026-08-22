@@ -283,7 +283,26 @@ GraphAnalysis analyze(const WorldGraph& graph) {
 // Weaver
 // ---------------------------------------------------------------------------
 
-Weaver::Weaver(WorldGraph& graph) : graph_(graph) {}
+Weaver::Weaver(Weaver&& other) noexcept
+    : llm_cb_(std::move(other.llm_cb_)),
+      interval_(other.interval_),
+      active_(other.active_),
+      rng_(std::move(other.rng_)),
+      expiry_stop_(other.expiry_stop_.load(std::memory_order_relaxed)),
+      expiry_queue_(std::move(other.expiry_queue_)) {}
+
+Weaver& Weaver::operator=(Weaver&& other) noexcept {
+    if (this == &other) return *this;
+    llm_cb_ = std::move(other.llm_cb_);
+    interval_ = other.interval_;
+    active_ = other.active_;
+    rng_ = std::move(other.rng_);
+    expiry_stop_.store(
+        other.expiry_stop_.load(std::memory_order_relaxed),
+        std::memory_order_relaxed);
+    expiry_queue_ = std::move(other.expiry_queue_);
+    return *this;
+}
 
 void Weaver::set_llm_callback(LLMCallback cb) {
     llm_cb_ = std::move(cb);
@@ -303,27 +322,29 @@ bool Weaver::should_weave(int turn_index) const {
 // Prompt builder
 // ---------------------------------------------------------------------------
 
-std::string Weaver::build_prompt(const std::string& scene_context) const {
-    auto sel = sample_degree_biased_subgraph(graph_, rng_);
+std::string Weaver::build_prompt(
+    const WorldGraph& graph, const std::string& scene_context) const {
+    auto sel = sample_degree_biased_subgraph(graph, rng_);
 
     // -- Debug log --
     log() << "  [weave] subgraph: " << sel.nodes.size() << "/"
-          << graph_.all_nodes(false).size() << " nodes\n";
+          << graph.all_nodes(false).size() << " nodes\n";
     log() << "  [weave] selected:";
     for (const auto& n : sel.nodes) {
-        int d = graph_.active_degree(n.id);
+        int d = graph.active_degree(n.id);
         log() << " " << n.id << "(d" << d << ")";
     }
     log() << "\n";
 
-    return assemble_weave_prompt(graph_, sel, scene_context);
+    return assemble_weave_prompt(graph, sel, scene_context);
 }
 
 // ---------------------------------------------------------------------------
 // Parse LLM response and apply mutations
 // ---------------------------------------------------------------------------
 
-WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
+WeaveResult Weaver::parse_and_apply(WorldGraph& graph,
+                                    const std::string& llm_response,
                                     int turn_index) {
     WeaveResult result;
     auto j = try_parse_json(llm_response);
@@ -355,12 +376,12 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
           << reweight_ops.size() << " reweight\n";
 
     apply_connections(
-        graph_, std::move(connect_ops), turn_index, result.connected);
+        graph, std::move(connect_ops), turn_index, result.connected);
     apply_disconnections(
-        graph_, std::move(disconnect_ops), result.disconnected);
-    apply_reweights(graph_, std::move(reweight_ops), result.reweighted);
+        graph, std::move(disconnect_ops), result.disconnected);
+    apply_reweights(graph, std::move(reweight_ops), result.reweighted);
 
-    result.analysis = analyze(graph_);
+    result.analysis = analyze(graph);
 
     log() << "  [weave] after: "
           << result.analysis.live_node_count << " nodes, "
@@ -374,12 +395,14 @@ WeaveResult Weaver::parse_and_apply(const std::string& llm_response,
 // Main entry points
 // ---------------------------------------------------------------------------
 
-WeaveResult Weaver::weave(int turn_index, const std::string& scene_context) {
-    return weave_impl(turn_index, scene_context);
+WeaveResult Weaver::weave(
+    WorldGraph& graph, int turn_index, const std::string& scene_context) {
+    return weave_impl(graph, turn_index, scene_context);
 }
 
-WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context) {
-    GraphAnalysis pre = analyze(graph_);
+WeaveResult Weaver::weave_impl(
+    WorldGraph& graph, int turn_index, const std::string& scene_context) {
+    GraphAnalysis pre = analyze(graph);
 
     if (pre.live_node_count < 2) {
         return empty_weave_result(pre);
@@ -396,7 +419,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context)
           << pre.active_edge_count << " active edges, "
           << pre.orphan_count << " orphans\n";
 
-    auto prompt = build_prompt(scene_context);
+    auto prompt = build_prompt(graph, scene_context);
     log() << "  [weave] prompt_fnv=" << hex_u64(fnv1a64(prompt))
           << " prompt_chars=" << prompt.size()
           << " — calling LLM...\n"
@@ -433,7 +456,7 @@ WeaveResult Weaver::weave_impl(int turn_index, const std::string& scene_context)
               << std::flush;
     }
 
-    auto result = parse_and_apply(response, turn_index);
+    auto result = parse_and_apply(graph, response, turn_index);
 
     std::ostringstream summary;
     summary << "response_chars=" << response.size()

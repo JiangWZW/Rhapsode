@@ -105,12 +105,12 @@ std::string build_monologue_prompt(
     const CharacterCore& core,
     const std::vector<MonologueStream>& streams,
     const std::string& description,
-    const std::string& beat_stimulus,
+    const std::string& turn_stimulus,
     const std::vector<Perception>& perceptions,
     const std::string& prior_beliefs) {
     std::ostringstream os;
     os <<
-        "You are the actor for ONE character after a public story beat (a \"take\").\n"
+        "You are the actor for ONE character after a public story turn (a \"take\").\n"
         "The narrator already wrote the stage action and spoken lines. You do not.\n"
         "You hold continuity and, when needed, improvise private subtext.\n\n"
         "Layers:\n"
@@ -149,7 +149,7 @@ std::string build_monologue_prompt(
     if (!prior_beliefs.empty())
         os << "\nPrior factual beliefs (compact):\n" << prior_beliefs << "\n";
     os << "\nThis take (given circumstances):\n"
-       << (beat_stimulus.empty() ? "(none)" : beat_stimulus) << "\n";
+       << (turn_stimulus.empty() ? "(none)" : turn_stimulus) << "\n";
     if (!perceptions.empty()) {
         os << "\nRouted perceptions (stimulus only — commit via knows if lasting):\n";
         for (const auto& perception : perceptions)
@@ -273,7 +273,7 @@ nlohmann::json CharacterMemory::render_mind_query(
 void CharacterMemory::update_monologues(
     int turn,
     const std::string& description,
-    const std::string& beat_stimulus,
+    const std::string& turn_stimulus,
     const LLMCallback& llm_callback) {
     ensure_bootstrap(description);
     if (!llm_callback) {
@@ -285,7 +285,7 @@ void CharacterMemory::update_monologues(
     auto perceptions = gather_active_perceptions(beliefs_);
     const std::string prior = truncate_utf8(render_thoughts({}), 800);
     const std::string prompt = build_monologue_prompt(
-        character_name_, core_, streams_, description, beat_stimulus,
+        character_name_, core_, streams_, description, turn_stimulus,
         perceptions, prior);
 
     std::string raw;

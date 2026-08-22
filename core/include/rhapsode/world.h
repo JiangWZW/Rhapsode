@@ -1,6 +1,8 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "rhapsode/character.h"
@@ -10,9 +12,9 @@
 
 namespace rhapsode {
 
-// The durable substrate for one Story: objective graph, character minds, roster,
-// and membership. World knows scene identity only as string ids carried by the
-// roster; it does not own or reference the Story's per-scene records.
+// Mechanical and character state. Standalone World values retain graph and
+// version fields for save and Python compatibility; live StoryData stores its
+// observation graph and transaction version separately.
 class World {
 public:
     WorldGraph& graph() { return world_graph_; }
@@ -21,6 +23,15 @@ public:
     const std::unordered_map<std::string, CharacterMemory>& character_memories() const {
         return character_memories_;
     }
+    std::uint64_t state_version() const { return state_version_; }
+    std::uint64_t advance_state_version() { return ++state_version_; }
+    void set_state_version(std::uint64_t version) { state_version_ = version; }
+    WorldGraph take_graph() {
+        WorldGraph graph = std::move(world_graph_);
+        world_graph_ = {};
+        return graph;
+    }
+    void set_graph(WorldGraph graph) { world_graph_ = std::move(graph); }
 
     // -- Roster --
     const Character* find_character(const std::string& name) const;
@@ -52,7 +63,7 @@ public:
     /// On-stage monologue updater (streams + optional knows[]). Replaces reflect LLM.
     void update_monologues(const std::string& scene_id,
                            int turn,
-                           const std::string& beat_stimulus,
+                           const std::string& turn_stimulus,
                            const LLMCallback& llm_callback);
     /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
@@ -69,6 +80,7 @@ private:
     WorldGraph world_graph_;
     std::unordered_map<std::string, CharacterMemory> character_memories_;
     std::vector<Character> characters_;  // membership via Character::scene_ids
+    std::uint64_t state_version_ = 0;
 };
 
 } // namespace rhapsode

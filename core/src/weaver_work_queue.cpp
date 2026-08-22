@@ -16,9 +16,10 @@ namespace rhapsode {
 // ---------------------------------------------------------------------------
 
 void Weaver::rebuild_expiry_queue(
+        const WorldGraph& graph,
         const std::vector<std::string>& priority_entities) {
     expiry_queue_.clear();
-    auto groups = graph_.entity_groups();
+    auto groups = graph.entity_groups();
 
     std::set<std::string> priority_keys;
     for (const auto& entity : priority_entities) {
@@ -52,7 +53,8 @@ void Weaver::rebuild_expiry_queue(
               << priority_groups.size() << " priority\n";
 }
 
-std::vector<ExpiryOp> Weaver::drain_expiry_queue(int turn_index) {
+std::vector<ExpiryOp> Weaver::drain_expiry_queue(
+    WorldGraph& graph, int turn_index) {
     expiry_stop_.store(false, std::memory_order_relaxed);
     std::vector<ExpiryOp> all;
 
@@ -63,13 +65,13 @@ std::vector<ExpiryOp> Weaver::drain_expiry_queue(int turn_index) {
 
         std::vector<const Node*> live_nodes;
         for (const auto node_id : node_ids) {
-            const Node* node = graph_.get_node(node_id);
+            const Node* node = graph.get_node(node_id);
             if (node && node->valid_until == -1)
                 live_nodes.push_back(node);
         }
         if (live_nodes.size() < 2) continue;
 
-        auto expired = check_group(std::move(live_nodes), turn_index);
+        auto expired = check_group(graph, std::move(live_nodes), turn_index);
         all.insert(all.end(),
                    std::make_move_iterator(expired.begin()),
                    std::make_move_iterator(expired.end()));
@@ -86,7 +88,7 @@ bool Weaver::expiry_queue_empty() const {
 }
 
 std::vector<ExpiryOp> Weaver::check_group(
-    std::vector<const Node*> live_nodes, int turn_index) {
+    WorldGraph& graph, std::vector<const Node*> live_nodes, int turn_index) {
     std::sort(live_nodes.begin(), live_nodes.end(),
               [](const Node* a, const Node* b) {
                   return a->created_at > b->created_at;
@@ -141,7 +143,7 @@ std::vector<ExpiryOp> Weaver::check_group(
             const auto by_id =
                 json_number<std::uint64_t>(element, "by", 0);
             if (by_id != 0) {
-                const Node* by_node = graph_.get_node(by_id);
+                const Node* by_node = graph.get_node(by_id);
                 if (by_node) valid_until = by_node->created_at;
             }
         } else if (element.is_number_integer()) {
@@ -149,7 +151,7 @@ std::vector<ExpiryOp> Weaver::check_group(
         }
 
         if (old_id == 0 || !valid_ids.count(old_id)) continue;
-        if (graph_.set_valid_until(old_id, valid_until))
+        if (graph.set_valid_until(old_id, valid_until))
             expired.push_back({old_id, reason});
     }
 

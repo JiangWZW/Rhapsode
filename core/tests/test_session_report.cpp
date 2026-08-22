@@ -76,7 +76,7 @@ TEST_CASE("SessionReport narrative detects empty beats and cast gaps",
     scene.system_prompt = "Narrate.";
     scene.history = {
         {Role::User, "I enter.", "", {}},
-        {Role::Assistant, "Hi", "", {}},  // empty-ish beat
+        {Role::Assistant, "Hi", "", {}},  // empty-ish turn
         {Role::User, "I speak to the barkeep.", "", {}},
         {Role::Assistant,
          "The tavern is quiet and the fire crackles while rain drums the roof "

@@ -497,3 +497,7 @@ T270–300 "This table over the world"; debt still open; every promise deferred
 The quest was never played; the debt was never resolved (explicitly not written off at T124; the
 season wager's deadline "first frost" is beyond turn 300); five breakfasts, one spa day, one lake
 date, four stanzas, and a weekly candle remain outstanding.
+
+## See Also
+
+- [[research/frontier-llm-long-horizon-orchestration]]

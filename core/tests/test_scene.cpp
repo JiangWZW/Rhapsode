@@ -10,13 +10,15 @@
 
 #include "rhapsode/character.h"
 #include "rhapsode/character_memory.h"
+#include "rhapsode/graph_plan.h"
 #include "rhapsode/narrator_prompt.h"
 #include "rhapsode/node.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_history.h"
-#include "rhapsode/turn_executor.h"
+#include "rhapsode/turn_pipeline.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/story.h"
+#include "rhapsode/story_data_ops.h"
 #include "rhapsode/text_downsampling.h"
 #include "rhapsode/weaver.h"
 #include "rhapsode/world.h"
@@ -52,9 +54,42 @@ NarratorLLMCallback with_unused_read_tools(TestNarratorCallback narrator) {
     };
 }
 
-void configure_executor(TurnExecutor& executor, TestNarratorCallback narrator) {
-    executor.set_llm_callback([](const std::string&) { return std::string{"fallback"}; });
-    executor.set_narrator_llm_callback(with_unused_read_tools(std::move(narrator)));
+void configure_runtime(TurnServices& services, TestNarratorCallback narrator) {
+    services.llm = [](const std::string&) { return std::string{"fallback"}; };
+    services.narrator = with_unused_read_tools(std::move(narrator));
+}
+
+TurnResult execute_test_turn(
+    World& world, TurnServices& services, SceneData& scene,
+    const std::string& text,
+    TurnInput::Kind kind = TurnInput::Kind::Player) {
+    StoryData data;
+    import_world(data, world);
+    data.active_scene_id = scene.scene_id;
+    adopt_scene(data, scene);
+    try {
+        TurnResult result = execute_turn(
+            data, services, {kind, scene.scene_id, text});
+        world = snapshot_world(data);
+        scene = std::move(*data.scenes.front());
+        return result;
+    } catch (...) {
+        world = snapshot_world(data);
+        scene = std::move(*data.scenes.front());
+        throw;
+    }
+}
+
+std::vector<Node> process_test_post_turn(
+    World& world, TurnServices& services, SceneData& scene, int turn) {
+    StoryData data;
+    import_world(data, world);
+    data.active_scene_id = scene.scene_id;
+    adopt_scene(data, scene);
+    auto expired = process_post_turn(data, services, scene.scene_id, turn);
+    world = snapshot_world(data);
+    scene = std::move(*data.scenes.front());
+    return expired;
 }
 
 void configure_story(Story& story, TestNarratorCallback narrator) {
@@ -122,25 +157,23 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
 
 TEST_CASE("Narrator instructions remain byte-identical across the refactor",
           "[narrator_prompt][characterization]") {
-    const std::string beat = build_narrator_instructions();
-    REQUIRE(beat.size() == 3170);
-    REQUIRE(prompt_hash(beat) == 0xdd97b2e1a1689252ULL);
+    const std::string turn = build_narrator_instructions();
+    REQUIRE(turn.size() == 3212);
+    REQUIRE(prompt_hash(turn) == 0xb43a38bb0973478aULL);
 
     const std::string graph = build_narrator_graph_instructions();
     REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
     REQUIRE(graph.size() == 1628);
-    REQUIRE(prompt_hash(graph) == 0xe345b641887160dbULL);
+    REQUIRE(prompt_hash(graph) == 0x476ab2e0bc632df9ULL);
 }
 
-TEST_CASE("TurnExecutor merges Phase B graph ops into the beat plan",
-          "[turn_executor][narrator][two_phase]") {
+TEST_CASE("Turn pipeline merges Phase B graph ops into the turn plan",
+          "[turn_pipeline][narrator][two_phase]") {
     World world;
     SceneData scene = basic_scene();
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
+    TurnServices runtime;
     int calls = 0;
-    configure_executor(executor,
+    configure_runtime(runtime,
         [&](const std::string&, const std::string& instructions, const std::string&) {
             ++calls;
             if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
@@ -155,7 +188,8 @@ TEST_CASE("TurnExecutor merges Phase B graph ops into the beat plan",
                 R"({"speech_turns":[],"new_characters":[],"active_cast":[],"transitions":[],"new_nodes":[]})");
         });
 
-    const TurnResult result = executor.run_player_turn(scene, "Listen.");
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Listen.");
     REQUIRE(calls == 2);
     REQUIRE(result.outputs.front().content == "Wind catches the gate.");
     REQUIRE(world.graph().size() == 1);
@@ -329,7 +363,7 @@ TEST_CASE("New World memories accept call-scoped monologue configuration",
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.update_monologues("root", 2, "Beat", monologue);
+    world.update_monologues("root", 2, "Turn", monologue);
     REQUIRE(calls == 1);
 }
 
@@ -347,8 +381,24 @@ TEST_CASE("Loaded World memories accept call-scoped monologue configuration",
     perceived.fact = "The ridge is empty";
     perceived.entities = {"Ridge"};
     world.route_perceptions("root", {perceived}, 1);
-    world.update_monologues("root", 2, "Beat", monologue);
+    world.update_monologues("root", 2, "Turn", monologue);
     REQUIRE(calls == 1);
+}
+
+TEST_CASE("World state version defaults for old saves and round-trips",
+          "[world][version][persistence]") {
+    json old_save = World{}.to_json();
+    old_save.erase("state_version");
+    World restored_old = World::from_json(old_save);
+    REQUIRE(restored_old.state_version() == 0);
+    REQUIRE(restored_old.advance_state_version() == 1);
+
+    World current;
+    REQUIRE(current.advance_state_version() == 1);
+    REQUIRE(current.advance_state_version() == 2);
+    World restored_current = World::from_json(current.to_json());
+    REQUIRE(restored_current.state_version() == 2);
+    REQUIRE(restored_current.advance_state_version() == 3);
 }
 
 TEST_CASE("Perceptions respect private and public audiences", "[world][memory]") {
@@ -375,39 +425,35 @@ TEST_CASE("Perceptions respect private and public audiences", "[world][memory]")
     REQUIRE(count("Bob") == 1);
 }
 
-TEST_CASE("TurnExecutor rejects graph-mismatched injected services",
-          "[turn_executor][ownership]") {
-    World world;
-    WorldGraph other;
-    Director wrong_director(other);
-    Director director(world.graph());
-    Weaver wrong_weaver(other);
-    Weaver weaver(world.graph());
-    REQUIRE_THROWS_AS(TurnExecutor(world, wrong_director, weaver),
-                      std::invalid_argument);
-    REQUIRE_THROWS_AS(TurnExecutor(world, director, wrong_weaver),
-                      std::invalid_argument);
+TEST_CASE("Turn services retain no graph identity",
+          "[turn_pipeline][ownership]") {
+    Weaver weaver;
+    WorldGraph first;
+    WorldGraph second;
+    weaver.set_interval(1);
+    REQUIRE(weaver.should_weave(0));
+    REQUIRE(weaver.weave(first, 0).analysis.live_node_count == 0);
+    REQUIRE(weaver.weave(second, 0).analysis.live_node_count == 0);
 }
 
 TEST_CASE("Weaver activation preserves optional runtime semantics",
           "[weaver][ownership]") {
     WorldGraph graph;
-    Weaver weaver(graph);
+    Weaver weaver;
     REQUIRE_FALSE(weaver.active());
     weaver.set_interval(3);
     REQUIRE(weaver.active());
 }
 
-TEST_CASE("TurnExecutor returns associated generic turn effects",
-          "[turn_executor][result][post_turn]") {
+TEST_CASE("Turn pipeline returns associated generic turn effects",
+          "[turn_pipeline][result][post_turn]") {
     World world;
     SceneData scene = basic_scene("root");
     const auto old_id = add_fact(world.graph(), "The gate is closed", "Gate", 1);
     const auto new_id = add_fact(world.graph(), "The gate is open", "Gate", 5);
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [](const std::string&, const std::string&, const std::string&) {
+    TurnServices runtime;
+    Weaver& weaver = runtime.weaver;
+    configure_runtime(runtime, [](const std::string&, const std::string&, const std::string&) {
         return response("The gate groans.",
             R"({"transitions":[],"new_nodes":[{"fact":"Wind crosses the gate","entities":["Gate"]}],"speech_turns":[],"new_characters":[],"active_cast":[]})");
     });
@@ -423,14 +469,16 @@ TEST_CASE("TurnExecutor returns associated generic turn effects",
             R"(,"weight":0.8,"reason":"state"}],"disconnect":[],"reweight":[]})";
     });
 
-    const TurnResult result = executor.run_player_turn(scene, "Look.");
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Look.");
     REQUIRE(result.scene_id == "root");
     REQUIRE(result.completed_turn == 1);
     REQUIRE(result.post_turn_index >= 0);
     REQUIRE(result.effects.created_nodes.size() == 1);
     REQUIRE(result.effects.expired_nodes.empty());
 
-    const auto expired = executor.run_post_turn(scene, result.post_turn_index);
+    const auto expired = process_test_post_turn(
+        world, runtime, scene, result.post_turn_index);
     REQUIRE(expired.size() == 1);
     REQUIRE(expired.front().id == old_id);
     const auto edges = world.graph().all_edges();
@@ -440,116 +488,303 @@ TEST_CASE("TurnExecutor returns associated generic turn effects",
     }));
 }
 
-TEST_CASE("TurnExecutor keeps narrator and dialogue histories separate", "[turn_executor]") {
+TEST_CASE("Turn pipeline keeps narrator and dialogue histories separate", "[turn_pipeline]") {
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Guard", "Alert", false});
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [](const std::string&, const std::string&, const std::string&) {
+    TurnServices runtime;
+    configure_runtime(runtime, [](const std::string&, const std::string&, const std::string&) {
         return response("The guard raises a hand.",
             R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"Stop.","action":"blocks the door"}],"new_characters":[],"active_cast":["Guard"]})");
     });
-    const auto result = executor.run_player_turn(scene, "Approach.");
+    const auto result = execute_test_turn(
+        world, runtime, scene, "Approach.");
     REQUIRE(result.outputs.size() == 2);
+    REQUIRE(result.base_state_version == 0);
+    REQUIRE(result.resulting_state_version == 1);
+    REQUIRE(world.state_version() == 1);
     REQUIRE(scene.history.size() == 2);
     REQUIRE(scene.dialogue.size() == 1);
     REQUIRE(scene.dialogue.front().content == "Stop. (blocks the door)");
+    REQUIRE(scene.history[0].metadata["scene_kind"] == "player");
+    REQUIRE(scene.history[0].metadata["turn"] == 0);
+    REQUIRE(scene.history[0].metadata["turn_ordinal"] == 0);
+    REQUIRE(scene.history[1].metadata["scene_kind"] == "narrator");
+    REQUIRE(scene.history[1].metadata["turn_ordinal"] == 1);
+    REQUIRE(scene.dialogue[0].metadata["speaker"] == "Guard");
+    REQUIRE(scene.dialogue[0].metadata["turn_ordinal"] == 2);
+    REQUIRE(scene.history[0].metadata["message_ref"] == "root:v1:player:0");
+    REQUIRE(scene.history[1].metadata["message_ref"] == "root:v1:narrator:1");
+    REQUIRE(scene.dialogue[0].metadata["message_ref"] ==
+            "root:v1:character:2");
+
+    const auto second = execute_test_turn(
+        world, runtime, scene, "Again.");
+    REQUIRE(second.base_state_version == 1);
+    REQUIRE(second.resulting_state_version == 2);
+    REQUIRE(world.state_version() == 2);
+    REQUIRE(scene.history[2].metadata["message_ref"] == "root:v2:player:0");
 }
 
-TEST_CASE("TurnExecutor active_cast adds presence without ejecting cast", "[turn_executor]") {
+TEST_CASE("Turn pipeline active_cast adds presence without ejecting cast", "[turn_pipeline]") {
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Alice", "A", false});
     world.enter_character("elsewhere", Character{"Bob", "B", false});
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [](const std::string&, const std::string&, const std::string&) {
+    TurnServices runtime;
+    configure_runtime(runtime, [](const std::string&, const std::string&, const std::string&) {
         return response("Bob arrives.",
             R"({"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Bob"]})");
     });
-    executor.run_player_turn(scene, "Wait.");
+    execute_test_turn(world, runtime, scene, "Wait.");
     REQUIRE(world.find_in_scene("root", "Alice") != nullptr);
     REQUIRE(world.find_in_scene("root", "Bob") != nullptr);
 }
 
-TEST_CASE("TurnExecutor retries invalid Player speech without leaking state",
-          "[turn_executor][transaction]") {
+TEST_CASE("Turn pipeline retries invalid Player speech without leaking state",
+          "[turn_pipeline][transaction]") {
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Guard", "Alert", false});
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
+    TurnServices runtime;
     int calls = 0;
-    configure_executor(executor, [&](const std::string&, const std::string&, const std::string&) {
+    configure_runtime(runtime, [&](const std::string&, const std::string&, const std::string&) {
         ++calls;
         if (calls == 1)
             return response("Wrong.",
                 R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Player","line":"No"}],"new_characters":[],"active_cast":["Guard"]})");
         return response("Corrected.");
     });
-    const auto result = executor.run_player_turn(scene, "Act.");
-    REQUIRE(calls == 3);  // beat fail + beat retry + graph
+    const auto result = execute_test_turn(
+        world, runtime, scene, "Act.");
+    REQUIRE(calls == 3);  // turn failure + turn retry + graph
     REQUIRE(result.outputs.front().content == "Corrected.");
     REQUIRE(scene.turn_index == 1);
 }
 
-TEST_CASE("TurnExecutor rolls back failed turns and can be reused",
-          "[turn_executor][transaction]") {
+TEST_CASE("Turn pipeline rolls back failed turns and can be reused",
+          "[turn_pipeline][transaction]") {
     World world;
     SceneData scene = basic_scene();
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor,
+    TurnServices runtime;
+    configure_runtime(runtime,
         [](const std::string&, const std::string&, const std::string&) -> std::string {
             throw std::runtime_error("narrator unavailable");
         });
-    REQUIRE_THROWS_AS(executor.run_player_turn(scene, "Act."), std::runtime_error);
+    REQUIRE_THROWS_AS(
+        execute_test_turn(world, runtime, scene, "Act."),
+        std::runtime_error);
     REQUIRE(scene.turn_index == 0);
     REQUIRE(scene.history.size() == 0);
     REQUIRE(world.graph().size() == 0);
 
-    executor.set_narrator_llm_callback(
+    runtime.narrator =
         [](const std::string&, const std::string&, const std::string&,
-           const ReadToolCallback&) {
-            return response("Recovered.");
-        });
-    REQUIRE(executor.run_player_turn(scene, "Again.").outputs.front().content == "Recovered.");
+           const ReadToolCallback&) { return response("Recovered."); };
+    REQUIRE(execute_test_turn(
+        world, runtime, scene, "Again.")
+        .outputs.front().content == "Recovered.");
 }
 
-TEST_CASE("TurnExecutor autonomous turns remain associated with their SceneData",
-          "[turn_executor][result]") {
+TEST_CASE("Failed turns publish no staged output callbacks",
+          "[turn_pipeline][transaction][delivery]") {
+    World world;
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    runtime.llm =
+        [](const std::string&) { return std::string{"fallback"}; };
+    runtime.narrator =
+        [&](const std::string&, const std::string& instructions,
+            const std::string&, const ReadToolCallback&) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                return response("", R"({"transitions":[],"new_nodes":[]})");
+            }
+            world.advance_state_version();
+            throw std::runtime_error("concurrent mutation");
+        };
+    int delivered = 0;
+    runtime.turn_complete = [&](const SceneMessage&) { ++delivered; };
+
+    REQUIRE_THROWS_AS(
+    execute_test_turn(
+            world, runtime, scene, "Approach."),
+        std::runtime_error);
+    REQUIRE(delivered == 0);
+    REQUIRE(scene.history.empty());
+    REQUIRE(scene.dialogue.empty());
+    REQUIRE(world.state_version() == 0);
+}
+
+TEST_CASE("Graph observation failure cannot roll back a committed turn",
+          "[turn_pipeline][transaction][observation]") {
+    World world;
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    std::vector<std::string> events;
+    runtime.llm = [](const std::string&) { return std::string{"fallback"}; };
+    runtime.narrator =
+        [&](const std::string&, const std::string& instructions,
+            const std::string&, const ReadToolCallback&) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                events.push_back("observe");
+                throw std::runtime_error("extractor unavailable");
+            }
+            events.push_back("narrate");
+            return response("The gate opens.");
+        };
+    runtime.turn_complete =
+        [&](const SceneMessage&) { events.push_back("deliver"); };
+
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Open it.");
+
+    REQUIRE(events == std::vector<std::string>{
+        "narrate", "deliver", "observe"});
+    REQUIRE(result.outputs.front().content == "The gate opens.");
+    REQUIRE(result.effects.created_nodes.empty());
+    REQUIRE(world.state_version() == 1);
+    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.history.size() == 2);
+}
+
+TEST_CASE("Graph observations cannot mark a character dead",
+          "[turn_pipeline][observation][authority]") {
+    World world;
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    int fallback_calls = 0;
+    runtime.llm = [&](const std::string&) {
+        ++fallback_calls;
+        return std::string{"yes"};
+    };
+    runtime.narrator =
+        [](const std::string&, const std::string& instructions,
+           const std::string&, const ReadToolCallback&) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                return response(
+                    "", R"({"transitions":[],"new_nodes":[{"fact":"Guard dies","type":"character","state":"active","entities":["Guard"]}]})");
+            }
+            return response("The guard falls still.");
+        };
+
+    execute_test_turn(world, runtime, scene, "Strike.");
+
+    REQUIRE(world.find_character("Guard") != nullptr);
+    REQUIRE_FALSE(world.find_character("Guard")->dead);
+    REQUIRE(fallback_calls == 0);
+}
+
+TEST_CASE("Output callback failure is a post-commit delivery failure",
+          "[turn_pipeline][transaction][delivery]") {
+    World world;
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    configure_runtime(runtime,
+        [](const std::string&, const std::string&, const std::string&) {
+            return response("The guard raises a hand.",
+                R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"Stop."}],"new_characters":[],"active_cast":[]})");
+    });
+    int attempts = 0;
+    runtime.turn_complete =
+        [&](const SceneMessage&) {
+            ++attempts;
+            throw std::runtime_error("socket unavailable");
+        };
+
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Approach.");
+    REQUIRE(result.outputs.size() == 2);
+    REQUIRE(result.delivery_failures ==
+            std::vector<std::string>{"socket unavailable", "socket unavailable"});
+    REQUIRE(attempts == 2);
+    REQUIRE(world.state_version() == 1);
+    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.history.size() == 2);
+    REQUIRE(scene.dialogue.size() == 1);
+}
+
+TEST_CASE("Legacy narrator plan is represented by inert typed shadow records",
+          "[turn_pipeline][shadow][actor_proposal]") {
+    World world;
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    configure_runtime(runtime,
+        [](const std::string&, const std::string&, const std::string&) {
+            return response("A courier waits behind the guard.",
+                R"({"transitions":[],"new_nodes":[{"fact":"A courier arrived","type":"scene","state":"active","entities":["Courier"]}],"speech_turns":[{"character":"Guard","line":"Stop there.","action":"raises one hand"},{}],"new_characters":[{"name":"Courier","description":"Dusty and impatient","role":"minor_npc"}],"active_cast":["Guard","Courier"]})");
+        });
+
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Approach.");
+    REQUIRE(result.outputs.size() == 2);
+    REQUIRE(result.outputs[1].content == "Stop there. (raises one hand)");
+    REQUIRE(result.legacy_shadow.has_value());
+    const LegacyTurnShadow& shadow = *result.legacy_shadow;
+    REQUIRE(shadow.source == "legacy_narrator");
+    REQUIRE(shadow.proposals.size() == 1);
+    const ActorProposal& proposal = shadow.proposals.front();
+    REQUIRE(proposal.proposal_id == "root:v1:legacy:proposal:0");
+    REQUIRE(proposal.character_id == "Guard");
+    REQUIRE(proposal.action == "raises one hand");
+    REQUIRE(proposal.exact_dialogue == "Stop there.");
+    REQUIRE(proposal.evidence_refs.empty());
+    REQUIRE_FALSE(proposal.character_core_version.has_value());
+    REQUIRE(proposal.base_state_version == 0);
+    REQUIRE(proposal.source == "legacy_narrator");
+
+    REQUIRE(shadow.decision.decision_id == "root:v1:legacy:decision");
+    REQUIRE(shadow.decision.accepted_proposal_ids ==
+            std::vector<std::string>{proposal.proposal_id});
+    REQUIRE(shadow.decision.mechanical_operations.size() == 3);
+    REQUIRE(shadow.decision.mechanical_operations[0].kind ==
+            MechanicalOperationKind::CreateCharacter);
+    REQUIRE(shadow.decision.mechanical_operations[0].character_id == "Courier");
+    REQUIRE(shadow.decision.mechanical_operations[1].kind ==
+            MechanicalOperationKind::EnsureSceneMember);
+    REQUIRE(shadow.decision.mechanical_operations[1].character_id == "Guard");
+    REQUIRE(shadow.decision.mechanical_operations[2].kind ==
+            MechanicalOperationKind::EnsureSceneMember);
+    REQUIRE(shadow.decision.mechanical_operations[2].character_id == "Courier");
+    REQUIRE(shadow.decision.canonical_events.empty());
+    REQUIRE(shadow.observation_graph_plan["new_nodes"][0]["fact"] ==
+            "A courier arrived");
+    REQUIRE(shadow.issues.size() == 1);
+    REQUIRE(shadow.issues.front().code == "malformed_actor_proposal");
+}
+
+TEST_CASE("Turn pipeline autonomous turns remain associated with their SceneData",
+          "[turn_pipeline][result]") {
     World world;
     SceneData first = basic_scene("first");
     SceneData second = basic_scene("second");
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor,
+    TurnServices runtime;
+    configure_runtime(runtime,
         [](const std::string& id, const std::string&, const std::string&) {
             return response("Narration for " + id + ".");
         });
-    REQUIRE(executor.run_player_turn(first, "Act.").scene_id == "first");
-    const auto result = executor.run_autonomous_turn(second, "Continue.");
+    REQUIRE(execute_test_turn(
+        world, runtime, first, "Act.").scene_id == "first");
+    const auto result = execute_test_turn(
+        world, runtime, second, "Continue.",
+        TurnInput::Kind::Autonomous);
     REQUIRE(result.scene_id == "second");
     REQUIRE(result.outputs.front().content == "Narration for second.");
 }
 
-TEST_CASE("TurnExecutor blocks until run_post_turn finishes",
-          "[turn_executor][post_turn]") {
+TEST_CASE("Turn pipeline blocks until post-turn processing finishes",
+          "[turn_pipeline][post_turn]") {
     using namespace std::chrono_literals;
     World world;
     SceneData scene = basic_scene();
     add_fact(world.graph(), "Gate shut", "Gate", 1);
     add_fact(world.graph(), "Torch lit", "Torch", 1);
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [](const std::string&, const std::string&, const std::string&) {
+    TurnServices runtime;
+    Weaver& weaver = runtime.weaver;
+    configure_runtime(runtime, [](const std::string&, const std::string&, const std::string&) {
         return response("Time passes.");
     });
     weaver.set_interval(1);
@@ -562,12 +797,14 @@ TEST_CASE("TurnExecutor blocks until run_post_turn finishes",
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
     });
 
-    const TurnResult beat = executor.run_player_turn(scene, "Wait.");
-    REQUIRE(beat.completed_turn == 1);
-    REQUIRE(beat.post_turn_index >= 0);
+    const TurnResult turn = execute_test_turn(
+        world, runtime, scene, "Wait.");
+    REQUIRE(turn.completed_turn == 1);
+    REQUIRE(turn.post_turn_index >= 0);
 
     auto running = std::async(std::launch::async, [&] {
-        return executor.run_post_turn(scene, beat.post_turn_index);
+        return process_test_post_turn(
+            world, runtime, scene, turn.post_turn_index);
     });
     started.get_future().wait();
     REQUIRE(running.wait_for(20ms) == std::future_status::timeout);
@@ -576,8 +813,8 @@ TEST_CASE("TurnExecutor blocks until run_post_turn finishes",
     REQUIRE_NOTHROW(running.get());
 }
 
-TEST_CASE("TurnExecutor preserves post-turn callback order",
-          "[turn_executor][post_turn][characterization]") {
+TEST_CASE("Turn pipeline preserves post-turn callback order",
+          "[turn_pipeline][post_turn][characterization]") {
     World world;
     SceneData scene = basic_scene();
     world.enter_character("root", Character{"Scout", "Careful", false});
@@ -591,10 +828,9 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
     }
 
     std::vector<std::string> events;
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [&](const std::string&, const std::string&,
+    TurnServices runtime;
+    Weaver& weaver = runtime.weaver;
+    configure_runtime(runtime, [&](const std::string&, const std::string&,
                              const std::string&) {
         events.push_back("narrator");
         return response("Wind crosses the gate.",
@@ -609,33 +845,33 @@ TEST_CASE("TurnExecutor preserves post-turn callback order",
         events.push_back("weave");
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
     });
-    executor.set_reflection_llm_callback([&](const std::string&) {
+    runtime.reflection = [&](const std::string&) {
         events.push_back("reflection");
         return std::string{R"({"appends":[],"ops":[],"knows":[]})"};
-    });
-    executor.set_downsampler_callback([&](const std::string&) {
+    };
+    runtime.downsampler = [&](const std::string&) {
         events.push_back("downsample");
         return std::string{"summary"};
-    });
+    };
 
-    const TurnResult beat = executor.run_player_turn(scene, "Look.");
-    REQUIRE(beat.completed_turn == 1);
+    const TurnResult turn = execute_test_turn(
+        world, runtime, scene, "Look.");
+    REQUIRE(turn.completed_turn == 1);
     REQUIRE(events == std::vector<std::string>{"narrator", "narrator"});
-    executor.run_post_turn(scene, beat.post_turn_index);
+    process_test_post_turn(world, runtime, scene, turn.post_turn_index);
     REQUIRE(events == std::vector<std::string>{
         "narrator", "narrator", "weave", "expiry", "reflection", "downsample"});
 }
 
-TEST_CASE("TurnExecutor post-turn failures remain non-fatal",
-          "[turn_executor][post_turn][characterization]") {
+TEST_CASE("Turn pipeline post-turn failures remain non-fatal",
+          "[turn_pipeline][post_turn][characterization]") {
     World world;
     SceneData scene = basic_scene();
     add_fact(world.graph(), "Gate shut", "Gate", 1);
     add_fact(world.graph(), "Torch lit", "Torch", 1);
-    Director director(world.graph());
-    Weaver weaver(world.graph());
-    TurnExecutor executor(world, director, weaver);
-    configure_executor(executor, [](const std::string&, const std::string&,
+    TurnServices runtime;
+    Weaver& weaver = runtime.weaver;
+    configure_runtime(runtime, [](const std::string&, const std::string&,
                             const std::string&) {
         return response("Time passes.");
     });
@@ -645,11 +881,13 @@ TEST_CASE("TurnExecutor post-turn failures remain non-fatal",
             throw std::runtime_error("weaver unavailable");
         });
 
-    const TurnResult result = executor.run_player_turn(scene, "Wait.");
+    const TurnResult result = execute_test_turn(
+        world, runtime, scene, "Wait.");
     REQUIRE(result.completed_turn == 1);
     REQUIRE(result.outputs.front().content == "Time passes.");
     REQUIRE(scene.turn_index == 1);
-    REQUIRE_NOTHROW(executor.run_post_turn(scene, result.post_turn_index));
+    REQUIRE_NOTHROW(process_test_post_turn(
+        world, runtime, scene, result.post_turn_index));
 }
 
 TEST_CASE("Story delivers player outputs before weave runs",
@@ -678,6 +916,54 @@ TEST_CASE("Story delivers player outputs before weave runs",
     REQUIRE(more.empty());
 }
 
+TEST_CASE("Turn execution reads one frozen transaction version",
+          "[turn_pipeline][read_tools][version]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    StoryData data;
+    import_world(data, std::move(world));
+    data.active_scene_id = "root";
+    adopt_scene(data, basic_scene());
+    TurnServices services;
+    services.llm =
+        [](const std::string&) { return std::string{"fallback"}; };
+
+    bool checked_snapshot = false;
+    int turn_calls = 0;
+    REQUIRE(data.transaction_version == 0);
+    services.narrator =
+        [&](const std::string&, const std::string& instructions,
+            const std::string&, const ReadToolCallback& read_tool) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos)
+                return response("", R"({"transitions":[],"new_nodes":[]})");
+
+            ++turn_calls;
+            REQUIRE(data.transaction_version == 0);
+            const std::string before =
+                read_tool("query_graph", R"({"query":"LateArrival"})");
+            Node late;
+            late.fact = "LateArrival entered after the snapshot";
+            late.entities = {"LateArrival"};
+            data.observations.add_node_chained(std::move(late), 0);
+            ++data.transaction_version;
+            const std::string after =
+                read_tool("query_graph", R"({"query":"LateArrival"})");
+            REQUIRE(after == before);
+            checked_snapshot = true;
+            return response("The room remains still.");
+        };
+
+    REQUIRE_THROWS_AS(
+        execute_turn(
+            data, services, {TurnInput::Kind::Player, "root", "Wait."}),
+        std::runtime_error);
+    REQUIRE(checked_snapshot);
+    REQUIRE(turn_calls == 1);
+    REQUIRE(data.transaction_version == 0);
+    REQUIRE(find_scene(data, "root")->history.empty());
+    REQUIRE(data.observations.size() == 0);
+}
+
 TEST_CASE("Story pending-turn guards reject unsafe calls",
           "[story][advance_player]") {
     World world;
@@ -685,12 +971,12 @@ TEST_CASE("Story pending-turn guards reject unsafe calls",
     Story story = Story::from_data(basic_scene(), std::move(world));
     configure_story(story, [](const std::string&, const std::string&,
                               const std::string&) {
-        return response("Beat.");
+        return response("Turn.");
     });
 
     REQUIRE_THROWS_AS(story.complete_turn(), std::runtime_error);
 
-    REQUIRE(story.advance_player("One.").front().content == "Beat.");
+    REQUIRE(story.advance_player("One.").front().content == "Turn.");
     REQUIRE_THROWS_AS(story.advance_player("Two."), std::runtime_error);
     REQUIRE_THROWS_AS(story.weave_scene("root"), std::runtime_error);
 
@@ -708,14 +994,14 @@ TEST_CASE("Story pending-turn guards reject unsafe calls",
 }
 
 TEST_CASE("Story keeps player outputs separate from off-stage turns",
-          "[story][turn_executor]") {
+          "[story][turn_pipeline]") {
     World world;
     world.enter_character("root", Character{"Player", "The player", true});
     world.enter_character("root", Character{"Scout", "Careful", false});
     Story story = Story::from_data(basic_scene(), std::move(world));
     configure_story(story,
         [](const std::string& id, const std::string&, const std::string&) {
-            return response(id == "root" ? "Player beat." : "Away beat.");
+            return response(id == "root" ? "Player turn." : "Away turn.");
         });
     REQUIRE(story.fork_scene(
         "root", "away", {"Scout"}, "Advance the patrol") != nullptr);
@@ -725,19 +1011,19 @@ TEST_CASE("Story keeps player outputs separate from off-stage turns",
     });
     const auto outputs = play_turn(story, "Act.");
     REQUIRE(outputs.size() == 1);
-    REQUIRE(outputs.front().content == "Player beat.");
-    REQUIRE(story.get_scene("away")->history.back().content == "Away beat.");
+    REQUIRE(outputs.front().content == "Player turn.");
+    REQUIRE(story.get_scene("away")->history.back().content == "Away turn.");
 }
 
 TEST_CASE("Story surfaces off-stage outputs when they merge into the active scene",
-          "[story][turn_executor][lifecycle]") {
+          "[story][turn_pipeline][lifecycle]") {
     World world;
     world.enter_character("root", Character{"Player", "The player", true});
     world.enter_character("root", Character{"Scout", "Careful", false});
     Story story = Story::from_data(basic_scene(), std::move(world));
     configure_story(story,
         [](const std::string& id, const std::string&, const std::string&) {
-            return response(id == "root" ? "Player beat."
+            return response(id == "root" ? "Player turn."
                                          : "Scout steps from the treeline beside the player.");
         });
     REQUIRE(story.fork_scene(
@@ -758,7 +1044,7 @@ TEST_CASE("Story surfaces off-stage outputs when they merge into the active scen
 
     const auto outputs = play_turn(story, "Act.");
     REQUIRE(outputs.size() == 2);
-    REQUIRE(outputs[0].content == "Player beat.");
+    REQUIRE(outputs[0].content == "Player turn.");
     REQUIRE(outputs[1].content ==
             "Scout steps from the treeline beside the player.");
     REQUIRE(story.get_scene("away") == nullptr);
@@ -912,11 +1198,11 @@ TEST_CASE("Board lifecycle applies merge before fork in one response",
 
 TEST_CASE("Lifecycle policy rejects malformed board ops",
           "[story][lifecycle]") {
-    BeatSummary beat;
-    beat.scene_id = "root";
+    TurnSummary turn;
+    turn.scene_id = "root";
     auto decide = [&](const std::string& raw) {
         return request_lifecycle_decision(
-            beat,
+            turn,
             [raw](const std::string&, const std::string&,
                   const ReadToolCallback&) { return raw; },
             [](const std::string&, const std::string&) {
@@ -1055,7 +1341,7 @@ TEST_CASE("Story owns explicit graph weaving", "[story][weaver][ownership]") {
     const WeaveResult result = story.weave_scene("root");
 
     REQUIRE(result.connected.size() == 1);
-    REQUIRE(story.world().graph().all_edges().size() == 1);
+    REQUIRE(story.observations().all_edges().size() == 1);
     REQUIRE_THROWS_AS(story.weave_scene("missing"), std::invalid_argument);
 }
 
@@ -1102,6 +1388,55 @@ TEST_CASE("Story timeline merges narrator and dialogue chronologically", "[story
     REQUIRE(timeline.front().content == "earlier");
 }
 
+TEST_CASE("Attributed transcript orders a turn and returns exact speaker evidence",
+          "[story][transcript]") {
+    SceneData scene = basic_scene();
+    const std::string timestamp = "2026-01-01T00:00:00Z";
+
+    SceneMessage player;
+    player.role = Role::User;
+    player.content = "I approach.";
+    player.timestamp = timestamp;
+    player.metadata = {
+        {"scene_kind", "player"}, {"turn", 4}, {"turn_ordinal", 0}};
+    append_history_message(scene.history, player);
+
+    SceneMessage narrator;
+    narrator.role = Role::Assistant;
+    narrator.content = "The guard raises a hand.";
+    narrator.timestamp = timestamp;
+    narrator.metadata = {
+        {"scene_kind", "narrator"}, {"turn", 4}, {"turn_ordinal", 1}};
+    append_history_message(scene.history, narrator);
+
+    const std::string exact_line = "Stop. " + std::string(450, 'x');
+    SceneMessage dialogue;
+    dialogue.role = Role::Assistant;
+    dialogue.content = exact_line;
+    dialogue.timestamp = timestamp;
+    dialogue.metadata = {
+        {"scene_kind", "character"}, {"speaker", "Guard"},
+        {"turn", 4}, {"turn_ordinal", 2}};
+    append_history_message(scene.dialogue, dialogue);
+
+    Story story = Story::from_data(std::move(scene));
+    const auto timeline = story.display_timeline("root");
+    REQUIRE(timeline.size() == 3);
+    REQUIRE(timeline[0].content == "I approach.");
+    REQUIRE(timeline[1].content == "The guard raises a hand.");
+    REQUIRE(timeline[2].content == exact_line);
+
+    const json result = json::parse(story.dispatch_tool(
+        "root", "query_transcript", R"({"query":"Guard"})"));
+    REQUIRE(result["spans"].size() == 2);
+    REQUIRE(result["spans"][0]["speaker"] == "Guard");
+    REQUIRE(result["spans"][0]["text"] == exact_line);
+    REQUIRE(result["spans"][0]["turn"] == 4);
+    REQUIRE(result["spans"][0]["ordinal"] == 2);
+    REQUIRE(result["spans"][0]["legacy_order"] == false);
+    REQUIRE(result["spans"][0]["retrieval_reason"] == "lexical");
+}
+
 TEST_CASE("Weaver queue prioritizes groups and applies supersession",
           "[weaver][work_queue]") {
     WorldGraph graph;
@@ -1109,7 +1444,7 @@ TEST_CASE("Weaver queue prioritizes groups and applies supersession",
     add_fact(graph, "A new", "A", 2);
     const auto old_id = add_fact(graph, "Gate closed", "Gate", 1);
     const auto new_id = add_fact(graph, "Gate open", "Gate", 5);
-    Weaver weaver(graph);
+    Weaver weaver;
     std::vector<std::string> prompts;
     weaver.set_llm_callback([&](const std::string& prompt) {
         prompts.push_back(prompt);
@@ -1119,8 +1454,8 @@ TEST_CASE("Weaver queue prioritizes groups and applies supersession",
                 R"(}],"reason":"newer state"})";
         return std::string{R"({"superseded":[],"reason":"current"})"};
     });
-    weaver.rebuild_expiry_queue({"Gate"});
-    const auto expired = weaver.drain_expiry_queue(9);
+    weaver.rebuild_expiry_queue(graph, {"Gate"});
+    const auto expired = weaver.drain_expiry_queue(graph, 9);
     REQUIRE(prompts.size() == 2);
     REQUIRE(prompts.front().find("Gate closed") != std::string::npos);
     REQUIRE(expired.size() == 1);
@@ -1134,7 +1469,7 @@ TEST_CASE("Weaver stop leaves undrained groups queued", "[weaver][work_queue]") 
     add_fact(graph, "A new", "A", 2);
     add_fact(graph, "B old", "B", 1);
     add_fact(graph, "B new", "B", 2);
-    Weaver weaver(graph);
+    Weaver weaver;
     std::promise<void> started;
     std::promise<void> release;
     auto release_future = release.get_future().share();
@@ -1143,9 +1478,9 @@ TEST_CASE("Weaver stop leaves undrained groups queued", "[weaver][work_queue]") 
         release_future.wait();
         return std::string{R"({"superseded":[],"reason":"current"})"};
     });
-    weaver.rebuild_expiry_queue();
+    weaver.rebuild_expiry_queue(graph);
     auto draining = std::async(std::launch::async, [&] {
-        return weaver.drain_expiry_queue(8);
+        return weaver.drain_expiry_queue(graph, 8);
     });
     started.get_future().wait();
     weaver.stop_expiry_drain();

@@ -12,3 +12,63 @@
   page: architecture/python-server
   summary: Embedding model changed from Alibaba-NLP/gte-base-en-v1.5 to BAAI/bge-base-en-v1.5
   reason: Custom model code caused IndexError with recent torch/transformers versions
+
+- date: 2026-08-20
+  page: architecture/system-overview
+  summary: Foreground turns gained aggregate versions, attributed transcript reads, staged notifications, and inert legacy shadow records
+  reason: The first four phases of the pragmatic turn transaction refactor changed the executable boundary
+
+- date: 2026-08-20
+  page: architecture/scene-loop
+  summary: Replaced the unversioned immediate-callback flow with the verified versioned foreground boundary
+  reason: The prior page no longer matched TurnExecutor, frozen read-tool ownership, or callback timing
+
+- date: 2026-08-21
+  page: architecture/scene-loop
+  summary: Replaced the TurnExecutor ownership model with a free-function candidate turn pipeline
+  reason: TurnExecutor was removed and Story now lends StoryState, TurnRuntime, and stateful services per call
+
+- date: 2026-08-21
+  page: architecture/cpp-data-model
+  summary: Replaced the executor-centric object graph with POD-style state and runtime aggregates
+  reason: The C++ refactor moved algorithms into turn_pipeline, story_state_ops, and story_lifecycle modules
+
+- date: 2026-08-21
+  page: architecture/system-overview
+  summary: Graph extraction became a post-commit failure-contained observation step
+  reason: Extractor failure and graph output can no longer roll back the turn or directly mark characters dead
+
+- date: 2026-08-21
+  page: architecture/pragmatic-turn-transaction-refactor
+  summary: Rebased the gradual authority-transfer plan on the data-oriented turn pipeline
+  reason: Structural cleanup and graph containment landed while actor and consequence authority remain gated
+
+- date: 2026-08-21
+  page: architecture/plot-graph
+  summary: Reclassified WorldGraph as fallible semantic observation state without direct mechanical authority
+  reason: Graph extraction moved after commit and the graph-driven character-death path was removed
+
+- date: 2026-08-22
+  page: architecture/cpp-data-model
+  summary: Replaced the intermediate StoryState, TurnRuntime, and graph-bound service design with StoryData, TurnServices, and explicit graph arguments
+  reason: The final flattening removed retained graph references and temporary turn wrapper types
+
+- date: 2026-08-22
+  page: architecture/scene-loop
+  summary: Reduced player and autonomous narrative execution to one execute_turn function over explicit data and services
+  reason: The final code removed parallel entry points and pass-through orchestration layers
+
+- date: 2026-08-22
+  page: architecture/system-overview
+  summary: Separated live observation storage from coded World state and isolated historical Director and Weaver constructors in Python bindings
+  reason: The runtime now exposes the intended one-way dependency graph without graph-bound core services
+
+- date: 2026-08-22
+  page: architecture/pragmatic-turn-transaction-refactor
+  summary: Rewrote the remaining authority-transfer plan against the implemented flattened runtime
+  reason: The structural foundation landed while actor authority and consequence-first rendering remain experimental
+
+- date: 2026-08-22
+  page: architecture/plot-graph
+  summary: Replaced the core Director class with stateless graph-plan application and moved live observations out of World
+  reason: Graph application no longer needs object identity or access to coded World mutation methods

@@ -143,15 +143,14 @@ NARRATOR_TOOLS = [
         "parameters": {"type": "object", "properties": {}},
     },
 ]
-# NOTE: lifecycle (fork/conclude/merge/exit) is NOT a narrator tool. It is decided
-# by a dedicated verdict (Story::decide_lifecycle + rhapsode.lifecycle), the sole
-# authority on cross-scene membership -- see that module for why.
+# Lifecycle (fork/conclude/merge/exit) is not a narrator tool. A separate
+# post-turn callback proposes operations, and Story applies their coded checks.
 
 
 def make_narrator_callback():
     """A single narrator callback for every scene.
 
-    The engine drives a beat and tells us which scene it is via `scene_id`; each
+    The engine drives a turn and tells us which scene it is via `scene_id`; each
     tool call is forwarded through the call-scoped read function supplied by the
     engine. This module only adapts the LLM's tool-use protocol to that function.
     """

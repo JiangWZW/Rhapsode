@@ -1,6 +1,6 @@
 ---
 title: Python server
-last_updated: 2026-07-21
+last_updated: 2026-08-22
 confidence: verified
 tier: semantic
 sources:
@@ -35,8 +35,8 @@ own turn sequencing or reconstruct native execution objects after errors.
 - a resume flag.
 
 The session configures narrator, scheduler, lifecycle, Weaver, reflection, downsampling, and memory
-callbacks on Story. Director, Weaver, TurnExecutor, World, and SceneData are constructed and owned
-inside C++.
+callbacks on Story. C++ owns `StoryData`, `TurnServices`, World, SceneData, and the Weaver service.
+Turn execution and graph-plan application are free functions, not owned executor/director objects.
 
 ## WebSocket flow
 
@@ -46,8 +46,8 @@ inside C++.
 4. Run `Story.advance_player()` on a worker thread; stream those SceneMessages.
 5. In `finally`, run `Story.complete_turn()` on a worker (post-turn, lifecycle, off-stage, save).
 6. Stream any merge/off-stage outputs; then set status `idle`.
-7. Report exceptions without rebuilding the native runtime; TurnExecutor rollback keeps it usable.
-   If `advance_player` succeeds, `complete_turn` must still run so a pending beat cannot leak.
+7. Report exceptions without rebuilding the native runtime; candidate-turn rollback keeps it usable.
+   If `advance_player` succeeds, `complete_turn` must still run so a pending turn cannot leak.
 
 ## LLM adapters
 
@@ -60,15 +60,16 @@ call supplies a temporary `read_tool(name, args_json)` function.
 The adapter may use it during the tool loop but must not retain it. Native code invalidates it on
 callback return.
 
-Lifecycle receives a self-contained beat summary and returns JSON; it has no tool callback.
+Lifecycle receives a self-contained turn summary and returns JSON; it has no tool callback.
 
 ## Ownership boundary
 
-Python owns integration objects and cloud/local model clients. C++ owns runtime state and ordering.
-SceneData is exposed as a read-only view. Story-owned World graph, roster, character, and memory
-properties return detached snapshots for UI/diagnostic code, so mutating a returned Python object
-cannot alter the running story. Mutations that affect native state go through explicit Story
-commands. The manual `/weave` diagnostic, for example, configures the Story-owned Weaver and calls
+Python owns integration objects and model clients while C++ owns runtime state and ordering.
+SceneData, observation, roster, character, and memory properties return detached values that cannot
+alter the running story.
+
+Only explicit Story commands mutate native state. The manual `/weave` diagnostic, for example,
+configures the Story-owned Weaver and calls
 `Story.weave_scene()` rather than constructing a Python Weaver over a live graph reference.
 
 ## Persistence

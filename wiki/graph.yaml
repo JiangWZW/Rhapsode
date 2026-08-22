@@ -1,32 +1,67 @@
 # Rhapsode Knowledge Graph
-# Entities and typed relationships between wiki-documented components.
-# See SCHEMA.md section 4 for format and maintenance rules.
+# Verified against the executable runtime on 2026-08-22.
+# This is a documentation index, not the runtime WorldGraph.
 
 entities:
-  - name: Session
+  - name: Story
     type: class
     layer: cpp-core
     page: architecture/system-overview
 
-  - name: SceneLoop
+  - name: World
     type: class
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: SceneData
+    type: struct
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: SceneMessage
+    type: struct
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: StoryData
+    type: struct
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: TurnServices
+    type: struct
+    layer: cpp-core
+    page: architecture/cpp-data-model
+
+  - name: TurnInput
+    type: struct
     layer: cpp-core
     page: architecture/scene-loop
 
-  - name: Scene
-    type: class
+  - name: TurnPipeline
+    type: module
     layer: cpp-core
-    page: architecture/cpp-data-model
+    page: architecture/scene-loop
 
-  - name: History
-    type: class
+  - name: ActorProposal
+    type: struct
     layer: cpp-core
-    page: architecture/cpp-data-model
+    page: architecture/pragmatic-turn-transaction-refactor
 
-  - name: Director
+  - name: TurnDecision
+    type: struct
+    layer: cpp-core
+    page: architecture/pragmatic-turn-transaction-refactor
+
+  - name: GraphPlan
+    type: module
+    layer: cpp-core
+    page: architecture/plot-graph
+
+  - name: Weaver
     type: class
     layer: cpp-core
-    page: architecture/system-overview
+    page: architecture/plot-graph
 
   - name: WorldGraph
     type: class
@@ -38,28 +73,8 @@ entities:
     layer: cpp-core
     page: architecture/plot-graph
 
-  - name: EdgeData
-    type: struct
-    layer: cpp-core
-    page: architecture/plot-graph
-
-  - name: RelationKind
-    type: enum
-    layer: cpp-core
-    page: architecture/plot-graph
-
-  - name: MemorySystem
-    type: class
-    layer: cpp-core
-    page: architecture/memory-system
-
-  - name: SceneMessage
-    type: struct
-    layer: cpp-core
-    page: architecture/cpp-data-model
-
   - name: Character
-    type: class
+    type: struct
     layer: cpp-core
     page: architecture/cpp-data-model
 
@@ -68,8 +83,28 @@ entities:
     layer: cpp-core
     page: architecture/character-system
 
+  - name: MemorySystem
+    type: class
+    layer: cpp-core
+    page: architecture/memory-system
+
+  - name: ReadToolContext
+    type: struct
+    layer: cpp-core
+    page: architecture/scene-loop
+
+  - name: SessionEvalRunner
+    type: class
+    layer: cpp-core
+    page: architecture/system-overview
+
   - name: FastAPI-App
     type: module
+    layer: python-server
+    page: architecture/python-server
+
+  - name: WsSession
+    type: class
     layer: python-server
     page: architecture/python-server
 
@@ -78,20 +113,10 @@ entities:
     layer: python-server
     page: architecture/python-server
 
-  - name: PromptBuilder
-    type: module
-    layer: python-server
-    page: architecture/python-server
-
-  - name: CharacterAgent
-    type: module
-    layer: python-server
-    page: architecture/python-server
-
   - name: MemoryCallbacks
     type: module
     layer: python-server
-    page: architecture/python-server
+    page: architecture/memory-system
 
   - name: VueFrontend
     type: module
@@ -103,88 +128,143 @@ entities:
     layer: vue-frontend
     page: architecture/vue-frontend
 
-  - name: LayoutStore
-    type: module
-    layer: vue-frontend
-    page: architecture/vue-frontend
-
 relationships:
-  - from: SceneLoop
-    to: Scene
-    type: owns
-    page: architecture/scene-loop
-
-  - from: SceneLoop
-    to: Director
-    type: calls
-    page: architecture/scene-loop
-
-  - from: SceneLoop
-    to: CharacterAgent
-    type: calls
-    page: architecture/scene-loop
-
-  - from: Scene
-    to: History
-    type: owns
-    page: architecture/cpp-data-model
-
-  - from: Scene
-    to: WorldGraph
-    type: owns
-    page: architecture/cpp-data-model
-
-  - from: Scene
-    to: CharacterMemory
-    type: owns
-    page: architecture/character-system
-
-  - from: SceneLoop
-    to: CharacterMemory
-    type: calls
-    page: architecture/character-system
-
-  - from: Director
-    to: WorldGraph
-    type: calls
-    page: architecture/system-overview
-
   - from: FastAPI-App
-    to: SceneLoop
+    to: WsSession
     type: calls
     page: architecture/python-server
 
-  - from: FastAPI-App
+  - from: WsSession
+    to: Story
+    type: owns
+    page: architecture/system-overview
+
+  - from: WsSession
+    to: MemorySystem
+    type: owns
+    page: architecture/memory-system
+
+  - from: WsSession
     to: LLMProvider
     type: depends-on
     page: architecture/python-server
 
-  - from: FastAPI-App
-    to: MemoryCallbacks
-    type: depends-on
-    page: architecture/python-server
+  - from: Story
+    to: StoryData
+    type: owns
+    page: architecture/cpp-data-model
 
-  - from: PromptBuilder
-    to: History
+  - from: Story
+    to: TurnServices
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: Story
+    to: TurnPipeline
+    type: calls
+    page: architecture/scene-loop
+
+  - from: StoryData
+    to: World
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: StoryData
+    to: SceneData
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: StoryData
+    to: WorldGraph
+    type: owns
+    page: architecture/plot-graph
+
+  - from: TurnServices
+    to: Weaver
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: TurnServices
+    to: MemorySystem
+    type: owns
+    page: architecture/memory-system
+
+  - from: SceneData
+    to: SceneMessage
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: World
+    to: Character
+    type: owns
+    page: architecture/cpp-data-model
+
+  - from: World
+    to: CharacterMemory
+    type: owns
+    page: architecture/character-system
+
+  - from: WorldGraph
+    to: Node
+    type: owns
+    page: architecture/plot-graph
+
+  - from: TurnPipeline
+    to: StoryData
+    type: depends-on
+    page: architecture/scene-loop
+
+  - from: TurnPipeline
+    to: TurnServices
+    type: depends-on
+    page: architecture/scene-loop
+
+  - from: TurnPipeline
+    to: TurnInput
+    type: depends-on
+    page: architecture/scene-loop
+
+  - from: TurnPipeline
+    to: ReadToolContext
+    type: calls
+    page: architecture/scene-loop
+
+  - from: TurnPipeline
+    to: ActorProposal
     type: feeds
-    page: architecture/python-server
+    page: architecture/pragmatic-turn-transaction-refactor
+
+  - from: TurnPipeline
+    to: TurnDecision
+    type: feeds
+    page: architecture/pragmatic-turn-transaction-refactor
+
+  - from: GraphPlan
+    to: WorldGraph
+    type: calls
+    page: architecture/plot-graph
+
+  - from: TurnPipeline
+    to: GraphPlan
+    type: calls
+    page: architecture/scene-loop
+
+  - from: Weaver
+    to: WorldGraph
+    type: calls
+    page: architecture/plot-graph
 
   - from: MemoryCallbacks
     to: MemorySystem
     type: feeds
     page: architecture/memory-system
 
-  - from: MemorySystem
-    to: PromptBuilder
-    type: feeds
-    page: architecture/python-server
-
-  - from: VueFrontend
-    to: FastAPI-App
-    type: depends-on
-    page: architecture/vue-frontend
-
   - from: WebSocketStore
     to: FastAPI-App
     type: calls
+    page: architecture/vue-frontend
+
+  - from: VueFrontend
+    to: WebSocketStore
+    type: depends-on
     page: architecture/vue-frontend

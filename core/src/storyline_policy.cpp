@@ -17,13 +17,13 @@ const std::string kSchedulerInstructions =
     "scene has just advanced. Up to TWO OFF-STAGE storylines may advance this "
     "turn while the others rest.\n"
     "Call list_scenes to see every live storyline. Weigh each off-stage row by "
-    "its charge (how urgent its driving intention is), staleness (how many beats "
+    "its charge (how urgent its driving intention is), staleness (how many turns "
     "since it last advanced -- higher means overdue), and whether it is "
     "converging on the player. Drill in with query_graph or query_mind if a row "
     "is ambiguous.\n"
     "Then call advance_scene once per storyline you want advanced this turn "
     "(at most 2). Never pick the scene where player_present is true. Prefer the "
-    "most overdue / highest-charge scenes. If nothing off-stage deserves a beat, "
+    "most overdue / highest-charge scenes. If nothing off-stage deserves a turn, "
     "call advance_scene once with an empty scene_id.";
 
 const std::string kLifecycleInstructions =
@@ -191,7 +191,7 @@ std::string request_off_stage_scene(const SchedulerCallback& callback,
 }
 
 std::optional<LifecycleDecision> request_lifecycle_decision(
-    const BeatSummary& summary, const LifecycleCallback& callback,
+    const TurnSummary& summary, const LifecycleCallback& callback,
     const ReadToolCallback& read_tool) {
     if (!callback) return std::nullopt;
 

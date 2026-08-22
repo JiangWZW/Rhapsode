@@ -7,6 +7,7 @@
 
 #include "rhapsode/memory_system.h"
 #include "rhapsode/scene_history.h"
+#include "rhapsode/story_data_ops.h"
 #include "rhapsode/text_downsampling.h"
 
 namespace rhapsode {
@@ -136,7 +137,7 @@ void save_scene_data(const SceneData& scene, const std::string& saves_dir) {
 bool Story::has_save(const std::string& saves_dir) const {
     if (!std::filesystem::exists(world_path(saves_dir))) return false;
     if (std::filesystem::exists(manifest_path(saves_dir))) return true;
-    const SceneData* root = get_scene(active_scene_id_);
+    const SceneData* root = get_scene(data_.active_scene_id);
     return root && has_scene_save(saves_dir, root->scene_id);
 }
 
@@ -152,9 +153,9 @@ void Story::load_save(const std::string& saves_dir) {
         throw std::runtime_error(
             "World save is missing world_graph/node_pool data");
     }
-    *world_ = World::from_json(world_value);
-    if (memory_)
-        memory_->set_next_id(world_value.value("memory_next_id", 0));
+    import_world(data_, World::from_json(world_value));
+    if (services_.memory)
+        services_.memory->set_next_id(world_value.value("memory_next_id", 0));
 
     const std::string path = manifest_path(saves_dir);
     if (!std::filesystem::exists(path)) {
@@ -165,13 +166,14 @@ void Story::load_save(const std::string& saves_dir) {
     std::ifstream input(path);
     nlohmann::json manifest;
     input >> manifest;
-    active_scene_id_ = manifest.value("active_scene_id", active_scene_id_);
-    beat_clock_ = manifest.value("beat_clock", 0);
-    scene_closures_.clear();
+    data_.active_scene_id = manifest.value("active_scene_id", data_.active_scene_id);
+    data_.turn_clock = manifest.value(
+        "turn_clock", manifest.value("beat_clock", 0));
+    data_.scene_closures.clear();
     for (const auto& value : manifest.value(
              "scene_closures", nlohmann::json::array())) {
         if (value.is_object())
-            scene_closures_.push_back(scene_closure_from_json(value));
+            data_.scene_closures.push_back(scene_closure_from_json(value));
     }
 
     std::vector<std::unique_ptr<SceneData>> rebuilt;
@@ -187,7 +189,7 @@ void Story::load_save(const std::string& saves_dir) {
         load_scene_data(*scene, saves_dir);
         rebuilt.push_back(std::move(scene));
     }
-    if (!rebuilt.empty()) scenes_ = std::move(rebuilt);
+    if (!rebuilt.empty()) data_.scenes = std::move(rebuilt);
 }
 
 void Story::save(const std::string& saves_dir) const {
@@ -197,18 +199,20 @@ void Story::save(const std::string& saves_dir) const {
     std::ofstream world_output(world_path(saves_dir));
     if (!world_output.is_open())
         throw std::runtime_error("Cannot write world save in: " + saves_dir);
-    auto world_value = world_->to_json();
-    world_value["memory_next_id"] = memory_ ? memory_->get_next_id() : 0;
+    auto world_value = snapshot_world(data_).to_json();
+    world_value["memory_next_id"] = services_.memory
+        ? services_.memory->get_next_id() : 0;
     world_output << world_value.dump(2);
 
-    for (const auto& scene : scenes_) save_scene_data(*scene, saves_dir);
+    for (const auto& scene : data_.scenes) save_scene_data(*scene, saves_dir);
 
     nlohmann::json manifest;
-    manifest["active_scene_id"] = active_scene_id_;
-    manifest["beat_clock"] = beat_clock_;
+    manifest["active_scene_id"] = data_.active_scene_id;
+    manifest["beat_clock"] = data_.turn_clock;  // Legacy save compatibility.
+    manifest["turn_clock"] = data_.turn_clock;
     manifest["scene_ids"] = scene_ids();
     manifest["scene_closures"] = nlohmann::json::array();
-    for (const auto& closure : scene_closures_)
+    for (const auto& closure : data_.scene_closures)
         manifest["scene_closures"].push_back(scene_closure_to_json(closure));
     std::ofstream output(manifest_path(saves_dir));
     if (!output.is_open())

@@ -1,9 +1,9 @@
 """Lifecycle verdict adapter.
 
-The lifecycle policy -- when a beat forks, merges, concludes, or exits a
+The lifecycle policy -- when a turn forks, merges, concludes, or exits a
 character -- lives in the C++ engine (`Story::decide_lifecycle`). This module only
 runs the completion: the engine hands us the instructions and a description of the
-beat, and we return the model's JSON verdict for the engine to parse and apply.
+turn, and we return the model's JSON verdict for the engine to parse and apply.
 
 It remains a focused verdict call, but may inspect the engine's call-scoped
 history, graph, mind, and live-scene tools before returning its decision.

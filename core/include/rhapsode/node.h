@@ -35,7 +35,7 @@ struct Node {
     // Perception routing (transient): which characters perceive this fact.
     // Set by the narrator on new_nodes; consumed when routing the fact into
     // character minds.  NOT serialized into the world graph -- it is an
-    // instruction, not world state.  Empty = a public beat (all present perceive).
+    // instruction, not world state. Empty = a public turn (all present perceive).
     std::vector<std::string> audience;
 };
 

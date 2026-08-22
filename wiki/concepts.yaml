@@ -2,35 +2,55 @@
 # Maps concepts to wiki pages for query routing.
 # See SCHEMA.md section 5 for format and maintenance rules.
 
+- name: long-run-story-dynamics
+  aliases: [default-guide-300, coherent stagnation, character convergence, story collapse, summary bottleneck, long-run evaluation]
+  desc: Evidence from a 300-turn run on plot stagnation, character convergence, and lossy narrator context
+  pages: [2026-08-10-long-run-storyline-and-character-collapse, motif-collapse-default-guide-300, monologue-streams]
+
+- name: long-horizon-llm-orchestration
+  aliases: [300-turn reliability, frontier narrator, multi-agent story, causal world, turn transaction, ConsequencePatch, obligation ledger, NCP-Bench, RPGBench, IBSEN, HAMLET, IVIE]
+  desc: Evidence and evaluation criteria for orchestrating narrators, characters, memory, and causal state over hundreds of free-form turns
+  pages: [frontier-llm-long-horizon-orchestration, pragmatic-turn-transaction-refactor, 2026-08-10-long-run-storyline-and-character-collapse, monologue-streams, plot-graph]
+
+- name: pragmatic-turn-transaction
+  aliases: [ActorProposal, TurnDecision, attributed transcript, exact dialogue, consequence-first turn, atomic turn commit, graph demotion]
+  desc: Gradual refactor of the current turn path into a versioned staged transaction without obligations or general semantic validation
+  pages: [pragmatic-turn-transaction-refactor, system-overview, scene-loop]
+
+- name: runtime-data-flow
+  aliases: [StoryData, TurnServices, TurnInput, data-oriented C++, composition, dependency graph]
+  desc: Story-owned data and service aggregates passed explicitly to stateless turn and lifecycle operations
+  pages: [cpp-data-model, system-overview, scene-loop]
+
 - name: code-quality
   aliases: [cleanup plan, refactor plan, maintainability, CI, lint, structural cleanup]
   desc: Verification-first plan for correctness, structure, ownership, tests, and documentation
   pages: [2026-07-20-code-structure-quality-plan]
 
 - name: memory-retrieval
-  aliases: [ChromaDB, vector search, embedding, ResolvedMemory, RAG, semantic search]
-  desc: How resolved plot nodes are stored and retrieved via semantic similarity
+  aliases: [ChromaDB, vector search, embedding, query_history, query_graph, RAG, semantic search]
+  desc: Current direct graph and keyword history tools; Chroma mirrors graph nodes but is not in the narrator retrieval path
   pages: [python-server, system-overview]
 
 - name: scene-loop
-  aliases: [SceneLoop, turn loop, FSM, game loop, turn cycle]
-  desc: The C++ state machine driving each turn of play
+  aliases: [turn pipeline, execute_turn, TurnInput, game loop, turn cycle]
+  desc: One free-function narrative-turn transaction followed by separately sequenced maintenance
   pages: [scene-loop, system-overview]
 
 - name: plot-graph
   aliases: [PlotGraph, WorldGraph, NodePool, plot node, DAG, tension node, narrative graph, RelationKind, EdgeData]
-  desc: Directed graph of latent world facts with typed edges that drive narrative
+  desc: Post-commit observation graph used by retrieval and semantic maintenance but denied direct mechanical authority
   pages: [plot-graph, system-overview]
 
-- name: director
-  aliases: [Director, narrative director, orchestrator, rhapsode]
-  desc: Rules engine that traverses plot graph and decides context injection
+- name: graph-plan-application
+  aliases: [apply_graph_plan, GraphPlanResult, Director, DirectorOutput]
+  desc: Stateless application of parsed post-commit observations; Director names remain only in Python compatibility bindings
   pages: [system-overview, plot-graph]
 
 - name: prompt-construction
-  aliases: [prompt builder, build_merged_prompt, context assembly, LLM prompt, merged prompt]
-  desc: How history, director focus, memory, and graph rules are assembled into a single merged LLM prompt
-  pages: [python-server]
+  aliases: [narrator prompt, build_narrator_turn_state, context assembly, LLM prompt, turn state]
+  desc: How cast, storyline board, lossy summary, bounded history, and call-scoped read tools form narrator context
+  pages: [system-overview, scene-loop, python-server]
 
 - name: llm-integration
   aliases: [Gemini, DeepSeek, google-genai, LLM client, complete(), RHAPSODE_PROVIDER, llm.py]
@@ -38,9 +58,9 @@
   pages: [python-server, stack]
 
 - name: character-synth
-  aliases: [character synthesis, speech cues, character_agent, NPC dialogue, speech_turns]
-  desc: Local llama.cpp model generates NPC dialogue lines from speech cues
-  pages: [python-server, scene-loop]
+  aliases: [character synthesis, speech cues, NPC dialogue, speech_turns, exact dialogue]
+  desc: The narrator model authors final NPC speech_turns; no separate production character-agent call exists
+  pages: [system-overview, scene-loop]
 
 - name: websocket-protocol
   aliases: [WebSocket, /ws, ws_endpoint, real-time, frontend protocol]

@@ -7,6 +7,7 @@
 
 #include "rhapsode/str_util.h"
 #include "rhapsode/world.h"
+#include "rhapsode/world_graph.h"
 
 namespace rhapsode {
 namespace {
@@ -75,9 +76,10 @@ std::vector<const Node*> find_fact_substring_matches(
 
 }  // namespace
 
-std::string query_world_graph(const World& world, const std::string& query) {
+std::string query_world_graph(
+    const WorldGraph& graph, const std::string& query) {
     const std::string query_lower = str::to_lower(query);
-    const auto nodes = world.graph().all_nodes(true);
+    const auto nodes = graph.all_nodes(true);
 
     const auto matched_entities = find_matching_entities(nodes, query);
     if (!matched_entities.empty()) {
@@ -153,62 +155,6 @@ std::string query_character_mind(const World& world,
     // Backward-compatible alias for older tooling.
     result["thoughts"] = result["beliefs"];
     return result.dump();
-}
-
-std::vector<DeathCandidate> find_death_candidates(const World& world) {
-    std::vector<DeathCandidate> candidates;
-    const auto nodes = world.graph().all_nodes(true);
-
-    static const std::vector<std::string> death_keywords = {
-        "dead", "dies", "died", "kills", "killed", "killing",
-        "corpse", "slain", "perished", "executed", "murdered",
-        "succumbed", "fatal"};
-
-    const auto has_death_keyword = [&](const std::string& text_lower) {
-        for (const auto& keyword : death_keywords) {
-            if (text_lower.find(keyword) != std::string::npos) return true;
-        }
-        return false;
-    };
-
-    const auto mentions_character = [&](const Node& node,
-                                        const std::string& name,
-                                        const std::string& name_lower) {
-        for (const auto& entity : node.entities) {
-            if (str::iequals(entity, name)) return true;
-        }
-        if (str::to_lower(node.fact).find(name_lower) != std::string::npos)
-            return true;
-        return str::to_lower(node.active_ctx).find(name_lower) !=
-               std::string::npos;
-    };
-
-    for (const auto& character : world.characters()) {
-        if (character.is_player || character.dead) continue;
-
-        const std::string name_lower = str::to_lower(character.name);
-        bool has_death_hit = false;
-        for (const auto& node : nodes) {
-            if (node.state != NodeState::Active) continue;
-            if (!mentions_character(node, character.name, name_lower)) continue;
-            if (has_death_keyword(str::to_lower(node.fact)) ||
-                has_death_keyword(str::to_lower(node.active_ctx))) {
-                has_death_hit = true;
-            }
-        }
-        if (!has_death_hit) continue;
-
-        DeathCandidate candidate;
-        candidate.character_name = character.name;
-        for (const auto& node : nodes) {
-            if (node.state != NodeState::Active) continue;
-            if (mentions_character(node, character.name, name_lower))
-                candidate.evidence.push_back(node.fact);
-        }
-        candidates.push_back(std::move(candidate));
-    }
-
-    return candidates;
 }
 
 }  // namespace rhapsode

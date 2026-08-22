@@ -1,3 +1,103 @@
+## [2026-08-22] implementation | Flattened Story turn dependencies
+
+- Reduced the native ownership graph to `Story` owning `StoryData`, `TurnServices`, and one pending-turn value.
+- Replaced parallel player/autonomous entry points with `execute_turn(StoryData&, TurnServices&, TurnInput)` and removed temporary turn wrapper records.
+- Removed the core `Director` class in favor of stateless `apply_graph_plan`; `Weaver` now receives its graph per operation instead of retaining a graph reference.
+- Separated live observation storage from coded `World` state while preserving the old save and Python World shape through explicit import/snapshot conversion.
+- Kept historical `Director(graph)` and `Weaver(graph)` constructors inside binding-only compatibility wrappers.
+- Renamed intermediate `story_state_ops` files and the ambiguous aggregate version to `story_data_ops` and `transaction_version`.
+- Rewrote the system, data-model, turn-execution, plot-graph, Python-boundary, and implementation-plan documentation against the final code.
+- Passed a clean native/binding build, 76 native cases with 442 assertions, 41 Python tests, Ruff, compileall, and targeted wiki lint.
+
+## [2026-08-21] implementation | Data-oriented turn pipeline
+
+- Removed `TurnExecutor` and replaced it with free turn functions over `StoryState`, `TurnRuntime`, and short-lived turn records.
+- Kept `Story` as the C++/Python compatibility façade while moving scene lookup, summaries, scheduling, lifecycle application, and turn execution into focused modules.
+- Changed foreground execution to commit complete candidate World and SceneData values after a base-version check.
+- Moved graph extraction after foreground commit, contained extractor failure, and removed graph-driven character death.
+- Preserved Python APIs, old saves, both transcript buffers, and compatibility-only “beat” names.
+- Rewrote the system, data-model, turn-execution, and pragmatic-plan pages around the executable design.
+- Rewrote the plot-graph page to document its post-commit, non-mechanical authority boundary.
+- Kept actor authority and consequence-first rendering disabled pending shadow and sequential gates.
+- Passed a clean native and binding build, 76 native cases with 440 assertions, 41 Python tests, and Ruff.
+
+## [2026-08-20] implementation | Turn transaction phases 0–4
+
+- Repaired and froze the native baseline, including MSVC UTF-8 compilation and roster-derived CharacterCore initialization.
+- Added one attributed transcript view and exact `query_transcript` dispatch over existing history and dialogue storage; the production model schema remains unchanged.
+- Added persisted aggregate state versions, deterministic message references, frozen read-tool snapshots, stale-turn rejection, and rollback coverage.
+- Delayed output callbacks until after commit and made callback exceptions explicit post-commit delivery failures.
+- Added inert legacy `ActorProposal` and `TurnDecision` records for audit only; legacy graph output remains a separate observation payload and gains no authority.
+- Passed a clean native build and all 74 Catch2 cases / 431 assertions, built `_core.pyd`, and passed 28 focused Python binding/lifetime tests.
+
+## [2026-08-20] plan | Pragmatic turn transaction refactor
+
+- Added [Pragmatic turn transaction refactor](architecture/pragmatic-turn-transaction-refactor.md) as the obligation-free implementation plan.
+- Kept the current `Story`, `TurnExecutor`, `SceneData`, `World`, transcript buffers, and compatibility path as the migration base.
+- Defined phased gates for attributed transcript evidence, one frozen versioned context, staged callbacks, shadow actor proposals, consequence-first rendering, narrow authority transfer, whole-turn recovery, and graph demotion.
+- Limited deterministic validation to implemented mechanics and kept proposal quality, canonical-event correctness, retrieval recall, and 100/300-turn survival explicitly unproven.
+- Required one reversible compatibility boundary per phase instead of story-specific fixes or an additional LLM validator.
+
+## [2026-08-19] audit | Current executable system baseline
+
+- Rewrote [Current executable system baseline](architecture/system-overview.md) from the production C++, bindings, Python server, Vue client, and evaluation harness.
+- Separated the rollback-capable foreground beat from non-transactional post-turn, lifecycle, off-stage, and save behavior.
+- Verified that exact NPC dialogue is stored outside normal narrator history; Chroma is not used by narrator retrieval; graph mutation occurs after prose; undo and saves are partial; and no Vulkan subsystem exists.
+- Marked obligations, actor proposals, and consequence patches as experiments rather than current architecture.
+- Corrected stale knowledge-graph and concept-index entries that still named removed `SceneLoop`, `CharacterAgent`, and prompt-builder components.
+- Ran the repository verification chain: production native build passed; native tests failed to compile on a code-page issue; 41 Python tests passed with one failing smoke module excluded; Ruff and all frontend checks passed.
+
+## [2026-08-17] plan | Obligation capability evaluation
+
+- Added an agent-executable benchmark plan at [Obligation capability evaluation](../experiments/obligation_capability/agent-plan.md).
+- Separated commitment authoring, registration, lifecycle preservation, and prompt contamination into independently scored experiments.
+- Required human gold labels, raw evidence, sequential survival reporting, reproducible run manifests, and explicit authority gates.
+- Made no production code or obligation-authority change.
+
+## [2026-08-13] research | Concrete long-horizon turn transaction
+
+- Moved the implementation design out of the evidence review; its maintained successor is [Pragmatic turn transaction refactor](architecture/pragmatic-turn-transaction-refactor.md).
+- Restored the agreed `ActorProposal`, `Obligation`, and `ConsequencePatch` contracts verbatim, made the ten-step execution order explicit, and promoted turns 7, 25, 98, 200, and 287 into a pre-generation falsification gate.
+- Rewrote the implementation page around verified current code seams, one monotonic compatibility mode, bounded review phases, exact file-level changes, rollback paths, and explicit post-turn limitations.
+- Added implementable proposal, obligation, and consequence-patch records to the migration plan.
+- Defined authority boundaries, transaction invariants, mutation rules, and failure behavior for each of ten turn stages.
+- Added a ten-phase migration that reuses TurnExecutor rollback, SceneMessage metadata, existing histories, TurnWork, and transaction tests.
+- Deferred durable receipts, split planner-renderer calls, and authoritative ledgers until additive shadow phases pass explicit exit criteria.
+- Kept atomic commit, rollback, replay, and cross-stage composition labeled as unproven hypotheses.
+
+## [2026-08-12] research | Orchestration mechanisms and 300-turn reliability
+
+- Rewrote [Frontier LLM orchestration over 300 interactive turns](research/frontier-llm-long-horizon-orchestration.md) from verified primary papers and fixed repository revisions.
+- Separated character chat, autonomous drama, scripted choices, coded simulations, finite prose, and evolving free-form worlds.
+- Added a source comparison, repository audit, benchmark-specific survival estimates, mechanism falsifiers, and ranked architecture hypotheses.
+- Defined a staged 20/100/300-turn evaluation with ablations, powered comparisons, recovery injections, and containment metrics.
+- Found no published demonstration of reliable 300-turn operation for Rhapsode's complete task.
+
+## [2026-08-12] research | Repeated bounded-context reconstruction
+
+- Extended [Frontier LLM orchestration over 300 interactive turns](research/frontier-llm-long-horizon-orchestration.md) with a primary-source audit of automatic scene, event, and session handoffs.
+- Separated the demonstrated mechanism -- assembling a bounded prompt from persistent records -- from the unproven claim that repeated reconstruction preserves the correct narrative working set.
+- Audited LoCoMo, StoryBox, RecurrentGPT, Re3, DOME, MemGPT, LongMemEval, Generative Agents, BOOK WORLD, OPEN-THEATRE, EvoSpark, and NARRA-Gym. Released code paths were checked where available.
+- Snowballed backward and forward citations from NCP-Bench, StoryWriter, LoCoMo, and LongMemEval; added BOOKMARKS, ConWriter, Lost in Stories, RealTalk, Conversation Chronicles, and StoryBench where they sharpen the Rhapsode boundary.
+- Identified the central evidence split: positive compression systems know the next event or restore canonical history, while Rhapsode must select evidence for an unknown future and then live with its own errors. Corrected the LoCoMo version statistics and NCP-Bench venue status against primary records.
+- Rejected automatic chapter resets as an established reliability mechanism. Recommended a low-cost reconstruction-fidelity gate on the existing 300-turn artifact before another long generation run.
+
+## [2026-08-11] research | Frontier LLM orchestration over 300 turns
+
+- Created [Frontier LLM orchestration over 300 interactive turns](research/frontier-llm-long-horizon-orchestration.md).
+- Reviewed eight close primary systems across free-form dialogue, scripted drama, coded simulation, long-form prose, and sequential narrative stress testing.
+- Verified evaluation horizons, affiliations, venue status, citation maturity, and released repositories against specific paper and code revisions.
+- Found no credible estimate of 300-turn survival; NCP-Bench supplies bounded evidence at turns 20 and 100, with material baseline limitations.
+- Derived a Rhapsode design and evaluation program around character-owned dialogue, pre-prose consequences, separate obligations, verbatim retrieval, and reversible state.
+
+## [2026-08-10] research | Long-run storyline and character failure analysis
+
+- Created [Default Guide 300: coherent stagnation and character convergence](episodes/2026-08-10-long-run-storyline-and-character-collapse.md).
+- Traced the dawn-quest failure through likely same-turn graph resolution, an empty scene intention, short-context feedback, and the unchecked invented fight at turn 98; separated direct evidence from the missing-response inference.
+- Re-audited the code paths for shared NPC authorship, post-turn monologues, mutable cores, dialogue persistence, graph retrieval, and narrator context limits.
+- Framed the 1,500-byte summary cap as a many-to-one information bottleneck, not proof of a low-dimensional manifold.
+- Kept the observation graph observational; separated proposed goal tracking, pre-narration character action, attributed-dialogue recall, and core-mutation policy.
+
 ## [2026-08-05] research | Motif-collapse post-mortem of default-guide-300
 
 - Analyzed the 300-turn autoplay run: plot vocabulary → 0 by block 6 while "candle" saturates;

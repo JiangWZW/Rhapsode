@@ -21,7 +21,7 @@ SCHEDULER_TOOLS = [
         "description": (
             "Pick an off-stage storyline to advance this turn. Call once per "
             "storyline you want advanced (at most 2). Never pick the player's "
-            "active scene. If no off-stage scene deserves a beat, call once with "
+            "active scene. If no off-stage scene deserves a turn, call once with "
             "an empty scene_id."
         ),
         "parameters": {

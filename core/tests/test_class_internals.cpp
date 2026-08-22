@@ -7,7 +7,7 @@
 
 #include "rhapsode/annotator.h"
 #include "rhapsode/character_memory.h"
-#include "rhapsode/director.h"
+#include "rhapsode/graph_plan.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/node.h"
 #include "rhapsode/world.h"
@@ -65,13 +65,12 @@ TEST_CASE("WorldGraph thread queries share active-edge semantics",
     REQUIRE(graph.thread_containing(c) == std::vector<std::uint64_t>{c});
 }
 
-TEST_CASE("Director result retains graph changes and context",
+TEST_CASE("Graph plan result retains graph changes and context",
           "[director][characterization]") {
     WorldGraph graph;
     Node existing = fact("Gate shut", "Gate", 1);
     existing.active_ctx = "The gate blocks the road.";
     const auto existing_id = graph.add_node(std::move(existing)).id;
-    Director director(graph);
 
     const json plan = {
         {"transitions", json::array({{
@@ -84,7 +83,7 @@ TEST_CASE("Director result retains graph changes and context",
         }})},
     };
 
-    const DirectorOutput output = director.apply_planned_turn(4, plan);
+    const GraphPlanResult output = apply_graph_plan(graph, 4, plan);
 
     REQUIRE(output.newly_expired.size() == 1);
     REQUIRE(output.newly_expired.front().id == existing_id);

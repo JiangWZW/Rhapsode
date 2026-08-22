@@ -1,0 +1,1358 @@
+{
+  "charge": 0.0,
+  "dialogue": [
+    {
+      "content": "Let's see... the fountain is now a haunted holy-water attraction — the Eris clergy have filed a formal complaint about the 'unsolicited competition.' The cabbage farmers are demanding restitution for the harvest your arch-wizard flash-fried during last week's toad cull. And seventeen shopkeepers on Merchant's Row would like you to know their windows exploded at dawn. Before breakfast. (tapping each entry with the neat precision of someone who has done this far too many times)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 0
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:31:53Z"
+    },
+    {
+      "content": "The window estimate is preliminary. The glaziers on Merchant's Row are still counting. But that is not why you are whispering to me, is it? (Her voice is barely above a breath. She doesn't look at the quest slip under her palm — she looks at you, and for just a moment her smile thins into something closer to what an actual person might wear at eight in the morning.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:34:31Z"
+    },
+    {
+      "content": "You're right. It's not a bill. It's the only quest on my board that pays enough to clear everything — windows, cabbages, the fountain, all of it — in a single job. I've had it for three months. Every time I almost assign it, I put it back. (Her fingers remain on the slip, not quite ready to slide it over.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:36:35Z"
+    },
+    {
+      "content": "The last party that took it came back in four separate wagons. I need adventurers desperate enough to say yes. You are the only ones desperate enough. That is precisely why I haven't asked.",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:36:35Z"
+    },
+    {
+      "content": "This one's different. The last party that took it — four wagons. That's how they came back. Four. Separate. Wagons. (Her grip on the slip tightens, knuckles blanching against the worn parchment.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:38:45Z"
+    },
+    {
+      "content": "Your party breaks windows. Flash-fries crops. Turns public fountains into holy water dispensaries that scream at Eris clergy. You are — statistically — the worst adventurers in Axel. (A fragile, crooked smile surfaces, then collapses under its own weight.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:38:45Z"
+    },
+    {
+      "content": "But you come back. Every time, you come back in one wagon. And I... I have gotten used to that. (She places the slip on the counter between you, palm still pressed flat over it, as if letting go requires a decision her hand hasn't made yet.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:38:45Z"
+    },
+    {
+      "content": "It's a subjugation contract. A General of the Demon King's army has established a forward base in the mountains three days east of here. Intelligence says she's amassing forces for a siege — not on Axel, not yet, but on the garrison at Arcanletia. If Arcanletia falls, Axel is next. The contract pays seventy million eris. (Her voice stays steady through the briefing — the professional recitation — but cracks on the final number.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:39:57Z"
+    },
+    {
+      "content": "The last party I gave this to was a full squad of eight. All advanced-class. Paladin, two Arch-Wizards, the works. They found the base. They engaged. And then we didn't hear anything for six days until the supply wagons started arriving at the east gate — four of them — carrying nothing but pieces. (She does not look at the slip. She looks at you.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:39:57Z"
+    },
+    {
+      "content": "I have pulled this contract out of the drawer forty-three times. Every time I put it back because I tell myself the same thing: your party isn't ready. Your mage collapses after one spell. Your crusader can't hit anything. Your priest is a font of disaster. And you — you'd take it anyway, because that's what you do when the debts pile up and the easy quests run dry. (Her voice drops to barely above a whisper.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:39:57Z"
+    },
+    {
+      "content": "But that's a lie. The real reason is much simpler and much more unprofessional: I don't want to be the person who sent you out there and never saw you come back. (She lifts her palm from the slip at last.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:39:57Z"
+    },
+    {
+      "content": "Honestly? I don't know. The squad that took this before you — eight of them, all advanced-class — came back in four supply wagons. Not one of them intact. I signed their quest vouchers myself the morning they left. I remember their faces. (Her voice barely carries across the counter. She does not look away from you.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 5
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:43:08Z"
+    },
+    {
+      "content": "The General who killed those eight adventurers is not waiting for us to find a ninth squad willing to die. He is marching on Arcanletia right now. If Arcanletia falls, Axel is next. The guild has no one else to send — every other party with the rank to accept this contract has already refused it, transferred out, or is dead. (Her voice stays even, but her knuckles are white where her fingers press the parchment.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:46:23Z"
+    },
+    {
+      "content": "So to answer your question honestly: I do not know if you can win. I have spent three months convincing myself the answer is no — that giving you this slip was the same as signing your death warrant. But I have also spent three months watching your party survive things that should have killed you. The fountain. The cabbages. The toads. The windows. Every single disaster you have walked into this guild and laughed about afterward. (She taps the smaller slip — a fresh quest form, already filled out, the ink waiting only for your party's names.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:46:23Z"
+    },
+    {
+      "content": "So this is not me handing you a coffin. This is me admitting that I cannot calculate your odds anymore. You break every ledger I try to fit you into. If anyone in Axel survives this contract, it will be the party that treats catastrophe like a morning routine. (She meets your eyes again, and her voice drops to something barely above a whisper.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:46:23Z"
+    },
+    {
+      "content": "That second slip is a standard goblin extermination in the eastern woods. It pays four thousand eris and will not kill anyone. I am showing you both because you deserve the choice I have been too afraid to give you. (She withdraws her hands from the counter, folding them in her lap.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 6
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:46:23Z"
+    },
+    {
+      "content": "I don't know if you can win. That's the truth. I thought I knew when I handed this to the last party. Eight names. Advanced class. Best equipment the guild could requisition. They had formations I'd never seen before — actual tactics. And I was so sure. (Her voice doesn't waver, but her thumb stops moving against the wood.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:49:35Z"
+    },
+    {
+      "content": "They came back in four wagons. The contract came back in a fifth, still sealed. No one else in Axel will even look at it now. Every qualified party has refused it, transferred to another town, or —",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:49:35Z"
+    },
+    {
+      "content": "Or they're already dead. You're the only ones left who are strong enough to try. And stupid enough to say yes. And I have spent forty-three mornings trying to decide whether that means I should give this to you... or whether it means I should burn it and tell the capital we have no one. (She swallows. Her voice drops, barely above a whisper, and she is no longer speaking as your guild receptionist — she is speaking as someone who has already buried too many adventurers and cannot bear to bury yours.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 7
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:49:35Z"
+    },
+    {
+      "content": "I... will process the goblin extermination. Standard terms. Four thousand eris upon delivery of twelve goblin ears. No expiration. (Her voice is steadier than her hands — she reaches for the guild stamp with the muscle memory of a thousand quests, but her knuckles are white on the handle.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:55:41Z"
+    },
+    {
+      "content": "Goblins! Goblins, Kazuma! I am a goddess — a literal, actual, divine being — and you are sending me to exterminate goblins like some common novice with a rusty shortsword! The Black Moon was right there! Seventy million eris! A Demon King General! That's the kind of quest where a goddess finally gets to demonstrate her magnificent power, and you chose goblins! (She spins on her barstool, nearly toppling her empty mug, arms flung wide in theatrical outrage.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:55:41Z"
+    },
+    {
+      "content": "Aqua, cease your bleating. Kazuma has made a tactical decision. The Black Moon is not rejected — it is deferred. Deferred, I say! A word that contains within it the promise of future conflagration! The contract waits for us like a slumbering dragon, and when we return from these paltry woods with goblin ears and full mana reserves, we shall awaken it together! (She rises from her chair, one hand pressed to her eyepatch, the other extended toward the Black Moon contract on the counter as though saluting a worthy opponent.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:55:41Z"
+    },
+    {
+      "content": "A Demon King General marching on Arcanletia... and we are hunting goblins. I understand the logic, truly I do, but my shield arm — it aches with the knowledge that somewhere, right now, a foe of unimaginable power is unchallenged. Though I suppose... goblins do swarm. They could overwhelm us through sheer numbers. A Crusader, surrounded, her armor the only thing between her party and a hundred filthy blades... (Her voice starts steady and noble, then dips into a breathless murmur; her cheeks flush behind the gaps in her helm.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 9
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:55:41Z"
+    },
+    {
+      "content": "Twelve ears! That is — that is a perfectly adequate warm-up for a Crusader's shield arm. I shall absorb every blow those goblins can muster, and should their crude weapons find my armor wanting, I will endure it gladly! (Straightens, gauntlets clenched, voice trembling upward on 'gladly' into unmistakable eagerness.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:58:41Z"
+    },
+    {
+      "content": "Unbelievable. You use my divine power as your excuse to run from the one quest that matters, and now I have to walk all the way to the woods? Kazuma, you are the worst party leader in the history of this guild. (Does not lift her cheek from the table. Her voice is muffled by wood.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:58:41Z"
+    },
+    {
+      "content": "A goblin cave is a canvas of shadow and filth! And into that darkness I shall cast a light so incandescent that future generations of Crimson Demons will name this day the Goblins' Dawn of Annihilation! ...Tomorrow. After I have recovered my mana. (Strikes her final pose, cloak settling around her shoulders with a practiced flutter.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:58:41Z"
+    },
+    {
+      "content": "I will. The drawer is open. Come back with twelve ears and I'll have the kettle ready — and the truth you asked for. (Her hand rests on the desk drawer, not quite closing it. Her smile is tired but unperformed.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 10
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:58:41Z"
+    },
+    {
+      "content": "Wait, wait, wait! That's it? Twelve goblin ears? I'm a goddess, Kazuma! A goddess! You're dragging me into the woods to hunt vermin when there's a Demon King General sitting on the counter like a seventy-million-eris feast, and you just — you just folded it away like a napkin! (slams her mug down hard enough to slosh water across the table)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:01:24Z"
+    },
+    {
+      "content": "Fear not, Aqua! The Arch-Wizard Megumin has already calculated the optimal trajectory. The goblin cave sits precisely seventeen degrees north-northwest of the hill where I perform my daily Explosion. Coincidence? I think not. Destiny has arranged a two-act performance: Act One, twelve ears. Act Two — conflagration visible from the capital itself. (plants her staff on the floorboards with a decisive crack)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:01:24Z"
+    },
+    {
+      "content": "Twelve ears. He said twelve. That's — that's a specific number, not a suggestion. He's going to count them. One by one. In front of the guild. Where everyone can see whether I held the line or... or failed him. (voice drops to a breathless murmur halfway through, gauntlets tightening around the zweihander's grip)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:01:24Z"
+    },
+    {
+      "content": "The woods east of Axel. Follow the old lumber trail until the creek forks, then head north. The nest is in a limestone outcrop — you'll smell it before you see it. And... please come back within the week. I'll have the Black Moon paperwork ready. (does not look up from the ledger, but her pen stops moving on the last word)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 11
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:01:24Z"
+    },
+    {
+      "content": "Three copper. Three. Copper. Kazuma, I am a goddess. A goddess! I have purified undead that would turn your mortal hair white! And you're paying me — paying me! — less than the cost of a single bubbly at this guild! This is not a budget, this is heresy! (Snatches her empty mug and brandishes it toward the door, voice cracking on the last word.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:04:23Z"
+    },
+    {
+      "content": "The coins have already been absorbed into my operational fund for Explosion-related tactical expenditures. Your protest is noted and filed under 'irrelevant.' Also, Aqua, you were holding that mug for so long without drinking that I assumed you had retired from consumption entirely. (Pats her coin-pocket with immense satisfaction, chin lifted, already drifting toward the door.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:04:23Z"
+    },
+    {
+      "content": "Kazuma, I have been ready since the word 'goblin' left your mouth. My shield arm has been restless for days — days spent watching you negotiate payment plans with glaziers while my blade collected dust. Twelve ears. I will hold the line. I will not miss. Not once. (Her voice drops on the last two words — more prayer than promise — and her cheeks are faintly pink beneath her helm.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:04:23Z"
+    },
+    {
+      "content": "Don't you dare walk out that door, Kazuma! You owe me — owe me — a real explanation! A goddess does not hunt goblins! Goblins are for tutorial quests and children's bedtime stories! I am being. Demoted. By copper. Coinage! (Slams the mug onto the table hard enough to rattle the empty chairs.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 12
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:04:23Z"
+    },
+    {
+      "content": "No Divine Purification?! You want me to walk into a goblin cave — a cave, Kazuma, dark and damp and probably full of mold — and I'm not allowed to use even a single sacred technique? What am I supposed to do, lecture them about the Axis faith until they repent? They're goblins! They don't even have souls worth saving! (stops in the doorway, hands on hips, blocking the exit with divine indignation)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:07:51Z"
+    },
+    {
+      "content": "No Explosion. You say those words as though they were a trifle — a small concession, a reasonable request. But you ask the foremost genius of the Crimson Demon Clan to enter a limestone cave and not reshape its very geology with the ultimate magic? This is not a condition, Kazuma. This is a temporary artistic embargo. I accept it only because the cave faces east and the dawn will be perfect tomorrow. (taps staff once on the floorboards, a punctuation mark of theatrical concession)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:07:51Z"
+    },
+    {
+      "content": "I will not miss. I swore it before the guild, before Luna, before the Black Moon itself. A Dustiness does not break a public vow — no matter how the alternative might... that is to say, the shame of failure would be... ahem. I will strike true. Every ear will be mine — ours. The party's. (releases the doorframe long enough to adjust her gauntlet strap with unnecessary force, then grips it again)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:07:51Z"
+    },
+    {
+      "content": "One week. I'll keep the coffee hot and the contract where you can see it. Don't make me pull it a forty-fourth time alone. (does not raise her voice; the words carry across the guild hall because something in her tone makes the morning quiet listen)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 13
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:07:51Z"
+    },
+    {
+      "content": "Well — obviously! Of course you trust me. I'm a goddess. It would be weird if you didn't trust me. It's just... it took you long enough to say it, that's all. (She sniffs once, hard, and rubs her nose with the back of her wrist in a way that has nothing to do with allergies and everything to do with saving face.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 14
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:10:54Z"
+    },
+    {
+      "content": "A wise allocation of tactical assets! While the Crimson Demon Arch-Wizard maintains her artistic embargo, the goddess shall serve as rearguard — a role both noble and, dare I say, dramatically underserved by the morning's fiscal negotiations. (She taps her staff once on the cobblestones outside the door, striking a pose that turns a goblin hunt into a campaign prologue.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 14
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:10:54Z"
+    },
+    {
+      "content": "Kazuma... I will not fail you. Every ear I bring back will be proof that this shield can also be a sword. I swear it on my family name — (She catches herself before saying Lalatina, her cheeks flushing as she forces the word back down her throat.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 14
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:10:54Z"
+    },
+    {
+      "content": "The limestone outcrop is east of the old lumber trail. Follow the creek until it forks, then bear north. And... do come back. I've already started the paperwork. (She says it lightly, but her fingers are still resting on the drawer handle, and she doesn't look away until the last of you has crossed the threshold.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 14
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:10:54Z"
+    },
+    {
+      "content": "I knew it was there! I was holding it on purpose! It's — it's a tactical mug. For... for water. Which I am the goddess OF, in case you forgot while you were busy giving away my SHARE of the— (She thrusts the mug toward Kazuma mid-tirade, then yanks it back before he can take it, clutching it to her chest like a holy relic.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:13:42Z"
+    },
+    {
+      "content": "The goddess of water requires a mug to carry water. Truly, the divine mysteries humble us all. Shall I hold your staff as well, Aqua? I have room — your copper share filled exactly one pocket. (Megumin calls this forward without breaking stride, her crimson cloak flaring with the self-satisfaction of someone who is both richer and funnier than she was ten minutes ago.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:13:42Z"
+    },
+    {
+      "content": "Are we stopping? Why are we stopping? The goblins won't wait forever — they could be sharpening their claws right now, preparing ambushes, oiling their little goblin traps... (Darkness has turned around thirty paces ahead, one gauntleted hand pressed flat against a tree trunk for balance, her face flushed with the specific agony of delayed peril.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 15
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:13:42Z"
+    },
+    {
+      "content": "For the record, I was fully aware I was holding it. A goddess does not forget objects in her own hand. I was simply... conducting a prolonged structural assessment of the vessel's craftsmanship. (She lifts her chin, not quite meeting your eyes. Her thumb traces the rim of the mug once, then stops.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:16:07Z"
+    },
+    {
+      "content": "The Crimson Demon Clan has a name for that kind of assessment. We call it 'being too proud to admit you forgot.' My people wrote three epic poems about it. (She steps past Aqua, her staff tapping once on a flat stone for emphasis, and squints toward the spot where Darkness vanished around the bend.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:16:07Z"
+    },
+    {
+      "content": "There's something here! I mean — I think there's something. It might be nothing. But it also might be goblins. Or a bear. Or a goblin riding a bear. Either way, I am fully prepared to stand my ground while you catch up! (Her voice echoes back through the trees, breathless and entirely too hopeful.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 16
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:16:07Z"
+    },
+    {
+      "content": "Kazuma. You said my name and then you stopped. That's worse than any of the other things you've said to me today. (She does not look at him. The mug hangs at her side, forgotten. Her voice is quiet — not a whine, not a complaint, just a fact stated to the gravel.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 17
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:18:51Z"
+    },
+    {
+      "content": "You stopped. Right at the part where you were supposed to say something true, you stopped. And now I have to walk the rest of this stupid trail not knowing if you were going to say you missed me or say you wished I'd gone. Do you have any idea how heavy that is? (Still not looking at the Player. Her voice is quieter than it's ever been — no whine, no wail — just the raw edge of someone who is tired of filling silences with noise.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 18
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:21:23Z"
+    },
+    {
+      "content": "Kazuma! The treeline — movement past the stump! Goblins, three, maybe four — they've been waiting for us to bunch up on the trail! (plants her shield, body coiling with the readiness of someone who has been tracking this ambush for the last quarter-mile)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 19
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:24:14Z"
+    },
+    {
+      "content": "Five! There are five — Kazuma, get behind me! (plants her boots, angled shield deflecting the first goblin's blade with a shriek of steel on steel, her voice breathless in a way that isn't entirely fear)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 24
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:42:50Z"
+    },
+    {
+      "content": "You have chosen poorly, wretches! To interrupt the Crimson Demon's tactical conference is to court annihilation so complete that even the carrion birds will write elegies! (staff thrust forward, cloak billowing, voice a cathedral of certainty — a bluff held together by pure theatrical gravity, her legs trembling slightly beneath the hem of her cloak where no goblin can see)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 24
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:42:50Z"
+    },
+    {
+      "content": "Kazuma — the mug! You still have— never mind, just don't die, you owe me three copper! (her voice cracks on 'copper' — not the whine of before, but something raw and urgent, her hands already rising with the faint blue shimmer of a goddess who has remembered what her power is actually for)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 24
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:42:50Z"
+    },
+    {
+      "content": "Kazuma, they're closing — I can intercept the right flank, but the leftmost one is already circling! Give the word and I'll plant my shield where they can't ignore me! (Her voice trembles at the edge of breathless, greatsword already angled to catch the morning light as a beacon.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:45:49Z"
+    },
+    {
+      "content": "The center one — his knife-hand trembles! That is not the grip of a warrior but the desperate clutch of prey that has mistaken itself for predator. Kazuma, grant me the signal and I shall pronounce their doom with such theatrical finality that their grandchildren will feel the chill! (She lifts her staff high, crimson bands catching sunlight, voice a cathedral of certainty despite the total absence of mana behind her eyes.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:45:49Z"
+    },
+    {
+      "content": "Kazuma. Whatever you saw in the dirt — I'll cover it. No goblin touches your back while I'm standing. (She steps forward, mug tucked into her sash with an uncharacteristic care, and the water in the creek behind her shivers — just slightly, just for a moment — as her fingers find the hem of her sleeve.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 25
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:45:49Z"
+    },
+    {
+      "content": "Foolish creatures! You thought to ambush the Crimson Demon Clan's foremost genius? Behold my staff, crackling with barely contained arcane fury — one more step and I shall reduce this entire hillside to a smoking crater! (slams staff into gravel, cape billowing dramatically despite the complete absence of wind)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:48:44Z"
+    },
+    {
+      "content": "That's it — come at me! Test your blades against my armor! I am the unbreakable wall of this party and I shall not— ah... that one nearly found a gap... do it again... (shield locked, face flushed, sword completely missing the goblin on her right by two feet)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:48:44Z"
+    },
+    {
+      "content": "I heard what you said before you ran. You're an idiot and you're going to get yourself killed and I am NOT carrying your soul back a second time — so you'd better drop that center one before I have to do something embarrassing. (hands raised and glowing faintly, creek water rising in tendrils behind her)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 26
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:48:44Z"
+    },
+    {
+      "content": "Five goblins and a hobgoblin, undone by a single Explosion that did not even need to be cast! Such is the terror of the Crimson Demon Clan — my reputation alone is a weapon that shatters formations! (plants her staff with theatrical finality, cape catching a breeze that may or may not be natural)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:53:12Z"
+    },
+    {
+      "content": "It's... it's over? Already? That one barely scratched my pauldron — I mean, how am I supposed to fulfill my vow to hold the line if the line doesn't even get properly TESTED? (voice starting noble, ending somewhere between indignation and breathless disappointment)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:53:12Z"
+    },
+    {
+      "content": "Did you see that?! The water just — it LISTENED to me! I didn't even have to use a spell, it just KNEW! That's because I'm a goddess, you know! A real one! Not like that goblin who couldn't even stand on WET GRAVEL! (practically bouncing on her heels, pointing at the goblin at her feet, the creek-water ribbon still obediently wrapped around his ankle)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 27
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:53:12Z"
+    },
+    {
+      "content": "Did you see that? I caught one. Alive. With my own water. Not purification, not some overkill goddess trick — just the creek and my fingers. He tried to run and I just... reached out, and the water wanted to help, and now he's sitting there like a wet cat and I didn't even cry once. (She says this without breaking her grip on the water-tether, but her voice has the wobble of someone trying very hard not to sound as proud as she feels.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:56:57Z"
+    },
+    {
+      "content": "The Crimson Demon Arch-Wizard stands before you, mana utterly spent, and yet not a single goblin dared test her empty staff. Let the bards note: Megumin's shadow alone is worth a full battalion. Also, Kazuma, if you could retrieve my cloak from where I dramatically discarded it three minutes ago, that would be acceptable gratitude. (She gestures vaguely toward a bush where a splash of crimson fabric is snagged on a branch.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:56:57Z"
+    },
+    {
+      "content": "Is everyone unharmed? That goblin on my flank — he struck my shield seventeen times. Seventeen! His arms must be burning. I almost felt bad for him. Almost. The formation broke cleanly. Kazuma, your tactics were... acceptable. More than acceptable. (She lowers her great shield with a heavy thud, then immediately looks flustered by her own sincerity.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 28
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:56:57Z"
+    },
+    {
+      "content": "You fight like chief-killer. Same feet. Same knife. Chief-killer came to our cave three winters back. Took everything. Left these. (taps the old scars on his ribs with one clawed finger, the gesture almost casual)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 29
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:59:59Z"
+    },
+    {
+      "content": "Same place. Hollow under the grandfather oak — the one lightning split the summer before she came. But she don't winter there anymore. Three winters is a long time for a human with scars that ain't healed. (His voice is gravel over gravel, the words shaped by a mouth more used to biting than talking. He glances at the water around his ankles, then back at the Player's face.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:14:13Z"
+    },
+    {
+      "content": "Wait. Three winters of watching for you to walk through Axel alive, and you're just going to— Kazuma, who IS this woman? And why does a goblin know more about her than I do? (Her voice pitches upward on the last syllable, the creek-water trembling with the shift in her focus. She's still holding the leash, but her eyes are locked on the Player now, not the prisoner.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 33
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:14:13Z"
+    },
+    {
+      "content": "She didn't owe me. I owed her. Three winters past. Your sister walked into our camp alone. Killed the chief. Killed the chief's sons. Killed everyone who raised a blade. Then she stopped. Looked at me. Looked at these — and said I'd already paid enough to live. The debt was my life. She said I could keep it. But I had to watch the road to Axel. Watch for a man with her same way of standing. Same way of measuring a threat before deciding to kill it. She said: When you see him breathing, tell him I kept my promise. Tell him the hollow is still home. And tell him the debt is paid — not yours, not mine, but the one between us and the ones we couldn't save. (He taps the scar-trenches across his ribs, then lowers his hand to his knee, palm up — a messenger who has delivered what he carried and is ready for judgment.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 35
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:21:45Z"
+    },
+    {
+      "content": "Gezrak. That is my name. She did not tell you because I did not give it to her. Three winters ago I had no name worth carrying. (His yellow eyes drop from the Player's, then rise again — not submission, but a weight set down.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 36
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:24:34Z"
+    },
+    {
+      "content": "She did not forget. Iron does not forget. Honesty does not forget. Your sister carried her debt the same way I carried her message. In the bone. It does not matter whether the one you carry it for remembers. You carry it anyway. (The gravel in his voice wears smooth at the edges, like river stone.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 36
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:24:34Z"
+    },
+    {
+      "content": "The guild wants ears. Twelve of them. That is the contract. (His gravel-rasp voice carries no defiance — just the flat recitation of a creature who has read the terms and isn't asking for mercy.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Gezrak",
+        "turn": 38
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:31:46Z"
+    },
+    {
+      "content": "The contract was written before I knew the goblin I was sending them to kill had a name. (She takes one step down the ravine bank, her heel sinking into the wet gravel, and does not look at her ledger.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 38
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:31:46Z"
+    },
+    {
+      "content": "You eat. I eat. Then we speak of what words are worth. (Tears the dried meat in half and offers one piece back toward the Player, his clawed hand steady despite the creek-water still binding his ankles.)",
+      "metadata": {
+        "scene_kind": "character",
+        "speaker": "Goblin Veteran",
+        "turn": 39
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:35:54Z"
+    }
+  ],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": []
+      },
+      {
+        "max_snippets": 5,
+        "snippets": []
+      },
+      {
+        "max_snippets": 3,
+        "snippets": []
+      }
+    ],
+    "summarized_up_to": 0
+  },
+  "driving_intention": "",
+  "history": [
+    {
+      "content": "Another beautiful morning in Axel — which means another morning of being broke.\n\nYou sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.\n\nAqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. \"Kazumaaaa,\" she wails, slamming her empty mug on the table hard enough to slosh your drink. \"We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!\"\n\n\"We're broke BECAUSE you keep drinking,\" you mutter, but she's already flagging down the waitress for another round on your tab.\n\nMegumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.\n\nDarkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.\n\n\"K-Kazuma,\" she stammers, not turning around. \"There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater...\"\n\nShe's trembling. That's not fear.\n\nLuna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.",
+      "metadata": {},
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:30:47Z"
+    },
+    {
+      "content": "I push my chair back with a groan and head over to the counter, ignoring Aqua's wailing behind me. I lean on the polished wood, keeping my voice low.\n\n\"Luna, what's the damage this time? Is it the fountain incident, the missing crops, or did one of my girls accidentally level a building while I was asleep?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:30:51Z"
+    },
+    {
+      "content": "Luna's smile doesn't waver — it never does — but something behind her eyes dims as she recognizes the particular slump of your shoulders. The slump of a man who already knows the answer and is just confirming how bad it's going to be.\n\nShe slides a thick ledger across the polished wood, turning it so you can read the latest entries. Her finger, manicured and steady, taps three fresh lines near the bottom. One entry for the cabbage harvest — *interrupted by unauthorized Explosion, 40% yield loss, damages claimed by seven farms.* One for the fountain in the central plaza — *turned to holy water during an unsanctioned exorcism ritual, now glows faintly at night and attracts restless spirits, purification and repairs pending.* And a brand-new one from this morning: *windows shattered along Merchant's Row, consistent with percussive blast originating from the eastern hills, seventeen properties affected.*\n\nShe taps the last one twice, her polite smile tightening by a single millimeter. Seventeen windows before breakfast. That has to be a new record, even for Megumin.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:31:53Z"
+    },
+    {
+      "content": "I lean on the counter and let out a long, tired sigh, rubbing the bridge of my nose. \"Seventeen windows. Before breakfast.\" I glance back at Megumin, who's now animatedly explaining her napkin diagrams to a visibly confused barmaid. \"You know, I used to think 'Crimson Magic Clan' was just a fancy title. Turns out it's more of a threat assessment.\"\n\nI turn back to Luna, lowering my voice further. \"Look, I'll make this right. We're short on funds, but I can offer my services — the legitimate ones, the ones that don't involve explosions — to pay off the damages. Or I could take a quest, something quiet, something that keeps us out of town for a few days.\" I pause, glancing back at Darkness, who is now reading the alligator quest with the intensity of someone memorizing a love letter. \"A few days might be good for everyone. Especially the shopkeepers.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:33:27Z"
+    },
+    {
+      "content": "Luna's gaze doesn't follow yours to the table. She doesn't need to. She's been watching your party long enough to know exactly what Megumin is doing with those napkins without turning her head — the same way she knows Aqua is on her fourth mug now, not her third, because the barmaid has a tell when serving a goddess who tips in divine blessings instead of coin.\n\nThe ledger stays open between you. Her finger hasn't moved from the third line — the fountain, the clergy complaint, the one that technically counts as a religious incident and therefore requires additional paperwork. Her manicured nail taps once, a tiny sound swallowed by the morning din of clinking mugs and distant laughter.\n\nShe reaches beneath the counter. What she produces isn't another bill or a revised total — it's a single quest slip, folded once, the parchment worn at the crease from being pulled out and put back too many times. She doesn't slide it across yet. She just sets it beside the ledger, her palm resting flat over the description, and meets your lowered voice with one of her own — soft enough that even the barmaid two paces away hears nothing at all.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:34:31Z"
+    },
+    {
+      "content": "I follow your gaze toward the quest board, but my eyes land on the slip in Luna's hand instead. The worn, folded one she hasn't slid across yet. Seventeen windows, and she's holding something back.\n\n\"What's that one?\" I nod at the slip under her palm. \"The one you keep pulling out and putting back. That's not a bill — bills don't get worn from hesitation.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:35:50Z"
+    },
+    {
+      "content": "For the first time this morning, Luna's professional smile falters. Not by much — a twitch at the corner of her mouth, a fractional widening of her eyes — but on a face that has delivered four-figure debt notices without flinching, it may as well be a confession.\n\nHer fingers tighten around the slip. The motion is instinctive, protective, the way someone guards a letter they've written and rewritten but never sent. The paper is soft at the edges, creased into obedience by months of the same ritual: pulled from the stack, reconsidered, returned before anyone could ask.\n\nShe looks at you — not through you, not past you, but directly at you — and for a fleeting half-second you see not the guild receptionist but the woman underneath, someone who has been carrying a weight that doesn't fit in any ledger column.\n\nThen the smile reassembles itself, smaller this time, less practiced. She places the slip on the counter between you but keeps two fingers pressed to its surface.\n\n---",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:36:35Z"
+    },
+    {
+      "content": "I lean forward, elbows on the counter, letting my voice drop to match hers. \"Three months you've been holding onto that slip. You've handed me quests that got my party blacklisted from half of Axel, and you didn't blink. But this one — this one you keep to yourself.\"\n\nI tilt my head, studying her face. \"You've watched my party break windows, flash-fry crops, and resurrect a fountain into a haunted tourist trap. You know we're reckless. So what's on that slip that makes *you* hesitate, not us?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:37:57Z"
+    },
+    {
+      "content": "Luna doesn't look away. That's the first thing you notice — she doesn't deflect, doesn't retreat behind the ledger, doesn't reach for the inventory clipboard to change the subject. Her eyes meet yours across the polished wood, and for a stretched, fragile moment, she is not the guild receptionist at all.\n\nShe is just a woman who has spent three months pulling a piece of parchment out of a drawer and putting it back again, each time telling herself it was professional judgment. Risk assessment. Party composition analysis. Anything but what it actually was.\n\nHer thumb traces the worn edge of the slip. The paper is soft as cloth from handling. Behind you, Megumin's voice rises in theatrical indignation about something — probably the barmaid questioning the structural integrity of a napkin fortress — and the familiar noise seems to anchor Luna back into her body. She exhales, a breath she may have been holding since the day the wagons returned.\n\nThe smile she musters is smaller than her professional one. Realer. It doesn't reach her eyes because it doesn't try to.\n\n\"This one's different.\"\n\nThe words come out quieter than either of you expected.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:38:45Z"
+    },
+    {
+      "content": "I keep my voice low, matching the hush between us. \"Three months of pulling that out and putting it back. You don't do that for cabbage debts or broken windows.\" I tap the parchment with two fingers, careful not to touch her hand. \"So what's actually on this thing, Luna? What makes the woman who hands me every cursed job in Axel balk at this one?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:39:00Z"
+    },
+    {
+      "content": "Luna's palm does not lift. Not yet.\n\nInstead, her other hand moves — a small, unconscious gesture — to the collar of her uniform, where her fingers brush the guild crest pinned there. The polished brass has gone dull at the edges from years of the same motion: straightening it before delivering bad news, touching it for luck before handing over a quest she suspects no one will come back from.\n\nWhen she finally speaks, her voice is quieter than you have ever heard it, stripped of the receptionist's lilt, stripped of everything but the raw arithmetic of risk she has been running in her head for ninety-one days.\n\nShe turns the slip over. It is not a single quest. It is a contract — thick parchment, three wax seals, one of them black.\n\n\"The Black Moon,\" she says. The name lands between you like a stone dropped into still water. Behind you, the guild hall's morning noise continues — mugs clinking, someone laughing at a table near the door — but here at the counter, there is only the slip and the weight of what she has just said.\n\nHer fingertips are white where they press into the wood.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:39:57Z"
+    },
+    {
+      "content": "I look at the black seal, then back at her. \"Seventy million. That's a lot of zeros. But you're not hesitating because of the payout — you're hesitating because you already know how this one ends.\" I lean forward, elbows on the counter, and don't look away from her eyes. \"So tell me honestly, Luna. Is this a quest we can actually win, or is this you handing us a coffin with a nice bow on it because there's no one else desperate enough?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:42:11Z"
+    },
+    {
+      "content": "For a long moment, Luna simply looks at you. Not through you, not past you — at you. The way someone looks at a door they have been afraid to open.\n\nThen her hand lifts from the parchment.\n\nIt is a small motion, unremarkable if you weren't watching for it — the kind of motion a person makes when they stop holding their breath after three months. The slip stays on the counter between you, its three wax seals catching the morning light from the high windows. The black one seems to drink it in.\n\nBehind you, Aqua's fourth mug clinks against the table. Someone laughs at the far end of the hall. A barmaid drops a tray and swears. The guild goes on being the guild.\n\nLuna's fingers, still hovering just above the parchment, curl slowly into her palm. When she speaks, her voice is barely above the counter — not the guild receptionist's measured tone, but something older and more tired, the voice of a woman who has rehearsed this moment forty-three times and still doesn't know the right words.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:43:08Z"
+    },
+    {
+      "content": "I take a long breath, letting her words settle. Seventy million eris. A general. Four wagons.\n\n\"Luna.\" I don't reach for the slip yet. \"You've seen us come back. Eight advanced-class didn't. That's not a death wish on our part—that's a calculation.\" I glance back at Aqua, who's now using her empty mug as a prop in some loud explanation, Megumin nodding furiously beside her. Darkness sits quietly, watching the three of them with a fondness that has nothing to do with battle.\n\nI turn back to Luna, lower my voice. \"I'm not asking about odds. I'm asking about the target. What's her specialty? Magic, or something worse—something that breaks morale first?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:44:57Z"
+    },
+    {
+      "content": "Luna holds your gaze for one breath. Two. Three.\n\nThen she does something you have never seen her do in all the months you have dragged your disaster of a party through her doors: she looks away first. Not at the ledger, not at the contract — at the guild crest on her collar, her fingers finding the worn brass again, and this time the gesture is not habit but anchor. When she looks back up, her smile is gone entirely, and what remains is the face of a woman who has spent forty-three mornings rehearsing this conversation in an empty room.\n\nShe slides the Black Moon contract across the polished wood until it sits squarely between your elbows. The black wax seal catches the morning light slanting through the guild windows — the same windows Megumin shattered before breakfast, the same windows whose replacement estimate is still being tallied in the ledger at Luna's elbow. The irony is not lost on her. You can tell by the way her thumb traces the edge of the parchment, a slow, deliberate line, as if she is memorizing the feel of it before letting go.\n\nHer other hand reaches beneath the counter — not for the inventory clipboard, not for another bill, but for a second slip of paper, smaller and crisper, the ink still dark. She sets it beside the contract without looking at it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:46:23Z"
+    },
+    {
+      "content": "I wait for her answer, but I also let my eyes drift to the second slip — the fresh one, the goblin job. Four thousand eris. No one dies. The safe choice I've been pretending doesn't exist.\n\nI don't reach for either yet.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:48:31Z"
+    },
+    {
+      "content": "The question hangs in the air between you — not a demand, not a bluff, just a simple request for the truth from someone who has spent three months avoiding it. Luna's hand, the one that held the contract down for forty-three pulls, now rests flat on the counter beside it. Defenseless. Her thumb traces a slow circle on the wood, a nervous tic you've never seen from her before, and she doesn't seem to notice she's doing it at all.\n\nBehind you, Aqua's voice rings out — something about the superior tensile strength of divine undergarments — and Megumin's answering cackle cuts through the guild hall like a small explosion. Neither of them has any idea what's happening at this counter. Darkness, though — when you glance back, you catch her watching. Not the loud pair, but you. The crusader's expression is unreadable, but she doesn't look away when your eyes meet hers. She's been listening.\n\nLuna exhales. It's a small sound, barely a breath, but it carries the weight of every pulled slip, every returned wagon, every adventurer whose name she had to scratch out of the registry in neat, careful handwriting.\n\nShe lifts her gaze back to yours. And this time, there is no guild receptionist left in her face at all.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:49:35Z"
+    },
+    {
+      "content": "I slide the black-wax contract aside and pick up the second slip — the goblin job. I don't look at the black one. My fingers are steady on the smaller paper.\n\n\"Aqua has a new spell she wants to try on live targets. Megumin is one misfire away from leveling a building. Darkness needs to feel useful, and I could use four thousand eris and one quiet afternoon.\" I let the slip settle back onto the counter, still not touching the sealed one. \"I'll take this one today. The other... give me a week. Let me get my party to a place where they come home first.\"\n\nI meet her eyes. \"I'm not saying no. I'm saying not yet.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:51:26Z"
+    },
+    {
+      "content": "Luna watches your fingers settle on the smaller slip with the expression of someone who braced for a door to slam and heard it close softly instead. The Black Moon contract sits where you left it — off to the side, not crumpled, not rejected, just deferred — and for a long moment she doesn't seem to know what to do with her hands now that they aren't guarding anything.\n\nThe guild murmur fills the silence: dice clattering somewhere in the back, a drunk adventurer arguing about a bar tab, the barmaid's bewildered \"so it's a *napkin* technique?\" drifting from your party's table. None of it touches her. Her thumb has stopped its nervous circle on the wood.\n\nShe picks up the goblin slip with two fingers, the same way she's handled ten thousand quests before it, but her hand isn't quite steady. One breath. Then the professional mask doesn't so much snap back into place as settle — gentler than before, less armor than acknowledgment. The smile she gives you is small and private and entirely real.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:52:31Z"
+    },
+    {
+      "content": "I look at the black-wax seal one more time — not to take the contract, just to memorize the shape of it. Then I fold the goblin slip and tuck it into my jacket.\n\n\"A week. I mean it, Luna. We'll come back from the woods with goblin ears and a full inventory, and then we'll have that talk — the one you've been rehearsing for forty-three mornings.\"\n\nI glance back at my party, at Aqua mid-argument with a barmaid about mug sizes, Megumin scribbling explosive runes on a napkin, Darkness staring at her own gauntlets like they hold the answer to something. \"They're worth more than a contract. Even if they don't know it yet.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:54:26Z"
+    },
+    {
+      "content": "The guild hall doesn't pause for moments like this — mugs still clank, the barmaid still tallies tabs, someone at the back tables still argues about loot splits — but Luna doesn't seem to hear any of it. Her eyes follow the goblin slip into your jacket the way a woman watches a fuse fail to catch. The Black Moon contract sits on the counter where you left it, wax seal catching the morning light through the high windows, and she doesn't snatch it back into the drawer. Doesn't even look at it. Her gaze is on you, and for the first time since you walked through these doors she looks less like someone bracing for tragedy and more like someone who just watched a cart miss a child by inches.\n\nHer fingers find the guild crest again, but this time the gesture is different — slower, less desperate, the way you touch a talisman after the danger has already passed. She draws a breath that catches somewhere in her throat, and when she exhales, three months of rehearsal leave her body in a single unsteady sigh.\n\nBehind you, Aqua's voice cuts through the ambient noise with the precision of a drunk throwing a mug: she's been mid-tirade for at least a full minute now, volume climbing, finger pointed at the ceiling like she's indicting the heavens for insufficient tribute. Megumin is nodding with the grave solemnity of a war council adjutant. Darkness sits with her gauntlets folded on the table, helm tilted just enough to watch the counter — watching you, actually, her posture rigid with the particular tension of someone who has been holding an argument inside her own head and losing.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:55:41Z"
+    },
+    {
+      "content": "I grab the goblin slip from the counter and tuck it away. \"Four thousand eris it is. We'll be back before the week's out — goblins, ears, maybe a bonus if we find their nest.\" I turn, catching Darkness's eye. \"Oi, Crusader. You wanted a fight. Twelve ears of it coming right up.\"\n\nI head toward the door, but pause. \"Luna. Keep the Black Moon contract where I can see it. Just... keep it.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T22:57:31Z"
+    },
+    {
+      "content": "Luna's fingers find the black-wax seal one last time — not to hide it, not to guard it, but simply to touch the thing she has touched forty-three times alone in an empty guild hall before dawn. This time, someone else knows it exists. The difference sits in her chest like a stone that has finally stopped rolling.\n\nAt the table, Darkness rises so fast her chair scrapes a long arc across the floorboards. Her gauntlets catch the morning light, and beneath her helm her cheeks are already coloring — not from embarrassment this time, but from something closer to relief. The word *useful* still rings in her ears, and she looks at you across the guild hall like a hound that has finally heard the whistle.\n\nAqua slumps forward across the table, her cheek pressed to the wood beside her empty mug. Her pout is theatrical enough to draw a glance from the barmaid, who has seen this exact expression on at least fourteen separate occasions and has learned to keep walking.\n\nMegumin is already on her feet, one hand pressed flat to her eye patch, the other extended toward the rafters in a pose she has been refining since age six. The morning light through the high windows catches the silver trim on her cloak at exactly the right angle — she planned this — and her crimson eyes gleam with the particular fire of someone who has just reframed a goblin hunt as the overture to an epic.\n\nBehind the counter, Luna picks up the Black Moon contract. She does not fold it. She does not file it. She holds it for a long moment, then slides it — gently, deliberately — into the top drawer of her desk, the one she has opened forty-three times before. But this time she does not close it all the way. A sliver of black wax catches the light through the gap.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T22:58:41Z"
+    },
+    {
+      "content": "I stop at the door, one hand on the frame, and look back at the table where the others are still tangled in their own arguments.\n\n\"Oi. Megumin, Darkness, Aqua — get your gear. We're heading to the woods. And I don't want to hear a single word about seventy million eris until we've got twelve ears on the table.\"\n\nI glance at Luna one more time, the sliver of black wax catching the light through the gap in her drawer. \"When we get back... you tell me what you know.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:00:24Z"
+    },
+    {
+      "content": "Aqua does not rise. She sits frozen mid-gesture, her empty mug still aloft like a scepter she has forgotten she was holding, her mouth a small round O of indignation that has not yet found its volume. The argument she was building — something about divine authority and the insult of being relegated to goblin target practice — collapses into a strangled noise halfway between a goddess's wrath and a child denied dessert.\n\nMegumin is already on her feet, staff in hand, cloak sweeping dramatically around her ankles despite the fact that she was seated at a corner table three seconds ago. The speed of the transition suggests she has been waiting for exactly this cue. Her visible eye gleams with the particular fervor of a strategist who has already decided the goblin cave is not a cave at all but a prologue.\n\nDarkness shoulders her zweihander with an ease that borders on obscene — the blade is taller than Megumin and weighs more than Aqua's entire luggage, and she lifts it like a woman picking up a bouquet. Her cheeks carry a faint high color beneath the crusader's helm, the flush of someone who has just been handed exactly what she needs and is already imagining the bruises.\n\nAt the counter, Luna curls her fingers around the edge of the Black Moon contract one last time. She does not put it back in the drawer. Not yet. Instead she slides it — slowly, almost ceremonially — beneath the ledger, where the black wax seal will catch the morning light every time she opens the book to tally tabs. A sliver of black. A reminder that this conversation did not end; it only paused. Her other hand finds the goblin extermination log and makes a crisp notation: party dispatched.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:01:24Z"
+    },
+    {
+      "content": "I grin at their chorus of complaints, then reach into my pouch and toss three copper coins onto the table—they clatter and spin, catching the light.\n\n\"Aqua. That's your entertainment budget. Megumin, you can have her share if you keep the napalm until we're out of earshot of Axel.\" I nod toward the door. \"Come on. The woodcutters said the creek's running high this time of year — I'll fish for our dinner on the way back.\"\n\nI push the door open, letting the morning light wash over the threshold.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:03:18Z"
+    },
+    {
+      "content": "The three coins hit the table in a staggered clatter — one spins long enough to flash its face three times before wobbling to a stop, one lands flat and dead, one rolls toward the edge and is stopped by Aqua's mug with a small, resonant *tink*.\n\nFor one heartbeat, Aqua simply stares at the copper as though you have placed a dead mouse on her dinner plate. Then her mug — still aloft — lowers with the slow, terrible precision of a drawbridge being cranked down before something unspeakable is released. Her blue eyes, wet at the corners, track from the coins to your face and back again, performing the kind of arithmetic no goddess should ever have to perform: her share, plus Megumin's incentive, divided by the distance between divine authority and pocket change.\n\nMegumin's hand has already moved. It darts across the table the instant you say *her share* — a crimson-sleeved blur that scoops all three coins into her palm with the reflexive speed of a girl who has never once let free money escape. She does not count them. She does not need to. She merely tucks them into the folds of her cloak with a small, satisfied nod, as though this transaction between mortals and goddesses has concluded exactly as cosmic law intended.\n\nDarkness is already at the door, shield slung across her back, one gauntleted hand resting on the frame where yours was a moment ago. She glances back at the table — at Aqua's trembling lower lip, at Megumin's bulging coin-pocket, at the half-dozen empty mugs that now constitute the battle's only casualties — and her expression flickers with something between impatience and a deeply un-crusader-like amusement she will deny under oath.\n\nAt the counter, Luna gathers the Black Moon contract with both hands. She does not fold it away into the drawer where it has lived for three months. Instead she places it — seal up, edges squared — on the corner of her ledger where the morning light from the front windows will keep it visible all day. A black wax landmark. Then she lifts her gaze to watch your party assemble at the door, and her smile is the tired, crooked thing that only four people in Axel have ever seen.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:04:23Z"
+    },
+    {
+      "content": "I pause at the doorway, letting the morning air hit my face, then glance back over my shoulder at the three of them — Aqua still frozen with her mug aloft, Megumin's coin-pocket bulging, Darkness already gripping the doorframe like a racehorse at the gate.\n\n\"Twelve ears. That's two apiece and four for whoever actually finds the nest first. No Explosion, no Divine Purification, no smashing the limestone ceiling down on my head. We go in quiet, we come out with loot, and we're back before Luna has to invent a decent excuse for why her favorite troublemakers vanished before noon.\"\n\nI step outside and let the door swing half-closed, holding it open just enough to add, \"And Aqua — the entertainment budget's non-refundable. You want to earn it back, there's a creek full of fish calling your name.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:06:21Z"
+    },
+    {
+      "content": "Aqua rises last, and slowly — the slow, ceremonial unfolding of a goddess who has decided, in the absence of worship, to weaponize her own feet. Each step toward the door is a small rebellion against the morning's indignities: the copper that was not hers, the share that vanished into Megumin's pocket, the specific prohibition against the one thing she is good at. She does not look at you as she approaches the doorframe. She looks at the space just to the left of your head, the way a cat looks at an empty corner where it has decided an enemy lives.\n\nMegumin adjusts her hat with the gravity of a general donning a war helm. Her free hand drifts to her staff — which she retrieves from beside the table with a single fluid motion, as though the staff itself rose to meet her palm — and her eyes, when they finally find yours, hold the serene condescension of someone who has already decided which rule she will break first and at what dramatic angle.\n\nDarkness hears \"no smashing the light\" and her shoulders drop half an inch — the microscopic slump of a crusader who has just been told her favorite form of dramatic entrance has been pre-emptively banned. But the disappointment lasts only a breath. Her grip on the doorframe tightens, and the flush on her cheeks deepens from embarrassment into something closer to anticipation. Twelve ears. Two apiece. Four for the finder. The math of it is a promise she has never been able to make herself before.\n\nBehind them all, Luna slides her ledger a quarter-inch to the left, so the corner of the Black Moon's black wax peeks out from beneath the leather — exactly where you asked. She does not wave. She does not call out. She simply nods, once, a small motion you might miss if you weren't looking for it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:07:51Z"
+    },
+    {
+      "content": "I let the morning air settle around me for a beat, then look back at Aqua through the gap in the door. The light catches the wet corners of her eyes, and for a moment — just a moment — I let my voice lose its edge.\n\n\"Hey. I know it's copper. I know it's beneath you. But you're the only one I trust to keep those goblins from swarming the flanks while Megumin's 'artistic embargo' holds and Darkness does... whatever Darkness does when she gets twelve ears in her head.\"\n\nI push the door fully open and step out onto the guild's front step, turning to face the road east. \"And if we nail this contract, the next one's a proper job. The kind with silver in it. I'll make the pitch myself — and I'll talk up the goddess who didn't need divine powers to get the job done.\"\n\nThe words hang in the air, lighter than I meant them to be. I start walking before I can think better of it.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:09:24Z"
+    },
+    {
+      "content": "Aqua draws a breath. It catches, just slightly, on the way in.\n\nShe steps through the doorway and into the morning light, and for once she does not announce herself. The mug hangs forgotten at her side — she'll probably realize she's still holding it three blocks from now and blame you for not mentioning it. But in this moment, the goddess of water is just a girl whose eyes are still wet and whose chin is still up, walking into a goblin hunt because someone she fights with every single day just told her she matters.\n\nMegumin sweeps past her with the theatrical gravity of a general crossing a border, her staff tapping the threshold once — a punctuation mark, a declaration, a claim. The sun catches the brass fittings and throws a small constellation of light across the guild door. Darkness follows last, because she cannot decide whether to walk ahead of Aqua in protection or behind her in deference, and settles for an awkward sideways shuffle that nearly catches her pauldron on the doorframe.\n\nBehind them all, Luna's hand rests on the drawer where the Black Moon contract now lives — not hidden, just waiting. Her smile is the professional one again, but it reaches her eyes in a way it didn't before.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:10:54Z"
+    },
+    {
+      "content": "I fall into step beside Aqua, matching her pace, letting the morning light settle on both of us. For a few strides neither of us speaks — just the crunch of gravel and the distant sound of the creek we're supposed to follow.\n\n\"Hey,\" I say, not looking at her. \"That mug you're still holding? You're gonna drop it in the creek about ten minutes from now and blame me for it. So either hand it over now, or actually drink the damn thing before we hit the fork.\"\n\nI keep my eyes on the road ahead, but there's a warmth in my voice that wasn't there before. \"And for what it's worth... I meant what I said. About the next contract. Silver, proper job, the works. A goddess deserves better than copper, and I'm the one who's gonna get it for her.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:12:38Z"
+    },
+    {
+      "content": "Aqua's stride hitches — just a quarter-step, the kind of stumble that happens when your brain suddenly notices something your hand has been doing for the last six blocks without permission. She looks down at the mug as though it has personally betrayed her, as though it climbed into her fingers while she was distracted by the wetness in her eyes and the strange, unwelcome warmth of being told she matters. The ceramic is still faintly ringed with last night's cheap wine.\n\nBehind you both, Megumin's boots crunch gravel at a satisfied, coin-jingling rhythm. Darkness has already pulled ahead — you can hear her armor creaking with that particular tension she gets when something might hit her within the next hour. The creek murmur threads through the morning quiet, still distant, still following its own path toward the limestone outcrop Luna described.\n\nAqua's grip on the mug tightens, then loosens, then tightens again — a small war between the goddess who wants to throw it at your head and the girl who doesn't actually want to let go of the last thing she touched before she walked out of the guild hall feeling seen.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:13:42Z"
+    },
+    {
+      "content": "I keep walking, but I let the corner of my mouth twitch up just enough to show I'm not entirely joking.\n\n\"And yeah, I know you're not gonna drink creek water. That's why I'm saying it now, before you get the chance to pretend you meant to dip it in there for... divine purification, or whatever you'll call it.\"\n\nI glance sideways at her, just once, then back to the trail. \"Drink it when we stop for lunch. It's the last of the good stuff anyway. Swear it's better than the slop at the guild.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:15:03Z"
+    },
+    {
+      "content": "Aqua lifts the mug to eye level. The morning light passes through the thin rim of leftover ale — a faint amber ring at the bottom — and for a moment she simply studies it, as though the mug contains not dregs but a prophecy she is trying very hard to misread. Then she lowers it, slow and ceremonial, like a royal decree delivered at half speed.\n\nShe still does not look at you. The set of her jaw says everything: she is keeping a tally in a ledger only she can read, and this morning's column is already full.\n\nBehind you, Megumin's staff taps the packed earth in a rhythm that almost, but never quite, syncs with the goddess's footsteps. Then it stops. Megumin has noticed that Darkness is no longer moving ahead — the distant creak of gauntlets has gone silent, replaced by a stillness that makes the trees on either side of the trail feel suddenly too close.\n\nThe creek runs high and fast somewhere to your left. Cold water over smooth stones. The kind of sound that covers other sounds.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:16:07Z"
+    },
+    {
+      "content": "I slow my pace just enough to fall into step beside her, close enough that our shoulders almost brush but don't quite.\n\n\"Look, Aqua—\" I start, then stop. What am I even trying to say? That I remember the church? That the way she looked at that altar screen, all bravado gone, messed with my head for a week? That I don't actually want her to go back to heaven, even if I'll never say it to her face?\n\nI settle for the truth, the easy version of it.\n\n\"Just didn't want you thinking the mug was about the water. That's all.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:17:35Z"
+    },
+    {
+      "content": "The silence after \"Aqua\" does not close. It hangs in the space between your shoulders — close enough to brush, not close enough to touch — and the creek fills it with the sound of water over stone, water against root, water wearing the world down one pebble at a time.\n\nAqua does not trip. She does not look at the mug. Her stride continues, steady in a way it hasn't been since the guild hall doors swung shut, but something in the set of her jaw has gone very still — the way water goes still before it realizes it's supposed to freeze. She heard the shape of the word. She heard the place where the rest of it broke off, and the shape of that absence is different from every other time you've said her name: not exasperation, not an order, not a punchline waiting to land.\n\nUp the trail, Darkness's silhouette has stopped moving. Thirty paces ahead, one gauntlet raised against the morning glare, her whole body canted forward at an angle that means she has found something and is deciding whether to call back. She hasn't yet. The creek is too loud for her to have heard the unfinished sentence, and for this one breath, that's a mercy.\n\nMegumin, somewhere behind your left shoulder, has gone quiet in the particular way that means she is watching and filing things away for later use.\n\nThe gravel crunches under your boots. Four steps. Five. Aqua still hasn't looked at you, but she hasn't walked faster either, and she hasn't let the distance between your shoulders grow.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:18:51Z"
+    },
+    {
+      "content": "I keep walking beside her, not looking at her either. The gravel crunch of our boots falls into a rhythm that isn't quite matched, the way it's been all morning.\n\n\"The church. The day we met.\" I say it to the trail ahead, to the trees, anywhere but at her. \"You stood in front of that altar screen and told me you were leaving. Going back to heaven. I believed you. And I—\" I stop, swallowing the rest of it.\n\nThe creek fills the silence. Water over stone, water against root. Then, quieter:\n\n\"I'm still glad you stayed. Even with the mug thing.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:20:14Z"
+    },
+    {
+      "content": "The silence that follows your swallowed words is the longest thing on the trail — longer than the creek, longer than the distance between here and the guild hall, longer than the three months Luna spent pulling that contract alone in the dark. Aqua's boots keep crunching gravel in a rhythm that hasn't changed, but something has: the space between your shoulders has contracted, just slightly, as though the unfinished sentence has its own gravity.\n\nShe does not look at you. She does not need to. Her fingers curl around the mug's handle, then loosen, then curl again — a small, unconscious metronome of a goddess trying to decide whether what she almost heard counts as an apology, a confession, or just another thing you will both pretend never happened by the time you reach the cave.\n\nAhead, Darkness has stopped walking. She stands thirty paces up the trail, shield half-raised, her body a rigid line of attention fixed on something past the jagged stump where the tall grass bends wrong — but she hasn't called out yet, and the silence she's keeping has a different texture from yours: anticipation rather than ache.\n\nMegumin has stopped too, halfway between Darkness and you, her crimson eyes moving from your face to Aqua's and back again with the slow, deliberate calculation of someone who has just realized she is witnessing something she was not meant to see and is deciding — with surprising delicacy — not to announce it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:21:23Z"
+    },
+    {
+      "content": "The mug in her hand tilts, just slightly — morning light catching the amber ring at the bottom. She doesn't look at me, but her stride slows, a half-step shorter than before.\n\n\"The church,\" she repeats, and the word comes out strange, like she's testing the weight of a stone she thought she'd thrown away. \"You were the first person in that whole world who ran toward me when I said I was leaving.\"\n\nShe stops. Not at the trail bend, not at the creek — just stops, in the middle of gravel and morning. Her fingers tighten around the mug.\n\n\"Everyone else said 'good riddance.' Eris cried, but she was always crying. But you—\" She laughs, a short broken sound that isn't quite a laugh. \"You just said 'Aqua' like that was supposed to be enough. And it was, you absolute idiot. It was.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:23:04Z"
+    },
+    {
+      "content": "Aqua does not look away from the trail ahead, but the mug in her hand has gone very still — no tilt, no fidget, no theatrical flourish. She is holding it the way a child holds a candle in a temple she doesn't quite believe in anymore: careful, provisional, afraid of what happens if she sets it down. The creek keeps talking because the creek doesn't know any better. It doesn't know that a goddess just admitted the loneliest thing she's ever held, and that the boy walking beside her hasn't answered yet, and that the space between their shoulders has become a kind of church all its own — small, unlit, waiting for a voice that isn't water.\n\nBehind them, Megumin has stopped counting her steps. She has stopped counting anything. Her crimson eyes are fixed on the back of Aqua's head with an expression that is not jealousy, not exactly — more like the look of a girl who just realized a story she thought she was narrating has been someone else's all along. She says nothing. For once, the genius arch-wizard of the Crimson Demon Clan has no incantation ready.\n\nAnd then Darkness turns.\n\nShe turns the way a Crusader turns when every nerve in her body has been screaming the same word for the last thirty seconds and duty finally overrides the heat in her belly. Her shield comes up in a single fluid motion, planted between the party and the treeline like a wall that decided to happen, and her voice cuts through the morning quiet with the clarity of someone who has been waiting to be useful.\n\nBeyond her, past the jagged stump where the old lumber trail bends east, the tall grass shivers — not with wind, not with creek-spray, but with the low, deliberate parting of something small and armed and very, very close.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:24:14Z"
+    },
+    {
+      "content": "\"Was it, though?\" I stop beside her, gravel crunching under my boots. \"What I said, back then — I was thinking about how I'd wasted my life. How I'd never done anything worth remembering. And then you were there, and you said 'Let's go to another world,' and I thought... this is the most insane person I've ever met.\"\n\nI scratch the back of my neck, looking at the creek instead of her.\n\n\"I didn't run toward you. I ran away from everything else. You just happened to be standing in the direction I was looking.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:26:09Z"
+    },
+    {
+      "content": "Aqua stops.\n\nShe stops the way rain stops — not all at once, but in the sudden awareness that something that was falling is no longer falling. Her boots settle into the gravel, and the mug in her hand goes so still that the amber ring at the bottom might as well be painted on. For three strides, the space between your shoulders stretches — and then it doesn't, because she has pivoted on her heel and she is looking at you. Not at the trail ahead, not at the creek, not at the mug. At you. Her eyes are still wet at the corners, but her jaw is set in the way it sets right before she demands something expensive and unreasonable and true.\n\nThe creek keeps running because the creek is an idiot.\n\nUp the trail, fifteen paces ahead, Megumin has stopped walking. She does not turn around — a Crimson Demon knows when a scene is not hers — but her shoulders are drawn up toward her ears, and one hand has found the edge of her cloak in a grip that suggests she is counting her own heartbeats and finding the tally insufficient.\n\nDarkness has not stopped walking. Her shield arm is rigid at her side, her boots still crunching gravel in a rhythm that has become mechanical, compulsive — a crusader walking toward something she has been tracking for the last three hundred yards and cannot now un-see. The tall grass past the jagged stump bends against the morning breeze in a direction the breeze is not blowing.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:27:50Z"
+    },
+    {
+      "content": "I watch the creek instead of her, but I can feel the exact moment the silence changes shape.\n\n\"You want the truth? Fine. Back then, when I said 'let's go' — I wasn't choosing you. I was choosing the only door that was open. But this morning, when I said your name and stopped...\" I finally turn to face her. \"I wasn't stopping because I had nothing to say. I was stopping because I had too much, and none of it was dressed up in a joke or an excuse.\"\n\nI take a half-step closer, not quite reaching for her. \"I don't run toward you, Aqua. That's not what I do. But I haven't walked away either. Not in all the time we've had. That has to count for something.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:30:17Z"
+    },
+    {
+      "content": "The Player's sentence does not end. It simply stops — a door left open to a room neither of them has entered in all the months since the church. The creek fills the space where \"and\" should have led somewhere: and I was afraid / and I didn't know how / and I still don't.\n\nAqua looks at the mug in her hand. Not at the amber ring, not at the dregs, but at the mug itself — cheap guild pottery, chipped at the rim, the kind of thing you grab without thinking because it's there. She has been holding it for six blocks, through two confessions and one silence that lasted longer than any of Luna's three-month vigils, and she has not once thought to set it down. Until now.\n\nShe sets it down.\n\nThe motion is so small it barely disturbs the gravel — a soft click of clay against stone at the edge of the trail, just beside a tuft of creek-grass. She straightens, and her hands are empty, and she does not know what to do with them. They hang at her sides like artifacts from a religion she's still trying to remember the prayers for.\n\nWhen she finally looks at you, her eyes are wet but her jaw is set — not the theatrical pout of the goddess denied her tribute, but something quieter and far more dangerous: a girl who has been offered a door, twice now, and has only just realized she's allowed to walk through it.\n\nUp the trail, Darkness's gauntlet tightens on her shield-grip. The tall grass past the jagged stump bends against the breeze in a direction the breeze isn't blowing. Three shapes. Maybe four. The stink of hide and old leather reaches her a half-second before she opens her mouth to call the warning she's been holding back for three heartbeats too long already.\n\nMegumin, twenty paces ahead and pretending very hard to navigate, has been counting the syllables she isn't supposed to hear. She has reached a number that feels important and refuses to turn around.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:32:08Z"
+    },
+    {
+      "content": "I hold her gaze, letting the gravel crunch under my boots as I take one more step closer. \"It counts for everything. A goddess who holds onto a chipped mug and a dead man who keeps walking beside her — that's not a punchline, Aqua. That's a choice we keep making together.\"\n\nI look past her toward where Darkness froze, then back. \"Whatever's in those trees can wait one more minute. This — you and me — we've been putting this off longer than Luna's vigil. And I'm tired of pretending I don't know it.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:34:31Z"
+    },
+    {
+      "content": "Aqua does not look away. Her eyes hold yours the way she once held that altar screen in her gaze — not with the confidence of a goddess who knows she is right, but with the raw, unguarded recognition of someone who has just realized she is standing on the same side of the door as you. The mug sits between your boots on the gravel, empty and small and somehow the loudest thing on the trail. Her fingers are still half-curled from setting it down, and they do not reach for you — not yet — but they do not retreat, either. They simply wait, suspended in the space where your unfinished sentence still hangs, where \"you a\" could become anything: you and me / you are the reason / you already know.\n\nThe creek rushes on because the creek has no sense of dramatic timing.\n\nUp-trail, past the jagged stump where the tall grass bends wrong, there is movement — a rustle that is not wind, a shadow that is not branch. Darkness has gone rigid thirty paces ahead, shield half-raised, every instinct screaming at her to shout a warning. She does not shout. She is holding her breath, and the reason is only partly tactical. The other part — the part that makes her face burn beneath her helm — is that she has never heard Aqua sound the way she sounds right now, and she is terrified of being the one who breaks it.\n\nMegumin, somewhere between the two of you and the treeline, has stopped walking entirely. Her staff is planted and her chin is lifted and her crimson eyes are narrowed with the particular intensity of a girl who is cataloguing every detail of this moment for a future dramatic retelling in which she will claim to have played a far more pivotal role. But she does not speak. Even Megumin, architect of explosions and thief of copper coins, knows better than to set off a blast in a room made of glass.\n\nThe goblins do not know any of this. The goblins, crouched behind the stump with their crude knives and their beady eyes and their complete ignorance of theology, see only two humans stopped on a trail, oblivious, defenseless, perfect.\n\nAnd Aqua, goddess of water, Arch-Priest of the Axis Order, the woman who once offered a dead boy a door to another world and then followed him through it — Aqua lifts her chin and looks at you as though you are the only thing on this trail worth looking at, goblins be damned.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:35:54Z"
+    },
+    {
+      "content": "I reach out and gently take the mug from her hand, turning it over in my fingers. The chip at the rim catches the morning light like a small, unpolished jewel. I hold it up between us.\n\n\"Then let's stop pretending.\" I press the mug back into her hands, closing her fingers around it. \"Whatever's waiting in those trees — we face it together, like we've faced everything else. That's the choice. That's always been the choice, since the day you dragged me through that door.\"\n\nI turn toward where Darkness's voice faded, rolling my shoulders. \"Come on. Let's go deal with the goblin bear and then finish this conversation somewhere we can't get stabbed.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:38:23Z"
+    },
+    {
+      "content": "Aqua's fingers close around the mug — not the loose, theatrical grip of before, but something firmer, a hand that has decided what it is holding and why. She does not look at the trees. She looks at you, and the morning light catches the chip at the rim between her knuckles like a star that forgot to fall. Whatever she was about to say, whatever sentence the creek was meant to carry, it never reaches her lips — because behind her, thirty paces up the trail, the tall grass bends against the breeze in three places at once.\n\nDarkness sees it a half-second before anyone else. She has been watching it build for three minutes, has felt the ambush coiling in her stomach like a prayer she was too ashamed to speak aloud, and now the choice is no longer hers to delay. The jagged stump shudders. A flash of dull iron — a crude knife, then another — and the goblins break cover in a scramble of gray-green limbs and guttural shrieks, five of them, more than she counted, fanning out across the trail with the ugly efficiency of creatures who have done this before.\n\nMegumin is already turning. Her legs tremble — the morning's Explosion left nothing in her reserves but theatrical conviction — but her cloak flares behind her with the practiced drama of someone who has never let exhaustion ruin an entrance. Her staff comes up, its tip catching the sun, and the goblins hesitate for exactly one heartbeat. One heartbeat is all a Crimson Demon needs to make a bluff sound like a prophecy.\n\nLuna, standing at the rear of the column with a guild-issue shortsword she has drawn exactly twice in her career, does not scream. Her knuckles are white on the grip, and her polite smile has gone somewhere very far away, but she is still standing. That, she has learned from three years behind the counter, is half the job.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:39:36Z"
+    },
+    {
+      "content": "I keep the mug in my hand for one more heartbeat — the weight of it, the chip, the warmth that's still in the clay from her fingers — then I tuck it into my jacket like it's the most natural thing in the world.\n\n\"Right. Goblins, maybe a bear, possibly a goblin riding a bear — I've fought worse with less.\" I crack my neck and start walking toward Darkness's position. \"Megumin, save the Explosion for if it's actually a bear. If it's just goblins, I'd rather not spend the morning picking gravel out of my eyebrows.\"\n\nAqua, keep close. If this goes sideways, I'm using you as a shield and I'm not even a little bit sorry.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:41:31Z"
+    },
+    {
+      "content": "You tuck the mug into your jacket, and the clay is still warm — not from the sun, but from her. It settles against your ribs like a small, ceramic promise, and for half a stride the world is nothing but gravel under your boots and the certainty that whatever just happened between you and Aqua is real enough to carry.\n\nThen you crack your neck, square your shoulders toward Darkness's position, and open your mouth.\n\n\"—sion!\"\n\nThe word never finishes.\n\nBecause the tall grass past the jagged stump erupts. Not with three goblins, not with four — five compact shapes boil out of the underbrush, all mottled green skin and crude iron and the wet-animal stink of hide armor that hasn't been cured so much as murdered. The nearest one is already mid-lunge, a rust-pocked shortsword aimed at the gap between your ribs and Darkness's shield, and the creek's white noise swallows every footfall they didn't make.\n\nDarkness is already moving. She doesn't call a warning — she doesn't have time. Her great shield swings into position with a sound like a cathedral door closing, planted heels grinding gravel into powder, and the first blade rings off tempered steel with a shriek that cuts through the water-roar and the morning birdsong and everything else that was soft about this moment. The impact shudders up her arm and into her spine, and her breath comes out in a rush that is half prayer and half something she will never admit to in confession.\n\nBehind her shield, the armored line of her shoulders blocks your view of four more goblins fanning out into a loose crescent, their yellow eyes flicking between the crusader they can't hurt and the rest of you they can.\n\nMegumin has not moved from her spot. Her staff is raised, her cloak caught in an obliging breeze, her chin lifted at an angle that turns her diminutive frame into a monument of theatrical certainty. There is no mana behind the pose — you both know it, she collapsed on a hill at dawn and hasn't recovered enough to light a candle — but the goblins don't know it. They hesitate. One of them, the one with a notched cleaver and a scar bisecting its left ear, squints at her the way a dog squints at a firework it doesn't understand.\n\nAqua is still standing where you left her, the space between your shoulders now stretched to six paces and closing fast, her hands empty of everything except the lingering shape of a mug she is no longer holding. The morning light catches the wet corners of her eyes and turns them into something that looks, for half a heartbeat, like a goddess who just remembered she still has work to do.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:42:50Z"
+    },
+    {
+      "content": "\"Five of them, and they've got the crescent formation down. Megumin, you're the decoy — wave that staff like you've got a full tank and they'll keep their eyes on you. Darkness, hold the line, don't let them flank. Aqua—\"\n\nI drop to one knee, palm flat on the gravel, and try to see what their feet are doing.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:44:36Z"
+    },
+    {
+      "content": "Your palm meets the gravel and the world narrows to a language only rogues and scavengers read: dust still settling behind the center goblin's left heel — he's the one who signaled the charge, the one the others glance toward before each step. His weight is back, knife hand trembling with the particular twitch of someone who's fought scared humans before but never one who dropped to study his feet. The two on the right flank are crowding each other, half a stride too close; one stumble and they tangle. The leftmost goblin is the problem — his stance is wider, his toes grip the dirt like he's done this on loose gravel before, and the fifth hangs behind him waiting for a signal that hasn't come yet.\n\nThe crescent isn't a formation. It's a net with a hole in the middle, and the hole is the one who's afraid.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:45:49Z"
+    },
+    {
+      "content": "I keep my palm flat on the gravel a half-second longer, memorizing the pattern—hobgoblin in the center with an old wound, two crowding on the right, one circling wide. \"Aqua, forget the mug—you're the one they'll underestimate. Stand behind Megumin, keep your hands visible. If I drop the center one, the others are going to panic and you'll have a clear lane.\"\n\nI don't wait for her answer. I'm already moving, low, angling right where the two goblins are tangled shoulder-to-shoulder.",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:47:46Z"
+    },
+    {
+      "content": "You don't wait for her answer because there isn't time for answers — there is only the space between one heartbeat and the next, the gravel exploding under your back foot, the wind snapping your jacket open as you close the distance between kneeling and killing. The hobgoblin's eyes go wide in the half-second before impact, and you see it register: the knife-hand that was trembling for scared humans is trembling now for a different reason entirely, because the man who was studying his feet three seconds ago is suddenly ten inches from his face with momentum and bad intentions and no visible hesitation at all.\n\nBehind you, Megumin's staff slams into the earth with a crack that echoes off the limestone, and her voice rides the shockwave — some declaration about the Crimson Demon Clan and the futility of ambush, the words less important than the silhouette she cuts against the morning sky, a wizard-shaped threat with no mana behind it and enough theater to fool five goblins who have never met a real arch-wizard. The two on the right check their advance. The one circling wide freezes mid-step, recalibrating.\n\nDarkness doesn't freeze. Darkness plants her great shield with the sound of a church door slamming, and the gravel under her boots grinds into powder as she locks into the exact position you ordered — between the flank and the party, a wall with blonde hair and a pulse rate that has nothing to do with fear. The rightmost goblin's blade scrapes across her pauldron and she does not flinch. She does something else. She exhales through her teeth and the sound is entirely too personal for a battlefield.\n\nAqua — you don't look back to check, but you feel her slot into position behind Megumin's staff-framed silhouette, hands visible, face unreadable, the creek water still trembling in her wake from whatever she did to it when she promised to cover your back. The mug is a small warm weight against your ribs, and then it is nothing, because you have reached the hobgoblin and there is only the knife in your hand and the old wound on his ribs and the particular sound a goblin makes when it realizes the formation it was so proud of has already fallen apart.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:48:44Z"
+    },
+    {
+      "content": "I let the knife lead me through the gap between the two crowding goblins — not through them, past them, the way a rogue reads a net and finds the hole. My shoulder brushes the first one's rusted pauldron and I twist, Chunchunmaru's flat smacking its wrist with a crack that sends its shortsword spinning into the creek. The second one's momentum carries it into the first, and they go down in a tangle of green limbs and curses.\n\nThe hobgoblin's knife-hand trembles again, but this time it's not fear — it's aim. He's already committing to the swing that will open his ribs.\n\nThat's my opening. I drive forward, low, and put all my weight behind the hilt as I sink Chunchunmaru into the old wound on his side. The sound it makes is wet and final, and for a heartbeat the whole world goes quiet except for the creek and the particular rasp of a goblin trying to breathe around a punctured lung.\n\n\"Darkness — left flank, now!\" I call out, already pulling the blade free and resetting my stance for the next one. \"Megumin, make some noise!\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:50:40Z"
+    },
+    {
+      "content": "The morning air settles back into the space the crescent occupied, and with it comes the smaller inventory of after-combat: the hobgoblin's wet breathing, the clink of a dropped knife still rocking on gravel, the two goblins in the creek discovering that wet leather is heavier than dry and that neither of them knows where the shortsword went. The veteran at Aqua's feet tries to push himself up and discovers that his ankle is still wrapped in creek water that has not yet been dismissed — it tightens, not painfully, just insistently, the way a leash reminds a dog who is holding the other end.\n\nYour jacket is still open from the charge. The mug sits against your ribs, warm in a way that has nothing to do with body heat and everything to do with the woman who held it before you tucked it away. The hobgoblin's knife lies three feet from his hand, and his eyes are open now — open and fixed on the sky with the particular emptiness of someone who has lost two fights to the same ribs and is only now doing the arithmetic on what that means.\n\nDarkness lowers her great shield by exactly one inch, and the sound she makes is the sound of a crusader who has just realized the battle is ending and her body is still disappointingly unperforated. The goblin blade that struck her shield left a scratch no deeper than a thumbnail, and she stares at it the way another woman might stare at a love letter that arrived one sentence too short.\n\nMegumin has not moved her staff from where it planted in the gravel, but her chin is up and her cape has settled into a drape that looks — impossibly, given that she has been standing still for the entire engagement — like it was arranged by wind that answers only to Crimson Demons.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:53:12Z"
+    },
+    {
+      "content": "I pull Chunchunmaru free with a wet shuck and spin to face the next threat, but my eyes catch the goblin at Aqua's feet — the one she leashed with creek-water. He's stopped struggling. He's just watching me, head tilted, like he's trying to memorize something.\n\n\"Aqua,\" I say, not looking away from him, \"don't let go of that one. I want to ask him something when this is done.\"\n\nThe knife in my hand is still slick. I adjust my grip and meet the leftmost goblin's eyes — the one Darkness was angling toward. \"Hey. You. Big one. Your buddy over here lost his knife in the creek. Want to try your luck against someone who actually knows how to use his?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:55:02Z"
+    },
+    {
+      "content": "The knife in your hand has nowhere to go.\n\nYou complete the spin and find nothing but the settling dust of a formation that no longer exists. The hobgoblin gurgles behind you. The two in the creek have stopped splashing and are simply sitting in the current, watching their boots fill with cold water. Darkness stands over a fourth goblin with her shield planted — the creature is on its back, arms splayed, apparently unharmed but too exhausted by the futility of striking her to rise. The fifth, the one who hung back waiting for a signal, is gone — a trampled patch of ferns and a snapped twig mark where he broke and ran north.\n\nAnd Aqua's goblin — the one she leashed with creek-water that still shimmers faintly around his ankles — is not looking at her. He is looking at you. Head tilted. Eyes wide but not afraid. His lips move, not forming words, just the small muscle-twitch of someone trying to place a face they have seen before.\n\nYou lower the knife. Not because the threat is gone — though it is — but because whatever this goblin is doing, it is not fighting.\n\nAqua stands behind him with one hand extended, fingers curled around a tether of water that glows the same pale blue as the morning sky. Her stance has changed. The slouch is gone. The mug is in your jacket, and she is holding a prisoner with the same power that once flooded an entire fountain with holy light, and she is not crying, not boasting, not complaining. She is simply holding.\n\nMegumin leans on her staff at the treeline, one eyebrow arched so high it threatens to vanish into her bangs. She has not moved from her decoy position. She has not needed to.\n\nDarkness lifts her visor with her free hand and scans the party with the quick, professional sweep of a noble who learned triage before table manners. Her cheeks are flushed. She looks almost disappointed.\n\nThe creek runs. The morning light catches the water-leash and throws tiny rainbows across the gravel. The goblin keeps watching you, and you realize with the particular clarity that only comes when your blood is still up: he is not trying to memorize a threat. He is trying to memorize a face he did not expect to see again.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:56:57Z"
+    },
+    {
+      "content": "I slide the knife into its sheath and take a step toward the goblin Aqua's holding, slow and easy, hands visible. \"Easy, big guy. Nobody's looking to add another scar to your ribs.\" I gesture at the creek. \"You already lost your friends. You already lost the fight. No point dying on a hill that's already surrendered.\"\n\nI crouch down to his eye level, keeping my voice low so the others can't hear. \"You been watching me since we got here. That's not normal. Goblins don't memorize human faces unless they're worth remembering — or they've been told to watch for one.\" I tap my own chest. \"So which is it? Did my reputation precede me, or did somebody point you at me?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-07T23:58:37Z"
+    },
+    {
+      "content": "The goblin's eyes — yellow where a human's would be white, pupils slit sideways like a goat's — don't blink. He studies your crouched posture the way you studied his footprints in the gravel: reading weight distribution, locating the knife you just sheathed, measuring the distance between your relaxed hands and the hilt. Then he does something you didn't expect.\n\nHe laughs.\n\nIt's not a cackle. It's the dry, wheezing exhale of someone who has been on the wrong end of a blade often enough to recognize mercy when it crouches three feet away and speaks in a low voice. His ribs — the old scar-tissue you noticed from across the clearing, the healed-over trenches that predate this fight by years — pull tight against his leathery hide with each breath. The creek-water Aqua has wrapped around his ankles pulses faintly, a liquid manacle that tightens whenever he shifts his weight, and the goddess behind you is silent in a way that feels like listening.\n\nHe tilts his head the other direction, and you realize what the gesture reminds you of: a crow. A scavenger who has learned that some humans are death and some humans are opportunity, and the difference is in the voice.\n\nBehind you, Darkness's shield creaks as she shifts her weight. Megumin plants her staff in the gravel with a theatrical thump that says *I am still here and still magnificent*. The two goblins in the creek have stopped filling their boots and are watching their leader watch you. The hobgoblin's wet breathing has gone shallow — he's bleeding out, but slowly, the way tough things do.\n\nThe veteran opens his mouth. His teeth are filed flat, not pointed — an old goblin's dentistry, worn down by years of things that fought back.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-07T23:59:59Z"
+    },
+    {
+      "content": "I hold his gaze, the creek water still shimmering around his ankles. \"You fight like someone who's been paid to put down that knife more than once. So tell me — who's been spreading word about a guy like me in a hole-in-the-wall goblin camp?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:03:31Z"
+    },
+    {
+      "content": "The goblin veteran's laugh dies in his throat, replaced by something quieter — a wet click from the back of his mouth, the sound of a creature who has spent years learning that laughter costs more than silence. His yellow eyes stay fixed on yours, but they've stopped measuring. Now they're just waiting, the way a scar waits for weather to remind it why it aches.\n\nHe shifts his weight against the creek-water shackles, and the water tightens in response — Aqua's magic still holding, still listening to a goddess nobody thanked. The goblin glances down at his own ankles, then back up at you, and his mouth twists into something that isn't quite a smile.\n\nBehind you, Megumin plants her staff in the gravel with a theatrical thump that's only half performance — the other half is physics, a fourteen-year-old archwizard using lacquered wood to keep her knees from betraying her. Darkness lowers her shield by a fraction of an inch, the iron rim scraping stone loud enough to remind everyone it's still there.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:04:50Z"
+    },
+    {
+      "content": "I glance back at Aqua, then Darkness, then Megumin — checking they're all still holding their formation. I turn back to the goblin veteran and slowly, deliberately, sheathe Chunchunmaru.\n\n\"Chief-killer, huh. I've been called worse things by better people.\" I squat down to his level, resting my forearms on my knees. \"There was a woman three months back — red hair, scarred cheek, carried a spear like she was born holding it. She ask you to watch for me, or was that someone else's coin?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:06:30Z"
+    },
+    {
+      "content": "The goblin veteran's yellow eyes don't flicker at the description, and that's the first thing that tells you he knows something — not surprise, but the particular stillness of a creature who has already filed a memory under *don't volunteer unless asked directly*. The creek-water tightens around his ankles in Aqua's grip, a soft crystalline creak, and he doesn't fight it. He's thinking. You can see the calculation moving behind those goat-slit pupils like a stone turning over in dark water.\n\nHe shifts his weight, and for the first time since you crouched down, he breaks eye contact — looks past your shoulder toward the treeline, toward the limestone outcrop where his cave nest sits seventeen degrees north-northwest of Megumin's explosion hill. When he looks back at you, something has changed in his face. Not fear. Not defiance. The look of a survivor who has just decided which piece of information is worth trading for his lungs to keep drawing air.\n\nBehind you, Megumin's staff taps the gravel once — a single, deliberate click that translates roughly to *hurry up, my legs are staging a coup*. Darkness hasn't moved. Her shield is still planted, but her breathing has gone shallow, the way a crusader breathes when she suspects she's about to hear something that will complicate the clean lines between monster and man. Aqua says nothing. The water says enough.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:07:58Z"
+    },
+    {
+      "content": "I keep my eyes on the goblin's, reading that stillness like a ledger. His gaze holds mine a beat too long — then he glances down at the creek-water manacle around his ankles, and a dry, rough laugh rasps out of him.\n\n\"Red hair. Scar here.\" He taps his own cheek with a clawed finger. \"She didn't want you watched. She wanted word sent when you passed through Axel alive. Said you'd know what it meant.\"\n\nHe pauses, then adds, \"She paid in iron and honesty. Both held.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:09:49Z"
+    },
+    {
+      "content": "The words land in your chest like a stone dropped into still water — not the sharp impact of a blow, but the spreading rings of something colder and deeper. *She wanted word sent when you passed through Axel alive.* The veteran's goat-slit eyes hold yours without blinking, and you realize he's been waiting for this moment since he saw you drop to one knee in the gravel — waiting to see whether the name he just conjured out of three winters of silence would break your face open or close it shut.\n\nBehind you, Aqua's grip on the creek-water tightens with a soft crystalline creak. She doesn't say anything, but you can feel the question forming in the air around her like frost on glass: *who is she.* Darkness has gone still in that particular way of hers — the stillness not of a knight preparing to strike, but of a woman who just heard a ghost's name spoken aloud and recognized it from someone else's nightmare. Megumin leans on her staff with both hands now, the tip digging a shallow divot into the gravel, and for once she doesn't fill the silence with a title or a declaration.\n\nThe veteran shifts his weight, the water around his ankles sloshing softly. His eyes flick toward the limestone outcrop visible above the treeline — the cave — then back to you. He's done stalling. Whatever he's about to say next is the thing he decided was worth trading for his life.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:10:57Z"
+    },
+    {
+      "content": "I hold his gaze for a long moment, the creek water murmuring between us. That name — chief-killer's sister — she'd wanted word sent. Three winters of silence, and she'd been watching for me to pass through alive.\n\n\"Red hair, scar on the cheek. Iron and honesty.\" I repeat the words slowly, letting them settle somewhere behind my ribs. \"Does she still live in the same place? The hollow by the old mill road, where the crow nests in the dead elm?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:12:36Z"
+    },
+    {
+      "content": "The goblin veteran's yellow eyes tick sideways — not toward the limestone cave this time, but north, past the creek, past the tree line, toward the low hills where morning mist still clings to the hollows. His jaw works once, the tendons shifting under the thin green skin of his throat, and you recognize the motion: a creature calculating whether the truth costs more than a lie, and finding both prices too high.\n\nHe settles on something in between.\n\nThe water around his ankles creaks as Aqua shifts her weight — she's been silent too long, the kind of silence that builds pressure behind a goddess's teeth — and the veteran flinches at the sound. Not at her. At the creek itself, the way it holds him without hands.\n\nHis gaze returns to yours. The goat-slit pupils have widened slightly. Not fear. Something closer to a wager.\n\nDarkness takes a half-step forward, her greaves scraping gravel. She doesn't speak, but her shadow falls across the veteran's scarred ribs, and he registers it the way old soldiers register weather: something to endure, not to fight.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:14:13Z"
+    },
+    {
+      "content": "I want to say I don't know her. That the veteran's got his wires crossed, that three winters of watching for me was wasted time. But the name sits in me like a stone I swallowed years ago, and the hollow by the old mill road is a place I've pictured in the quiet moments between quests — never admitting why.\n\n\"She's my sister,\" I say, the words coming out rougher than I meant. \"Not by blood. By the kind of debt that doesn't get paid off.\"\n\nI glance at Aqua, at the water tight around the goblin's ankles, then back to the veteran. \"You said she wanted word. What else did she tell you? About why she's been waiting?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:16:38Z"
+    },
+    {
+      "content": "The goblin veteran's yellow eyes don't soften — you doubt they're built for it — but something behind them shifts, a door opening in a house you both once lived in. He studies your face the way he studied the creek gravel earlier, reading the grain of a truth he already knew but needed to hear spoken aloud, because a fact carried in silence is just a scar, and a fact spoken is a debt acknowledged.\n\nBehind you, Aqua's breath catches. The water around the veteran's ankles shimmers once — a quick crystalline tremor — and then holds steady, though you can feel the question burning in the air behind your left shoulder, the one she's been swallowing since you first crouched down to talk instead of kill. Darkness lowers her shield an inch, the steel catching morning light and throwing it across the veteran's scar-trenched ribs like a blade that isn't falling. Megumin says nothing, but her shadow on the gravel has stopped swaying — she's planted her staff, and the stillness is absolute, the kind a Crimson Demon reserves for moments too large for pyrotechnics.\n\nThe veteran works his jaw again, that same tendon-shift you read before — a creature spending words he can't get back. When he speaks, the gravel-rasp is lower than before, stripped of the bargaining tone he carried when he was trading information for survival. Now it's just one survivor to another, settling an old account.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:17:50Z"
+    },
+    {
+      "content": "I hold the veteran's gaze, letting the silence stretch long enough to feel honest. The name sits between us like a third person in the circle.\n\n\"She told me about a debt too,\" I say, and the gravel in my voice surprises me. \"Said if I ever saw you walk through Axel breathing, I'd know the debt was paid and I could stop watching. But she never said what the debt was. Only that it had your face on it.\"\n\nI glance over my shoulder at Aqua. Her eyes are wet but her jaw is set — she's not angry, just holding a question that can wait. I turn back to the veteran.\n\n\"So. You going to tell me what she thought she owed you? Or do I have to guess from the scars?\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:20:33Z"
+    },
+    {
+      "content": "The goblin veteran's yellow eyes hold yours for three long breaths — not a contest, not a test, but the particular patience of a creature who has carried a message so long it's worn a groove in the bone. The creek-water tightens faintly around his ankles, Aqua's grip shifting somewhere behind you, and he doesn't look at it. He's looking at your face the way a man looks at a landmark he was told to find but never quite believed existed.\n\nHe reaches up — slow, deliberate, the motion of someone who knows how fast a human hand can move to a knife — and taps the scar-trenches across his ribs, the ones that run parallel like a beast raked him open and left him to count the grooves.\n\nHe exhales through his nose, and it's the sound of a door that hasn't been opened in three winters settling on its hinges.\n\n\"She didn't owe me. I owed her.\" The gravel in his voice makes it sound like an old confession. \"Three winters past. Your sister walked into our camp alone. Killed the chief. Killed the chief's sons.\" He pauses, and the wet click comes from the back of his throat again. \"Killed everyone who raised a blade. Then she stopped. Looked at me. Looked at these\" — he taps the scars — \"and said I'd already paid enough to live.\"\n\nHe lets that hang in the creek-air between you, and you can feel the weight of it: the sister you remember, red hair and scarred cheek, standing in a goblin camp with a blade in her hand, deciding one life was worth sparing.\n\n\"The debt was my life,\" he says. \"She said I could keep it. But I had to watch the road to Axel. Watch for a man with her same way of standing. Same way of measuring a threat before deciding to kill it. She said: *When you see him breathing, tell him I kept my promise. Tell him the hollow is still home. And tell him the debt is paid — not yours, not mine, but the one between us and the ones we couldn't save.*\"\n\nHis yellow eyes don't waver. The creek runs cold over the gravel. Somewhere behind you, Megumin has gone utterly silent, and you realize with a start that she understood every word.\n\nThe goblin veteran lowers his hand from his ribs and lets it rest on his knee, palm up — the gesture of a messenger who has finally delivered what he was sent to carry, and is ready to be judged for it.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:21:45Z"
+    },
+    {
+      "content": "I let the silence sit a moment longer, then push a rough breath out through my nose.\n\n\"She never told me your name either. Just said there was a goblin on the road to Axel who'd know mine.\" I tap two fingers against my own ribs, mirroring his gesture. \"Three winters is a long time to carry a message for someone who might've already forgotten you were waiting.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:23:32Z"
+    },
+    {
+      "content": "The goblin veteran's yellow eyes drop from yours for the first time since you crouched to his level — not in submission, but in the way a man sets down a weight he's carried so long he forgot it wasn't part of his own body. He looks at the creek-water manacle around his ankles, at Aqua's faintly glowing grip behind him, at the three other goblins sitting defeated in the shallows, and then back at you.\n\nHis mouth works once, that same tendon-shift under the thin green skin of his throat. When he speaks, the gravel in his voice has worn smooth at the edges, like river stone.\n\n\"Gezrak,\" he says. It comes out as two syllables, the first hard as a knuckle cracking, the second soft as ash. \"That is my name. She did not tell you because I did not give it to her. Three winters ago I had no name worth carrying.\"\n\nHe pauses, and the pause itself is a deliberate thing — not hesitation, but a creature choosing which of several true things to say next, knowing he may only get one.\n\n\"She did not forget.\" His yellow eyes find yours again, and there's something in them now that wasn't there before — not warmth, exactly, but the absence of cold. \"Iron does not forget. Honesty does not forget. Your sister carried her debt the same way I carried her message. In the bone. It does not matter whether the one you carry it for remembers. You carry it anyway.\"\n\nBehind you, Aqua's breathing shifts — a soft, wet inhale that might be the beginning of tears or the suppression of them. Darkness stands motionless, her shield still planted, her shadow still falling across the veteran's scarred ribs, but something in her posture has gone quiet in a way that has nothing to do with battle. Megumin says nothing, and her silence is the most eloquent thing about her.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:24:34Z"
+    },
+    {
+      "content": "I finally let my own laugh out—short, hollow.\n\n\"Three winters I spent thinking I was the only one she told anything to.\" I glance at the scars on his ribs, then back at his eyes. \"Guess she had room for two strays.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:27:07Z"
+    },
+    {
+      "content": "The word *strays* lands between you and the goblin veteran like a coin tossed into still water — and you watch him decide, in the slow blink of those yellow goat-slit eyes, that he is going to give you something he never gave her.\n\nHis clawed hand lifts from his side, slow enough that the motion reads as offering rather than threat, and taps his own sternum — not the scar-trenches this time, but the flat bone above them, where a name might sit if names lived in the chest.\n\nThe creek-water creaks softly around his ankles. Behind you, Aqua shifts her weight and doesn't speak. Megumin's silence is the particular stillness of a Crimson Demon filing away material for later. Darkness breathes once, sharp, then swallows whatever she was about to say.\n\nThe veteran holds your eyes and you understand: this is not a trade. Trades are finished. This is the thing you give when the ledger is closed and you discover there's still something left.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:28:00Z"
+    },
+    {
+      "content": "I let the laugh die in my throat and push myself up from the crouch, knees cracking. I don't look at Aqua yet—can't. Not with what he just said sitting in my chest.\n\n\"Alright, Gezrak.\" I say his name slow, like I'm testing the weight of it. \"You've carried this long enough. Whatever happens with you and the guild—\" I glance at Luna, who's been standing too still by the door, \"—that's between you and them. But I owe you more than a knife in the dark in return.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:30:31Z"
+    },
+    {
+      "content": "Your glance finds Luna exactly where you left her — by the door of the guild hall that is miles behind you now, except it isn't, because she followed. She followed the party out of town, past the creek, past the tree line, and she's been standing at the edge of the ravine this whole time with her receptionist's apron still tied at her waist and a look on her face that has nothing to do with paperwork.\n\nThe goblin veteran — Gezrak — follows your glance to her, and something passes across his yellow eyes that isn't fear. It's recognition. The same way he recognized you. A creature who has spent three winters reading the weight of strangers knows a bureaucrat who just watched a debt close and realized she's holding an open contract in the other hand.\n\nAqua's creek-water grip tightens, just slightly — not aggression, but the reflexive squeeze of a goddess who has been following the emotional thread of this conversation the way a drunk follows a lantern, half a step behind but unwilling to let it go out. Behind her, Megumin has gone so still that her cape has stopped rustling, which has never happened in the entire history of your acquaintance. Darkness stands with one gauntleted hand pressed flat against her own breastplate, breathing through her mouth.\n\nGezrak shifts his weight in the shallows, the water rippling against his scarred ribs, and turns his palms up — an old gesture, one that predates guild contracts and receptionists and the very concept of paperwork.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:31:46Z"
+    },
+    {
+      "content": "I pull a strip of dried meat from my pack and toss it to him—he catches it one-handed, a reflex born of a life where food never came free. I keep my voice low enough that Luna won't catch the words.\n\n\"Gezrak. You said my sister's promise—'the hollow is still home.'\" I pause, letting the weight of it sit. \"Those words made it past three winters and a war's worth of scars. They're worth something. I'll make sure the guild hears what you carried.\"",
+      "metadata": {},
+      "role": "user",
+      "timestamp": "2026-08-08T00:34:46Z"
+    },
+    {
+      "content": "Gezrak catches the dried meat the way a creature catches anything that's thrown at him — not with gratitude, not with suspicion, but with the reflexive economy of someone who learned before his voice broke that food doesn't ask questions and neither should he. He doesn't eat it. He holds it in his clawed fingers, turning it over once, twice, while his yellow eyes stay fixed on yours.\n\nThen he sets the meat down on a flat stone beside his knee — not rejecting it, but shelving it, a transaction he isn't ready to close.\n\nThe three other goblins in the shallows have gone very still. They've been watching their veteran speak to the humans in a language of names and debts and sisters, and they don't understand the words but they understand the weight of them — the same way prey understands when the predator's attention has shifted from *kill* to *listen*. One of them, the youngest, has a gash across his forearm from the skirmish and he's been pressing creek-mud into it with the focus of someone who learned wound-care from watching others die of smaller cuts.\n\nBehind you, Aqua shifts her weight from one foot to the other, and the creek-water around Gezrak's ankles flexes with the motion — a faint crystalline creak that breaks the silence without breaking the moment. She hasn't said anything since the name *Gezrak* landed in the ravine, and that silence is costing her something; you can feel it radiating off her like heat from a stone, the particular frustration of a goddess who has been upstaged by a scarred goblin and a dead woman's message and can't decide whether to be angry or impressed.\n\nLuna hasn't moved from the treeline. Her receptionist's apron is smudged with bark-dust where she leaned against a pine without looking first, and her left hand is worrying the corner of something in her skirt pocket — the folded edge of the extermination contract, you realize, the one with *twelve ears* written in her own neat script before anyone in this ravine had a name.\n\nGezrak watches you not eat the meat. Then, very slowly, he picks it up again and tears it in half.",
+      "metadata": {
+        "scene_kind": "narrator"
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-08T00:35:54Z"
+    }
+  ],
+  "intention_node_id": 0,
+  "intention_owner": "",
+  "last_advanced": 40,
+  "scene_id": "konosuba",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": 40
+}

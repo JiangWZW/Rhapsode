@@ -26,6 +26,7 @@ def test_public_binding_surface_matches_owned_runtime_design():
 def test_story_is_the_production_composition_surface():
     expected = {
         "active_scene", "active_scene_id", "advance_player", "beat_clock",
+        "turn_clock",
         "complete_turn",
         "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
         "fork_scene", "from_scenario_json_str", "get_scene", "has_save",
@@ -95,7 +96,7 @@ def test_active_scene_rejects_unknown_ids():
 def test_world_exposes_read_state_but_not_lifecycle_staging():
     expected = {
         "character_memories", "characters", "find_character",
-        "world_graph",
+        "state_version", "world_graph",
     }
     assert {name for name in dir(_core.World) if not name.startswith("_")} == expected
     for removed in (

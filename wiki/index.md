@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-08-05
+last_updated: 2026-08-21
 ---
 
 # Rhapsode wiki — index
@@ -17,10 +17,11 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Architecture
 
-- [System overview](architecture/system-overview.md) — subsystems, control flow, engineering constraints, implementation status
+- [Current executable system baseline](architecture/system-overview.md) — verified ownership, exact turn flow, context/retrieval reality, persistence, failure boundaries, tests, and native stack
 - [Stack](architecture/stack.md) — layers, repo layout, build system, dependencies
 - [C++ data model](architecture/cpp-data-model.md) — current Story/World/SceneData ownership and runtime boundaries
-- [Turn execution](architecture/scene-loop.md) — synchronous TurnExecutor transaction, rollback, effects, and callbacks
+- [Turn execution](architecture/scene-loop.md) — functional candidate transaction, post-commit observations, and deferred post-turn work
+- [Pragmatic turn transaction refactor](architecture/pragmatic-turn-transaction-refactor.md) — gradual plan for attributed evidence, actor-owned dialogue, consequence-first decisions, atomic commits, and graph demotion without obligations
 - [Plot graph](architecture/plot-graph.md) — Node/WorldGraph with typed edges (implemented), trigger predicates (planned), F-T-P triples
 - [Memory system](architecture/memory-system.md) — hybrid retrieval, quality pipeline, C++/Python callback split
 - [Python server](architecture/python-server.md) — FastAPI, WebSocket protocol, Gemini client, memory callbacks
@@ -33,6 +34,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Episodes
 
+- [Default Guide 300: coherent stagnation and character convergence](episodes/2026-08-10-long-run-storyline-and-character-collapse.md) - verified 300-turn analysis of abandoned story obligations, converging NPC voices, and the 1,500-byte history bottleneck
 - [Storyline lifecycle continuity](episodes/2026-07-22-storyline-lifecycle-continuity-plan.md) - implemented transactional fork context, durable conclusion, and lifecycle invariants
 - [Runtime semantic-risk audit](episodes/2026-07-21-runtime-semantic-risk-audit.md) - behavior-sensitive findings intentionally excluded from the internal readability refactor
 - [Runtime architectural decoupling plan](episodes/2026-07-21-runtime-architectural-decoupling-plan.md) - implemented separation of Story, turn execution, World services, Python tools, and SceneData behavior
@@ -46,6 +48,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Research
 
+- [Frontier LLM orchestration over 300 interactive turns](research/frontier-llm-long-horizon-orchestration.md) - audited player-turn evidence, architecture falsifiers, and a powered 20/100/300-turn reliability program
 - [Literature review](research/literature-review.md) — 8 papers from awesome-llm-story-generation, adopted ideas, confirmed gaps
 - [Memory systems survey](research/memory-systems-survey.md) — MemGPT, Graphiti, AriGraph, A-Mem, Mem0 v3
 - [Memory systems internals](research/memory-systems-internals.md) — Mem0 v3 and A-Mem implementation details

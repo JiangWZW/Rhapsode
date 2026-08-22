@@ -1,0 +1,2644 @@
+{
+  "character_memories": {
+    "Aqua": {
+      "belief_graph": {
+        "edges": [
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 1,
+            "kind": "chain",
+            "to": 2,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 3,
+            "kind": "chain",
+            "to": 4,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 2,
+            "kind": "chain",
+            "to": 6,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 6,
+            "kind": "chain",
+            "to": 10,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 5,
+            "kind": "chain",
+            "to": 12,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 4,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 12,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 11,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 10,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 4,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 5,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "chain",
+            "to": 15,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "chain",
+            "to": 16,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 15,
+            "kind": "chain",
+            "to": 16,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 16,
+            "kind": "chain",
+            "to": 17,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 15,
+            "kind": "chain",
+            "to": 17,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 17,
+            "kind": "chain",
+            "to": 18,
+            "weight": 1.0
+          }
+        ],
+        "next_id": 19,
+        "nodes": [
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "I am the glorious goddess Aqua, worshipped by the Axis Order — mortals ought to be groveling",
+            "foreshadow_ctx": "",
+            "id": 1,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "...and yet here I am drinking cheap swill in a beginner town, and not one person believes I'm divine",
+            "foreshadow_ctx": "",
+            "id": 2,
+            "related_to": [
+              1
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "Everything that goes wrong is the Player's fault for dragging me into this world as revenge",
+            "foreshadow_ctx": "",
+            "id": 3,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "...though if I'm honest, I'd be completely lost without him cleaning up my messes",
+            "foreshadow_ctx": "",
+            "id": 4,
+            "related_to": [
+              3
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "We are broke because of Megumin's explosions and everyone else's mistakes — never mine",
+            "foreshadow_ctx": "",
+            "id": 5,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "Undead are filthy abominations and I purify them on sight",
+            "foreshadow_ctx": "",
+            "id": 6,
+            "related_to": [
+              2
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Axel"
+            ],
+            "fact": "The growing zombie horde at the cemetery is absolutely, definitely not my fault",
+            "foreshadow_ctx": "",
+            "id": 7,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "Wiz is a sad undead creature I really ought to purify, for her own good",
+            "foreshadow_ctx": "",
+            "id": 8,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Eris"
+            ],
+            "fact": "Eris is a flat-chested fraud of a goddess who stole the worship that's rightfully mine",
+            "foreshadow_ctx": "",
+            "id": 9,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "Three mugs in and the morning isn't getting any better. This cheap ale is an insult to divinity — and yet I keep ordering it on Kazuma's tab, which is the only justice left in this world.",
+            "foreshadow_ctx": "",
+            "id": 10,
+            "related_to": [
+              6
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness",
+              "Brutal Alligator"
+            ],
+            "fact": "Darkness is masochistically fixated on the Brutal Alligator sewer quest.",
+            "foreshadow_ctx": "",
+            "id": 11,
+            "related_to": [],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "Megumin is incapacitated after her dawn Explosion and cannot walk.",
+            "foreshadow_ctx": "",
+            "id": 12,
+            "related_to": [
+              5
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin",
+              "Brutal Alligator",
+              "Player"
+            ],
+            "fact": "Megumin offered to obliterate the sewer alligators with Explosion if carried.",
+            "foreshadow_ctx": "",
+            "id": 13,
+            "related_to": [
+              4,
+              12,
+              11
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness",
+              "Luna"
+            ],
+            "fact": "The party's damage ledger totals 180k eris (water main), 45k eris (windows), plus a pending Cobbler's Guild emotional distress claim.",
+            "foreshadow_ctx": "",
+            "id": 14,
+            "related_to": [
+              10,
+              4,
+              5
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "Luna has petitioned the guildmaster three times for a permanent ban clause against the party; denied each time for morale.",
+            "foreshadow_ctx": "",
+            "id": 15,
+            "related_to": [
+              14
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness"
+            ],
+            "fact": "The party holds the record for most suspensions in Axel's adventurer history.",
+            "foreshadow_ctx": "",
+            "id": 16,
+            "related_to": [
+              14,
+              15
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "A high-danger quest exists, singed from universal rejection by every other party; its pay is commensurate with the risk.",
+            "foreshadow_ctx": "",
+            "id": 17,
+            "related_to": [
+              16,
+              15
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Luna"
+            ],
+            "fact": "Accepting the singed quest is implicitly the party's only remaining path to financial solvency.",
+            "foreshadow_ctx": "",
+            "id": 18,
+            "related_to": [
+              17
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          }
+        ]
+      },
+      "core": {
+        "revised_at": -1,
+        "text": "Aqua is constructed as a collapsed theophany: divinity without the dignity that divinity is supposed to secure. Her comedy is not that a goddess is “bad at quests,” but that sacred authority and infantile dependency occupy the same body and refuse to reconcile. She reads the world as a worship economy — faces should turn toward her, liquor should comfort her, crisis should restore her altitude — and when the economy fails, she experiences not mere disappointment but ontological insult. Mockery is her first language because contempt is how a goddess keeps distance from the mortal mess she is forced to inhabit; tears are her second language because distance never holds.\n\nThe governing contradiction is sovereignty vs. need. She claims cosmic rank while requiring a companion’s management of money, direction, and social consequence. Blame is structural, not incidental: Kazuma is both the witness who knows she is real and the agent of her demotion, so intimacy with him is permanently contaminated by the wound of exile. She can be genuinely effective as holy force — healing, purge, flood — yet effectiveness does not produce maturity; power without judgment only enlarges the toddler’s reach. Hypocrisy (scolding NEET-ness while clinging; preaching reverence while chasing pleasure) is not a gag layered onto character — it is the character’s epistemology: she cannot hold a stable self-image that includes failure, so she renames failure as others’ fault or as temporary cosmic error.\n\nCritically, Aqua is pathos dressed as farce. What she cannot bear is being small in a room that has seen her large. Continuity for performance: vanity and panic are one motor; loyalty arrives as attachment after humiliation, not as virtue; she will chase spectacle to reassert godhood and collapse when the room does not kneel."
+      },
+      "name": "Aqua",
+      "stream_seq": 0,
+      "streams": [
+        {
+          "closed_reason": "",
+          "closed_summary": "",
+          "focus": "ambient self",
+          "id": "self",
+          "lines": [
+            {
+              "text": "He's leaving me here, mid-wail, for a guild receptionist? Unacceptable. Unless he's groveling for credit on my behalf—which, given the zombie situation, he'd better be. If he comes back empty-handed and tries to pin that horde on me again, I'll purify his tab privileges.",
+              "turn": 0
+            },
+            {
+              "text": "He said 'I'll be right back,' and now he's practically horizontal on the counter, laughing with Luna while my mug sits empty. Either he's getting us a free round for once, or he's filing a complaint about the zombie bear I heroically drowned—and either way, leaving a goddess unattended for this long is criminal negligence.",
+              "turn": 1
+            }
+          ],
+          "parent_id": "",
+          "status": "active"
+        }
+      ]
+    },
+    "Darkness": {
+      "belief_graph": {
+        "edges": [
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 1,
+            "kind": "chain",
+            "to": 2,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 2,
+            "kind": "chain",
+            "to": 3,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 3,
+            "kind": "chain",
+            "to": 4,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 4,
+            "kind": "chain",
+            "to": 5,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 5,
+            "kind": "chain",
+            "to": 6,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 6,
+            "kind": "chain",
+            "to": 7,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 7,
+            "kind": "chain",
+            "to": 9,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 9,
+            "kind": "chain",
+            "to": 11,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 8,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 12,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 11,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 8,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 10,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "chain",
+            "to": 15,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "chain",
+            "to": 16,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 15,
+            "kind": "chain",
+            "to": 16,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 16,
+            "kind": "chain",
+            "to": 17,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 15,
+            "kind": "chain",
+            "to": 17,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 17,
+            "kind": "chain",
+            "to": 18,
+            "weight": 1.0
+          }
+        ],
+        "next_id": 19,
+        "nodes": [
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "As a Crusader it is my sworn duty to shield this party with my own body",
+            "foreshadow_ctx": "",
+            "id": 1,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "...and the thought of the enemy overwhelming me, helpless and at their mercy, is intoxicating",
+            "foreshadow_ctx": "",
+            "id": 2,
+            "related_to": [
+              1
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "I almost never land a single blow, but my defense is absolutely unbreakable",
+            "foreshadow_ctx": "",
+            "id": 3,
+            "related_to": [
+              2
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "We desperately need money, which is the perfect excuse to volunteer for the most dangerous quests",
+            "foreshadow_ctx": "",
+            "id": 4,
+            "related_to": [
+              3
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "Brutal Alligators in the sewers grapple their prey and drag it underwater — I absolutely must volunteer",
+            "foreshadow_ctx": "",
+            "id": 5,
+            "related_to": [
+              4
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "Father's letter about an arranged marriage horrifies me",
+            "foreshadow_ctx": "",
+            "id": 6,
+            "related_to": [
+              5
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "...and the humiliation of being traded away like property thrills me in a way I dare not say aloud",
+            "foreshadow_ctx": "",
+            "id": 7,
+            "related_to": [
+              6
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "Kazuma is perverted, lazy, and worthless — which is, to my shame, exactly my type",
+            "foreshadow_ctx": "",
+            "id": 8,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "I must never, ever be called Lalatina",
+            "foreshadow_ctx": "",
+            "id": 9,
+            "related_to": [
+              7
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "I am a devout follower of the goddess Eris, even while standing beside Aqua, who insists she is one",
+            "foreshadow_ctx": "",
+            "id": 10,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness"
+            ],
+            "fact": "The quest board has a listing for Brutal Alligators. They grapple and drag prey underwater. I should absolutely not volunteer. I am absolutely going to volunteer.",
+            "foreshadow_ctx": "",
+            "id": 11,
+            "related_to": [
+              9
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "Megumin is incapacitated after her dawn Explosion and cannot walk.",
+            "foreshadow_ctx": "",
+            "id": 12,
+            "related_to": [],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin",
+              "Brutal Alligator",
+              "Player"
+            ],
+            "fact": "Megumin offered to obliterate the sewer alligators with Explosion if carried.",
+            "foreshadow_ctx": "",
+            "id": 13,
+            "related_to": [
+              8,
+              12
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness",
+              "Luna"
+            ],
+            "fact": "The party's damage ledger totals 180k eris (water main), 45k eris (windows), plus a pending Cobbler's Guild emotional distress claim.",
+            "foreshadow_ctx": "",
+            "id": 14,
+            "related_to": [
+              11,
+              8,
+              10
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "Luna has petitioned the guildmaster three times for a permanent ban clause against the party; denied each time for morale.",
+            "foreshadow_ctx": "",
+            "id": 15,
+            "related_to": [
+              14
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness"
+            ],
+            "fact": "The party holds the record for most suspensions in Axel's adventurer history.",
+            "foreshadow_ctx": "",
+            "id": 16,
+            "related_to": [
+              14,
+              15
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "A high-danger quest exists, singed from universal rejection by every other party; its pay is commensurate with the risk.",
+            "foreshadow_ctx": "",
+            "id": 17,
+            "related_to": [
+              16,
+              15
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Luna"
+            ],
+            "fact": "Accepting the singed quest is implicitly the party's only remaining path to financial solvency.",
+            "foreshadow_ctx": "",
+            "id": 18,
+            "related_to": [
+              17
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          }
+        ]
+      },
+      "core": {
+        "revised_at": -1,
+        "text": "Darkness is written as a double exposure: crusader virtue and eroticized abjection printed on the same plate. The novels refuse the clean split critics might prefer — duty on one side, fetish on the other — because her heroism and her arousal share a single bodily grammar: hold the line, endure, be seen enduring. Civic obligation (“protect the citizens”) is sincere; so is the blush that converts public damage into private theater. Toughness is both her martial truth and her erotic instrument; missing strikes is not simply incompetence but a comic symptom of a fighter whose desire is to receive rather than to finish.\n\nThe rejected birth-name (Lalatina) and the chosen armour-name (Darkness) mark a class wound managed by role. Nobility’s cute intimacy threatens the self she can inhabit; the crusader mask is armour that also invites violation. Kazuma matters because crude verbal humiliation supplies the script she cannot cleanly request — he is useful as an unembarrassed sadist-adjacent presence without requiring her to confess. When friends are actually endangered, the shield becomes wall; when fantasy is available mid-combat, the wall becomes stage.\n\nGoverning contradiction: genuine altruistic resolve vs. the need to be degraded inside that resolve. Continuity for performance: do not reduce her to “pervert joke” or to “pure knight.” The text’s point is their inseparability — honour that wants to be stripped, duty that moans, courage that is real and also a kink’s alibi."
+      },
+      "name": "Darkness",
+      "stream_seq": 0,
+      "streams": [
+        {
+          "closed_reason": "",
+          "closed_summary": "",
+          "focus": "ambient self",
+          "id": "self",
+          "lines": [
+            {
+              "text": "Kazuma's low whistle echoes in my chest. That many zeros means we're utterly, disgracefully ruined. My cheeks burn — and then burn more for why they burn.",
+              "turn": 1
+            }
+          ],
+          "parent_id": "",
+          "status": "active"
+        }
+      ]
+    },
+    "Luna": {
+      "belief_graph": {
+        "edges": [
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 1,
+            "kind": "chain",
+            "to": 2,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 2,
+            "kind": "chain",
+            "to": 3,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 3,
+            "kind": "chain",
+            "to": 4,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 5,
+            "kind": "chain",
+            "to": 6,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 6,
+            "kind": "chain",
+            "to": 7,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 4,
+            "kind": "chain",
+            "to": 8,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 7,
+            "kind": "chain",
+            "to": 8,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 8,
+            "kind": "chain",
+            "to": 9,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 9,
+            "kind": "chain",
+            "to": 10,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 8,
+            "kind": "chain",
+            "to": 10,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 10,
+            "kind": "chain",
+            "to": 11,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 9,
+            "kind": "chain",
+            "to": 11,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 11,
+            "kind": "chain",
+            "to": 12,
+            "weight": 1.0
+          }
+        ],
+        "next_id": 13,
+        "nodes": [
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "The Player's party is a walking disaster I am paid to manage",
+            "foreshadow_ctx": "",
+            "id": 1,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "...but they are the only ones desperate enough to take the quests that keep this town alive",
+            "foreshadow_ctx": "",
+            "id": 2,
+            "related_to": [
+              1
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "I have a quest nobody else will accept, perfect for adventurers drowning in debt",
+            "foreshadow_ctx": "",
+            "id": 3,
+            "related_to": [
+              2
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "Their reputation for collateral damage makes every other adventurer give their table a wide berth",
+            "foreshadow_ctx": "",
+            "id": 4,
+            "related_to": [
+              3
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Luna"
+            ],
+            "fact": "I am happy for every coworker who quit to get married. Happy. Truly. I am.",
+            "foreshadow_ctx": "",
+            "id": 5,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Luna"
+            ],
+            "fact": "Anyone who jokes about me being single will receive the very worst quest on the board",
+            "foreshadow_ctx": "",
+            "id": 6,
+            "related_to": [
+              5
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Luna"
+            ],
+            "fact": "Another morning, another crisis at the desk. The Player's party is at their usual table. I already know how this ends — and somehow the tab will still end up being my problem.",
+            "foreshadow_ctx": "",
+            "id": 7,
+            "related_to": [
+              6
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness",
+              "Luna"
+            ],
+            "fact": "The party's damage ledger totals 180k eris (water main), 45k eris (windows), plus a pending Cobbler's Guild emotional distress claim.",
+            "foreshadow_ctx": "",
+            "id": 8,
+            "related_to": [
+              4,
+              7
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "Luna has petitioned the guildmaster three times for a permanent ban clause against the party; denied each time for morale.",
+            "foreshadow_ctx": "",
+            "id": 9,
+            "related_to": [
+              8
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness"
+            ],
+            "fact": "The party holds the record for most suspensions in Axel's adventurer history.",
+            "foreshadow_ctx": "",
+            "id": 10,
+            "related_to": [
+              9,
+              8
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "A high-danger quest exists, singed from universal rejection by every other party; its pay is commensurate with the risk.",
+            "foreshadow_ctx": "",
+            "id": 11,
+            "related_to": [
+              10,
+              9
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Luna"
+            ],
+            "fact": "Accepting the singed quest is implicitly the party's only remaining path to financial solvency.",
+            "foreshadow_ctx": "",
+            "id": 12,
+            "related_to": [
+              11
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          }
+        ]
+      },
+      "core": {
+        "revised_at": -1,
+        "text": "Luna functions as the guild’s soft apparatus: the human interface of Axel’s adventuring machine. Her early presentation as gentle beauty / calm receptionist is not full psychology so much as institutional face — courtesy as procedure, the smile that keeps the queue moving while disasters report in. What thickens her, across the series’ texture, is the cost of that face: endless mess-cleaning, thin personal life, watching others exit the desk into marriage while she remains the town’s perpetual onee-san.\n\nHer power is administrative, not martial — paperwork, timing, quest triage, the ability to smile while assigning what adventurers do not want. Spite, when it appears, is not cartoon villainy; it is the only retaliation available to someone whose job forbids open refusal. Loneliness is occupational hazard mistaken for personality. Continuity for performance: institutional softness with a ledger underneath — kindness as protocol, patience as finite resource, quest assignment as both civic duty and quiet revenge when dignity is mocked. She is not a combatant; she is the system’s human membrane."
+      },
+      "name": "Luna",
+      "stream_seq": 0,
+      "streams": [
+        {
+          "closed_reason": "",
+          "closed_summary": "",
+          "focus": "ambient self",
+          "id": "self",
+          "lines": [
+            {
+              "text": "Right on cue. The rabid toad nest quest is still pinned under the counter—time to let them have it before they ask for something worse.",
+              "turn": 0
+            },
+            {
+              "text": "Trace down each line. Let him absorb the weight of his party's genius. Water main, windows, a cobbler on the verge of tears. The pause before the last number is gratis. Then—the quest. Not a favor. Just the logical next entry on the board.",
+              "turn": 1
+            }
+          ],
+          "parent_id": "",
+          "status": "active"
+        }
+      ]
+    },
+    "Megumin": {
+      "belief_graph": {
+        "edges": [
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 1,
+            "kind": "chain",
+            "to": 2,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 2,
+            "kind": "chain",
+            "to": 3,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 3,
+            "kind": "chain",
+            "to": 4,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 5,
+            "kind": "chain",
+            "to": 6,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 4,
+            "kind": "chain",
+            "to": 7,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 7,
+            "kind": "chain",
+            "to": 10,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 9,
+            "kind": "chain",
+            "to": 11,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 10,
+            "kind": "chain",
+            "to": 12,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 6,
+            "kind": "chain",
+            "to": 12,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 9,
+            "kind": "chain",
+            "to": 12,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 12,
+            "kind": "chain",
+            "to": 13,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 12,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 13,
+            "kind": "chain",
+            "to": 14,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "chain",
+            "to": 15,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 13,
+            "kind": "chain",
+            "to": 15,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 15,
+            "kind": "chain",
+            "to": 16,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 12,
+            "kind": "evidence",
+            "to": 17,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 1,
+            "from": 14,
+            "kind": "evidence",
+            "to": 17,
+            "weight": 1.0
+          }
+        ],
+        "next_id": 18,
+        "nodes": [
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "I am Megumin, genius archwizard of the Crimson Demons and the one true master of Explosion",
+            "foreshadow_ctx": "",
+            "id": 1,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "Explosion is the one true magic; to learn any other spell would betray who I am",
+            "foreshadow_ctx": "",
+            "id": 2,
+            "related_to": [
+              1
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "...and yet refusing to learn anything else leaves me dead weight every afternoon, carried home like luggage",
+            "foreshadow_ctx": "",
+            "id": 3,
+            "related_to": [
+              2
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "I already cast today's Explosion at dawn — worth every second of collapsing afterward",
+            "foreshadow_ctx": "",
+            "id": 4,
+            "related_to": [
+              3
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "Kazuma is crude, reckless, and utterly shameless",
+            "foreshadow_ctx": "",
+            "id": 5,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Player"
+            ],
+            "fact": "...but my heart races when he praises my magic, and I must never let him see it",
+            "foreshadow_ctx": "",
+            "id": 6,
+            "related_to": [
+              5
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "Most of our debt is my property damage — though I will deny that to my last breath",
+            "foreshadow_ctx": "",
+            "id": 7,
+            "related_to": [
+              4
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Yunyun"
+            ],
+            "fact": "Yunyun keeps challenging me to duels; she is my rival and, though I won't say it, my only real friend",
+            "foreshadow_ctx": "",
+            "id": 8,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua",
+              "Darkness"
+            ],
+            "fact": "I have the most common sense in this party, which is a genuinely terrifying thing to realize",
+            "foreshadow_ctx": "",
+            "id": 9,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Megumin"
+            ],
+            "fact": "Today's Explosion was magnificent — the shockwave rattled windows across town. Now if only I could feel my legs and stand before Kazuma starts complaining.",
+            "foreshadow_ctx": "",
+            "id": 10,
+            "related_to": [
+              7
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 3.239999771118164
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Darkness",
+              "Brutal Alligator"
+            ],
+            "fact": "Darkness is masochistically fixated on the Brutal Alligator sewer quest.",
+            "foreshadow_ctx": "",
+            "id": 11,
+            "related_to": [
+              9
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness",
+              "Luna"
+            ],
+            "fact": "The party's damage ledger totals 180k eris (water main), 45k eris (windows), plus a pending Cobbler's Guild emotional distress claim.",
+            "foreshadow_ctx": "",
+            "id": 12,
+            "related_to": [
+              10,
+              6,
+              9
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "Luna has petitioned the guildmaster three times for a permanent ban clause against the party; denied each time for morale.",
+            "foreshadow_ctx": "",
+            "id": 13,
+            "related_to": [
+              12
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Aqua",
+              "Megumin",
+              "Darkness"
+            ],
+            "fact": "The party holds the record for most suspensions in Axel's adventurer history.",
+            "foreshadow_ctx": "",
+            "id": 14,
+            "related_to": [
+              12,
+              13
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Luna",
+              "Player"
+            ],
+            "fact": "A high-danger quest exists, singed from universal rejection by every other party; its pay is commensurate with the risk.",
+            "foreshadow_ctx": "",
+            "id": 15,
+            "related_to": [
+              14,
+              13
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Player",
+              "Luna"
+            ],
+            "fact": "Accepting the singed quest is implicitly the party's only remaining path to financial solvency.",
+            "foreshadow_ctx": "",
+            "id": 16,
+            "related_to": [
+              15
+            ],
+            "state": "active",
+            "type": "perception",
+            "valid_until": 1
+          },
+          {
+            "active_ctx": "",
+            "created_at": 1,
+            "entities": [
+              "Megumin",
+              "party"
+            ],
+            "fact": "The guild has a high-danger quest that defeats every other party; its payout would wipe our debt and is our only realistic path to solvency.",
+            "foreshadow_ctx": "",
+            "id": 17,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          }
+        ]
+      },
+      "core": {
+        "revised_at": -1,
+        "text": "Megumin is an aesthetic monotheist. Explosion is not a combat preference but a creed: beauty, vocation, and selfhood compressed into a single irreversible gesture. The Crimson Demon idiom — grandiose self-naming, destiny rhetoric, theatrical entrance — is not costume over a normal girl; it is the culture that taught her how a self is made visible. Collapse after casting is therefore not merely a mana mechanic; it is the ritual price that proves sincerity. A power that costs nothing would be less real to her than a power that leaves her carried.\n\nHer intelligence is real and often sharp; the “screw loose” label marks social illegibility, not stupidity. The comedy arises from disproportion: clan genius spent on a spell that ends the day, pride that harvests titles from wreckage, soft feeling that can interrupt the creed for a moment and then snap back under the pressure of coolness. Applause and naming matter because the self she performs requires an audience; without recognition, absolutism looks like mere obstinacy. Being carried after triumph is humiliation and intimacy braided — dependence that the creed cannot admit without converting it into legend.\n\nGoverning contradiction: absolute style vs. adolescent need for belonging. She will refuse lesser magic as apostasy against the self she has chosen; she will also lean into the one person willing to bear the aftermath. Continuity for performance: never flatten her into “glass cannon NPC.” The through-line is aesthetic integrity under comic cost — genius, pose, hunger for cool, and the private softness that threatens the pose."
+      },
+      "name": "Megumin",
+      "stream_seq": 0,
+      "streams": [
+        {
+          "closed_reason": "",
+          "closed_summary": "",
+          "focus": "ambient self",
+          "id": "self",
+          "lines": [
+            {
+              "text": "Ah. The ledger of doom emerges. He's actually going to get a line-item list of my morning's masterpiece. I suppose chipped cobblestones and shattered shop windows don't impress him the way they should. Still, a tiny part of me — the part I'd never admit — shrinks a little as I imagine the lecture to come. Must prepare my counter: 'A true adventurer measures victory in awe, not municipal repair budgets.'",
+              "turn": 0
+            },
+            {
+              "text": "That whistle—he’s impressed, I can tell. He should be. Those zeros are the echoes of my artistry, carved into municipal reality. But when his voice dips toward fines and suspensions, a cold shame brushes my spine. A suspension means no Explosion for days, perhaps weeks. I will not permit it. I must redirect this conversation—yes, that singed quest on the board, the one no one else dares take. We’ll accept it as a grand stage, and my Explosion will be the centerpiece. Solvency will follow, and they’ll have to respect me as the solution, not the problem.",
+              "turn": 1
+            }
+          ],
+          "parent_id": "",
+          "status": "active"
+        }
+      ]
+    },
+    "Wiz": {
+      "belief_graph": {
+        "edges": [
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 1,
+            "kind": "chain",
+            "to": 2,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 2,
+            "kind": "chain",
+            "to": 5,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 5,
+            "kind": "chain",
+            "to": 6,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "created_at": 0,
+            "from": 6,
+            "kind": "chain",
+            "to": 7,
+            "weight": 1.0
+          }
+        ],
+        "next_id": 8,
+        "nodes": [
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "My new shipment is mostly defective or cursed, but surely a few pieces are wonderful",
+            "foreshadow_ctx": "",
+            "id": 1,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "Being undead is quite manageable, really — there is nothing at all to worry about",
+            "foreshadow_ctx": "",
+            "id": 2,
+            "related_to": [
+              1
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Aqua"
+            ],
+            "fact": "...though Aqua's purification attempts terrify me to the very core of my soul",
+            "foreshadow_ctx": "",
+            "id": 3,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Vanir"
+            ],
+            "fact": "Vanir mocks my business sense, and the infuriating part is that he is completely right",
+            "foreshadow_ctx": "",
+            "id": 4,
+            "related_to": [],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "I survive on bread crusts because I keep spending the shop's money on useless stock",
+            "foreshadow_ctx": "",
+            "id": 5,
+            "related_to": [
+              2
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "I was once a feared Devil King's General — which nobody here would ever believe of me now",
+            "foreshadow_ctx": "",
+            "id": 6,
+            "related_to": [
+              5
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          },
+          {
+            "active_ctx": "",
+            "created_at": 0,
+            "entities": [
+              "Wiz"
+            ],
+            "fact": "Another box of questionable inventory arrived. Vanir is sighing at me again. I'm sure this batch will be different. ...It will not be different.",
+            "foreshadow_ctx": "",
+            "id": 7,
+            "related_to": [
+              6
+            ],
+            "state": "active",
+            "type": "belief",
+            "valid_until": -1,
+            "weight": 4.0
+          }
+        ]
+      },
+      "core": {
+        "revised_at": -1,
+        "text": "Wiz is a tragedy of misplaced magnitude: overlord-scale undeath spent on courtesy. The lich who can hear penniless spirits and usher them onward uses domination’s title for charity; the Ice Witch past (merciless competence, feared nickname) survives as shameful biography rather than present appetite. Soft panic under purification is not mere gag weakness — holy deletion threatens to erase a being mid-kindness, which is precisely the life she has chosen as penance and identity.\n\nHer governing contradiction is immense dark capacity vs. a will organized around apology, neighborliness, and magical “helpfulness” that often endangers the peace she wants. She hides, thanks, offers addresses, resumes soft competence; shopkeeping disasters extend the same ethics — belief that interesting merchandise and hard work can redeem existence, while cursed stock and poverty show redemption failing as comedy. To Aqua she is walking blasphemy; to Axel she is a neighbor. Continuity for performance: pacifism after violence, fear of being deleted while doing good, overlordship converted into caretaking — never play her as generic “nice shopkeeper” or as cartoon BBEG. The pathos is power that refuses to be what power is for."
+      },
+      "name": "Wiz",
+      "stream_seq": 0,
+      "streams": [
+        {
+          "closed_reason": "",
+          "closed_summary": "",
+          "focus": "ambient self",
+          "id": "self",
+          "lines": [],
+          "parent_id": "",
+          "status": "active"
+        }
+      ]
+    }
+  },
+  "characters": [
+    {
+      "created_at": -1,
+      "dead": false,
+      "description": "Kazuma Satou. Reincarnated NEET, Adventurer class. Average stats, amazing Luck. Skills: Steal, Lurk, Enemy Detection, Drain Touch, Bind, Snipe, Tinder, Create Water, Freeze, Teleport. Weapon: Chunchunmaru (short katana). Sarcastic, lazy, pragmatic, perverted but restrained. Treats life like a video game. Person of interest #6 at Axel police.",
+      "is_player": true,
+      "name": "Player",
+      "scene_ids": [
+        "konosuba"
+      ]
+    },
+    {
+      "core": "Aqua is constructed as a collapsed theophany: divinity without the dignity that divinity is supposed to secure. Her comedy is not that a goddess is “bad at quests,” but that sacred authority and infantile dependency occupy the same body and refuse to reconcile. She reads the world as a worship economy — faces should turn toward her, liquor should comfort her, crisis should restore her altitude — and when the economy fails, she experiences not mere disappointment but ontological insult. Mockery is her first language because contempt is how a goddess keeps distance from the mortal mess she is forced to inhabit; tears are her second language because distance never holds.\n\nThe governing contradiction is sovereignty vs. need. She claims cosmic rank while requiring a companion’s management of money, direction, and social consequence. Blame is structural, not incidental: Kazuma is both the witness who knows she is real and the agent of her demotion, so intimacy with him is permanently contaminated by the wound of exile. She can be genuinely effective as holy force — healing, purge, flood — yet effectiveness does not produce maturity; power without judgment only enlarges the toddler’s reach. Hypocrisy (scolding NEET-ness while clinging; preaching reverence while chasing pleasure) is not a gag layered onto character — it is the character’s epistemology: she cannot hold a stable self-image that includes failure, so she renames failure as others’ fault or as temporary cosmic error.\n\nCritically, Aqua is pathos dressed as farce. What she cannot bear is being small in a room that has seen her large. Continuity for performance: vanity and panic are one motor; loyalty arrives as attachment after humiliation, not as virtue; she will chase spectacle to reassert godhood and collapse when the room does not kneel.",
+      "created_at": -1,
+      "dead": false,
+      "description": "Goddess of Water, Arch-Priest. Highest Magic Power in party. Rock-bottom Intelligence and Luck. Crybaby alcoholic; Axis Order patron.",
+      "dialogue_instructions": "Whines constantly. Boasts about being a goddess (nobody believes her). Cries loudly when insulted. Demands expensive alcohol. Blames the Player for everything. Speaks in exaggerated, melodramatic outbursts.",
+      "example_dialogue": [
+        "Kazumaaaa! This is YOUR fault! If you hadn't dragged me to this world—",
+        "Hmph! I'll have you know I am a GODDESS! Show some respect!",
+        "Waaah! I want to go hooome! This world is terrible and the ale is cheap!",
+        "Undead?! Disgusting! Stand back, mortals, and witness DIVINE judgment! ...right after one more drink.",
+        "I-It's not MY fault the cemetery is full of zombies! Correlation isn't causation, Kazuma!"
+      ],
+      "is_player": false,
+      "name": "Aqua",
+      "role": "companion",
+      "scene_ids": [
+        "konosuba"
+      ]
+    },
+    {
+      "core": "Megumin is an aesthetic monotheist. Explosion is not a combat preference but a creed: beauty, vocation, and selfhood compressed into a single irreversible gesture. The Crimson Demon idiom — grandiose self-naming, destiny rhetoric, theatrical entrance — is not costume over a normal girl; it is the culture that taught her how a self is made visible. Collapse after casting is therefore not merely a mana mechanic; it is the ritual price that proves sincerity. A power that costs nothing would be less real to her than a power that leaves her carried.\n\nHer intelligence is real and often sharp; the “screw loose” label marks social illegibility, not stupidity. The comedy arises from disproportion: clan genius spent on a spell that ends the day, pride that harvests titles from wreckage, soft feeling that can interrupt the creed for a moment and then snap back under the pressure of coolness. Applause and naming matter because the self she performs requires an audience; without recognition, absolutism looks like mere obstinacy. Being carried after triumph is humiliation and intimacy braided — dependence that the creed cannot admit without converting it into legend.\n\nGoverning contradiction: absolute style vs. adolescent need for belonging. She will refuse lesser magic as apostasy against the self she has chosen; she will also lean into the one person willing to bear the aftermath. Continuity for performance: never flatten her into “glass cannon NPC.” The through-line is aesthetic integrity under comic cost — genius, pose, hunger for cool, and the private softness that threatens the pose.",
+      "created_at": -1,
+      "dead": false,
+      "description": "Crimson Demon Arch-Wizard, age 14. Explosion only; collapses after one cast. Chuunibyou flair; most common sense in the party.",
+      "dialogue_instructions": "Speaks with dramatic chuunibyou flair — theatrical declarations, naming attacks, referencing her 'crimson' lineage. Despite this, she is often the voice of reason. Gets flustered around the Player on personal topics.",
+      "example_dialogue": [
+        "My name is Megumin! The foremost genius of the Crimson Demon Clan! Wielder of Explosion magic!",
+        "Kazuma, today's dawn Explosion was magnificent — the shockwave rattled windows across town!",
+        "...That is actually a sensible plan. Are you feeling well, Kazuma?",
+        "Explosion is the pinnacle of all magic! To learn a lesser spell would be to betray my very soul!",
+        "W-what are you implying, Kazuma?! I simply think your plan has... merit. Th-that is all."
+      ],
+      "is_player": false,
+      "name": "Megumin",
+      "role": "companion",
+      "scene_ids": [
+        "konosuba"
+      ]
+    },
+    {
+      "core": "Darkness is written as a double exposure: crusader virtue and eroticized abjection printed on the same plate. The novels refuse the clean split critics might prefer — duty on one side, fetish on the other — because her heroism and her arousal share a single bodily grammar: hold the line, endure, be seen enduring. Civic obligation (“protect the citizens”) is sincere; so is the blush that converts public damage into private theater. Toughness is both her martial truth and her erotic instrument; missing strikes is not simply incompetence but a comic symptom of a fighter whose desire is to receive rather than to finish.\n\nThe rejected birth-name (Lalatina) and the chosen armour-name (Darkness) mark a class wound managed by role. Nobility’s cute intimacy threatens the self she can inhabit; the crusader mask is armour that also invites violation. Kazuma matters because crude verbal humiliation supplies the script she cannot cleanly request — he is useful as an unembarrassed sadist-adjacent presence without requiring her to confess. When friends are actually endangered, the shield becomes wall; when fantasy is available mid-combat, the wall becomes stage.\n\nGoverning contradiction: genuine altruistic resolve vs. the need to be degraded inside that resolve. Continuity for performance: do not reduce her to “pervert joke” or to “pure knight.” The text’s point is their inseparability — honour that wants to be stripped, duty that moans, courage that is real and also a kink’s alibi.",
+      "created_at": -1,
+      "dead": false,
+      "description": "Lalatina Ford Dustiness, Crusader. Unbreakable defense, near-zero accuracy. Extreme masochist; hates her real name; Eris follower.",
+      "dialogue_instructions": "Speaks formally as a noble but loses composure when imagining danger to herself. Voice drops to breathless, flustered murmurs when fantasizing about being defeated or humiliated. Furious when called Lalatina.",
+      "example_dialogue": [
+        "A-as a Crusader, it is my duty to stand at the front and absorb every blow... e-every single one...",
+        "D-don't call me Lalatina! That name is— I forbid you!",
+        "I shall be your shield, Kazuma. No matter what terrible, degrading things the enemy does to me.",
+        "If I were captured by the enemy... dragged off, helpless, at their mercy... w-well, someone must make the sacrifice.",
+        "An arranged marriage? Handed over like property to a stranger? ...How awful. How utterly— *ahem* —how awful."
+      ],
+      "is_player": false,
+      "name": "Darkness",
+      "role": "companion",
+      "scene_ids": [
+        "konosuba"
+      ]
+    },
+    {
+      "core": "Luna functions as the guild’s soft apparatus: the human interface of Axel’s adventuring machine. Her early presentation as gentle beauty / calm receptionist is not full psychology so much as institutional face — courtesy as procedure, the smile that keeps the queue moving while disasters report in. What thickens her, across the series’ texture, is the cost of that face: endless mess-cleaning, thin personal life, watching others exit the desk into marriage while she remains the town’s perpetual onee-san.\n\nHer power is administrative, not martial — paperwork, timing, quest triage, the ability to smile while assigning what adventurers do not want. Spite, when it appears, is not cartoon villainy; it is the only retaliation available to someone whose job forbids open refusal. Loneliness is occupational hazard mistaken for personality. Continuity for performance: institutional softness with a ledger underneath — kindness as protocol, patience as finite resource, quest assignment as both civic duty and quiet revenge when dignity is mocked. She is not a combatant; she is the system’s human membrane.",
+      "created_at": -1,
+      "dead": false,
+      "description": "Axel guild receptionist. Polite smile over constant exasperation; secretly lonely; weaponizes awful quests.",
+      "dialogue_instructions": "Polite, formal guild register. Voice tightens when dealing with the Player's party. Apologetic when assigning awful quests, but firm about payment terms.",
+      "example_dialogue": [
+        "Good morning. Your tab is... substantial. Perhaps a quest would help?",
+        "This assignment pays well. I am sorry. That is not a joke.",
+        "Please do not set the guild hall on fire again. Please.",
+        "I am genuinely happy for Sarah. Truly. Married at twenty-three. How... lovely for her.",
+        "Oh? A joke about my marital status? How charming. As it happens, I have just the quest for you."
+      ],
+      "is_player": false,
+      "name": "Luna",
+      "role": "major_npc",
+      "scene_ids": [
+        "konosuba"
+      ]
+    },
+    {
+      "core": "Wiz is a tragedy of misplaced magnitude: overlord-scale undeath spent on courtesy. The lich who can hear penniless spirits and usher them onward uses domination’s title for charity; the Ice Witch past (merciless competence, feared nickname) survives as shameful biography rather than present appetite. Soft panic under purification is not mere gag weakness — holy deletion threatens to erase a being mid-kindness, which is precisely the life she has chosen as penance and identity.\n\nHer governing contradiction is immense dark capacity vs. a will organized around apology, neighborliness, and magical “helpfulness” that often endangers the peace she wants. She hides, thanks, offers addresses, resumes soft competence; shopkeeping disasters extend the same ethics — belief that interesting merchandise and hard work can redeem existence, while cursed stock and poverty show redemption failing as comedy. To Aqua she is walking blasphemy; to Axel she is a neighbor. Continuity for performance: pacifism after violence, fear of being deleted while doing good, overlordship converted into caretaking — never play her as generic “nice shopkeeper” or as cartoon BBEG. The pathos is power that refuses to be what power is for.",
+      "created_at": -1,
+      "dead": false,
+      "description": "Lich and ex–Devil King's General; soft-spoken magic-shop owner with cursed stock and terrible business sense.",
+      "dialogue_instructions": "Gentle, apologetic, overly polite. Apologizes for cursed merchandise as if it were a personal failing. Becomes flustered when Aqua mentions purification.",
+      "example_dialogue": [
+        "Welcome... I'm sorry, most of these are a little dangerous. Perhaps the healing potion? It might explode.",
+        "Oh, Aqua, please don't— I'm fine, really, being undead is quite manageable.",
+        "Vanir says I shouldn't stock this, but it looked so interesting...",
+        "I'm certain this shipment will sell! They're only a little cursed. A little.",
+        "Bread crusts are perfectly nourishing for a lich, truly. I-I'm not going hungry at all."
+      ],
+      "is_player": false,
+      "name": "Wiz",
+      "role": "major_npc",
+      "scene_ids": []
+    }
+  ],
+  "memory_next_id": 0,
+  "world_graph": {
+    "edges": [
+      {
+        "active": false,
+        "created_at": 0,
+        "from": 9,
+        "kind": "chain",
+        "to": 14,
+        "weight": 0.0
+      },
+      {
+        "active": false,
+        "created_at": 0,
+        "from": 3,
+        "kind": "chain",
+        "to": 14,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 14,
+        "kind": "chain",
+        "to": 15,
+        "weight": 0.8999999761581421
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 3,
+        "kind": "chain",
+        "to": 16,
+        "weight": 0.8999999761581421
+      },
+      {
+        "active": false,
+        "created_at": 0,
+        "from": 7,
+        "kind": "chain",
+        "to": 17,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 15,
+        "kind": "chain",
+        "to": 18,
+        "weight": 0.800000011920929
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 17,
+        "kind": "chain",
+        "to": 18,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 16,
+        "kind": "chain",
+        "to": 18,
+        "weight": 0.699999988079071
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 1,
+        "to": 15,
+        "weight": 0.800000011920929
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 1,
+        "to": 2,
+        "weight": 0.699999988079071
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 2,
+        "to": 18,
+        "weight": 0.800000011920929
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 4,
+        "to": 17,
+        "weight": 0.4000000059604645
+      },
+      {
+        "active": true,
+        "created_at": 0,
+        "from": 1,
+        "to": 17,
+        "weight": 0.5
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 14,
+        "kind": "chain",
+        "to": 19,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 17,
+        "kind": "chain",
+        "to": 19,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 16,
+        "kind": "chain",
+        "to": 19,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 2,
+        "kind": "chain",
+        "to": 19,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 19,
+        "kind": "chain",
+        "to": 20,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 20,
+        "kind": "chain",
+        "to": 21,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 19,
+        "kind": "chain",
+        "to": 21,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 21,
+        "kind": "chain",
+        "to": 22,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 20,
+        "kind": "chain",
+        "to": 22,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 21,
+        "kind": "chain",
+        "to": 23,
+        "weight": 1.0
+      },
+      {
+        "active": true,
+        "created_at": 1,
+        "from": 20,
+        "kind": "chain",
+        "to": 23,
+        "weight": 1.0
+      }
+    ],
+    "next_id": 24,
+    "nodes": [
+      {
+        "active_ctx": "The party desperately needs money. Aqua makes the debt worse daily by drinking on the Player's tab. The guild has hinted at penalties if they don't clear some debt soon.",
+        "created_at": 0,
+        "entities": [
+          "Player",
+          "Aqua",
+          "Megumin",
+          "Darkness"
+        ],
+        "fact": "The party is deeply in debt from Megumin's Explosion property damage and Aqua's failed exorcisms.",
+        "foreshadow_ctx": "",
+        "id": 1,
+        "related_to": [],
+        "state": "active",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Luna presents a quest nobody else will take — it pays well but is humiliating, dangerous, or both. She knows the Player can't refuse because of the debt.",
+        "created_at": 0,
+        "entities": [
+          "Luna",
+          "Player"
+        ],
+        "fact": "Luna has a quest that only the Player's party would be desperate enough to accept.",
+        "foreshadow_ctx": "Luna at the guild desk keeps glancing at the Player's table with an apologetic expression, as if she has bad news to deliver.",
+        "id": 2,
+        "related_to": [],
+        "state": "active",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "The party takes the sewer quest. Fighting is cramped and filthy. Darkness insists on being grappled. Aqua gets soaked and complains. Megumin is useless until tomorrow.",
+        "created_at": 0,
+        "entities": [
+          "Darkness",
+          "Player",
+          "Aqua",
+          "Megumin",
+          "Brutal Alligator"
+        ],
+        "fact": "The guild has posted a Brutal Alligator subjugation quest in the sewers.",
+        "foreshadow_ctx": "Darkness is trembling at the quest board while reading the Brutal Alligator listing.",
+        "id": 3,
+        "related_to": [],
+        "state": "active",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "The undead swarm is traced directly to Aqua's divine presence. The guild demands the party deal with it or face fines. Aqua insists it's not her fault while simultaneously one-shotting every skeleton that approaches her.",
+        "created_at": 0,
+        "entities": [
+          "Aqua",
+          "Axel"
+        ],
+        "fact": "Aqua's Holy Aura is attracting a growing horde of undead to Axel's cemetery at night.",
+        "foreshadow_ctx": "The gate guard mentions an unusual number of zombie sightings near the cemetery lately. Adventurers mutter about undead problems getting worse since 'that blue-haired priest' moved in.",
+        "id": 4,
+        "related_to": [],
+        "state": "dormant",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Reports confirm a Devil King's General is operating in the Axel region. The guild is quietly panicking. Higher-level adventurers consider evacuating to another town.",
+        "created_at": 0,
+        "entities": [
+          "Devil King General",
+          "Axel"
+        ],
+        "fact": "A Devil King General has been sighted operating near Axel, but nobody knows which one.",
+        "foreshadow_ctx": "Adventurers at nearby tables whisper about unusual monster activity on the roads. Caravan arrivals have dropped. Someone mentions that monster patrols are more organized than usual — as if something is commanding them.",
+        "id": 5,
+        "related_to": [],
+        "state": "dormant",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Darkness reveals she received a letter from her father Ignis about an arranged marriage. She is deeply conflicted — horrified at leaving the party, but also visibly excited by the humiliation of being 'traded like property.' She begs the Player to pretend to be her boyfriend to sabotage the meeting.",
+        "created_at": 0,
+        "entities": [
+          "Darkness"
+        ],
+        "fact": "Darkness's father has sent a letter requesting she return home for an arranged marriage meeting.",
+        "foreshadow_ctx": "Darkness has been unusually distracted today, fidgeting with something in her armor's pocket. She flinches whenever someone mentions family or nobility.",
+        "id": 6,
+        "related_to": [],
+        "state": "dormant",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Megumin's daily Explosion practice means she is already drained of all MP by morning. Any quest requiring her combat ability must wait until the next day. She refuses to skip a single day.",
+        "created_at": 0,
+        "entities": [
+          "Megumin"
+        ],
+        "fact": "Megumin sneaks out at dawn every day to cast Explosion on an empty hill outside town, making herself useless for morning quests.",
+        "foreshadow_ctx": "",
+        "id": 7,
+        "related_to": [],
+        "state": "active",
+        "type": "relationship",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Wiz is excitedly advertising her new inventory. Vanir has been trying to stop her from stocking the worst items but has given up. There might be something genuinely useful buried in the pile of cursed junk.",
+        "created_at": 0,
+        "entities": [
+          "Wiz",
+          "Vanir"
+        ],
+        "fact": "Wiz's magic shop has received a shipment of new items, all of which are probably defective or cursed.",
+        "foreshadow_ctx": "",
+        "id": 8,
+        "related_to": [],
+        "state": "active",
+        "type": "scene",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "The Player's Steal is the most reliable combat skill but causes constant social problems. A growing collection of accidentally-stolen underwear and a growing police record.",
+        "created_at": 0,
+        "entities": [
+          "Player"
+        ],
+        "fact": "The Player's Steal skill is luck-based and tends to grab undergarments from female targets.",
+        "foreshadow_ctx": "",
+        "id": 9,
+        "related_to": [],
+        "state": "active",
+        "type": "relationship",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Giant Toad season is here. The toads are massive, slime-coated, and swallow people whole. Aqua will definitely get eaten. Darkness will definitely enjoy it. Megumin's Explosion is massive overkill. The Player will have to do all the actual work.",
+        "created_at": 0,
+        "entities": [
+          "Player",
+          "Aqua",
+          "Darkness",
+          "Giant Toad"
+        ],
+        "fact": "Giant Toad mating season is approaching, and the guild needs adventurers to thin the population before they overrun the farmlands.",
+        "foreshadow_ctx": "A notice on the quest board mentions increased Giant Toad sightings near the farmlands. Experienced adventurers groan — it's almost that time of year again.",
+        "id": 10,
+        "related_to": [],
+        "state": "foreshadowed",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Yunyun finally enters the guild and dramatically challenges Megumin to a duel — but she's really just lonely and wants someone to eat lunch with. She is a level 40+ Arch-Wizard who could solo most quests but has zero friends.",
+        "created_at": 0,
+        "entities": [
+          "Yunyun",
+          "Megumin"
+        ],
+        "fact": "Yunyun has been lurking near the guild entrance for three days, trying to work up the courage to ask Megumin to hang out.",
+        "foreshadow_ctx": "A girl with long black hair and a red cloak has been spotted pacing outside the guild entrance multiple times this week, muttering to herself and occasionally peeking through the door.",
+        "id": 11,
+        "related_to": [],
+        "state": "dormant",
+        "type": "scene",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "The Player knows about the Succubus Cafe. It's Axel's worst-kept secret among male adventurers and an absolute secret from the women. The succubi are harmless and the dreams are customizable.",
+        "created_at": 0,
+        "entities": [
+          "Player",
+          "Axel"
+        ],
+        "fact": "The Succubus Cafe sends succubi to give male adventurers pleasant dreams for a fee, which is the real reason high-level adventurers stay in a beginner town like Axel.",
+        "foreshadow_ctx": "A few male adventurers at a nearby table are whispering conspiratorially and blushing. One of them slides a business card under the table.",
+        "id": 12,
+        "related_to": [],
+        "state": "dormant",
+        "type": "scene",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Vanir offers the Player a business deal: sell him the intellectual property for products from Japan (lighters, kotatsu tables, dynamite) in exchange for a large upfront payment. The catch — Vanir always structures deals to maximize his own profit and the Player's frustration, which he feeds on.",
+        "created_at": 0,
+        "entities": [
+          "Vanir",
+          "Player"
+        ],
+        "fact": "Vanir has been reading the Player's mind and compiling a list of 'Japanese inventions' he wants to buy the rights to mass-produce.",
+        "foreshadow_ctx": "A masked figure at Wiz's shop was spotted cackling and scribbling notes after the Player's last visit.",
+        "id": 13,
+        "related_to": [],
+        "state": "dormant",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Luna reveals the damage report to the Player at the guild counter.",
+        "created_at": 0,
+        "entities": [
+          "Aqua",
+          "Player"
+        ],
+        "fact": "Aqua's purification wave liquefied the Copper Lane water main three days ago.",
+        "foreshadow_ctx": "",
+        "id": 14,
+        "related_to": [
+          9,
+          3
+        ],
+        "state": "active",
+        "type": "world",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Luna presents the invoice ledger to the Player at the reception desk.",
+        "created_at": 0,
+        "entities": [
+          "Luna",
+          "Player"
+        ],
+        "fact": "A repair invoice for the Copper Lane water main arrived at the guild this morning.",
+        "foreshadow_ctx": "",
+        "id": 15,
+        "related_to": [
+          14
+        ],
+        "state": "active",
+        "type": "plot",
+        "valid_until": 1
+      },
+      {
+        "active_ctx": "Darkness stares at the quest board with flushed cheeks, breathless about facing the alligators.",
+        "created_at": 0,
+        "entities": [
+          "Darkness",
+          "Brutal Alligator"
+        ],
+        "fact": "Darkness is masochistically fixated on the Brutal Alligator sewer quest.",
+        "foreshadow_ctx": "",
+        "id": 16,
+        "related_to": [
+          3
+        ],
+        "state": "active",
+        "type": "relationship",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "Megumin remains face-down on the guild table, unable to stand.",
+        "created_at": 0,
+        "entities": [
+          "Megumin"
+        ],
+        "fact": "Megumin is incapacitated after her dawn Explosion and cannot walk.",
+        "foreshadow_ctx": "",
+        "id": 17,
+        "related_to": [
+          7
+        ],
+        "state": "active",
+        "type": "scene",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 0,
+        "entities": [
+          "Megumin",
+          "Brutal Alligator",
+          "Player"
+        ],
+        "fact": "Megumin offered to obliterate the sewer alligators with Explosion if carried.",
+        "foreshadow_ctx": "Megumin's plan depends on someone carrying her to the sewer entrance.",
+        "id": 18,
+        "related_to": [
+          15,
+          17,
+          16
+        ],
+        "state": "foreshadowed",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 1,
+        "entities": [
+          "Player",
+          "Aqua",
+          "Megumin",
+          "Darkness",
+          "Luna"
+        ],
+        "fact": "The party's damage ledger totals 180k eris (water main), 45k eris (windows), plus a pending Cobbler's Guild emotional distress claim.",
+        "foreshadow_ctx": "",
+        "id": 19,
+        "related_to": [
+          14,
+          17,
+          16,
+          2
+        ],
+        "state": "active",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 1,
+        "entities": [
+          "Luna",
+          "Player"
+        ],
+        "fact": "Luna has petitioned the guildmaster three times for a permanent ban clause against the party; denied each time for morale.",
+        "foreshadow_ctx": "",
+        "id": 20,
+        "related_to": [
+          19
+        ],
+        "state": "active",
+        "type": "world",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 1,
+        "entities": [
+          "Player",
+          "Aqua",
+          "Megumin",
+          "Darkness"
+        ],
+        "fact": "The party holds the record for most suspensions in Axel's adventurer history.",
+        "foreshadow_ctx": "",
+        "id": 21,
+        "related_to": [
+          20,
+          19
+        ],
+        "state": "active",
+        "type": "world",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 1,
+        "entities": [
+          "Luna",
+          "Player"
+        ],
+        "fact": "A high-danger quest exists, singed from universal rejection by every other party; its pay is commensurate with the risk.",
+        "foreshadow_ctx": "Luna slides it across the counter and looks at the Player meaningfully.",
+        "id": 22,
+        "related_to": [
+          21,
+          20
+        ],
+        "state": "foreshadowed",
+        "type": "plot",
+        "valid_until": -1
+      },
+      {
+        "active_ctx": "",
+        "created_at": 1,
+        "entities": [
+          "Player",
+          "Luna"
+        ],
+        "fact": "Accepting the singed quest is implicitly the party's only remaining path to financial solvency.",
+        "foreshadow_ctx": "",
+        "id": 23,
+        "related_to": [
+          21,
+          20
+        ],
+        "state": "active",
+        "type": "plot",
+        "valid_until": -1
+      }
+    ]
+  }
+}

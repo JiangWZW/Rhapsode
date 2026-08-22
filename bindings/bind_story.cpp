@@ -65,6 +65,7 @@ void bind_story(py::module_& m) {
 
     py::class_<World>(m, "World")
         .def(py::init<>())
+        .def_property_readonly("state_version", &World::state_version)
         .def_property_readonly("world_graph",
             [](const World& world) { return world.graph(); })
         .def_property_readonly("characters",
@@ -106,10 +107,7 @@ void bind_story(py::module_& m) {
         .def("to_scenario_json_str", [](const Story& story, const std::string& scene_id) {
             return story.to_scenario_json(scene_id).dump(2);
         }, py::arg("scene_id"))
-        .def("world", [](const Story& story) -> const World& {
-                 return story.world();
-             },
-             py::return_value_policy::reference_internal)
+        .def("world", &Story::world_snapshot)
         .def("get_scene", [](const Story& story, const std::string& id)
                 -> std::optional<SceneData> {
             const SceneData* scene = story.get_scene(id);
@@ -139,6 +137,7 @@ void bind_story(py::module_& m) {
         .def("merge_scene", &Story::merge_scene,
              py::arg("from_id"), py::arg("into_id"))
         .def("note_advanced", &Story::note_advanced, py::arg("scene_id"))
+        .def_property_readonly("turn_clock", &Story::turn_clock)
         .def_property_readonly("beat_clock", &Story::beat_clock)
         .def("tool_list_scenes", &Story::tool_list_scenes)
         .def("dispatch_tool", &Story::dispatch_tool,

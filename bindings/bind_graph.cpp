@@ -5,13 +5,31 @@
 
 #include "rhapsode/annotator.h"
 #include "rhapsode/character_memory.h"
-#include "rhapsode/director.h"
+#include "rhapsode/graph_plan.h"
 #include "rhapsode/node.h"
 #include "rhapsode/world.h"
 #include "rhapsode/world_graph.h"
 
 namespace py = pybind11;
 using namespace rhapsode;
+
+namespace {
+
+// Python compatibility object. Core turn code uses apply_graph_plan directly;
+// only this boundary object retains a standalone graph supplied by Python.
+struct BoundDirector {
+    explicit BoundDirector(WorldGraph& graph) : graph(&graph) {}
+
+    GraphPlanResult apply_planned_turn(
+        int turn_index, const std::string& json_text) {
+        return apply_graph_plan(
+            *graph, turn_index, nlohmann::json::parse(json_text));
+    }
+
+    WorldGraph* graph;
+};
+
+}  // namespace
 
 void bind_graph(py::module_& m) {
     // -- Node System --
@@ -141,19 +159,16 @@ void bind_graph(py::module_& m) {
         .def_readwrite("fact",   &Rejection::fact)
         .def_readwrite("reason", &Rejection::reason);
 
-    py::class_<DirectorOutput>(m, "DirectorOutput")
+    py::class_<GraphPlanResult>(m, "DirectorOutput")
         .def(py::init<>())
-        .def_readwrite("context_blocks",  &DirectorOutput::context_blocks)
-        .def_readwrite("newly_expired",   &DirectorOutput::newly_expired)
-        .def_readwrite("new_nodes",       &DirectorOutput::new_nodes)
-        .def_readwrite("rejections",      &DirectorOutput::rejections);
+        .def_readwrite("context_blocks",  &GraphPlanResult::context_blocks)
+        .def_readwrite("newly_expired",   &GraphPlanResult::newly_expired)
+        .def_readwrite("new_nodes",       &GraphPlanResult::new_nodes)
+        .def_readwrite("rejections",      &GraphPlanResult::rejections);
 
-    py::class_<Director>(m, "Director")
+    py::class_<BoundDirector>(m, "Director")
         .def(py::init<WorldGraph&>(), py::arg("graph"), py::keep_alive<1, 2>())
-        .def("apply_planned_turn",
-             [](Director& self, int turn_idx, const std::string& json_txt) -> DirectorOutput {
-                 return self.apply_planned_turn(turn_idx, nlohmann::json::parse(json_txt));
-             },
+        .def("apply_planned_turn", &BoundDirector::apply_planned_turn,
              py::arg("turn_index"), py::arg("json_txt"));
 
     // -- Annotator --

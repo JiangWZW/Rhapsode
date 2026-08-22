@@ -2,7 +2,7 @@ add_library(rhapsode STATIC
     include/rhapsode/annotator.h
     include/rhapsode/character.h
     include/rhapsode/character_memory.h
-    include/rhapsode/director.h
+    include/rhapsode/graph_plan.h
     include/rhapsode/llm_callback.h
     include/rhapsode/memory_system.h
     include/rhapsode/log_util.h
@@ -13,12 +13,16 @@ add_library(rhapsode STATIC
     include/rhapsode/scene_history.h
     include/rhapsode/scenario_bootstrap.h
     include/rhapsode/json_util.h
-    include/rhapsode/turn_executor.h
+    include/rhapsode/turn_pipeline.h
+    include/rhapsode/turn_contracts.h
     include/rhapsode/scene_message.h
     include/rhapsode/str_util.h
     include/rhapsode/text_downsampling.h
     include/rhapsode/weaver.h
     include/rhapsode/story.h
+    include/rhapsode/story_lifecycle.h
+    include/rhapsode/story_data.h
+    include/rhapsode/story_data_ops.h
     include/rhapsode/storyline_policy.h
     include/rhapsode/world.h
     include/rhapsode/world_analysis.h
@@ -38,14 +42,16 @@ add_library(rhapsode STATIC
     src/read_tools.cpp
     src/story.cpp
     src/story_advance.cpp
+    src/story_lifecycle.cpp
     src/story_serialization.cpp
+    src/story_data_ops.cpp
     src/storyline_policy.cpp
-    src/turn_executor.cpp
-    src/turn_executor_post_turn.cpp
-    src/turn_executor_narrator.cpp
+    src/turn_pipeline.cpp
+    src/turn_pipeline_post_turn.cpp
+    src/turn_pipeline_narrator.cpp
     src/text_downsampling.cpp
     src/node.cpp
-    src/director.cpp
+    src/graph_plan.cpp
     src/memory_system.cpp
     src/weaver.cpp
     src/weaver_work_queue.cpp
@@ -76,7 +82,7 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    target_compile_options(rhapsode PRIVATE /W4)
+    target_compile_options(rhapsode PRIVATE /utf-8 /W4)
 else()
     target_compile_options(rhapsode PRIVATE -Wall -Wextra -Wpedantic)
 endif()
@@ -91,7 +97,7 @@ add_executable(test_scene EXCLUDE_FROM_ALL
 target_link_libraries(test_scene PRIVATE rhapsode Catch2::Catch2WithMain)
 
 if(MSVC)
-    target_compile_options(test_scene PRIVATE /W4)
+    target_compile_options(test_scene PRIVATE /utf-8 /W4)
 else()
     target_compile_options(test_scene PRIVATE -Wall -Wextra -Wpedantic)
 endif()
