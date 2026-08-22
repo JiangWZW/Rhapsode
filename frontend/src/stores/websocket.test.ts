@@ -56,6 +56,10 @@ describe('websocket store', () => {
     expect(store.processing).toBe(true)
     expect(socket.sent).toEqual([JSON.stringify({ type: 'player_message', content: 'hello' })])
 
+    socket.onmessage?.({ data: JSON.stringify({ type: 'status', state: 'ready' }) })
+    expect(store.processing).toBe(false)
+    store.send('again')
+    expect(store.processing).toBe(true)
     socket.onmessage?.({ data: JSON.stringify({ type: 'status', state: 'idle' }) })
     expect(store.processing).toBe(false)
     socket.onmessage?.({ data: JSON.stringify({ type: 'error', detail: 'failed' }) })

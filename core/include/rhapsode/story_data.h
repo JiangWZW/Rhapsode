@@ -18,6 +18,8 @@ struct SceneClosure {
     std::string story_so_far;
     std::string final_narration;
     int concluded_at = 0;
+    /// Empty for a concluded storyline. Set when a fork was merged away.
+    std::string merged_into;
 };
 
 // Durable data for one playthrough. Scene allocations stay stable because the

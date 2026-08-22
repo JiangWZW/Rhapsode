@@ -71,6 +71,7 @@ nlohmann::json scene_closure_to_json(const SceneClosure& closure) {
         {"story_so_far", closure.story_so_far},
         {"final_narration", closure.final_narration},
         {"concluded_at", closure.concluded_at},
+        {"merged_into", closure.merged_into},
     };
 }
 
@@ -85,6 +86,7 @@ SceneClosure scene_closure_from_json(const nlohmann::json& value) {
     closure.final_narration =
         value.value("final_narration", std::string{});
     closure.concluded_at = value.value("concluded_at", 0);
+    closure.merged_into = value.value("merged_into", std::string{});
     return closure;
 }
 

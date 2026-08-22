@@ -6,7 +6,7 @@
 
 [player]
 protocol = "protocol.md"
-guide = "guides/merge_fork_test.md"
+guide = "guides/fork_merge.md"
 empty_action = "I look around carefully."
 
 [run]

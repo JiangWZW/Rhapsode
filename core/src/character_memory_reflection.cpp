@@ -100,73 +100,112 @@ std::string extract_json_object(const std::string& raw) {
     return raw.substr(start, end - start + 1);
 }
 
-std::string build_monologue_prompt(
+constexpr char kMonologueUserSentinel[] = "<<<RHAPSODE_MONOLOGUE_USER>>>";
+
+constexpr char kMonologueJsonSchema[] =
+    "{\"appends\":[{\"stream_id\":\"...\",\"text\":\"...\"}],"
+    "\"ops\":[{\"op\":\"fork\",\"parent\":\"...\",\"focus\":\"...\","
+    "\"opening\":\"optional\"}|"
+    "{\"op\":\"merge\",\"from\":\"...\",\"into\":\"...\","
+    "\"reason\":\"...\",\"synthesis\":\"...\"}|"
+    "{\"op\":\"conclude\",\"stream_id\":\"...\",\"reason\":\"...\","
+    "\"closure\":\"...\"}],"
+    "\"knows\":[{\"fact\":\"...\",\"entities\":[\"Name\"],\"weight\":5,"
+    "\"relation\":\"evidence\"}],"
+    "\"core_revision\":null}";
+
+std::string monologue_system_instructions() {
+    std::ostringstream os;
+    os <<
+        "You are playing one human being, from the inside, in the silence after a take.\n"
+        "The public scene is already written. You do not speak. You do not narrate.\n"
+        "You do not invent another person's private mind.\n\n"
+        "Most takes you only listen. That is good acting.\n"
+        "When something lands, it is yours: a private beat of subtext, a shift in what\n"
+        "you want, or a fact you will still know tomorrow.\n\n"
+        "Live in first person. Do not describe the role from outside.\n"
+        "Do not rewrite who you are unless the soul of the role actually changed.\n"
+        "Fork/merge/conclude only when a want itself splits, joins, or ends. "
+        "Never drop the last active through-line. Max "
+        << CharacterMemory::kMaxActiveStreams << " active.\n\n"
+        "Answer with ONLY the JSON sidecar (no prose wrapper). Empty appends and ops "
+        "are a listening take.\n\n"
+        "JSON:\n"
+        << kMonologueJsonSchema << "\n";
+    return os.str();
+}
+
+std::string build_monologue_user_payload(
     const std::string& name,
     const CharacterCore& core,
     const std::vector<MonologueStream>& streams,
-    const std::string& description,
+    const std::string& voice,
     const std::string& turn_stimulus,
     const std::vector<Perception>& perceptions,
     const std::string& prior_beliefs) {
     std::ostringstream os;
-    os <<
-        "You are the actor for ONE character after a public story turn (a \"take\").\n"
-        "The narrator already wrote the stage action and spoken lines. You do not.\n"
-        "You hold continuity and, when needed, improvise private subtext.\n\n"
-        "Layers:\n"
-        "- CORE = character bible / continuity sheet (who you are): a deep "
-        "durable analysis of identity — NOT a thought stream, NOT first-person "
-        "self-talk. Do not append thoughts to core.\n"
-        "- STREAMS = the only place for self-aware / in-the-moment interiority. "
-        "Focus = objective/through-line. Appends = subtext for this take.\n"
-        "- KNOWS = durable subjective facts for the belief graph (what you will still "
-        "know later). Empty knows is normal.\n"
-        "- Most takes: listen. Empty appends and ops:[] are correct acting.\n\n"
-        "Rules:\n"
-        "1. No-op is success (background / unpressured / only listening).\n"
-        "2. Do not re-narrate the scene. Do not write dialogue.\n"
-        "3. Improvise reaction WITHOUT breaking character or inventing other minds.\n"
-        "4. Noticing a fact != needing a stream line or a knows entry.\n"
-        "5. Fork/merge/conclude shift objectives — prefer ops:[]. Never drop the last "
-        "active stream. Max " << CharacterMemory::kMaxActiveStreams << " active.\n"
-        "6. Reply with ONLY JSON.\n\n"
-        "Character: " << name << "\n";
-    if (!description.empty())
-        os << "Seed description: " << description << "\n";
-    os << "CORE (continuity sheet):\n"
-       << (core.text.empty() ? "(empty — may set core_revision once if needed)"
-                             : core.text)
-       << "\n\nActive streams:\n";
+    os << "You are " << name << ".\n";
+    if (!voice.empty())
+        os << str::trim(voice) << "\n";
+    os << "\nWho you are (do not rewrite this unless the soul of the role actually changed):\n"
+       << (core.text.empty()
+               ? "(empty — you may set core_revision once if needed)"
+               : core.text)
+       << "\n";
+
+    os << "\nThrough-lines you are already carrying:\n";
+    bool any_stream = false;
     for (const auto& stream : streams) {
         if (stream.status != "active") continue;
-        os << "- id=" << stream.id << " focus=" << stream.focus << "\n";
+        any_stream = true;
+        os << "- " << stream.focus << " [" << stream.id << "]\n";
+    }
+    if (!any_stream)
+        os << "- (none)\n";
+
+    os << "\nRecent inner beats (yours, not the scene):\n";
+    bool any_beat = false;
+    for (const auto& stream : streams) {
+        if (stream.status != "active") continue;
         const int start = stream.lines.size() > 3
             ? static_cast<int>(stream.lines.size()) - 3 : 0;
-        for (int i = start; i < static_cast<int>(stream.lines.size()); ++i)
-            os << "    t" << stream.lines[i].turn << ": " << stream.lines[i].text
-               << "\n";
+        for (int i = start; i < static_cast<int>(stream.lines.size()); ++i) {
+            any_beat = true;
+            os << "- [" << stream.id << "] " << stream.lines[i].text << "\n";
+        }
     }
-    if (!prior_beliefs.empty())
-        os << "\nPrior factual beliefs (compact):\n" << prior_beliefs << "\n";
-    os << "\nThis take (given circumstances):\n"
-       << (turn_stimulus.empty() ? "(none)" : turn_stimulus) << "\n";
-    if (!perceptions.empty()) {
-        os << "\nRouted perceptions (stimulus only — commit via knows if lasting):\n";
+    if (!any_beat)
+        os << "- (none yet)\n";
+
+    os << "\nWhat you already hold as true:\n"
+       << (prior_beliefs.empty() ? "(nothing lasting yet)\n" : prior_beliefs + "\n");
+
+    os << "\nWhat just happened (given circumstances — the stage, not your cue to recap it):\n"
+       << (turn_stimulus.empty() ? "(none)\n" : turn_stimulus + "\n");
+
+    os << "\nWhat reached you this take, still raw:\n";
+    if (perceptions.empty()) {
+        os << "(nothing extra)\n";
+    } else {
         for (const auto& perception : perceptions)
-            os << "- #" << perception.id << " " << perception.fact << "\n";
+            os << "- " << perception.fact << " #" << perception.id << "\n";
     }
-    os << "\nJSON schema:\n"
-          "{\"appends\":[{\"stream_id\":\"...\",\"text\":\"...\"}],"
-          "\"ops\":[{\"op\":\"fork\",\"parent\":\"...\",\"focus\":\"...\","
-          "\"opening\":\"optional\"}|"
-          "{\"op\":\"merge\",\"from\":\"...\",\"into\":\"...\","
-          "\"reason\":\"...\",\"synthesis\":\"...\"}|"
-          "{\"op\":\"conclude\",\"stream_id\":\"...\",\"reason\":\"...\","
-          "\"closure\":\"...\"}],"
-          "\"knows\":[{\"fact\":\"...\",\"entities\":[\"Name\"],\"weight\":5,"
-          "\"relation\":\"evidence\"}],"
-          "\"core_revision\":null}\n";
     return os.str();
+}
+
+std::string build_monologue_prompt(
+    const std::string& name,
+    const CharacterCore& core,
+    const std::vector<MonologueStream>& streams,
+    const std::string& voice,
+    const std::string& turn_stimulus,
+    const std::vector<Perception>& perceptions,
+    const std::string& prior_beliefs) {
+    return monologue_system_instructions()
+        + kMonologueUserSentinel + "\n"
+        + build_monologue_user_payload(
+              name, core, streams, voice, turn_stimulus, perceptions,
+              prior_beliefs);
 }
 
 std::vector<std::uint64_t> apply_knows(
@@ -274,7 +313,8 @@ void CharacterMemory::update_monologues(
     int turn,
     const std::string& description,
     const std::string& turn_stimulus,
-    const LLMCallback& llm_callback) {
+    const LLMCallback& llm_callback,
+    const std::string& voice) {
     ensure_bootstrap(description);
     if (!llm_callback) {
         log() << "  [char_mem:" << character_name_
@@ -285,7 +325,7 @@ void CharacterMemory::update_monologues(
     auto perceptions = gather_active_perceptions(beliefs_);
     const std::string prior = truncate_utf8(render_thoughts({}), 800);
     const std::string prompt = build_monologue_prompt(
-        character_name_, core_, streams_, description, turn_stimulus,
+        character_name_, core_, streams_, voice, turn_stimulus,
         perceptions, prior);
 
     std::string raw;

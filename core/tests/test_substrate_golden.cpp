@@ -198,6 +198,10 @@ TEST_CASE("story: fork shares World without coupling SceneData to it",
     REQUIRE(story.world().find_in_scene("golden_b", "Alice") != nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Alice") == nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
+    const std::string live = story.render_transcript();
+    REQUIRE(live.find("[Fork]") != std::string::npos);
+    REQUIRE(live.find("fork from=golden to=golden_b") != std::string::npos);
+    REQUIRE(live.find("## Off-stage — golden_b") != std::string::npos);
 
     World detached = story.world_snapshot();
     Node node;
@@ -298,12 +302,31 @@ TEST_CASE("story: merge synthesizes context before moving cast and retiring sour
     REQUIRE(narrator_called);
     REQUIRE(story.get_scene("hunt") == nullptr);
     REQUIRE(story.world().find_in_scene("golden", "Bob") != nullptr);
-    REQUIRE(story.active_scene()->history.size() == target_history_size);
+    REQUIRE(story.active_scene()->history.size() == target_history_size + 1);
     REQUIRE(render_text_downsampling(story.active_scene()->downsampling) ==
             "Alice holds the gate as Bob arrives from the woods with the trail unresolved.");
+    const std::string transcript = story.render_transcript();
+    REQUIRE(transcript.find("[Fork]") != std::string::npos);
+    REQUIRE(transcript.find("fork from=golden to=hunt") != std::string::npos);
+    REQUIRE(transcript.find("[Merge]") != std::string::npos);
+    REQUIRE(transcript.find("merge from=hunt into=golden") != std::string::npos);
+    REQUIRE(transcript.find("## Fork — hunt (merged into golden)") !=
+            std::string::npos);
+    REQUIRE(transcript.find("Bob follows tracks through the woods.") !=
+            std::string::npos);
+    REQUIRE(transcript.find("## Off-stage — hunt") == std::string::npos);
 
     const std::string saves = temp_saves_dir();
     story.save(saves);
+    std::ifstream manifest_file(
+        std::filesystem::path(saves) / "story.json");
+    json manifest;
+    manifest_file >> manifest;
+    REQUIRE(manifest["scene_closures"].size() == 1);
+    REQUIRE(manifest["scene_closures"][0]["scene_id"] == "hunt");
+    REQUIRE(manifest["scene_closures"][0]["merged_into"] == "golden");
+    REQUIRE(manifest["scene_closures"][0]["cast"] == json::array({"Bob"}));
+
     SceneData shell;
     shell.scene_id = "golden";
     Story reloaded = Story::from_data(std::move(shell));
@@ -311,6 +334,11 @@ TEST_CASE("story: merge synthesizes context before moving cast and retiring sour
     REQUIRE(reloaded.scene_count() == 1);
     REQUIRE(render_text_downsampling(reloaded.active_scene()->downsampling) ==
             "Alice holds the gate as Bob arrives from the woods with the trail unresolved.");
+    const std::string reloaded_transcript = reloaded.render_transcript();
+    REQUIRE(reloaded_transcript.find("## Fork — hunt (merged into golden)") !=
+            std::string::npos);
+    REQUIRE(reloaded_transcript.find("[Fork]") != std::string::npos);
+    REQUIRE(reloaded_transcript.find("[Merge]") != std::string::npos);
 }
 
 TEST_CASE("story: failed merge synthesis leaves both scenes unchanged",

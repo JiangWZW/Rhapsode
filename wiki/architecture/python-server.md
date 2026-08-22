@@ -44,10 +44,13 @@ Turn execution and graph-plan application are free functions, not owned executor
 2. Configure callbacks and synchronize graph nodes to external memory.
 3. Receive player text; set status `processing`.
 4. Run `Story.advance_player()` on a worker thread; stream those SceneMessages.
-5. In `finally`, run `Story.complete_turn()` on a worker (post-turn, lifecycle, off-stage, save).
-6. Stream any merge/off-stage outputs; then set status `idle`.
-7. Report exceptions without rebuilding the native runtime; candidate-turn rollback keeps it usable.
+5. Set status `ready` so the UI can accept the next action while post-turn work runs.
+6. In `finally`, run `Story.complete_turn()` on a worker (post-turn, lifecycle, off-stage, save).
+7. Stream any merge/off-stage extras; then set status `idle` (eval waits on this).
+8. Report exceptions without rebuilding the native runtime; candidate-turn rollback keeps it usable.
    If `advance_player` succeeds, `complete_turn` must still run so a pending turn cannot leak.
+   A player_message sent after `ready` stays in the WebSocket buffer until the loop receives
+   again; C++ still rejects overlapping `advance_player` calls.
 
 ## LLM adapters
 

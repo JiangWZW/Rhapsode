@@ -65,13 +65,17 @@ not create a second owner or a scene-to-Story back-reference.
 | `world` | Roster, scene membership, life status, and character memories |
 | `observations` | Non-authoritative shared narrative graph |
 | `scenes` | Live scene records with stable allocation |
-| `scene_closures` | Compact records for concluded scenes |
+| `scene_closures` | Compact records for concluded scenes and merged-away forks |
 | `active_scene_id` | Scene receiving player input |
 | `turn_clock` | Cross-scene scheduling clock |
 | `transaction_version` | Monotonic version for committed turn and lifecycle mutations |
 
 The transaction version is not a content hash. Post-turn graph maintenance, downsampling, and service
 state do not each advance it.
+
+A `SceneClosure` is either a concluded storyline (`merged_into` empty) or a fork that was merged
+away (`merged_into` names the surviving scene). Merge archives the retired fork's visible transcript
+there so `Story::render_transcript` can still print it after the live `SceneData` is erased.
 
 ### `TurnServices`
 
@@ -119,7 +123,7 @@ scene, prompt, narrator result, and output values are local variables inside `ex
 | `story_data_ops.*` | Scene lookup, summaries, frozen reads, cast resolution, scheduling selection |
 | `story_lifecycle.*` | Fork, merge, conclude, exit, and apply parsed lifecycle decisions |
 | `graph_plan.*` | Apply parsed node transitions/additions to an explicit observation graph |
-| `scene_history.*` | Append, order, query, and revert transcript messages |
+| `scene_history.*` | Append, order, query, revert, and format visible transcript (including fork/merge notes) |
 | `story_serialization.cpp` | Convert between the live split representation and the old save shape |
 
 `apply_graph_plan` is stateless. `Weaver` remains a class because it owns a callback, random generator,

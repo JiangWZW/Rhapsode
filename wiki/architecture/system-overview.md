@@ -129,6 +129,9 @@ biased by an incorrect observation.
   conversion.
 - `beat_clock` and a few persisted or diagnostic “beat” names remain compatibility aliases. New core
   execution code uses “turn.”
+- Eval `story.txt` is `Story::render_transcript()`: live Main/Off-stage scenes, `[Fork]`/`[Merge]`
+  notes on the parent timeline, archived `## Fork — id (merged into …)` closures, and `## Concluded`
+  closures.
 
 ## Limitations
 

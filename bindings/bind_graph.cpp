@@ -124,7 +124,7 @@ void bind_graph(py::module_& m) {
              py::arg("core_text_if_empty"))
         .def("update_monologues", &CharacterMemory::update_monologues,
              py::arg("turn"), py::arg("description"), py::arg("beat_stimulus"),
-             py::arg("callback"))
+             py::arg("callback"), py::arg("voice") = "")
         .def("render_thoughts",   &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
         .def("render_mind_query", [](const CharacterMemory& memory,

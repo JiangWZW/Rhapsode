@@ -243,7 +243,8 @@ void World::update_monologues(const std::string& scene_id,
             turn,
             !str::trim(character.core).empty() ? character.core
                                                : character.description,
-            turn_stimulus, llm_callback);
+            turn_stimulus, llm_callback,
+            character.build_prompt__dialogue_voice());
     }
 }
 

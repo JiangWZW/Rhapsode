@@ -65,11 +65,47 @@ def make_weaver_callback():
     return _call
 
 
+MONOLOGUE_USER_SENTINEL = "<<<RHAPSODE_MONOLOGUE_USER>>>"
+
+
+def split_monologue_prompt(prompt: str) -> tuple[str | None, str]:
+    """Split the native concatenated monologue blob into system + user.
+
+    C++ still hands Python one string (LLMCallback). The sentinel marks where
+    the shared craft/schema ends and the inhabitation sheet begins. Missing
+    sentinel (old _core.pyd) keeps the whole blob as the user message.
+    """
+    idx = prompt.find(MONOLOGUE_USER_SENTINEL)
+    if idx < 0:
+        return None, prompt
+    system = prompt[:idx]
+    if system.endswith("\n"):
+        system = system[:-1]
+    user = prompt[idx + len(MONOLOGUE_USER_SENTINEL):]
+    if user.startswith("\n"):
+        user = user[1:]
+    return system, user
+
+
 def make_reflection_callback():
-    """On-stage monologue updater: narrator/pro model, thinking on."""
+    """On-stage monologue updater: narrator/pro model, thinking on.
+
+    No chat history. Each take is system (craft+schema) plus one user sheet.
+    """
     def _call(prompt: str) -> str:
-        return call_llm(
-            prompt, stage="monologue", model=_pro_model(), thinking=True)
+        system, user = split_monologue_prompt(prompt)
+        if system is None:
+            return call_llm(
+                prompt, stage="monologue", model=_pro_model(), thinking=True)
+        return complete(
+            [
+                {"role": "system", "parts": [{"text": system}]},
+                {"role": "user", "parts": [{"text": user}]},
+            ],
+            model=_pro_model(),
+            thinking=True,
+            stage="monologue",
+        )
     return _call
 
 

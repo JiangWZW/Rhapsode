@@ -27,6 +27,8 @@ struct TranscriptSpan {
 
 void append_history_message(std::vector<SceneMessage>& history,
                             SceneMessage message);
+void append_lifecycle_note(SceneData& scene, const std::string& kind,
+                           const std::string& content);
 std::vector<SceneMessage> snapshot_history(
     const std::vector<SceneMessage>& history,
     std::optional<std::size_t> count = std::nullopt);
@@ -41,5 +43,7 @@ std::vector<TranscriptSpan> attributed_transcript(
 std::string query_attributed_transcript(const SceneData& scene,
                                         const std::string& query,
                                         std::size_t max_results = 10);
+/// Player/narrator/character beats plus fork/merge lifecycle notes.
+std::string format_visible_transcript(const SceneData& scene);
 
 }  // namespace rhapsode

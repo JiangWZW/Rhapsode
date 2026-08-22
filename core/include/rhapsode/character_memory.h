@@ -59,10 +59,12 @@ public:
 
     // On-stage actor update: streams + optional knows[] + rare core_revision.
     // Consumes Active perceptions after the call. No separate reflect LLM.
+    // voice is lived diction (optional); empty keeps identity without it.
     void update_monologues(int turn,
                            const std::string& description,
                            const std::string& turn_stimulus,
-                           const LLMCallback& llm_callback);
+                           const LLMCallback& llm_callback,
+                           const std::string& voice = {});
 
     const WorldGraph& beliefs() const { return beliefs_; }
     const CharacterCore& core() const { return core_; }

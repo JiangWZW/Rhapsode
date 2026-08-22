@@ -161,21 +161,25 @@ std::string format_live_storylines_board(
     const std::vector<SceneSummary>& summaries) {
     if (summaries.empty()) return {};
     std::ostringstream os;
-    os << "### Live storylines\n";
+    os << "Other live threads:\n";
     for (const auto& summary : summaries) {
-        os << "- " << summary.scene_id;
-        if (summary.player_present) os << " [PLAYER]";
-        os << " cast=[";
-        for (size_t i = 0; i < summary.cast.size(); ++i) {
-            if (i) os << ", ";
-            os << summary.cast[i];
+        os << "- ";
+        if (summary.player_present)
+            os << "This scene (" << summary.scene_id << "): you are here";
+        else
+            os << summary.scene_id;
+        if (!summary.cast.empty()) {
+            os << ". With ";
+            for (size_t i = 0; i < summary.cast.size(); ++i) {
+                if (i) os << ", ";
+                os << summary.cast[i];
+            }
         }
-        os << "]";
         if (!summary.driving_intention.empty())
-            os << " intention=" << summary.driving_intention;
+            os << ". They want: " << summary.driving_intention;
         if (!summary.last_narration.empty())
-            os << " last=" << summary.last_narration;
-        os << "\n";
+            os << ". Last: " << summary.last_narration;
+        os << ".\n";
     }
     return os.str();
 }

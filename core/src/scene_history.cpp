@@ -57,6 +57,15 @@ void append_history_message(std::vector<SceneMessage>& history,
     history.push_back(std::move(message));
 }
 
+void append_lifecycle_note(SceneData& scene, const std::string& kind,
+                           const std::string& content) {
+    SceneMessage message;
+    message.role = Role::System;
+    message.content = content;
+    message.metadata["scene_kind"] = kind;
+    append_history_message(scene.history, std::move(message));
+}
+
 std::vector<SceneMessage> snapshot_history(
     const std::vector<SceneMessage>& history,
     std::optional<std::size_t> count) {
@@ -153,6 +162,8 @@ std::string transcript_speaker(const SceneMessage& message,
     const std::string stored = string_metadata(message, "speaker");
     if (!stored.empty()) return stored;
     if (kind == "director_cue") return "Director";
+    if (kind == "fork") return "Fork";
+    if (kind == "merge") return "Merge";
     if (message.role == Role::User) return "Player";
     if (message.role == Role::System) return "System";
     return kind == "character" ? "Character" : "Narrator";
@@ -285,6 +296,20 @@ std::string query_attributed_transcript(const SceneData& scene,
         });
     }
     return nlohmann::json{{"spans", std::move(spans)}}.dump();
+}
+
+std::string format_visible_transcript(const SceneData& scene) {
+    std::ostringstream out;
+    for (const auto& span : attributed_transcript(scene)) {
+        if (span.kind == "director_cue") continue;
+        if (span.message.role == Role::System &&
+            span.kind != "fork" && span.kind != "merge")
+            continue;
+        const std::string content = str::trim(span.message.content);
+        if (content.empty()) continue;
+        out << "[" << span.speaker << "]\n" << content << "\n\n";
+    }
+    return out.str();
 }
 
 }  // namespace rhapsode

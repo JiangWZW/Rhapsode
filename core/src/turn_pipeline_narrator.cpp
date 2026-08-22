@@ -15,6 +15,7 @@
 #include <array>
 #include <cstring>
 #include <iterator>
+#include <sstream>
 #include <string_view>
 #include <tuple>
 #include <unordered_set>
@@ -217,20 +218,6 @@ void log_rejections(std::string_view label, int attempt,
     log() << std::flush;
 }
 
-std::string build_graph_turn_state(const std::string& turn_state,
-                                   const std::string& prose,
-                                   const nlohmann::json& turn_plan) {
-    std::string state = turn_state;
-    state += "\n\n### This turn's narration\n";
-    state += prose;
-    const auto it = turn_plan.find("speech_turns");
-    if (it != turn_plan.end() && it->is_array() && !it->empty()) {
-        state += "\n\n### Speech turns\n";
-        state += it->dump();
-    }
-    return state;
-}
-
 nlohmann::json json_array_or_empty(const nlohmann::json& plan,
                                    const char* key) {
     if (plan.is_object()) {
@@ -238,6 +225,44 @@ nlohmann::json json_array_or_empty(const nlohmann::json& plan,
         if (it != plan.end() && it->is_array()) return *it;
     }
     return nlohmann::json::array();
+}
+
+std::string join_string_array(const nlohmann::json& values) {
+    std::string result;
+    for (const auto& value : values) {
+        if (!value.is_string()) continue;
+        if (!result.empty()) result += ", ";
+        result += value.get<std::string>();
+    }
+    return result;
+}
+
+std::string build_graph_turn_state(const std::string& prose,
+                                   const nlohmann::json& turn_plan) {
+    std::ostringstream os;
+    const std::string on_stage =
+        join_string_array(json_array_or_empty(turn_plan, "active_cast"));
+    if (!on_stage.empty())
+        os << "On this stage: " << on_stage << "\n\n";
+    os << "This take:\n" << prose;
+    const auto speech = json_array_or_empty(turn_plan, "speech_turns");
+    bool any_spoken = false;
+    for (const auto& cue : speech) {
+        if (!cue.is_object()) continue;
+        const std::string name = str::trim(cue.value("character", ""));
+        const std::string line = str::trim(cue.value("line", ""));
+        const std::string action = str::trim(cue.value("action", ""));
+        if (name.empty() || (line.empty() && action.empty())) continue;
+        if (!any_spoken) {
+            os << "\n\nSpoken:\n";
+            any_spoken = true;
+        }
+        os << name << ":";
+        if (!line.empty()) os << " " << line;
+        if (!action.empty()) os << " (" << action << ")";
+        os << "\n";
+    }
+    return os.str();
 }
 
 void merge_graph_into_turn_plan(nlohmann::json& turn_plan,
@@ -516,15 +541,12 @@ NarratorPrompt build_turn_prompt(
     log_info("narrator") << "[1/4] building prompt scene=" << scene.scene_id
                          << "\n" << std::flush;
 
-    const size_t win = services.resuming
-        ? services.resume_history_window : services.history_window;
-    const std::vector<SceneMessage> history = snapshot_history(scene.history, win);
     services.resuming = false;
 
     NarratorPrompt prompt;
     prompt.instructions = build_narrator_instructions();
     prompt.turn_state = build_narrator_turn_state(
-        history, scene, world, services.storyline_board);
+        scene, world, services.storyline_board);
     services.storyline_board.clear();
 
     ++scene.turn_index;
@@ -619,13 +641,13 @@ GraphPlanResult extract_graph_observations(
     World& world, WorldGraph& observations, TurnServices& services,
     const SceneData& scene, int turn, const NarratorPrompt& prompt,
     NarratorTurnResult& narrator, const ReadToolCallback& read_tool) {
+    (void)prompt;
     // Observation extraction runs only after the narrative turn is committed.
     log_info("narrator") << "[2b/4] graph LLM scene=" << scene.scene_id << "\n"
                          << std::flush;
     auto raw_graph = call_narrator(
         services, scene, build_narrator_graph_instructions(),
-        build_graph_turn_state(
-            prompt.turn_state, narrator.prose, narrator.plan),
+        build_graph_turn_state(narrator.prose, narrator.plan),
         read_tool);
     log_narrator_phase("graph", raw_graph);
     auto [ignored_prose, graph_plan] =

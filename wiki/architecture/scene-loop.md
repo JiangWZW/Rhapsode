@@ -57,6 +57,10 @@ The implementation order in `core/src/turn_pipeline.cpp` is:
 4. Append the exact input to the candidate scene. Autonomous input is labeled `director_cue`; player
    input is labeled `player`.
 5. Build the narrator prompt and run the existing narrator response/retry path.
+   Phase A system is stage craft plus the speech/cast JSON schema. The user sheet is who is on
+   this stage (with voice), who is not, other live threads, story so far, then the last attributed
+   Player / Narrator / character spans from history **and** dialogue. Phase B (`GRAPH_UPDATE`)
+   receives only this take's prose and speech.
 6. Apply accepted legacy cast additions to the candidate World.
 7. Stage narrator prose and formatted character messages in the candidate scene and `TurnResult`.
 8. Confirm that `StoryData::transaction_version` still equals the captured base version.
@@ -84,8 +88,9 @@ board, and timing counters. This is an in-process turn transaction, not crash-sa
 pointer into Story state.
 
 The native `query_transcript` result preserves exact message content, role, speaker, scene, turn,
-ordinal, and `message_ref`. The Python narrator schema does not advertise this tool yet, so this is an
-available and tested data path rather than production retrieval behavior.
+ordinal, and `message_ref`. The default narrator beat already uses that attributed timeline (last
+16 spans). The Python tool schema still does not advertise `query_transcript`; keyword
+`query_history` remains history-buffer only.
 
 ## Message identity
 

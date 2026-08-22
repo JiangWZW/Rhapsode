@@ -6,12 +6,47 @@
 #include "rhapsode/character_memory.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/read_tools.h"
+#include "rhapsode/scene_history.h"
 #include "rhapsode/story_data_ops.h"
 #include "rhapsode/str_util.h"
 #include "rhapsode/text_downsampling.h"
 #include "rhapsode/turn_pipeline.h"
 
 namespace rhapsode {
+namespace {
+
+std::string join_names(const std::vector<std::string>& names) {
+    std::ostringstream line;
+    for (size_t i = 0; i < names.size(); ++i) {
+        if (i) line << ", ";
+        line << names[i];
+    }
+    return line.str();
+}
+
+SceneClosure archive_merged_storyline(
+    const StoryData& data, const SceneData& source, const std::string& into_id) {
+    SceneClosure closure;
+    closure.scene_id = source.scene_id;
+    closure.reason = "merged into " + into_id;
+    closure.merged_into = into_id;
+    closure.driving_intention = source.driving_intention;
+    closure.story_so_far = format_visible_transcript(source);
+    closure.concluded_at = data.turn_clock;
+    for (const auto& character : data.world.characters()) {
+        if (character.dead || !character.in_scene(source.scene_id)) continue;
+        closure.cast.push_back(character.name);
+    }
+    for (auto message = source.history.rbegin();
+         message != source.history.rend(); ++message) {
+        if (message->role != Role::Assistant) continue;
+        closure.final_narration = message->content;
+        break;
+    }
+    return closure;
+}
+
+}  // namespace
 
 SceneData* fork_story_scene(
     StoryData& data, TurnServices& services, const std::string& parent_id,
@@ -74,13 +109,14 @@ SceneData* fork_story_scene(
     SceneData* adopted = adopt_scene(data, std::move(child));
     data.world = std::move(next_world);
     ++data.transaction_version;
-    std::ostringstream cast_line;
-    for (size_t i = 0; i < resolved_cast->size(); ++i) {
-        if (i) cast_line << ", ";
-        cast_line << (*resolved_cast)[i];
-    }
-    log_info("story") << "fork from=" << parent_id << " to=" << new_id
-                      << " cast=[" << cast_line.str() << "]\n";
+    const std::string cast_text = join_names(*resolved_cast);
+    std::ostringstream note;
+    note << "fork from=" << parent_id << " to=" << new_id
+         << " cast=[" << cast_text << "]";
+    const std::string intention = str::trim(driving_intention);
+    if (!intention.empty()) note << " intention=" << intention;
+    append_lifecycle_note(*parent, "fork", note.str());
+    log_info("story") << note.str() << "\n";
     return adopted;
 }
 
@@ -179,7 +215,11 @@ bool merge_story_scene(
         0, static_cast<int>(target->history.size()) - kVerbatimTail);
     target->downsampling = text_downsampling_from_summary(
         std::move(merged_story_so_far), summarized_up_to);
+    SceneClosure closure = archive_merged_storyline(data, *source, into_id);
+    append_lifecycle_note(*target, "merge",
+                          "merge from=" + from_id + " into=" + into_id);
     data.world.move_scene_members(from_id, into_id);
+    data.scene_closures.push_back(std::move(closure));
     auto it = std::find_if(data.scenes.begin(), data.scenes.end(),
         [&](const auto& scene) { return scene->scene_id == from_id; });
     data.scenes.erase(it);

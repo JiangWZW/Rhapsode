@@ -135,15 +135,6 @@ std::uint64_t add_fact(WorldGraph& graph, const std::string& fact,
     return graph.add_node(std::move(node)).id;
 }
 
-std::uint64_t prompt_hash(const std::string& text) {
-    std::uint64_t hash = 14695981039346656037ULL;
-    for (const unsigned char byte : text) {
-        hash ^= byte;
-        hash *= 1099511628211ULL;
-    }
-    return hash;
-}
-
 }  // namespace
 
 TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
@@ -155,16 +146,134 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
     REQUIRE(scene.turn_index == 0);
 }
 
-TEST_CASE("Narrator instructions remain byte-identical across the refactor",
+TEST_CASE("Narrator instructions are stage craft with schema last",
           "[narrator_prompt][characterization]") {
     const std::string turn = build_narrator_instructions();
-    REQUIRE(turn.size() == 3212);
-    REQUIRE(prompt_hash(turn) == 0xb43a38bb0973478aULL);
+    const auto craft = turn.find("You narrate a live scene");
+    const auto sentinel = turn.find("<<<RHAPSODE_JSON>>>");
+    const auto schema = turn.find("\"speech_turns\"");
+    REQUIRE(craft != std::string::npos);
+    REQUIRE(sentinel != std::string::npos);
+    REQUIRE(schema != std::string::npos);
+    REQUIRE(craft < sentinel);
+    REQUIRE(sentinel < schema);
+    REQUIRE(turn.find("### Remember") == std::string::npos);
+    REQUIRE(turn.find("new_characters") != std::string::npos);
+    REQUIRE(turn.find("active_cast") != std::string::npos);
 
     const std::string graph = build_narrator_graph_instructions();
     REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
-    REQUIRE(graph.size() == 1628);
-    REQUIRE(prompt_hash(graph) == 0x476ab2e0bc632df9ULL);
+    const auto mark = graph.find("GRAPH_UPDATE");
+    const auto graph_sentinel = graph.find("<<<RHAPSODE_JSON>>>");
+    const auto graph_schema = graph.find("\"new_nodes\"");
+    REQUIRE(mark < graph_sentinel);
+    REQUIRE(graph_sentinel < graph_schema);
+    REQUIRE(graph.find("### Remember") == std::string::npos);
+}
+
+TEST_CASE("Narrator turn state puts attributed speech last",
+          "[narrator_prompt][characterization]") {
+    World world;
+    Character aqua{"Aqua", "A loud goddess", false};
+    aqua.role = "goddess";
+    aqua.dialogue_instructions = "Loud, indignant";
+    world.enter_character("root", std::move(aqua));
+    world.enter_character("guild", Character{"Kazuma", "The guy", false});
+
+    SceneData scene = basic_scene();
+    scene.downsampling = text_downsampling_from_summary(
+        "Yesterday the party left the guild.", 0);
+
+    SceneMessage prior_player;
+    prior_player.role = Role::User;
+    prior_player.content = "I insult Aqua.";
+    prior_player.metadata = {
+        {"scene_kind", "player"}, {"turn", 1}, {"turn_ordinal", 0}};
+    append_history_message(scene.history, prior_player);
+
+    SceneMessage prior_narrator;
+    prior_narrator.role = Role::Assistant;
+    prior_narrator.content = "Aqua bristles.";
+    prior_narrator.metadata = {
+        {"scene_kind", "narrator"}, {"turn", 1}, {"turn_ordinal", 1}};
+    append_history_message(scene.history, prior_narrator);
+
+    SceneMessage spoken;
+    spoken.role = Role::Assistant;
+    spoken.content = "How dare you!";
+    spoken.metadata = {
+        {"scene_kind", "character"}, {"speaker", "Aqua"},
+        {"turn", 1}, {"turn_ordinal", 2}};
+    append_history_message(scene.dialogue, spoken);
+
+    SceneMessage now;
+    now.role = Role::User;
+    now.content = "I do it again.";
+    now.metadata = {
+        {"scene_kind", "player"}, {"turn", 2}, {"turn_ordinal", 0}};
+    append_history_message(scene.history, now);
+
+    const std::string board =
+        "Other live threads:\n- This scene (root): you are here. With Aqua.\n";
+    const std::string state = build_narrator_turn_state(scene, world, board);
+
+    const auto on_at = state.find("On this stage");
+    const auto voice_at = state.find("Loud, indignant");
+    const auto off_at = state.find("Not on this stage");
+    const auto threads_at = state.find("Other live threads");
+    const auto happened_at = state.find("What has already happened");
+    const auto beat_at = state.find("What was just said and done");
+    const auto line_at = state.find("How dare you!");
+    const auto player_at = state.find("Player: I do it again.");
+    REQUIRE(on_at != std::string::npos);
+    REQUIRE(voice_at != std::string::npos);
+    REQUIRE(off_at != std::string::npos);
+    REQUIRE(threads_at != std::string::npos);
+    REQUIRE(happened_at != std::string::npos);
+    REQUIRE(beat_at != std::string::npos);
+    REQUIRE(line_at != std::string::npos);
+    REQUIRE(player_at != std::string::npos);
+    REQUIRE(on_at < voice_at);
+    REQUIRE(voice_at < off_at);
+    REQUIRE(off_at < threads_at);
+    REQUIRE(threads_at < happened_at);
+    REQUIRE(happened_at < beat_at);
+    REQUIRE(beat_at < line_at);
+    REQUIRE(line_at < player_at);
+    REQUIRE(state.find("Kazuma") != std::string::npos);
+    REQUIRE(state.find("### Remember") == std::string::npos);
+    REQUIRE(state.find("user:") == std::string::npos);
+    REQUIRE(state.find("assistant:") == std::string::npos);
+}
+
+TEST_CASE("Graph narrator user is this take only",
+          "[narrator_prompt][two_phase]") {
+    World world;
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    SceneData scene = basic_scene();
+    TurnServices runtime;
+    std::string graph_state;
+    configure_runtime(runtime,
+        [&](const std::string&, const std::string& instructions,
+            const std::string& turn_state) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                graph_state = turn_state;
+                return std::string{
+                    "<<<RHAPSODE_JSON>>>\n"
+                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"],"audience":[]}]})"};
+            }
+            return response(
+                "Wind catches the gate.",
+                R"({"speech_turns":[{"character":"Guard","line":"Hold.","action":"raises a hand"}],"new_characters":[],"active_cast":["Guard"]})");
+        });
+
+    execute_test_turn(world, runtime, scene, "Listen.");
+    REQUIRE(graph_state.find("This take:") != std::string::npos);
+    REQUIRE(graph_state.find("Wind catches the gate.") != std::string::npos);
+    REQUIRE(graph_state.find("Guard: Hold. (raises a hand)") != std::string::npos);
+    REQUIRE(graph_state.find("On this stage: Guard") != std::string::npos);
+    REQUIRE(graph_state.find("What was just said") == std::string::npos);
+    REQUIRE(graph_state.find("Listen.") == std::string::npos);
 }
 
 TEST_CASE("Turn pipeline merges Phase B graph ops into the turn plan",

@@ -9,7 +9,6 @@
 #include "rhapsode/read_tools.h"
 #include "rhapsode/scenario_bootstrap.h"
 #include "rhapsode/scene_history.h"
-#include "rhapsode/str_util.h"
 #include "rhapsode/story_lifecycle.h"
 #include "rhapsode/story_data_ops.h"
 #include "rhapsode/turn_pipeline.h"
@@ -113,42 +112,18 @@ std::vector<SceneMessage> Story::display_timeline(
 
 namespace {
 
-std::string message_speaker_label(const SceneMessage& message) {
-    std::string kind;
-    if (message.metadata.is_object() &&
-        message.metadata.contains("scene_kind") &&
-        message.metadata["scene_kind"].is_string())
-        kind = message.metadata["scene_kind"].get<std::string>();
-
-    // Autonomous off-stage inputs are director cues, not player speech.
-    if (kind == "director_cue") return "Off-stage cue";
-    if (message.role == Role::User) return "Player";
-    if (message.role == Role::System) return "System";
-
-    std::string speaker;
-    if (message.metadata.is_object() &&
-        message.metadata.contains("speaker") &&
-        message.metadata["speaker"].is_string())
-        speaker = message.metadata["speaker"].get<std::string>();
-    if (!speaker.empty()) return speaker;
-    if (kind == "character") return "Character";
-    return "Narrator";
+void append_timeline(std::ostringstream& out, const SceneData& scene) {
+    out << format_visible_transcript(scene);
 }
 
-void append_timeline(std::ostringstream& out, const Story& story,
-                     const std::string& scene_id) {
-    for (const auto& message : story.display_timeline(scene_id)) {
-        if (message.role == Role::System) continue;
-        // Omit the internal autonomous prompt; section headers already carry
-        // intention, and the following Narrator turn is the readable content.
-        if (message.metadata.is_object() &&
-            message.metadata.value("scene_kind", std::string{}) == "director_cue")
-            continue;
-        const std::string content = str::trim(message.content);
-        if (content.empty()) continue;
-        out << "[" << message_speaker_label(message) << "]\n"
-            << content << "\n\n";
+void append_closure_cast(std::ostringstream& out, const SceneClosure& closure) {
+    if (closure.cast.empty()) return;
+    out << "cast=";
+    for (size_t i = 0; i < closure.cast.size(); ++i) {
+        if (i) out << ", ";
+        out << closure.cast[i];
     }
+    out << "\n";
 }
 
 }  // namespace
@@ -157,8 +132,15 @@ std::string Story::render_transcript() const {
     std::ostringstream out;
     out << "# Story transcript\n\n";
     out << "Active scene: " << data_.active_scene_id << "\n";
+    int concluded = 0;
+    int merged = 0;
+    for (const auto& closure : data_.scene_closures) {
+        if (closure.merged_into.empty()) ++concluded;
+        else ++merged;
+    }
     out << "Live storylines: " << data_.scenes.size()
-        << "  Concluded: " << data_.scene_closures.size() << "\n\n";
+        << "  Concluded: " << concluded
+        << "  Merged forks: " << merged << "\n\n";
 
     const std::string active = data_.active_scene_id;
     if (const SceneData* scene = active_scene()) {
@@ -170,7 +152,7 @@ std::string Story::render_transcript() const {
         if (!scene->driving_intention.empty())
             out << "  intention=" << scene->driving_intention;
         out << "\n\n";
-        append_timeline(out, *this, scene->scene_id);
+        append_timeline(out, *scene);
     }
 
     for (const auto& scene : data_.scenes) {
@@ -183,23 +165,33 @@ std::string Story::render_transcript() const {
         if (!scene->driving_intention.empty())
             out << "  intention=" << scene->driving_intention;
         out << "\n\n";
-        append_timeline(out, *this, scene->scene_id);
+        append_timeline(out, *scene);
     }
 
     for (const auto& closure : data_.scene_closures) {
+        if (closure.merged_into.empty()) continue;
+        out << "============================================================\n";
+        out << "## Fork — " << closure.scene_id
+            << " (merged into " << closure.merged_into << ")\n";
+        out << "turn=" << closure.concluded_at << "\n";
+        if (!closure.driving_intention.empty())
+            out << "intention=" << closure.driving_intention << "\n";
+        append_closure_cast(out, closure);
+        if (!closure.reason.empty())
+            out << "reason=" << closure.reason << "\n";
+        out << "\n";
+        if (!closure.story_so_far.empty())
+            out << closure.story_so_far;
+    }
+
+    for (const auto& closure : data_.scene_closures) {
+        if (!closure.merged_into.empty()) continue;
         out << "============================================================\n";
         out << "## Concluded — " << closure.scene_id
             << " (turn " << closure.concluded_at << ")\n";
         if (!closure.driving_intention.empty())
             out << "intention=" << closure.driving_intention << "\n";
-        if (!closure.cast.empty()) {
-            out << "cast=";
-            for (size_t i = 0; i < closure.cast.size(); ++i) {
-                if (i) out << ", ";
-                out << closure.cast[i];
-            }
-            out << "\n";
-        }
+        append_closure_cast(out, closure);
         if (!closure.reason.empty())
             out << "reason=" << closure.reason << "\n";
         out << "\n";

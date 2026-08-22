@@ -232,6 +232,10 @@ async def run_session(ws: WebSocket) -> None:
 
             try:
                 await _stream_outputs(ws, session.annotator, outputs)
+                # Unlock the input as soon as the player-visible beat is on
+                # screen. Eval still waits for the later `idle` after
+                # complete_turn (weave/monologue/lifecycle/save).
+                await ws.send_json({"type": "status", "state": "ready"})
             finally:
                 try:
                     more = await loop.run_in_executor(

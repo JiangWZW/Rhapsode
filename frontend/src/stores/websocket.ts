@@ -115,7 +115,9 @@ export const useWebSocket = defineStore('websocket', () => {
         })
         processing.value = false
       } else if (data.type === 'status') {
-        processing.value = data.state !== 'idle'
+        // `ready` = player beat is on screen; weave/monologue may still run.
+        // `idle` = post-turn finished. Only `processing` locks the input.
+        processing.value = data.state === 'processing'
       } else if (data.type === 'undo') {
         // Server reseeds after undo; clear before the new timeline arrives.
         messages.value = []

@@ -82,7 +82,7 @@ Player input section with a "What do you do?" prompt. Contains the InputBar comp
 
 ### InputBar.vue
 
-Text input with send functionality. Emits `send(text)` on submit. Disabled when not connected or while processing. Enter key submits; the input clears after sending.
+Text input with send functionality. Emits `send(text)` on submit. Disabled when not connected or while `processing` (waiting for the player beat). The server sets `ready` after streaming that beat, so the input is usable during weave/monologue. Enter key submits; the input clears after sending.
 
 ### Unused stub panels
 
@@ -143,7 +143,7 @@ interface ChatMessage {
 | `scene_message` | Push to messages with `scene_kind` and optional `speaker`, clear processing |
 | `assistant_message` | Push as narrator message (backward compat) |
 | `error` | Push as assistant message with `[Error]` prefix |
-| `status` | Set `processing = (state !== 'idle')` |
+| `status` | Set `processing = (state === 'processing')`. `ready` and `idle` both unlock the input. |
 
 **Sending:** Pushes a user message to the local array immediately (optimistic), then sends `{ type: "player_message", content }` over the socket.
 

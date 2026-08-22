@@ -1,3 +1,41 @@
+## [2026-08-22] implementation | Fork/merge visible in story.txt
+
+- Parent timeline now keeps `[Fork]` / `[Merge]` system notes (`fork from=… to=…`, `merge from=… into=…`).
+- Merge archives the retired fork as a `SceneClosure` with `merged_into`, so `story.txt` still has a
+  `## Fork — {id} (merged into {parent})` section after the live scene file is deleted.
+- Docs: [architecture/cpp-data-model.md](architecture/cpp-data-model.md),
+  [architecture/system-overview.md](architecture/system-overview.md).
+- Rebuild `_core.pyd` before the next autoplay run or the eval transcript will stay on the old renderer.
+
+## [2026-08-22] experiment | Fork/merge autoplay guide
+
+- Added player brief [`experiments/session_pipeline/guides/fork_merge.md`](../experiments/session_pipeline/guides/fork_merge.md): one Aqua-to-cemetery (or Megumin crater) split, then travel-and-greet until co-presence; no second split.
+- `config.toml` default guide now points at it (autoplay.bat still defaults to `guides/default.md` until you pick the new file).
+- Older stub `guides/merge_fork_test.md` kept so prior run notes still resolve.
+
+## [2026-08-22] implementation | Narrator prompt unclump
+
+- Rewrote Phase A as stage craft with the speech/cast schema last; user sheet is on-stage+voice,
+  off-stage names, readable threads, story so far, then attributed Player/Narrator/Name lines.
+- Phase B (`GRAPH_UPDATE`) now sees only this take's prose and speech, not the Phase A sheet.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md).
+
+## [2026-08-22] implementation | Monologue prefix cache (minimum)
+
+- Reordered the on-stage monologue prompt: shared craft+JSON schema, then name/voice/core, then want-roster and inner beats, then this take and raw perceptions.
+- Native blob still one `LLMCallback` string; sentinel `<<<RHAPSODE_MONOLOGUE_USER>>>`. Python splits to `system` + `user` with no history store. Voice comes from `Character::build_prompt__dialogue_voice()`.
+- Apply path unchanged (`appends` / `ops` / `knows` / `core_revision`). Rebuild `_core.pyd` or Python falls back to a single user blob.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
+## [2026-08-22] fix | Unlock input during weave/monologue
+
+- `/ws` now sends `status: ready` after streaming `advance_player` outputs, before `complete_turn`.
+- The input bar was locked for the whole weave/expiry/monologue tail; `idle` still arrives after
+  post-turn so eval keeps waiting for the full turn. A typed next action waits in the socket until
+  the loop receives again.
+- Docs: [architecture/python-server.md](architecture/python-server.md),
+  [architecture/vue-frontend.md](architecture/vue-frontend.md).
+
 ## [2026-08-22] implementation | Flattened Story turn dependencies
 
 - Reduced the native ownership graph to `Story` owning `StoryData`, `TurnServices`, and one pending-turn value.
