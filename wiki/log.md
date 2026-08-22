@@ -1,3 +1,41 @@
+## [2026-08-22] implementation | execute_turn extract copies and speech helpers
+
+- Graph extract mutates working copies and assigns them only on success; dropped
+  `completed_turn` / `base_state_version` / `resulting_state_version`.
+- Speech validation helpers folded into `validate_speech_turns`.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md).
+
+## [2026-08-22] implementation | Cut turn-path ceremony
+
+- Local `TurnRollback` in `execute_turn`; deleted re-entry guard, LLM-null and stale-version
+  checks, `SpeechCue`, timing averages, `GraphPlanResult::context_blocks`, and paired catch blocks.
+- Narrator sanitize-once; one chroma swallow; fork/merge synthesize no longer takes a run guard.
+- Python `run_session` still always `complete_turn` after a successful `advance_player`. `view_of`
+  remains the Python name for `render_thoughts`.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md),
+  [architecture/cpp-data-model.md](architecture/cpp-data-model.md).
+
+## [2026-08-22] fix | Autoplay WS probe racing Chroma
+
+- Eval spawn-wait now `GET /health` instead of opening `/ws`. A probe `/ws` started a full
+  Story+Chroma session, then the real connection opened Chroma again and chromadb 1.5.9 crashed
+  (`RustBindingsAPI.bindings`).
+- Chroma persistent client is opened once during FastAPI lifespan (`warmup_chroma`).
+- Docs: [architecture/python-server.md](architecture/python-server.md),
+  [architecture/memory-system.md](architecture/memory-system.md).
+
+## [2026-08-22] implementation | Readable C++ (every file)
+
+- Deleted unread C++: legacy turn-shadow types, `resuming` / `resume_history_window`, `LogContext`,
+  `pressing_thought` / `charge_state`, `BeatSummary`, `GraphPlanResult::rejections`,
+  `World::character_description`, binding-only `Director` / `Weaver(graph)`, and unread eval `pid_`.
+- Flattened `execute_turn` (prompt mutations and graph extract sit in the turn script). Moved
+  fork/merge synthesize into `story_lifecycle.cpp`. Collapsed `Weaver::weave` / `weave_impl`.
+- Python `Story.world()` remains a detached snapshot; `set_resuming` is gone. Docs:
+  [architecture/scene-loop.md](architecture/scene-loop.md),
+  [architecture/system-overview.md](architecture/system-overview.md),
+  [architecture/cpp-data-model.md](architecture/cpp-data-model.md).
+
 ## [2026-08-22] implementation | Fork/merge visible in story.txt
 
 - Parent timeline now keeps `[Fork]` / `[Merge]` system notes (`fork from=… to=…`, `merge from=… into=…`).

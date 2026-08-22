@@ -65,7 +65,7 @@ TEST_CASE("WorldGraph thread queries share active-edge semantics",
     REQUIRE(graph.thread_containing(c) == std::vector<std::uint64_t>{c});
 }
 
-TEST_CASE("Graph plan result retains graph changes and context",
+TEST_CASE("Graph plan result retains expired and new nodes",
           "[director][characterization]") {
     WorldGraph graph;
     Node existing = fact("Gate shut", "Gate", 1);
@@ -89,7 +89,7 @@ TEST_CASE("Graph plan result retains graph changes and context",
     REQUIRE(output.newly_expired.front().id == existing_id);
     REQUIRE(output.new_nodes.size() == 1);
     REQUIRE(output.new_nodes.front().fact == "Gate open");
-    REQUIRE(output.context_blocks == std::vector<std::string>{"The road is clear."});
+    REQUIRE(output.new_nodes.front().active_ctx == "The road is clear.");
 }
 
 TEST_CASE("CharacterMemory monologue update writes knows and stream lines",
@@ -104,7 +104,7 @@ TEST_CASE("CharacterMemory monologue update writes knows and stream lines",
                 R"({"appends":[{"stream_id":"self","text":"Finally — a way out."}],"ops":[],"knows":[{"fact":"I can finally leave.","entities":["Gate"],"weight":7,"relation":"evidence"}],"core_revision":null})"};
         });
 
-    const std::string view = memory.view_of({"Gate"});
+    const std::string view = memory.render_thoughts({"Gate"});
     REQUIRE(view.find("The gate is shut") != std::string::npos);
     REQUIRE(view.find("I can finally leave.") != std::string::npos);
     REQUIRE(memory.active_stream_count() >= 1);

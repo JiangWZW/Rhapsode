@@ -97,7 +97,8 @@ Each scene gets a single ChromaDB collection:
 |------------|----------|
 | `{scene_id}_nodes` | Embedded facts from WorldGraph nodes. Metadata: `node_id`, `state`, `type`, `created_at` |
 
-Embeddings use **BAAI/bge-base-en-v1.5** (768-dimensional). The model is loaded once at server startup (`warmup_model()`).
+Embeddings use **BAAI/bge-base-en-v1.5** (768-dimensional). The model and the Chroma
+persistent client are opened once at server startup (`warmup_model()`, `warmup_chroma()`).
 
 ### Store
 

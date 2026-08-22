@@ -7,40 +7,16 @@
 #include <cmath>
 #include <cstdlib>
 #include <functional>
-#include <random>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace rhapsode {
 
-// ---------------------------------------------------------------------------
-// Construction
-// ---------------------------------------------------------------------------
-
 CharacterMemory::CharacterMemory(std::string name)
     : character_name_(std::move(name)) {
     ensure_bootstrap("");
 }
-
-// ---------------------------------------------------------------------------
-// Subjective belief graph (beliefs_)
-// ---------------------------------------------------------------------------
-
-namespace {
-
-// Case-insensitive identity test for two entity strings.  Exact equality only.
-// The narrator is the sole identity authority: it emits canonical subjects
-// (exact Cast names, "Player"), so the same referent always arrives as the same
-// string.  Substring/containment is deliberately NOT used -- it both falsely
-// merges distinct names that share a token ("Ash" vs "Ashenmoor", any
-// "...captain...") and misses true aliases with no shared substring.  Identity
-// is decided once at the source, never re-guessed here.
-bool entity_matches(const std::string& a_lower, const std::string& b_lower) {
-    return !a_lower.empty() && a_lower == b_lower;
-}
-
-}  // namespace
 
 std::uint64_t CharacterMemory::seed_belief(const std::string& fact,
                                            const std::vector<std::string>& entities,
@@ -79,15 +55,6 @@ void CharacterMemory::link_tension(std::uint64_t a_id, std::uint64_t b_id, int t
 namespace {
 
 // -- render_thoughts helpers --------------------------------------------------
-
-struct ThoughtRenderMode {
-    bool no_charge = false;
-    static ThoughtRenderMode from_env() {
-        ThoughtRenderMode m;
-        m.no_charge = std::getenv("RHAPSODE_BASELINE_NO_CHARGE") != nullptr;
-        return m;
-    }
-};
 
 struct ThoughtChain {
     std::string subject;
@@ -143,17 +110,17 @@ std::vector<ThoughtChain> group_and_order_thought_chains(
 
 void append_thought_chains(std::ostringstream& os,
                            const std::vector<ThoughtChain>& ordered,
-                           const ThoughtRenderMode& mode,
+                           bool no_charge,
                            const std::unordered_set<std::uint64_t>& in_tension)
 {
     for (const auto& c : ordered) {
         os << "About " << c.subject;
-        if (!mode.no_charge && c.peak > 0.0f)
+        if (!no_charge && c.peak > 0.0f)
             os << "  [pressing ~" << std::lround(c.peak) << "/10]";
         os << ":\n";
         for (const auto* n : c.nodes) {
             os << "   - " << n->fact;
-            if (!mode.no_charge) {
+            if (!no_charge) {
                 os << "  (w" << std::lround(n->weight) << ")";
                 if (in_tension.count(n->id)) os << "  [in tension]";
             }
@@ -204,67 +171,29 @@ std::string CharacterMemory::render_thoughts(
         if (all) { thoughts.push_back(&n); return; }
         for (const auto& e : n.entities) {
             const std::string el = str::to_lower(e);
+            if (el.empty()) continue;
             for (const auto& w : wanted)
-                if (entity_matches(el, w)) { thoughts.push_back(&n); return; }
+                if (el == w) { thoughts.push_back(&n); return; }
         }
     }, false);
     if (thoughts.empty()) return {};
 
-    auto mode = ThoughtRenderMode::from_env();
+    const bool no_charge =
+        std::getenv("RHAPSODE_BASELINE_NO_CHARGE") != nullptr;
     std::unordered_set<std::uint64_t> rendered;
     for (const auto* n : thoughts) rendered.insert(n->id);
     std::unordered_set<std::uint64_t> in_tension =
-        mode.no_charge ? std::unordered_set<std::uint64_t>{}
-                       : collect_tension_node_ids(beliefs_);
+        no_charge ? std::unordered_set<std::uint64_t>{}
+                  : collect_tension_node_ids(beliefs_);
 
-    auto ordered = group_and_order_thought_chains(thoughts, mode.no_charge);
+    auto ordered = group_and_order_thought_chains(thoughts, no_charge);
 
     std::ostringstream os;
-    append_thought_chains(os, ordered, mode, in_tension);
-    if (!mode.no_charge)
+    append_thought_chains(os, ordered, no_charge, in_tension);
+    if (!no_charge)
         append_tension_crosslinks(os, beliefs_, rendered);
 
     return sanitize_utf8(os.str());
-}
-
-std::string CharacterMemory::view_of(const std::vector<std::string>& subjects) const {
-    if (subjects.empty()) return {};
-    return render_thoughts(subjects);
-}
-
-std::string CharacterMemory::pressing_thought(unsigned seed) const {
-    float peak = 0.0f;
-    std::vector<const Node*> charged;
-    beliefs_.for_each([&](const Node& n) {
-        if (n.type != "belief" || n.state != NodeState::Active) return;
-        peak = std::max(peak, n.weight);
-        charged.push_back(&n);
-    }, false);
-    if (charged.empty() || peak <= 0.0f) return {};
-
-    // The most-charged Thoughts (within 1.0 of the peak); pick one seeded so the
-    // choice is stable for a given (character, turn) but varies across turns.
-    std::vector<const Node*> top;
-    for (const auto* n : charged)
-        if (n->weight >= peak - 1.0f) top.push_back(n);
-    if (top.empty()) return {};
-    std::mt19937 rng(seed);
-    return sanitize_utf8(top[rng() % top.size()]->fact);
-}
-
-std::string CharacterMemory::charge_state() const {
-    const auto in_tension = collect_tension_node_ids(beliefs_);
-
-    const Node* top = nullptr;
-    beliefs_.for_each([&](const Node& n) {
-        if (n.type != "belief" || n.state != NodeState::Active) return;
-        if (!top || n.weight > top->weight) top = &n;
-    }, false);
-
-    if (!top || top->weight < 8.0f) return {};  // only when something nears the ceiling
-    return in_tension.count(top->id)
-               ? std::string("a tension has become almost unbearable")
-               : std::string("a conviction has hardened");
 }
 
 void CharacterMemory::route_fact(const std::string& fact,

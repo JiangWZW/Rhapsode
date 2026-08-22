@@ -9,8 +9,6 @@
 
 namespace rhapsode {
 
-// State for one storyline. Story owns these records and coordinates them with
-// World; a SceneData record deliberately has no World or runtime dependency.
 struct SceneData {
     std::string scene_id;
     std::string title;

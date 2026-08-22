@@ -35,11 +35,6 @@ def _init_memory(scene_id: str) -> MemorySystem:
 
 
 def _sync_graph_to_memory(story: Story, memory: MemorySystem) -> None:
-    """Ensure all graph nodes are indexed in ChromaDB (catches seed nodes from scenario load).
-
-    Uses upsert so it's safe to call on every startup — already-indexed nodes
-    are overwritten with the same data.  ~30 nodes embeds in 1-2 seconds.
-    """
     all_nodes = story.world().world_graph.all_nodes_including_expired()
     if not all_nodes:
         return
@@ -54,12 +49,10 @@ def _sync_graph_to_memory(story: Story, memory: MemorySystem) -> None:
              len(all_nodes), len(expired))
 
 
-def _configure_story(story: Story, *, resuming: bool) -> None:
-    """Configure callbacks on the Story-owned native runtime."""
+def _configure_story(story: Story) -> None:
     story.set_llm_callback(make_llm_callback("death", thinking=False))
     story.set_narrator_llm_callback(make_narrator_callback())
     story.set_weaver_llm_callback(make_weaver_callback())
-    story.set_resuming(resuming)
     story.set_scheduler_callback(make_scheduler_callback())
     story.set_lifecycle_callback(make_lifecycle_callback())
     story.set_downsampler_callback(make_llm_callback("downsample", thinking=False))
@@ -75,7 +68,6 @@ class WsSession:
 
     @property
     def scene(self) -> SceneData:
-        """The player's active scene."""
         return self.story.active_scene()
 
 
@@ -101,13 +93,12 @@ def _setup_ws_session() -> WsSession:
         )
 
     _sync_graph_to_memory(story, memory)
-    # Story keeps reflection configuration outside the persisted World value.
     story.set_reflection_llm_callback(make_reflection_callback())
 
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())
 
-    _configure_story(story, resuming=is_resuming)
+    _configure_story(story)
 
     return WsSession(story=story, memory=memory, annotator=annotator,
                      is_resuming=is_resuming)
@@ -129,7 +120,6 @@ def _scene_ws_payload(msg: SceneMessage) -> dict:
 
 async def _send_seed_messages(ws: WebSocket, story: Story,
                               scene: SceneData, is_resuming: bool = False):
-    # Resume used to cap at 8, which looked like an empty game after long runs.
     cap = 120 if is_resuming else None
     seeds = story.display_timeline(scene.scene_id, cap)
     log.info(
@@ -153,7 +143,6 @@ def _player_text(data: dict) -> str | None:
 
 async def _stream_outputs(ws: WebSocket, annotator: Annotator,
                           outputs: list[SceneMessage]) -> None:
-    """Send one turn's outputs to the player, annotating narrator prose with NER."""
     for chunk in outputs:
         payload = _scene_ws_payload(chunk)
         if payload.get("scene_kind") == "narrator":
@@ -182,18 +171,10 @@ async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
 
 
 async def run_session(ws: WebSocket) -> None:
-    """Accept the socket and drive turns until the client disconnects.
-
-    Each turn: `advance_player` (stream outputs), then `complete_turn` (post-turn,
-    lifecycle, off-stage, save) and stream any merge extras.
-    """
     await ws.accept()
 
     loop = asyncio.get_event_loop()
     try:
-        # Heavy load/save must not block the event loop — a multi-minute setup
-        # after accept used to leave the browser on an empty story panel (and
-        # with no reconnect, it stayed empty forever).
         session = await loop.run_in_executor(None, _setup_ws_session)
     except Exception as exc:
         log.exception("Session setup failed")
@@ -202,8 +183,6 @@ async def run_session(ws: WebSocket) -> None:
         return
 
     await _send_seed_messages(ws, session.story, session.scene, session.is_resuming)
-    # Signal ready-for-input. Eval runner (and UI status) wait on this; undo
-    # already emits the same frame after reseeding.
     await ws.send_json({"type": "status", "state": "idle"})
 
     try:
@@ -220,7 +199,6 @@ async def run_session(ws: WebSocket) -> None:
                 continue
 
             await ws.send_json({"type": "status", "state": "processing"})
-            more: list = []
             try:
                 outputs = await loop.run_in_executor(
                     None, session.story.advance_player, text)
@@ -230,11 +208,9 @@ async def run_session(ws: WebSocket) -> None:
                 await ws.send_json({"type": "status", "state": "idle"})
                 continue
 
+            more: list = []
             try:
                 await _stream_outputs(ws, session.annotator, outputs)
-                # Unlock the input as soon as the player-visible beat is on
-                # screen. Eval still waits for the later `idle` after
-                # complete_turn (weave/monologue/lifecycle/save).
                 await ws.send_json({"type": "status", "state": "ready"})
             finally:
                 try:

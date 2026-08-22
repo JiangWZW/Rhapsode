@@ -5,8 +5,6 @@
 
 namespace rhapsode {
 
-/// Generic LLM callback: prompt in, completion out.
-/// Used by Weaver, text downsampling, CharacterMemory, etc.
 using LLMCallback = std::function<std::string(const std::string&)>;
 
 using ReadToolCallback = std::function<std::string(

@@ -248,12 +248,6 @@ void World::update_monologues(const std::string& scene_id,
     }
 }
 
-std::string World::character_description(const std::string& name) const {
-    for (const auto& character : characters_)
-        if (character.name == name) return character.description;
-    return {};
-}
-
 bool World::mark_character_dead(const std::string& name) {
     for (auto& character : characters_) {
         if (character.name == name) {

@@ -63,13 +63,12 @@ def _dot_to_svg_response(dot: str) -> Response:
 
 def _safe_render_thoughts(mem) -> str:
     try:
-        return mem.render_thoughts([]) or "(no live beliefs yet)"
+        return mem.view_of([]) or "(no live beliefs yet)"
     except UnicodeDecodeError:
         return "(beliefs unavailable: invalid UTF-8 in belief data)"
 
 
 def _mind_snapshot(mem) -> dict:
-    """Core + streams + compact beliefs for debug JSON/HTML."""
     core = ""
     streams: list = []
     try:
@@ -79,19 +78,8 @@ def _mind_snapshot(mem) -> dict:
         streams = payload.get("streams") or []
         if not isinstance(streams, list):
             streams = []
-    except Exception:  # noqa: BLE001 -- fall back to partial fields
-        try:
-            core = mem.core_text or ""
-        except Exception:  # noqa: BLE001
-            core = ""
-        try:
-            data = json.loads(mem.to_json_str())
-            streams = [
-                s for s in (data.get("streams") or [])
-                if isinstance(s, dict) and s.get("status", "active") == "active"
-            ]
-        except Exception:  # noqa: BLE001
-            streams = []
+    except Exception:
+        pass
     return {
         "core": core,
         "streams": streams,
@@ -170,8 +158,6 @@ def characters_endpoint():
             "core": snap["core"],
             "streams": snap["streams"],
             "beliefs": snap["beliefs"],
-            # Backward-compatible alias
-            "interior": snap["beliefs"],
         })
     return {"characters": characters}
 

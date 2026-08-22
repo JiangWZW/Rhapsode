@@ -43,7 +43,6 @@ std::vector<TranscriptSpan> attributed_transcript(
 std::string query_attributed_transcript(const SceneData& scene,
                                         const std::string& query,
                                         std::size_t max_results = 10);
-/// Player/narrator/character beats plus fork/merge lifecycle notes.
 std::string format_visible_transcript(const SceneData& scene);
 
 }  // namespace rhapsode

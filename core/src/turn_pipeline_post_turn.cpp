@@ -75,22 +75,17 @@ std::vector<Node> process_post_turn(
             scene->scene_id, turn, turn_stimulus, services.reflection);
 
         if (services.downsampler) {
-            try {
-                const int before = scene->downsampling.summarized_up_to;
-                process_text_downsampling(
-                    scene->downsampling, scene->history, services.downsampler);
-                const int after = scene->downsampling.summarized_up_to;
-                log_debug("downsampler") << "summarized_up_to " << before
-                      << " -> " << after << "\n";
-                const auto rendered = render_text_downsampling(scene->downsampling);
-                if (!rendered.empty())
-                    log_debug("downsampler") << "story_so_far (" << rendered.size()
-                          << " chars): " << rendered.substr(0, 200)
-                          << (rendered.size() > 200 ? "..." : "") << "\n";
-            } catch (const std::exception& error) {
-                log_warn("downsampler") << "process_turn failed: "
-                      << error.what() << "\n" << std::flush;
-            }
+            const int before = scene->downsampling.summarized_up_to;
+            process_text_downsampling(
+                scene->downsampling, scene->history, services.downsampler);
+            const int after = scene->downsampling.summarized_up_to;
+            log_debug("downsampler") << "summarized_up_to " << before
+                  << " -> " << after << "\n";
+            const auto rendered = render_text_downsampling(scene->downsampling);
+            if (!rendered.empty())
+                log_debug("downsampler") << "story_so_far (" << rendered.size()
+                      << " chars): " << rendered.substr(0, 200)
+                      << (rendered.size() > 200 ? "..." : "") << "\n";
         }
 
         if (!weave.connected.empty() || !weave.disconnected.empty() ||
@@ -101,14 +96,9 @@ std::vector<Node> process_post_turn(
                   << " nodes=" << weave.analysis.live_node_count
                   << " edges=" << weave.analysis.active_edge_count << "\n";
         }
-    } catch (const std::exception& error) {
-        expired_nodes.clear();
-        log_error("turn") << "post-turn failed: " << error.what() << "\n"
-                          << std::flush;
     } catch (...) {
         expired_nodes.clear();
-        log_error("turn") << "post-turn failed with unknown exception\n"
-                          << std::flush;
+        log_error("turn") << "post-turn failed\n" << std::flush;
     }
     return expired_nodes;
 }

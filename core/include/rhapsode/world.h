@@ -12,9 +12,6 @@
 
 namespace rhapsode {
 
-// Mechanical and character state. Standalone World values retain graph and
-// version fields for save and Python compatibility; live StoryData stores its
-// observation graph and transaction version separately.
 class World {
 public:
     WorldGraph& graph() { return world_graph_; }
@@ -56,16 +53,13 @@ public:
                                     int valid_until);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
-    /// Route objective nodes into on-stage (or audience) minds as perception stimulus.
     void route_perceptions(const std::string& scene_id,
                            const std::vector<Node>& nodes,
                            int turn);
-    /// On-stage monologue updater (streams + optional knows[]). Replaces reflect LLM.
     void update_monologues(const std::string& scene_id,
                            int turn,
                            const std::string& turn_stimulus,
                            const LLMCallback& llm_callback);
-    /// Mark a roster character dead and remove all scene memberships.
     bool mark_character_dead(const std::string& name);
 
     nlohmann::json to_json() const;
@@ -75,7 +69,6 @@ private:
     Character* find_character_mutable(const std::string& name);
     Character& add_new_character(const std::string& scene_id,
                                  Character character);
-    std::string character_description(const std::string& name) const;
 
     WorldGraph world_graph_;
     std::unordered_map<std::string, CharacterMemory> character_memories_;

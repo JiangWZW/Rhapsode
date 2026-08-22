@@ -9,8 +9,6 @@
 
 namespace rhapsode {
 
-/// Replace invalid UTF-8 sequences with U+FFFD so pybind11 string
-/// conversion never throws UnicodeDecodeError.
 inline std::string sanitize_utf8(const std::string& s) {
     std::string out;
     out.reserve(s.size());
@@ -51,7 +49,6 @@ inline std::string sanitize_utf8(const std::string& s) {
     return out;
 }
 
-/// Truncate to at most max_len bytes without splitting a UTF-8 code point.
 inline std::string truncate_utf8(const std::string& s, size_t max_len) {
     if (s.size() <= max_len) return s;
     size_t pos = max_len;
@@ -60,18 +57,12 @@ inline std::string truncate_utf8(const std::string& s, size_t max_len) {
     return s.substr(0, pos);
 }
 
-/// Truncate to at most max_len bytes (UTF-8 safe) and append "..." if truncated.
 inline std::string truncate_utf8_ellipsis(const std::string& s, size_t max_len) {
     if (s.size() <= max_len) return s;
     return truncate_utf8(s, max_len > 3 ? max_len - 3 : 0) + "...";
 }
 
-/// Normalize "smart"/typographic punctuation that LLMs habitually emit into the
-/// ASCII forms JSON requires.  Curly double quotes (U+201C/D/E) become ", curly
-/// single quotes / primes (U+2018/19, U+2032) become ' (valid inside JSON
-/// strings).  Everything else is left untouched.  Without this, a model that
-/// "prettifies" its JSON with smart quotes produces unparseable output and the
-/// whole turn's structured plan is lost.
+// Map typographic quotes to ASCII so LLM JSON still parses.
 inline std::string normalize_json_punct(std::string s) {
     struct Repl { const char* from; char to; };
     static const Repl repls[] = {
@@ -123,8 +114,6 @@ inline nlohmann::json try_parse_json(const std::string& text) {
     try { return nlohmann::json::parse(text); }
     catch (...) {}
 
-    // Retry after normalizing smart quotes -- the most common reason a model's
-    // JSON fails to parse.
     const std::string norm = normalize_json_punct(text);
 
     std::string salvaged;
@@ -139,7 +128,6 @@ inline nlohmann::json try_parse_json(const std::string& text) {
     return nlohmann::json::object();
 }
 
-/// Read a numeric field that the LLM may have returned as a quoted string.
 template <typename T>
 T json_number(const nlohmann::json& j, const char* key, T fallback) {
     auto it = j.find(key);

@@ -35,7 +35,7 @@ tags:
 
 Rhapsode is a C++17 narrative runtime exposed through pybind11, hosted by a FastAPI WebSocket
 session, and displayed by a Vue client. One native `Story` owns one playthrough. Its core dependency
-shape has one public façade, two owned aggregates, and one turn function.
+shape has one public Story type, two owned aggregates, and one turn function.
 
 ## Dependency shape
 
@@ -61,9 +61,9 @@ contains callbacks, configuration, and the stateful services used by turn operat
 `execute_turn(StoryData&, TurnServices&, TurnInput)` handles both player and autonomous narrative
 turns.
 
-The C++ core has no `TurnExecutor` class and no `Director` class. Python still exports historical
-`Director(graph)` and `Weaver(graph)` objects for compatibility; their binding-only wrappers are not
-used by `Story`.
+The C++ core has no `TurnExecutor` class and no `Director` class. Graph updates go through
+`apply_graph_plan`. Python weaves with `Story.weave_scene` and inspects graphs with `analyze_graph`;
+there is no Python `Director` or `Weaver` constructor.
 
 ## Turn and maintenance boundaries
 
@@ -91,8 +91,7 @@ successful `advance_player` is not rolled back when later maintenance or saving 
 | Scene transcript and scheduling state | `StoryData::scenes` | Committed playthrough record |
 | Active scene, closures, turn clock | `StoryData` | Story lifecycle state |
 | Observation nodes and edges | `StoryData::observations` | Fallible semantic state; no direct mechanical authority |
-| Callbacks, Weaver queue, timing, resume state | `TurnServices` | Runtime service state, not story evidence |
-| `ActorProposal` and `TurnDecision` | `TurnResult::legacy_shadow` | Diagnostic only |
+| Callbacks, Weaver queue, timing, history window | `TurnServices` | Runtime service state, not story evidence |
 
 The observation graph is physically separate from the live `World`. A standalone `World` still has a
 graph slot and `state_version` field so old saves and the historical Python `World` API remain
@@ -136,8 +135,7 @@ biased by an incorrect observation.
 ## Limitations
 
 - The narrator still authors prose, character dialogue, and live cast suggestions in one response.
-- `ActorProposal` and `TurnDecision` adapt that response after generation; characters do not yet own
-  their final lines.
+- Characters do not yet own their final lines.
 - Consequences are not declared before prose.
 - The transaction version covers committed turn/lifecycle mutations, not every derived graph,
   summary, or service update.

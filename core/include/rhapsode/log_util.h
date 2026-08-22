@@ -13,28 +13,6 @@ namespace rhapsode {
 
 enum class LogLevel { Error = 0, Warn = 1, Info = 2, Debug = 3 };
 
-struct LogContext {
-    std::string scene;
-    int turn = -1;
-    std::string kind;  // "player" | "offstage" | ""
-};
-
-inline LogContext& log_context() {
-    thread_local LogContext ctx;
-    return ctx;
-}
-
-inline void set_log_context(std::string scene, int turn, std::string kind) {
-    auto& ctx = log_context();
-    ctx.scene = std::move(scene);
-    ctx.turn = turn;
-    ctx.kind = std::move(kind);
-}
-
-inline void clear_log_context() {
-    log_context() = {};
-}
-
 inline bool verbose_logging_enabled() {
     return std::getenv("RHAPSODE_VERBOSE_LOG") != nullptr;
 }
@@ -119,8 +97,6 @@ inline std::ostream& log_debug(const char* component) {
     return log_at(LogLevel::Debug, component);
 }
 
-/// Legacy sink — treated as DEBUG so quiet INFO consoles stay clean until
-/// call sites are migrated to log_info / log_debug / log_error.
 inline std::ostream& log() {
     return log_debug("app");
 }

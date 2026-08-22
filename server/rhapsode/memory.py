@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -14,6 +15,7 @@ log = logging.getLogger(__name__)
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 _shared_model: SentenceTransformer | None = None
 _shared_client: chromadb.ClientAPI | None = None
+_client_lock = threading.Lock()
 
 
 def _load_embedding_model() -> SentenceTransformer:
@@ -39,11 +41,20 @@ def warmup_model() -> None:
         _shared_model = _load_embedding_model()
 
 
+def warmup_chroma(chroma_path: str = "./chroma") -> None:
+    _get_client(chroma_path)
+
+
 def _get_client(chroma_path: str = "./chroma") -> chromadb.ClientAPI:
     global _shared_client
-    if _shared_client is None:
-        _shared_client = chromadb.PersistentClient(path=chroma_path)
-    return _shared_client
+    if _shared_client is not None:
+        return _shared_client
+    with _client_lock:
+        if _shared_client is None:
+            log.info("Opening Chroma persistent client at %s ...", chroma_path)
+            _shared_client = chromadb.PersistentClient(path=chroma_path)
+            log.info("Chroma ready.")
+        return _shared_client
 
 
 def _make_embed():

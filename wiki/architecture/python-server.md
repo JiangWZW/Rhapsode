@@ -38,6 +38,9 @@ The session configures narrator, scheduler, lifecycle, Weaver, reflection, downs
 callbacks on Story. C++ owns `StoryData`, `TurnServices`, World, SceneData, and the Weaver service.
 Turn execution and graph-plan application are free functions, not owned executor/director objects.
 
+Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a full session
+(Story + Chroma); a throwaway probe would race the real connection on the Chroma client.
+
 ## WebSocket flow
 
 1. Load the scenario and optional save.

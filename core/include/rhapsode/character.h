@@ -32,17 +32,13 @@ struct Character
     Character(std::string n, std::string d, bool player = false)
         : name(std::move(n)), description(std::move(d)), is_player(player) {}
 
-    /// Is this character part of the given storyline right now?
     bool in_scene(const std::string& scene_id) const {
         return std::find(scene_ids.begin(), scene_ids.end(), scene_id) != scene_ids.end();
     }
-    /// Active in at least one storyline. Prefer in_scene() for scene-scoped checks.
     bool on_stage() const { return !scene_ids.empty(); }
-    /// Add this character to a storyline (idempotent).
     void join_scene(const std::string& scene_id) {
         if (!in_scene(scene_id)) scene_ids.push_back(scene_id);
     }
-    /// Remove this character from a storyline (no-op if absent).
     void leave_scene(const std::string& scene_id) {
         scene_ids.erase(std::remove(scene_ids.begin(), scene_ids.end(), scene_id),
                         scene_ids.end());

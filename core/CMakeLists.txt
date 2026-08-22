@@ -14,7 +14,6 @@ add_library(rhapsode STATIC
     include/rhapsode/scenario_bootstrap.h
     include/rhapsode/json_util.h
     include/rhapsode/turn_pipeline.h
-    include/rhapsode/turn_contracts.h
     include/rhapsode/scene_message.h
     include/rhapsode/str_util.h
     include/rhapsode/text_downsampling.h

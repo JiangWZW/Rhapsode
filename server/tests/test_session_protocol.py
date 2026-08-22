@@ -29,3 +29,8 @@ def test_scene_payload_preserves_character_metadata():
         "scene_kind": "character",
         "speaker": "Maren",
     }
+
+
+def test_health_route_is_registered():
+    from rhapsode.app import app
+    assert any(getattr(route, "path", None) == "/health" for route in app.routes)

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/story_data.h"
 #include "rhapsode/storyline_policy.h"
 
@@ -30,5 +31,15 @@ LifecycleApplyResult apply_lifecycle_decision(
     StoryData& data, TurnServices& services,
     const std::string& advanced_scene_id,
     const LifecycleDecision& decision);
+
+std::string synthesize_merge_context(
+    World& world, TurnServices& services,
+    const SceneData& source, const SceneData& target,
+    ReadToolCallback read_tool = {});
+std::string synthesize_fork_context(
+    World& world, TurnServices& services,
+    const SceneData& parent, const std::vector<std::string>& cast,
+    const std::string& driving_intention,
+    ReadToolCallback read_tool = {});
 
 }  // namespace rhapsode

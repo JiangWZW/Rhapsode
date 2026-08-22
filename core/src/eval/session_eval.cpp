@@ -28,6 +28,7 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 
 #include "rhapsode/log_util.h"
@@ -37,6 +38,7 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace beast = boost::beast;
+namespace http = beast::http;
 namespace websocket = beast::websocket;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
@@ -54,6 +56,24 @@ struct TurnExchange {
     bool turn_error = false;
     std::string error_detail;
 };
+
+bool http_health_ok(const std::string& host, const std::string& port) {
+    net::io_context ioc;
+    tcp::resolver resolver{ioc};
+    beast::tcp_stream stream{ioc};
+    stream.expires_after(std::chrono::seconds(2));
+    stream.connect(resolver.resolve(host, port));
+    http::request<http::empty_body> req{http::verb::get, "/health", 11};
+    req.set(http::field::host, host);
+    req.set(http::field::user_agent, "rhapsode-session-eval");
+    http::write(stream, req);
+    beast::flat_buffer buffer;
+    http::response<http::string_body> res;
+    http::read(stream, buffer, res);
+    beast::error_code ec;
+    stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+    return res.result() == http::status::ok;
+}
 
 #if defined(_WIN32)
 class ServerProcess {
@@ -118,7 +138,6 @@ public:
         CloseHandle(pi.hThread);
         process_ = pi.hProcess;
         job_ = job;
-        pid_ = pi.dwProcessId;
         return true;
     }
 
@@ -146,13 +165,11 @@ public:
             CloseHandle(process_);
             process_ = nullptr;
         }
-        pid_ = 0;
     }
 
 private:
     HANDLE process_ = nullptr;
     HANDLE job_ = nullptr;
-    DWORD pid_ = 0;
 };
 #else
 class ServerProcess {
@@ -314,15 +331,13 @@ EndReason SessionEvalRunner::run() {
         spawned = server.spawn(config_.server_cmd, log_path);
         if (!spawned)
             throw std::runtime_error("Failed to spawn server: " + config_.server_cmd);
-        // Give uvicorn a moment to bind.
-        for (int i = 0; i < 50; ++i) {
+        // Wait for HTTP /health. Do not open /ws: that starts a full session
+        // (Story + Chroma) which the real connection then races.
+        for (int i = 0; i < 100; ++i) {
             if (!server.alive()) break;
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             try {
-                WsClient probe;
-                probe.connect(config_.ws_host, config_.ws_port, config_.ws_path);
-                probe.close();
-                break;
+                if (http_health_ok(config_.ws_host, config_.ws_port)) break;
             } catch (...) {
                 // keep waiting
             }

@@ -51,25 +51,16 @@ public:
     bool active() const noexcept { return active_; }
     bool should_weave(int turn_index) const;
 
-    /// Graph edge audit using the weaver LLM (called on should_weave turns).
     WeaveResult weave(WorldGraph& graph, int turn_index,
                       const std::string& scene_context = "");
 
-    // -- Entity-group expiry detector --
-
-    /// Rebuild the expiry queue from the current graph state.
-    /// Entity groups matching priority_entities are placed at the front.
     void rebuild_expiry_queue(
         const WorldGraph& graph,
         const std::vector<std::string>& priority_entities = {});
 
-    /// Drain the expiry queue, one LLM call per entity group.
-    /// Loops until queue empty or stop_expiry_drain() is called.
-    /// Thread-safe with stop_expiry_drain().
     std::vector<ExpiryOp> drain_expiry_queue(
         WorldGraph& graph, int turn_index);
 
-    /// Signal the drain loop to stop after the current group finishes.
     void stop_expiry_drain();
 
     bool expiry_queue_empty() const;
@@ -84,8 +75,6 @@ private:
     WeaveResult parse_and_apply(WorldGraph& graph,
                                 const std::string& llm_response,
                                 int turn_index);
-    WeaveResult weave_impl(WorldGraph& graph, int turn_index,
-                           const std::string& scene_context);
 
     // Selection RNG (mutable: not part of observable Weaver state)
     mutable std::mt19937 rng_{std::random_device{}()};

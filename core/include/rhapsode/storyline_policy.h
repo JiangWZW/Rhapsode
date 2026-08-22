@@ -27,9 +27,7 @@ struct SceneSummary {
     bool player_present = false;
     std::string driving_intention;
     float charge = 0.0f;
-    /// Short snippet for list_scenes / tool payloads (~240 bytes).
     std::string last_narration;
-    /// Longer snippet for board lifecycle checks only (~1200 bytes).
     std::string recent_narration;
 };
 
@@ -43,10 +41,6 @@ struct TurnSummary {
     std::vector<SceneMessage> dialogue;
     std::vector<SceneSummary> storylines;
 };
-
-// Transitional source-compatibility alias. New orchestration code uses
-// TurnSummary; serialized data and external callers can migrate separately.
-using BeatSummary = TurnSummary;
 
 struct LifecycleOp {
     enum class Kind { Merge, Conclude, Fork, Exit };
@@ -66,7 +60,6 @@ struct LifecycleDecision {
 
 std::string serialize_scene_summaries(
     const std::vector<SceneSummary>& summaries);
-/// Compact board section for the narrator turn state.
 std::string format_live_storylines_board(
     const std::vector<SceneSummary>& summaries);
 std::string request_off_stage_scene(const SchedulerCallback& callback,

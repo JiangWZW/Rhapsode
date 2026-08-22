@@ -5,31 +5,12 @@
 
 #include "rhapsode/annotator.h"
 #include "rhapsode/character_memory.h"
-#include "rhapsode/graph_plan.h"
 #include "rhapsode/node.h"
 #include "rhapsode/world.h"
 #include "rhapsode/world_graph.h"
 
 namespace py = pybind11;
 using namespace rhapsode;
-
-namespace {
-
-// Python compatibility object. Core turn code uses apply_graph_plan directly;
-// only this boundary object retains a standalone graph supplied by Python.
-struct BoundDirector {
-    explicit BoundDirector(WorldGraph& graph) : graph(&graph) {}
-
-    GraphPlanResult apply_planned_turn(
-        int turn_index, const std::string& json_text) {
-        return apply_graph_plan(
-            *graph, turn_index, nlohmann::json::parse(json_text));
-    }
-
-    WorldGraph* graph;
-};
-
-}  // namespace
 
 void bind_graph(py::module_& m) {
     // -- Node System --
@@ -117,7 +98,8 @@ void bind_graph(py::module_& m) {
              py::arg("type") = "belief")
         .def("link_tension",      &CharacterMemory::link_tension,
              py::arg("a_id"), py::arg("b_id"), py::arg("turn"))
-        .def("view_of",           &CharacterMemory::view_of, py::arg("subjects"))
+        .def("view_of",           &CharacterMemory::render_thoughts,
+             py::arg("subjects") = std::vector<std::string>{})
         .def("route_fact",        &CharacterMemory::route_fact,
              py::arg("fact"), py::arg("entities"), py::arg("turn"))
         .def("ensure_bootstrap",  &CharacterMemory::ensure_bootstrap,
@@ -125,8 +107,6 @@ void bind_graph(py::module_& m) {
         .def("update_monologues", &CharacterMemory::update_monologues,
              py::arg("turn"), py::arg("description"), py::arg("beat_stimulus"),
              py::arg("callback"), py::arg("voice") = "")
-        .def("render_thoughts",   &CharacterMemory::render_thoughts,
-             py::arg("subjects") = std::vector<std::string>{})
         .def("render_mind_query", [](const CharacterMemory& memory,
                                      std::size_t max_belief_chars,
                                      std::size_t max_line_chars) {
@@ -151,25 +131,6 @@ void bind_graph(py::module_& m) {
         .def("__repr__", [](const CharacterMemory& self) {
             return "CharacterMemory(" + self.name() + ")";
         });
-
-    // -- Director --
-
-    py::class_<Rejection>(m, "Rejection")
-        .def(py::init<>())
-        .def_readwrite("fact",   &Rejection::fact)
-        .def_readwrite("reason", &Rejection::reason);
-
-    py::class_<GraphPlanResult>(m, "DirectorOutput")
-        .def(py::init<>())
-        .def_readwrite("context_blocks",  &GraphPlanResult::context_blocks)
-        .def_readwrite("newly_expired",   &GraphPlanResult::newly_expired)
-        .def_readwrite("new_nodes",       &GraphPlanResult::new_nodes)
-        .def_readwrite("rejections",      &GraphPlanResult::rejections);
-
-    py::class_<BoundDirector>(m, "Director")
-        .def(py::init<WorldGraph&>(), py::arg("graph"), py::keep_alive<1, 2>())
-        .def("apply_planned_turn", &BoundDirector::apply_planned_turn,
-             py::arg("turn_index"), py::arg("json_txt"));
 
     // -- Annotator --
 

@@ -8,7 +8,6 @@ sources:
   - core/include/rhapsode/story_data.h
   - core/include/rhapsode/story_data_ops.h
   - core/include/rhapsode/story_lifecycle.h
-  - core/include/rhapsode/turn_contracts.h
   - core/include/rhapsode/turn_pipeline.h
   - core/include/rhapsode/scene_data.h
   - core/include/rhapsode/world.h
@@ -82,21 +81,21 @@ there so `Story::render_transcript` can still print it after the live `SceneData
 `TurnServices` holds execution dependencies and runtime state:
 
 - model, narrator, delivery, scheduler, lifecycle, reflection, and downsampling callbacks;
-- history-window and resume settings;
-- temporary storyline-board and timing counters;
+- history window (the Python `resume` argument to `set_history_window` is ignored);
+- temporary storyline-board text;
 - the stateful `Weaver` service;
 - shared `MemorySystem` ownership;
-- save-directory configuration;
-- a re-entry guard flag.
+- save-directory configuration.
 
 It contains no `World*`, `SceneData*`, or `WorldGraph*`. `Weaver` receives the graph explicitly for
 each operation.
 
 ### `Story`
 
-`Story` is a compatibility façade and composition root. Its only owned state is `StoryData`,
+`Story` is the composition root. Its only owned state is `StoryData`,
 `TurnServices`, and an optional private `PendingTurn`. It exposes setup, queries, lifecycle commands,
-turn sequencing, undo, and persistence.
+turn sequencing, undo, and persistence. Python `Story.world()` returns a detached snapshot
+(`world_snapshot`); C++ `Story::world()` is the live roster.
 
 `Story` does not contain scene algorithms, scheduling algorithms, graph-application logic, or a
 turn-executor object. Those operations accept explicit data arguments.
@@ -106,11 +105,8 @@ turn-executor object. Those operations accept explicit data arguments.
 | Type | Lifetime | Purpose |
 |---|---|---|
 | `TurnInput` | One call | Player/autonomous kind, scene ID, exact input text |
-| `TurnResult` | Return value | Committed outputs, versions, delivery failures, graph effects, audit shadow |
+| `TurnResult` | Return value | Committed outputs, delivery failures, graph effects, post-turn index |
 | `PendingTurn` | Between `advance_player` and `complete_turn` | Scene, exact player input, post-turn index |
-| `ActorProposal` | Diagnostic result | Typed view adapted from legacy narrator speech |
-| `TurnDecision` | Diagnostic result | Typed view of accepted proposals and legacy mechanical operations |
-| `LegacyTurnShadow` | Diagnostic result | Proposals, decision, graph plan, and adapter issues |
 
 There are no `TurnWork`, `PreparedTurn`, or `CompletedSceneTurn` wrapper layers. Candidate World,
 scene, prompt, narrator result, and output values are local variables inside `execute_turn`.
@@ -119,9 +115,9 @@ scene, prompt, narrator result, and output values are local variables inside `ex
 
 | Module | Responsibility |
 |---|---|
-| `turn_pipeline.*` | Stage, version-check, commit, deliver, and observe one narrative turn |
+| `turn_pipeline.*` | Stage, commit, deliver, and observe one narrative turn |
 | `story_data_ops.*` | Scene lookup, summaries, frozen reads, cast resolution, scheduling selection |
-| `story_lifecycle.*` | Fork, merge, conclude, exit, and apply parsed lifecycle decisions |
+| `story_lifecycle.*` | Fork, merge, conclude, exit, synthesize story-so-far, and apply parsed lifecycle decisions |
 | `graph_plan.*` | Apply parsed node transitions/additions to an explicit observation graph |
 | `scene_history.*` | Append, order, query, revert, and format visible transcript (including fork/merge notes) |
 | `story_serialization.cpp` | Convert between the live split representation and the old save shape |

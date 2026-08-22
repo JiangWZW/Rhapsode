@@ -6,10 +6,8 @@ import pytest
 
 from rhapsode._core import (
     Annotator,
-    Director,
     MemorySystem,
     Story,
-    Weaver,
     WorldGraph,
 )
 from rhapsode.llm_tools import make_narrator_callback
@@ -31,24 +29,6 @@ def _story() -> Story:
         }),
         "root",
     )
-
-
-def test_standalone_graph_utilities_keep_their_graph_alive():
-    director_graph = WorldGraph()
-    director_graph_ref = weakref.ref(director_graph)
-    director = Director(director_graph)
-    del director_graph
-    gc.collect()
-    assert director_graph_ref() is not None
-    assert director.apply_planned_turn(0, "{}").new_nodes == []
-
-    weaver_graph = WorldGraph()
-    weaver_graph_ref = weakref.ref(weaver_graph)
-    weaver = Weaver(weaver_graph)
-    del weaver_graph
-    gc.collect()
-    assert weaver_graph_ref() is not None
-    assert weaver.should_weave(0)
 
 
 def test_story_callbacks_do_not_form_strong_reference_cycles():

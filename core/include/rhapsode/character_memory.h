@@ -47,8 +47,6 @@ public:
     bool expire_intention(std::uint64_t node_id, int valid_until);
     void link_tension(std::uint64_t a_id, std::uint64_t b_id, int turn);
 
-    std::string view_of(const std::vector<std::string>& subjects) const;
-
     // Perception layer: stimulus for the next monologue update. Not auto-belief.
     void route_fact(const std::string& fact,
                     const std::vector<std::string>& entities,
@@ -78,9 +76,6 @@ public:
     nlohmann::json render_mind_query(std::size_t max_belief_chars = 1200,
                                      std::size_t max_line_chars = 400) const;
 
-    std::string pressing_thought(unsigned seed) const;
-    std::string charge_state() const;
-
     nlohmann::json to_json() const;
     static CharacterMemory from_json(const nlohmann::json& j);
 
@@ -88,7 +83,6 @@ public:
 
 private:
     MonologueStream* find_stream(const std::string& id);
-    const MonologueStream* find_stream(const std::string& id) const;
     std::string alloc_stream_id(const std::string& parent_id, int turn);
 
     std::string character_name_;

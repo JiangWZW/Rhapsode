@@ -22,8 +22,6 @@ class MemorySystem;
 struct TurnResult;
 struct WeaveResult;
 
-// Public compatibility facade for the C++/Python boundary. Core operations use
-// the owned StoryData and TurnServices directly.
 class Story {
 public:
     Story();
@@ -68,7 +66,7 @@ public:
 
     void note_advanced(const std::string& scene_id);
     int turn_clock() const { return data_.turn_clock; }
-    int beat_clock() const { return turn_clock(); }  // Compatibility alias.
+    int beat_clock() const { return turn_clock(); }
     std::string tool_list_scenes() const;
     std::string dispatch_tool(const std::string& scene_id,
                               const std::string& name,
@@ -78,18 +76,14 @@ public:
         const std::string& scene_id,
         std::optional<size_t> cap = std::nullopt) const;
 
-    /// Full readable transcript: active scene, other live storylines, then
-    /// concluded closures (summary only — full history is not retained).
     std::string render_transcript() const;
 
-    // Runtime configuration. Python does not own or wire these services.
     void set_llm_callback(LLMCallback cb);
     void set_narrator_llm_callback(NarratorLLMCallback cb);
     void set_weaver_llm_callback(LLMCallback cb);
     void set_weaver_interval(int turns);
     WeaveResult weave_scene(const std::string& scene_id);
     void set_history_window(size_t normal, size_t resume);
-    void set_resuming(bool value);
     void set_scheduler_callback(SchedulerCallback cb) {
         services_.scheduler = std::move(cb);
     }
@@ -103,9 +97,7 @@ public:
     }
     void set_saves_dir(const std::string& dir) { services_.saves_dir = dir; }
 
-    /// Player turn only; defers post-turn. Pair with complete_turn().
     std::vector<SceneMessage> advance_player(const std::string& player_input);
-    /// Post-turn, lifecycle, off-stage, save. Requires a prior advance_player().
     std::vector<SceneMessage> complete_turn();
     int revert_active_turns(int count);
 

@@ -32,7 +32,6 @@ struct KnowFact {
     std::string fact;
     std::vector<std::string> entities;
     float weight = 5.0f;
-    std::string kind = "evidence";  // evidence | tension
 };
 
 std::vector<Perception> gather_active_perceptions(const WorldGraph& beliefs) {
@@ -266,12 +265,6 @@ MonologueStream* CharacterMemory::find_stream(const std::string& id) {
     return nullptr;
 }
 
-const MonologueStream* CharacterMemory::find_stream(const std::string& id) const {
-    for (const auto& stream : streams_)
-        if (stream.id == id) return &stream;
-    return nullptr;
-}
-
 std::string CharacterMemory::alloc_stream_id(const std::string& parent_id,
                                             int turn) {
     ++stream_seq_;
@@ -456,17 +449,9 @@ void CharacterMemory::update_monologues(
                 }
                 item.weight = static_cast<float>(
                     std::clamp(json_number<int>(value, "weight", 5), 1, 10));
-                const std::string relation =
-                    str::to_lower(value.value("relation", "evidence"));
-                item.kind =
-                    (relation.find("tension") != std::string::npos ||
-                     relation.find("contradict") != std::string::npos)
-                        ? "tension" : "evidence";
                 knows.push_back(std::move(item));
             }
             new_belief_ids = apply_knows(beliefs_, turn, knows, perceptions);
-            // tension: link new knows that requested tension against newest prior
-            // (simple: skip cross-link complexity; evidence edges to perceptions done)
         }
     } else {
         log() << "  [char_mem:" << character_name_

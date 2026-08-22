@@ -8,19 +8,21 @@ from rhapsode import _core
 def test_public_binding_surface_matches_owned_runtime_design():
     expected = {
         "Annotator", "Character", "CharacterMemory",
-        "Director", "DirectorOutput", "EdgeData", "EdgeInfo", "EndReason",
+        "EdgeData", "EdgeInfo", "EndReason",
         "EntitySpan", "ExpiryOp", "GraphAnalysis", "MemorySystem",
         "NarrativeMetrics", "Node",
-        "NodeState", "Rejection", "ReliabilityMetrics", "Role", "SceneData",
+        "NodeState", "ReliabilityMetrics", "Role", "SceneData",
         "SceneMessage", "SessionEvalConfig", "SessionEvalRunner", "SessionReport",
         "Story", "WeaveOp", "WeaveResult",
-        "Weaver", "World", "WorldGraph", "analyze_graph",
+        "World", "WorldGraph", "analyze_graph",
     }
     assert {name for name in dir(_core) if not name.startswith("_")} == expected
     assert not hasattr(_core, "Scene")
     assert not hasattr(_core, "SceneLoop")
-    assert not hasattr(_core.Weaver, "weave_local")
-    assert not hasattr(_core.Weaver, "set_local_llm_callback")
+    assert not hasattr(_core, "Director")
+    assert not hasattr(_core, "DirectorOutput")
+    assert not hasattr(_core, "Rejection")
+    assert not hasattr(_core, "Weaver")
 
 
 def test_story_is_the_production_composition_surface():
@@ -36,7 +38,7 @@ def test_story_is_the_production_composition_surface():
         "set_downsampler_callback", "set_history_window",
         "set_lifecycle_callback", "set_llm_callback",
         "set_memory", "set_reflection_llm_callback",
-        "set_narrator_llm_callback", "set_resuming", "set_saves_dir",
+        "set_narrator_llm_callback", "set_saves_dir",
         "set_scheduler_callback", "set_weaver_interval",
         "set_weaver_llm_callback",
         "to_scenario_json_str", "tool_list_scenes", "weave_scene", "world",

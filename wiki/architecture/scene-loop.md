@@ -9,6 +9,7 @@ sources:
   - core/include/rhapsode/story_data_ops.h
   - core/include/rhapsode/turn_pipeline.h
   - core/src/story_advance.cpp
+  - core/src/story_lifecycle.cpp
   - core/src/turn_pipeline.cpp
   - core/src/turn_pipeline_narrator.cpp
   - core/src/turn_pipeline_post_turn.cpp
@@ -50,27 +51,26 @@ successful commit it stores only the scene ID, exact player input, and post-turn
 
 The implementation order in `core/src/turn_pipeline.cpp` is:
 
-1. Reject re-entry and resolve the requested live scene.
-2. Copy the live World, observation graph, active SceneData, and mutable service fields needed for
-   rollback.
+1. Resolve the requested live scene.
+2. Snapshot World, observations, the live scene, and the storyline board in a local `TurnRollback`.
+   Generation mutates copies; an exception restores those snapshots from the destructor.
 3. Build a `ReadToolLease` from a copy of World, observations, every live scene, and scene summaries.
 4. Append the exact input to the candidate scene. Autonomous input is labeled `director_cue`; player
    input is labeled `player`.
-5. Build the narrator prompt and run the existing narrator response/retry path.
-   Phase A system is stage craft plus the speech/cast JSON schema. The user sheet is who is on
-   this stage (with voice), who is not, other live threads, story so far, then the last attributed
-   Player / Narrator / character spans from history **and** dialogue. Phase B (`GRAPH_UPDATE`)
-   receives only this take's prose and speech.
-6. Apply accepted legacy cast additions to the candidate World.
+5. Build narrator instructions (stage craft plus the speech/cast JSON schema) and turn state
+   (who is on this stage with voice, who is not, other live threads, story so far, then the last
+   attributed Player / Narrator / character spans from history **and** dialogue). Increment
+   `turn_index` and run the narrator retry path.
+6. Apply accepted cast additions to the candidate World.
 7. Stage narrator prose and formatted character messages in the candidate scene and `TurnResult`.
-8. Confirm that `StoryData::transaction_version` still equals the captured base version.
-9. Move the candidate World and scene into `StoryData` and advance the version once.
-10. Notify the output callback. Notification failures are recorded; the committed turn is not replayed.
-11. Extract and apply non-authoritative graph observations on copies of the committed values.
-12. Build the inert `LegacyTurnShadow` for diagnostics.
+8. Move the candidate World and scene into `StoryData`, advance the version once, and disarm rollback.
+9. Notify the output callback. Notification failures are recorded; the committed turn is not replayed.
+10. Extract and apply non-authoritative graph observations on working copies.
+    The graph call (`GRAPH_UPDATE`) sees only this take's prose and speech. Live World and
+    observations are replaced only if that call succeeds.
 
-An exception before step 9 restores World, observations, scene, version, resume state, storyline
-board, and timing counters. This is an in-process turn transaction, not crash-safe persistence.
+An exception before step 8 restores World, observations, scene, version, and storyline board. This is
+an in-process turn transaction, not crash-safe persistence.
 
 ## Snapshot reads
 
@@ -108,13 +108,14 @@ References are deterministic within a committed turn and need no mutable global 
 
 ## Observation step
 
-Graph extraction runs after transcript and coded-state commit. It asks the narrator callback for
-`transitions` and `new_nodes`, then calls the stateless `apply_graph_plan` function over a copied
-`WorldGraph`. New nodes may be routed into copied character memories as perceptions.
+Graph extraction runs after transcript and coded-state commit. It copies World and observations,
+asks the narrator callback for `transitions` and `new_nodes`, then calls the stateless
+`apply_graph_plan` function on those copies. New nodes may be routed into the copied character
+memories as perceptions. Scene is not copied; extract reads the committed scene.
 
-On success, the updated observations and routed perceptions replace their committed copies. On
-failure, the pre-extraction World, scene, and observations are restored while the committed turn
-survives. The graph-application function cannot access Story, SceneData, or mechanical World methods.
+On success, those copies replace the live World and observations. On failure they are discarded;
+the committed turn survives. The graph-application function cannot access Story, SceneData, or
+mechanical World methods.
 
 The observation step is derived semantic work. It does not increment the transaction version and is
 not part of an all-or-nothing save transaction.
@@ -141,8 +142,7 @@ The live path remains narrator-authored:
 
 - the narrator produces prose and `speech_turns`;
 - character lines are not separate actor calls;
-- `ActorProposal` and `TurnDecision` are reconstructed afterward for comparison only;
-- cast operations are validated legacy operations, not a general consequence declaration;
+- cast operations are validated operations, not a general consequence declaration;
 - graph nodes remain observations rather than mechanical facts.
 
 The transaction structure contains several failure modes but does not establish long-horizon story
@@ -153,11 +153,20 @@ reliability.
 - Output delivery occurs after commit and before graph extraction; clients must treat delivery errors
   as retryable notification failures, not failed turns.
 - Maintenance and saving occur after the turn transaction and can fail independently.
-- The base-version check assumes one synchronous writer; it is not a concurrent transaction manager.
 - Narrator retry validation checks the existing enumerated plan shape, not semantic truth or character
   quality.
 - No sequential evaluation shows that the current path preserves voice or causality for 100 or 300
   player turns.
+
+## Implementation files
+
+| File | Role |
+|---|---|
+| `core/src/turn_pipeline.cpp` | `execute_turn`: copy, prompt, commit, deliver, observe |
+| `core/src/turn_pipeline_narrator.cpp` | Narrator retry, cast apply, graph extraction |
+| `core/src/turn_pipeline_post_turn.cpp` | Weaver, monologues, downsampling after commit |
+| `core/src/story_advance.cpp` | `advance_player` / `complete_turn` spine |
+| `core/src/story_lifecycle.cpp` | Fork, merge, conclude, and synthesize story-so-far |
 
 ## See also
 

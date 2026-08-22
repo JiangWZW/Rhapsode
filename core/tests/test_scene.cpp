@@ -276,7 +276,7 @@ TEST_CASE("Graph narrator user is this take only",
     REQUIRE(graph_state.find("Listen.") == std::string::npos);
 }
 
-TEST_CASE("Turn pipeline merges Phase B graph ops into the turn plan",
+TEST_CASE("Turn pipeline merges graph observation ops into the turn plan",
           "[turn_pipeline][narrator][two_phase]") {
     World world;
     SceneData scene = basic_scene();
@@ -581,7 +581,6 @@ TEST_CASE("Turn pipeline returns associated generic turn effects",
     const TurnResult result = execute_test_turn(
         world, runtime, scene, "Look.");
     REQUIRE(result.scene_id == "root");
-    REQUIRE(result.completed_turn == 1);
     REQUIRE(result.post_turn_index >= 0);
     REQUIRE(result.effects.created_nodes.size() == 1);
     REQUIRE(result.effects.expired_nodes.empty());
@@ -609,8 +608,6 @@ TEST_CASE("Turn pipeline keeps narrator and dialogue histories separate", "[turn
     const auto result = execute_test_turn(
         world, runtime, scene, "Approach.");
     REQUIRE(result.outputs.size() == 2);
-    REQUIRE(result.base_state_version == 0);
-    REQUIRE(result.resulting_state_version == 1);
     REQUIRE(world.state_version() == 1);
     REQUIRE(scene.history.size() == 2);
     REQUIRE(scene.dialogue.size() == 1);
@@ -627,10 +624,7 @@ TEST_CASE("Turn pipeline keeps narrator and dialogue histories separate", "[turn
     REQUIRE(scene.dialogue[0].metadata["message_ref"] ==
             "root:v1:character:2");
 
-    const auto second = execute_test_turn(
-        world, runtime, scene, "Again.");
-    REQUIRE(second.base_state_version == 1);
-    REQUIRE(second.resulting_state_version == 2);
+    execute_test_turn(world, runtime, scene, "Again.");
     REQUIRE(world.state_version() == 2);
     REQUIRE(scene.history[2].metadata["message_ref"] == "root:v2:player:0");
 }
@@ -815,56 +809,6 @@ TEST_CASE("Output callback failure is a post-commit delivery failure",
     REQUIRE(scene.dialogue.size() == 1);
 }
 
-TEST_CASE("Legacy narrator plan is represented by inert typed shadow records",
-          "[turn_pipeline][shadow][actor_proposal]") {
-    World world;
-    world.enter_character("root", Character{"Guard", "Alert", false});
-    SceneData scene = basic_scene();
-    TurnServices runtime;
-    configure_runtime(runtime,
-        [](const std::string&, const std::string&, const std::string&) {
-            return response("A courier waits behind the guard.",
-                R"({"transitions":[],"new_nodes":[{"fact":"A courier arrived","type":"scene","state":"active","entities":["Courier"]}],"speech_turns":[{"character":"Guard","line":"Stop there.","action":"raises one hand"},{}],"new_characters":[{"name":"Courier","description":"Dusty and impatient","role":"minor_npc"}],"active_cast":["Guard","Courier"]})");
-        });
-
-    const TurnResult result = execute_test_turn(
-        world, runtime, scene, "Approach.");
-    REQUIRE(result.outputs.size() == 2);
-    REQUIRE(result.outputs[1].content == "Stop there. (raises one hand)");
-    REQUIRE(result.legacy_shadow.has_value());
-    const LegacyTurnShadow& shadow = *result.legacy_shadow;
-    REQUIRE(shadow.source == "legacy_narrator");
-    REQUIRE(shadow.proposals.size() == 1);
-    const ActorProposal& proposal = shadow.proposals.front();
-    REQUIRE(proposal.proposal_id == "root:v1:legacy:proposal:0");
-    REQUIRE(proposal.character_id == "Guard");
-    REQUIRE(proposal.action == "raises one hand");
-    REQUIRE(proposal.exact_dialogue == "Stop there.");
-    REQUIRE(proposal.evidence_refs.empty());
-    REQUIRE_FALSE(proposal.character_core_version.has_value());
-    REQUIRE(proposal.base_state_version == 0);
-    REQUIRE(proposal.source == "legacy_narrator");
-
-    REQUIRE(shadow.decision.decision_id == "root:v1:legacy:decision");
-    REQUIRE(shadow.decision.accepted_proposal_ids ==
-            std::vector<std::string>{proposal.proposal_id});
-    REQUIRE(shadow.decision.mechanical_operations.size() == 3);
-    REQUIRE(shadow.decision.mechanical_operations[0].kind ==
-            MechanicalOperationKind::CreateCharacter);
-    REQUIRE(shadow.decision.mechanical_operations[0].character_id == "Courier");
-    REQUIRE(shadow.decision.mechanical_operations[1].kind ==
-            MechanicalOperationKind::EnsureSceneMember);
-    REQUIRE(shadow.decision.mechanical_operations[1].character_id == "Guard");
-    REQUIRE(shadow.decision.mechanical_operations[2].kind ==
-            MechanicalOperationKind::EnsureSceneMember);
-    REQUIRE(shadow.decision.mechanical_operations[2].character_id == "Courier");
-    REQUIRE(shadow.decision.canonical_events.empty());
-    REQUIRE(shadow.observation_graph_plan["new_nodes"][0]["fact"] ==
-            "A courier arrived");
-    REQUIRE(shadow.issues.size() == 1);
-    REQUIRE(shadow.issues.front().code == "malformed_actor_proposal");
-}
-
 TEST_CASE("Turn pipeline autonomous turns remain associated with their SceneData",
           "[turn_pipeline][result]") {
     World world;
@@ -908,7 +852,6 @@ TEST_CASE("Turn pipeline blocks until post-turn processing finishes",
 
     const TurnResult turn = execute_test_turn(
         world, runtime, scene, "Wait.");
-    REQUIRE(turn.completed_turn == 1);
     REQUIRE(turn.post_turn_index >= 0);
 
     auto running = std::async(std::launch::async, [&] {
@@ -965,7 +908,6 @@ TEST_CASE("Turn pipeline preserves post-turn callback order",
 
     const TurnResult turn = execute_test_turn(
         world, runtime, scene, "Look.");
-    REQUIRE(turn.completed_turn == 1);
     REQUIRE(events == std::vector<std::string>{"narrator", "narrator"});
     process_test_post_turn(world, runtime, scene, turn.post_turn_index);
     REQUIRE(events == std::vector<std::string>{
@@ -992,7 +934,6 @@ TEST_CASE("Turn pipeline post-turn failures remain non-fatal",
 
     const TurnResult result = execute_test_turn(
         world, runtime, scene, "Wait.");
-    REQUIRE(result.completed_turn == 1);
     REQUIRE(result.outputs.front().content == "Time passes.");
     REQUIRE(scene.turn_index == 1);
     REQUIRE_NOTHROW(process_test_post_turn(
@@ -1062,15 +1003,12 @@ TEST_CASE("Turn execution reads one frozen transaction version",
             return response("The room remains still.");
         };
 
-    REQUIRE_THROWS_AS(
-        execute_turn(
-            data, services, {TurnInput::Kind::Player, "root", "Wait."}),
-        std::runtime_error);
+    execute_turn(
+        data, services, {TurnInput::Kind::Player, "root", "Wait."});
     REQUIRE(checked_snapshot);
     REQUIRE(turn_calls == 1);
-    REQUIRE(data.transaction_version == 0);
-    REQUIRE(find_scene(data, "root")->history.empty());
-    REQUIRE(data.observations.size() == 0);
+    REQUIRE(data.transaction_version == 1);
+    REQUIRE_FALSE(find_scene(data, "root")->history.empty());
 }
 
 TEST_CASE("Story pending-turn guards reject unsafe calls",

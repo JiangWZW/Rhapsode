@@ -15,7 +15,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket
 
 from rhapsode.config import configure_logging
-from rhapsode.memory import warmup_model
+from rhapsode.memory import warmup_chroma, warmup_model
 from rhapsode.fable import warmup_fable
 from rhapsode.graph_views import router as graph_router
 from rhapsode.session import run_session
@@ -27,11 +27,17 @@ configure_logging()
 async def lifespan(application: FastAPI):
     warmup_model()
     warmup_fable()
+    warmup_chroma()
     yield
 
 
 app = FastAPI(title="Rhapsode", lifespan=lifespan)
 app.include_router(graph_router)
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
 
 
 @app.websocket("/ws")

@@ -155,7 +155,6 @@ void bind_story(py::module_& m) {
         .def("weave_scene", &Story::weave_scene, py::arg("scene_id"))
         .def("set_history_window", &Story::set_history_window,
              py::arg("normal") = 3, py::arg("resume") = 10)
-        .def("set_resuming", &Story::set_resuming, py::arg("value"))
         .def("set_scheduler_callback", &Story::set_scheduler_callback, py::arg("cb"))
         .def("set_lifecycle_callback", &Story::set_lifecycle_callback, py::arg("cb"))
         .def("set_downsampler_callback", &Story::set_downsampler_callback, py::arg("cb"))

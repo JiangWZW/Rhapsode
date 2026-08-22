@@ -397,11 +397,6 @@ WeaveResult Weaver::parse_and_apply(WorldGraph& graph,
 
 WeaveResult Weaver::weave(
     WorldGraph& graph, int turn_index, const std::string& scene_context) {
-    return weave_impl(graph, turn_index, scene_context);
-}
-
-WeaveResult Weaver::weave_impl(
-    WorldGraph& graph, int turn_index, const std::string& scene_context) {
     GraphAnalysis pre = analyze(graph);
 
     if (pre.live_node_count < 2) {

@@ -11,18 +11,17 @@ namespace rhapsode {
 namespace {
 
 void sync_memory(
-    StoryData& data, TurnServices& services, const TurnResult& result) {
-    SceneData* scene = find_scene(data, result.scene_id);
+    StoryData& data, TurnServices& services, const std::string& scene_id,
+    const std::vector<Node>& created, const std::vector<Node>& expired) {
+    SceneData* scene = find_scene(data, scene_id);
     if (!services.memory || !scene) return;
     try {
-        if (!result.effects.created_nodes.empty())
-            services.memory->process_new_nodes(
-                result.effects.created_nodes, scene->turn_index);
-        if (!result.effects.expired_nodes.empty())
-            services.memory->sync_expired(result.effects.expired_nodes);
-    } catch (const std::exception& error) {
-        log_warn("memory") << "post-turn sync failed: " << error.what()
-                           << "\n" << std::flush;
+        if (!created.empty())
+            services.memory->process_new_nodes(created, scene->turn_index);
+        if (!expired.empty())
+            services.memory->sync_expired(expired);
+    } catch (...) {
+        log_warn("memory") << "post-turn sync failed\n" << std::flush;
     }
 }
 
@@ -31,14 +30,7 @@ LifecycleApplyResult complete_scene_maintenance(
     const std::string& player_input, int post_turn_index) {
     const std::vector<Node> expired = process_post_turn(
         data, services, scene_id, post_turn_index);
-    if (services.memory && !expired.empty()) {
-        try {
-            services.memory->sync_expired(expired);
-        } catch (const std::exception& error) {
-            log_warn("memory") << "post-turn sync failed: " << error.what()
-                               << "\n" << std::flush;
-        }
-    }
+    sync_memory(data, services, scene_id, {}, expired);
 
     LifecycleApplyResult applied;
     SceneData* scene = find_scene(data, scene_id);
@@ -54,9 +46,8 @@ LifecycleApplyResult complete_scene_maintenance(
                 applied = apply_lifecycle_decision(
                     data, services, scene_id, *decision);
             }
-        } catch (const std::exception& error) {
-            log_warn("lifecycle") << "verdict call failed: " << error.what()
-                                  << "\n" << std::flush;
+        } catch (...) {
+            log_warn("lifecycle") << "verdict call failed\n" << std::flush;
         }
     }
 
@@ -78,7 +69,8 @@ std::vector<SceneMessage> Story::advance_player(
     TurnResult result = execute_turn(
         data_, services_,
         {TurnInput::Kind::Player, active->scene_id, player_input});
-    sync_memory(data_, services_, result);
+    sync_memory(data_, services_, result.scene_id,
+                result.effects.created_nodes, result.effects.expired_nodes);
     pending_turn_ = PendingTurn{
         result.scene_id, player_input, result.post_turn_index};
     return std::move(result.outputs);
@@ -104,7 +96,9 @@ std::vector<SceneMessage> Story::complete_turn() {
                 data_, services_,
                 {TurnInput::Kind::Autonomous, scene_id,
                  make_autonomous_turn_cue(data_, scene_id)});
-            sync_memory(data_, services_, off_stage);
+            sync_memory(data_, services_, scene_id,
+                        off_stage.effects.created_nodes,
+                        off_stage.effects.expired_nodes);
             const LifecycleApplyResult lifecycle = complete_scene_maintenance(
                 data_, services_, scene_id, {}, off_stage.post_turn_index);
             if (lifecycle.merged_into &&
@@ -113,11 +107,10 @@ std::vector<SceneMessage> Story::complete_turn() {
                                off_stage.outputs.end());
             }
             log_info("scheduler") << "advanced scene=" << scene_id
-                                  << " turn=" << off_stage.completed_turn
+                                  << " turn=" << off_stage.post_turn_index
                                   << "\n";
-        } catch (const std::exception& error) {
-            log_error("turn") << "step failed scene=" << scene_id
-                              << ": " << error.what() << "\n"
+        } catch (...) {
+            log_error("turn") << "step failed scene=" << scene_id << "\n"
                               << std::flush;
         }
     }

@@ -112,10 +112,6 @@ std::vector<SceneMessage> Story::display_timeline(
 
 namespace {
 
-void append_timeline(std::ostringstream& out, const SceneData& scene) {
-    out << format_visible_transcript(scene);
-}
-
 void append_closure_cast(std::ostringstream& out, const SceneClosure& closure) {
     if (closure.cast.empty()) return;
     out << "cast=";
@@ -152,7 +148,7 @@ std::string Story::render_transcript() const {
         if (!scene->driving_intention.empty())
             out << "  intention=" << scene->driving_intention;
         out << "\n\n";
-        append_timeline(out, *scene);
+        out << format_visible_transcript(*scene);
     }
 
     for (const auto& scene : data_.scenes) {
@@ -165,7 +161,7 @@ std::string Story::render_transcript() const {
         if (!scene->driving_intention.empty())
             out << "  intention=" << scene->driving_intention;
         out << "\n\n";
-        append_timeline(out, *scene);
+        out << format_visible_transcript(*scene);
     }
 
     for (const auto& closure : data_.scene_closures) {
@@ -237,7 +233,6 @@ int Story::revert_active_turns(int count) {
     if (!scene) throw std::runtime_error("Story::revert_active_turns: no active scene");
     const int reverted = revert_scene_turns(*scene, count);
     if (reverted > 0) ++data_.transaction_version;
-    services_.resuming = true;
     if (!services_.saves_dir.empty()) save(services_.saves_dir);
     return reverted;
 }
@@ -270,11 +265,9 @@ WeaveResult Story::weave_scene(const std::string& scene_id) {
     return result;
 }
 
-void Story::set_history_window(size_t normal, size_t resume) {
+void Story::set_history_window(size_t normal, size_t /*resume*/) {
     services_.history_window = normal;
-    services_.resume_history_window = resume;
 }
-void Story::set_resuming(bool value) { services_.resuming = value; }
 void Story::set_downsampler_callback(LLMCallback cb) {
     services_.downsampler = std::move(cb);
 }
