@@ -196,18 +196,14 @@ std::string CharacterMemory::render_thoughts(
     return sanitize_utf8(os.str());
 }
 
-void CharacterMemory::route_fact(const std::string& fact,
-                                 const std::vector<std::string>& entities,
-                                 int turn) {
-    if (fact.empty()) return;
-    Node n;
-    n.fact        = sanitize_utf8(fact);
-    n.type        = "perception";
-    n.state       = NodeState::Active;
-    n.entities    = entities;
-    n.created_at  = turn;
-    n.valid_until = -1;
-    beliefs_.add_node_chained(std::move(n), turn);
+void CharacterMemory::append_objective(int turn, std::string kind,
+                                       std::string text) {
+    text = str::trim(sanitize_utf8(std::move(text)));
+    if (text.empty()) return;
+    if (kind != "take" && kind != "seen") kind = "seen";
+    log() << "  [journal:" << character_name_ << "] " << kind
+          << " t=" << turn << " " << text << "\n" << std::flush;
+    objective_journal_.push_back({turn, std::move(kind), std::move(text)});
 }
 
 // ---------------------------------------------------------------------------
@@ -233,13 +229,27 @@ nlohmann::json CharacterMemory::to_json() const {
         row["closed_summary"] = stream.closed_summary;
         nlohmann::json lines = nlohmann::json::array();
         for (const auto& line : stream.lines) {
-            lines.push_back({{"turn", line.turn}, {"text", line.text}});
+            lines.push_back({
+                {"turn", line.turn},
+                {"text", line.text},
+                {"seq", line.seq},
+            });
         }
         row["lines"] = std::move(lines);
         streams.push_back(std::move(row));
     }
     j["streams"] = std::move(streams);
+    nlohmann::json journal = nlohmann::json::array();
+    for (const auto& line : objective_journal_) {
+        journal.push_back({
+            {"turn", line.turn},
+            {"kind", line.kind},
+            {"text", line.text},
+        });
+    }
+    j["objective_journal"] = std::move(journal);
     j["stream_seq"] = stream_seq_;
+    j["line_seq"] = line_seq_;
     return j;
 }
 
@@ -271,6 +281,7 @@ CharacterMemory CharacterMemory::from_json(const nlohmann::json& j) {
                     stream.lines.push_back({
                         line.value("turn", 0),
                         line.value("text", ""),
+                        line.value("seq", 0),
                     });
                 }
             }
@@ -278,9 +289,37 @@ CharacterMemory CharacterMemory::from_json(const nlohmann::json& j) {
                 cm.streams_.push_back(std::move(stream));
         }
     }
+    cm.objective_journal_.clear();
+    if (j.contains("objective_journal") && j["objective_journal"].is_array()) {
+        for (const auto& line : j["objective_journal"]) {
+            if (!line.is_object()) continue;
+            ObjectiveLine row;
+            row.turn = line.value("turn", 0);
+            row.kind = line.value("kind", "seen");
+            row.text = line.value("text", "");
+            if (!row.text.empty())
+                cm.objective_journal_.push_back(std::move(row));
+        }
+    }
+
     cm.stream_seq_ = j.value("stream_seq", 0);
+    if (j.contains("line_seq")) {
+        cm.line_seq_ = j.value("line_seq", 0);
+    } else {
+        int seq = 0;
+        for (auto& stream : cm.streams_) {
+            for (auto& line : stream.lines)
+                line.seq = ++seq;
+        }
+        cm.line_seq_ = seq;
+    }
     cm.ensure_bootstrap("");
     return cm;
+}
+
+void CharacterMemory::append_line(MonologueStream& stream, int turn,
+                                  std::string text) {
+    stream.lines.push_back({turn, std::move(text), ++line_seq_});
 }
 
 }  // namespace rhapsode

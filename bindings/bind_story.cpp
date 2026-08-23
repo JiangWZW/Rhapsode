@@ -160,6 +160,8 @@ void bind_story(py::module_& m) {
         .def("set_downsampler_callback", &Story::set_downsampler_callback, py::arg("cb"))
         .def("set_reflection_llm_callback", &Story::set_reflection_llm_callback,
              py::arg("cb"))
+        .def("set_observation_llm_callback", &Story::set_observation_llm_callback,
+             py::arg("cb"))
         .def("set_memory", &Story::set_memory, py::arg("memory"))
         .def("set_saves_dir", &Story::set_saves_dir, py::arg("dir"))
         .def("advance_player", &Story::advance_player, py::arg("player_input"),

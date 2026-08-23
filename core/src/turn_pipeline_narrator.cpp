@@ -333,9 +333,9 @@ GraphPlanResult extract_graph_observations(
     (void)ignored_prose;
     merge_graph_into_turn_plan(narrator.plan, graph_plan);
 
+    (void)world;
     GraphPlanResult output = apply_graph_plan(
         observations, turn, narrator.plan);
-    world.route_perceptions(scene.scene_id, output.new_nodes, turn);
     return output;
 }
 

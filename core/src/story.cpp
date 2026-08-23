@@ -276,4 +276,8 @@ void Story::set_reflection_llm_callback(LLMCallback cb) {
     services_.reflection = std::move(cb);
 }
 
+void Story::set_observation_llm_callback(LLMCallback cb) {
+    services_.observation = std::move(cb);
+}
+
 }  // namespace rhapsode

@@ -57,6 +57,8 @@ Story build_fixture() {
     const auto first = alice.seed_belief("The gate must stay shut", {"Gate"}, 0);
     const auto second = alice.seed_belief("Bob keeps eyeing the gate", {"Bob", "Gate"}, 0);
     alice.link_tension(first, second, 0);
+    alice.seed_belief("Alice spots a loosened hinge", {"Gate"}, 3,
+                      CharacterMemory::kAuthoredSeedWeight, "perception");
     world.set_character_memory(std::move(alice));
 
     CharacterMemory bob("Bob");
@@ -71,12 +73,6 @@ Story build_fixture() {
     draft.fact = "A draft slips under the gate";
     draft.entities = {"Gate"};
     world.graph().add_node_chained(std::move(draft), 2);
-
-    Node seen;
-    seen.fact = "Alice spots a loosened hinge";
-    seen.entities = {"Gate"};
-    seen.audience = {"Alice"};
-    world.route_perceptions("golden", {seen}, 3);
 
     append_history_message(scene.history, stamped(
         Role::User, "I approach the gate.", "2026-01-01T00:00:00Z"));

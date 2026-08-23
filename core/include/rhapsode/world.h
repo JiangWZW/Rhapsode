@@ -53,12 +53,14 @@ public:
                                     int valid_until);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
-    void route_perceptions(const std::string& scene_id,
-                           const std::vector<Node>& nodes,
-                           int turn);
+    void append_objective_takes(const std::string& scene_id,
+                                int turn,
+                                const std::string& take_text);
+    void update_objective_journals(const std::string& scene_id,
+                                   int turn,
+                                   const LLMCallback& llm_callback);
     void update_monologues(const std::string& scene_id,
                            int turn,
-                           const std::string& turn_stimulus,
                            const LLMCallback& llm_callback);
     bool mark_character_dead(const std::string& name);
 

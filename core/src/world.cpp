@@ -1,9 +1,11 @@
 #include "rhapsode/world.h"
+#include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/str_util.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -11,6 +13,8 @@
 namespace rhapsode {
 
 namespace {
+
+constexpr std::size_t kMonologueTakeCap = 2000;
 
 void fill_missing_profile(Character& existing, Character& incoming) {
     if (existing.description.empty() && !incoming.description.empty())
@@ -195,42 +199,47 @@ std::vector<std::uint64_t> World::revert_to_turn(int target_turn) {
     return removed_ids;
 }
 
-void World::route_perceptions(const std::string& scene_id,
-                              const std::vector<Node>& nodes,
-                              int turn) {
-    int deliveries = 0;
-    std::unordered_set<std::string> minds;
-    auto route_to = [&](const std::string& name, const Node& node) {
-        auto it = character_memories_.find(name);
-        if (it != character_memories_.end()) {
-            it->second.route_fact(node.fact, node.entities, turn);
-            ++deliveries;
-            minds.insert(it->first);
-        }
-    };
-
-    for (const auto& node : nodes) {
-        if (!node.audience.empty()) {
-            for (const auto& name : node.audience) {
-                route_to(name, node);
-            }
-        } else {
-            for (const auto& character : characters_) {
-                if (character.is_player || character.dead || !character.in_scene(scene_id)) {
-                    continue;
-                }
-                route_to(character.name, node);
-            }
-        }
+void World::append_objective_takes(const std::string& scene_id,
+                                   int turn,
+                                   const std::string& take_text) {
+    const std::string take = str::trim(take_text);
+    if (take.empty()) {
+        log() << "  [journal] take t=" << turn << " empty -- skipped\n"
+              << std::flush;
+        return;
     }
+    log() << "  [journal] take t=" << turn << " chars=" << take.size()
+          << "\n" << std::flush;
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        it->second.append_objective(turn, "take", take);
+    }
+}
 
-    log() << "  [perceive] " << nodes.size() << " new_node(s) -> " << deliveries
-          << " perception(s) routed to " << minds.size() << " mind(s)\n" << std::flush;
+void World::update_objective_journals(const std::string& scene_id,
+                                      int turn,
+                                      const LLMCallback& llm_callback) {
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        const std::string who =
+            !str::trim(character.core).empty() ? character.core
+                                               : character.description;
+        it->second.update_objective_journal(turn, who, llm_callback);
+    }
 }
 
 void World::update_monologues(const std::string& scene_id,
                               int turn,
-                              const std::string& turn_stimulus,
                               const LLMCallback& llm_callback) {
     for (const auto& character : characters_) {
         if (character.is_player || character.dead ||
@@ -239,11 +248,30 @@ void World::update_monologues(const std::string& scene_id,
         }
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
+        std::string take;
+        std::string seen;
+        for (const auto& line : it->second.objective_journal()) {
+            if (line.turn != turn) continue;
+            if (line.kind == "take") {
+                if (!take.empty()) take += '\n';
+                take += line.text;
+            } else if (line.kind == "seen") {
+                if (!seen.empty()) seen += '\n';
+                seen += line.text;
+            }
+        }
+        if (take.size() > kMonologueTakeCap)
+            take = truncate_utf8(take, kMonologueTakeCap);
+        std::string tail = take;
+        if (!seen.empty()) {
+            if (!tail.empty()) tail += '\n';
+            tail += seen;
+        }
         it->second.update_monologues(
             turn,
             !str::trim(character.core).empty() ? character.core
                                                : character.description,
-            turn_stimulus, llm_callback,
+            tail, llm_callback,
             character.build_prompt__dialogue_voice());
     }
 }

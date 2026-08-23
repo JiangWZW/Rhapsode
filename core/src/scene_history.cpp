@@ -5,6 +5,7 @@
 #include <cctype>
 #include <ctime>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <utility>
 
@@ -76,6 +77,21 @@ std::vector<SceneMessage> snapshot_history(
 
 void truncate_history(std::vector<SceneMessage>& history, std::size_t new_size) {
     if (new_size < history.size()) history.resize(new_size);
+}
+
+std::string format_monologue_stimulus(
+    const std::vector<SceneMessage>& history,
+    std::size_t cap_per_message) {
+    std::string body;
+    for (const auto& message : history) {
+        if (message.role != Role::User && message.role != Role::Assistant)
+            continue;
+        body += '\n';
+        body += message.role == Role::User ? "user: " : "assistant: ";
+        body += truncate_utf8(message.content, cap_per_message);
+    }
+    if (body.empty()) return {};
+    return "Turn" + body;
 }
 
 void drop_history_from_turn(std::vector<SceneMessage>& history, int min_turn) {
@@ -309,6 +325,43 @@ std::string format_visible_transcript(const SceneData& scene) {
         if (content.empty()) continue;
         out << "[" << span.speaker << "]\n" << content << "\n\n";
     }
+    return out.str();
+}
+
+std::string format_turn_take(const SceneData& scene, int turn) {
+    std::ostringstream out;
+    auto meta_int = [](const SceneMessage& message, const char* key)
+        -> std::optional<int> {
+        if (!message.metadata.is_object()) return std::nullopt;
+        const auto it = message.metadata.find(key);
+        if (it == message.metadata.end() || !it->is_number_integer())
+            return std::nullopt;
+        return it->get<int>();
+    };
+    auto meta_str = [](const SceneMessage& message, const char* key) {
+        if (!message.metadata.is_object()) return std::string{};
+        const auto it = message.metadata.find(key);
+        return it != message.metadata.end() && it->is_string()
+            ? it->get<std::string>() : std::string{};
+    };
+    auto emit = [&](const SceneMessage& message) {
+        const auto message_turn = meta_int(message, "turn");
+        if (!message_turn || *message_turn != turn) return;
+        const std::string content = str::trim(message.content);
+        if (content.empty()) return;
+        const std::string kind = meta_str(message, "scene_kind");
+        const std::string speaker = meta_str(message, "speaker");
+        if (kind == "player" || kind == "director_cue" ||
+            message.role == Role::User || message.role == Role::System)
+            return;
+        if (!out.str().empty()) out << '\n';
+        if (kind == "character" || !speaker.empty())
+            out << speaker << ": " << content;
+        else
+            out << content;
+    };
+    for (const auto& message : scene.history) emit(message);
+    for (const auto& message : scene.dialogue) emit(message);
     return out.str();
 }
 

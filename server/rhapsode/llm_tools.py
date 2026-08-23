@@ -66,47 +66,65 @@ def make_weaver_callback():
 
 
 MONOLOGUE_USER_SENTINEL = "<<<RHAPSODE_MONOLOGUE_USER>>>"
+OBSERVATION_USER_SENTINEL = "<<<RHAPSODE_OBSERVATION_USER>>>"
 
 
-def split_monologue_prompt(prompt: str) -> tuple[str | None, str]:
-    """Split the native concatenated monologue blob into system + user.
-
-    C++ still hands Python one string (LLMCallback). The sentinel marks where
-    the shared craft/schema ends and the inhabitation sheet begins. Missing
-    sentinel (old _core.pyd) keeps the whole blob as the user message.
-    """
-    idx = prompt.find(MONOLOGUE_USER_SENTINEL)
+def split_on_sentinel(prompt: str, sentinel: str) -> tuple[str | None, str]:
+    idx = prompt.find(sentinel)
     if idx < 0:
         return None, prompt
     system = prompt[:idx]
     if system.endswith("\n"):
         system = system[:-1]
-    user = prompt[idx + len(MONOLOGUE_USER_SENTINEL):]
+    user = prompt[idx + len(sentinel):]
     if user.startswith("\n"):
         user = user[1:]
     return system, user
 
 
-def make_reflection_callback():
-    """On-stage monologue updater: narrator/pro model, thinking on.
+def split_monologue_prompt(prompt: str) -> tuple[str | None, str]:
+    """Split the native concatenated monologue blob into system + user."""
+    return split_on_sentinel(prompt, MONOLOGUE_USER_SENTINEL)
 
-    No chat history. Each take is system (craft+schema) plus one user sheet.
-    """
+
+def _system_user_callback(
+    sentinel: str,
+    stage: str,
+    *,
+    model: str | None,
+    thinking: bool,
+):
     def _call(prompt: str) -> str:
-        system, user = split_monologue_prompt(prompt)
+        system, user = split_on_sentinel(prompt, sentinel)
         if system is None:
             return call_llm(
-                prompt, stage="monologue", model=_pro_model(), thinking=True)
+                prompt, stage=stage, model=model, thinking=thinking)
         return complete(
             [
                 {"role": "system", "parts": [{"text": system}]},
                 {"role": "user", "parts": [{"text": user}]},
             ],
-            model=_pro_model(),
-            thinking=True,
-            stage="monologue",
+            model=model,
+            thinking=thinking,
+            stage=stage,
         )
     return _call
+
+
+def make_reflection_callback():
+    """On-stage monologue updater: narrator/pro model, thinking on."""
+    return _system_user_callback(
+        MONOLOGUE_USER_SENTINEL, "monologue",
+        model=_pro_model(), thinking=True,
+    )
+
+
+def make_observation_callback():
+    """Per-character objective journal: base (flash) model, thinking on."""
+    return _system_user_callback(
+        OBSERVATION_USER_SENTINEL, "observation",
+        model=_base_model(), thinking=True,
+    )
 
 
 NARRATOR_TOOLS = [

@@ -15,8 +15,8 @@ from rhapsode._core import (
 )
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import (
-    make_llm_callback, make_narrator_callback, make_reflection_callback,
-    make_weaver_callback,
+    make_llm_callback, make_narrator_callback, make_observation_callback,
+    make_reflection_callback, make_weaver_callback,
 )
 from rhapsode.scheduler import make_scheduler_callback
 from rhapsode.lifecycle import make_lifecycle_callback
@@ -94,6 +94,7 @@ def _setup_ws_session() -> WsSession:
 
     _sync_graph_to_memory(story, memory)
     story.set_reflection_llm_callback(make_reflection_callback())
+    story.set_observation_llm_callback(make_observation_callback())
 
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())

@@ -28,7 +28,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 - [Vue frontend](architecture/vue-frontend.md) — component tree, WebSocket store, styling
 - [MVP v0](architecture/mvp-v0.md) — original criteria, what was built beyond MVP, deviations from plan
 - [Companion system](architecture/companion-system.md) — protagonist companion design: L3 (LoRA identity) + L2 (observe-reflect-plan memory), implementation order, unknowns
-- [Monologue streams](architecture/monologue-streams.md) — **design of record**: CharacterCore + monologue streams + belief graph via `knows[]`; actor-framed updater; no forced reflection
+- [Monologue streams](architecture/monologue-streams.md) — **design of record**: CharacterCore + monologue streams + objective journal (`take`/`seen`) + belief graph via `knows[]`
 - [Character system](architecture/character-system.md) — persona (`Character`) + mind overview (**stale** on countdown/`self_state_` reflection; prefer monologue-streams)
 - [Subjective character minds](architecture/subjective-character-minds.md) — earlier graph-mind proposal; partially superseded by monologue-streams
 

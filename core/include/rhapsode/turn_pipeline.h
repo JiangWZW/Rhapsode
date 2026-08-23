@@ -38,6 +38,7 @@ struct TurnServices {
     TurnCompleteCallback turn_complete;
     LLMCallback downsampler;
     LLMCallback reflection;
+    LLMCallback observation;
     size_t history_window = 8;
     std::string storyline_board;
     Weaver weaver;

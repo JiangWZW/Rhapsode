@@ -13,7 +13,7 @@ sources:
   - core/src/turn_pipeline.cpp
   - core/src/turn_pipeline_narrator.cpp
   - core/include/rhapsode/story_data.h
-last_updated: 2026-08-22
+last_updated: 2026-08-23
 confidence: verified
 tier: semantic
 related:
@@ -29,7 +29,7 @@ tags:
 # Plot graph
 
 `WorldGraph` stores fallible narrative observations and their relationships. It supports retrieval,
-context construction, perception routing, and semantic maintenance. A graph node is not permission to
+context construction, and semantic maintenance. A graph node is not permission to
 change coded world state.
 
 ## Data model
@@ -48,7 +48,6 @@ change coded world state.
 | `related_to` | Serialized predecessor IDs |
 | `created_at` | Originating turn |
 | `weight` | Pressure used by character-mind nodes, not factual confidence |
-| `audience` | Transient perception-routing instruction; omitted from saves |
 
 “Resolved” is accepted as an input compatibility term. Internally, validity is represented by
 `valid_until`, while `NodeState` remains a three-value prompt state.
@@ -75,16 +74,15 @@ flowchart LR
     Commit["Committed transcript and coded state"] --> Extract["Graph extraction call"]
     Extract --> Copy["Copy observations + World"]
     Copy --> Apply["apply_graph_plan"]
-    Apply --> Route["Route perceptions"]
-    Route --> Replace["Retain derived semantic state"]
+    Apply --> Replace["Retain derived semantic state"]
     Extract -->|"exception"| Preserve["Preserve committed turn; discard graph effects"]
 ```
 
 `extract_graph_observations` runs after the turn commit. It asks the narrator callback for
 `transitions` and `new_nodes`, then passes them to `apply_graph_plan` with a copied graph.
 
-Successful observations and routed perceptions replace the graph portion of live state. The
-committed scene is restored from its copy.
+Successful observations replace the graph portion of live state. The
+committed scene is restored from its copy. World extract does not copy nodes into character minds.
 
 Failure clears reported graph effects and leaves the committed turn intact. Graph extraction does not
 run character-death detection.
@@ -118,11 +116,9 @@ receives the observation graph explicitly; the service is not bound to one graph
 
 ## Character-memory interaction
 
-New observations are routed to present characters according to the transient `audience` field.
-Perceptions feed later monologue updates; they do not become beliefs automatically.
-
-Character minds own separate WorldGraph instances for beliefs and intentions. Shared graph data and
-subjective graph data therefore use the same container without sharing authority or truth status.
+World extract does not copy `new_nodes` into character minds. After the take commits, each on-stage
+NPC gets that turn's narrator prose and speech on their objective journal (`take`), then a
+per-character LLM may append `seen` lines. Monologue reads this turn's capped `take` plus `seen`.
 See [[architecture/monologue-streams]].
 
 ## Authority rule
@@ -130,7 +126,7 @@ See [[architecture/monologue-streams]].
 The graph may:
 
 - supply fallible context to a model;
-- seed perceptions;
+- stay off character minds (journals are written separately);
 - organize related observations;
 - influence semantic retrieval and scheduling context;
 - be rebuilt or reindexed.

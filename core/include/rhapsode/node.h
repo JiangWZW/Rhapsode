@@ -31,12 +31,6 @@ struct Node {
     // decays when untouched (set only by the background reflection pass).
     // Facts leave it at 0; only character minds use it.
     float weight = 0.0f;
-
-    // Perception routing (transient): which characters perceive this fact.
-    // Set by the narrator on new_nodes; consumed when routing the fact into
-    // character minds.  NOT serialized into the world graph -- it is an
-    // instruction, not world state. Empty = a public turn (all present perceive).
-    std::vector<std::string> audience;
 };
 
 std::string to_string(NodeState s);

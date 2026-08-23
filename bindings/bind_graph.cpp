@@ -100,8 +100,11 @@ void bind_graph(py::module_& m) {
              py::arg("a_id"), py::arg("b_id"), py::arg("turn"))
         .def("view_of",           &CharacterMemory::render_thoughts,
              py::arg("subjects") = std::vector<std::string>{})
-        .def("route_fact",        &CharacterMemory::route_fact,
-             py::arg("fact"), py::arg("entities"), py::arg("turn"))
+        .def("append_objective",  &CharacterMemory::append_objective,
+             py::arg("turn"), py::arg("kind"), py::arg("text"))
+        .def("update_objective_journal",
+             &CharacterMemory::update_objective_journal,
+             py::arg("turn"), py::arg("who"), py::arg("callback"))
         .def("ensure_bootstrap",  &CharacterMemory::ensure_bootstrap,
              py::arg("core_text_if_empty"))
         .def("update_monologues", &CharacterMemory::update_monologues,
@@ -123,6 +126,18 @@ void bind_graph(py::module_& m) {
         })
         .def_property_readonly("active_stream_count",
              &CharacterMemory::active_stream_count)
+        .def_property_readonly("objective_journal",
+             [](const CharacterMemory& memory) {
+                 py::list rows;
+                 for (const auto& line : memory.objective_journal()) {
+                     py::dict row;
+                     row["turn"] = line.turn;
+                     row["kind"] = line.kind;
+                     row["text"] = line.text;
+                     rows.append(row);
+                 }
+                 return rows;
+             })
         .def("to_json_str", [](const CharacterMemory& self) { return self.to_json().dump(2); })
         .def_static("from_json_str", [](const std::string& s) {
             return CharacterMemory::from_json(nlohmann::json::parse(s));

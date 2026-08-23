@@ -110,8 +110,8 @@ References are deterministic within a committed turn and need no mutable global 
 
 Graph extraction runs after transcript and coded-state commit. It copies World and observations,
 asks the narrator callback for `transitions` and `new_nodes`, then calls the stateless
-`apply_graph_plan` function on those copies. New nodes may be routed into the copied character
-memories as perceptions. Scene is not copied; extract reads the committed scene.
+`apply_graph_plan` function on those copies. Nodes stay on the world ledger. Scene is not copied;
+extract reads the committed scene.
 
 On success, those copies replace the live World and observations. On failure they are discarded;
 the committed turn survives. The graph-application function cannot access Story, SceneData, or
@@ -125,12 +125,13 @@ not part of an all-or-nothing save transaction.
 `Story::complete_turn` consumes `PendingTurn` and then performs:
 
 1. graph weaving and expiry;
-2. character monologue updates;
-3. text downsampling;
-4. lifecycle decision request and deterministic application;
-5. turn-clock advancement;
-6. selection and execution of up to two off-stage scene turns;
-7. saving when configured.
+2. objective journals (`take` from this turn, then per-character `seen`);
+3. character monologue updates;
+4. text downsampling;
+5. lifecycle decision request and deterministic application;
+6. turn-clock advancement;
+7. selection and execution of up to two off-stage scene turns;
+8. saving when configured.
 
 Every selected off-stage scene calls the same `execute_turn` function with
 `TurnInput::Kind::Autonomous`, then receives its own maintenance pass. A failure in one off-stage turn

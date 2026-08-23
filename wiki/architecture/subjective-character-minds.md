@@ -25,7 +25,9 @@ tags:
 
 # Subjective character minds
 
-This is the design of record for re-founding character memory so that each character holds a private,
+**Stale on routing.** Narrator `audience` / `route_perceptions` / `route_fact` are gone. On-stage minds get an objective journal (`take` / `seen`), then monologue. Prefer [monologue-streams.md](monologue-streams.md).
+
+This page was the design of record for re-founding character memory so that each character holds a private,
 subjective view of the world and of other characters. It is a planned refactor, delivered in slices;
 the build order and status sit at the bottom.
 
@@ -69,21 +71,11 @@ a reference only to its own `beliefs_`, so reading the narrator's graph is impos
 ```
 
 1. **Truth** lives in the world graph: the omniscient ledger, holding everything including secrets.
-2. **Perception** is decided by the narrator. The narrator already emits `new_nodes`; each gains an
-   `audience` list naming the characters who perceive it. One event may produce several facts at
-   different fidelities with disjoint audiences. In a tavern where A and B confer in secret while C is
-   outside tending the horse:
-
-   ```
-   truth (world graph): "A and B agreed to betray the lord at midnight"
-     → A.mind, B.mind:   "we agreed to betray the lord at midnight"            audience [A, B]
-     → C.mind:           "A and B conferred quietly while I tended the horse"  audience [C]
-   ```
-
-   Presence is not perception — C stands in the scene yet hears nothing. The narrator is the
-   perceivability oracle, and a thin partial-perception fact is emitted only when it seeds something
-   such as suspicion. The player never appears in an `audience` (the screen is the player's memory);
-   other characters perceive the player's actions through facts the narrator emits with an audience.
+2. **Perception** is a per-character objective journal. The world graph no longer copies `new_nodes`
+   into minds. After the take commits, every living on-stage NPC gets that turn's narrator prose and
+   speech as a `take` line. A per-character LLM then writes `seen` lines: what this person could take
+   in, judged from who they are, their journal so far, and the latest take. No position tags. The
+   player does not get a journal (the screen is the player's memory).
 3. **Interpretation** is reflection: routed perception becomes belief through persona and prior
    beliefs. Two minds handed the same fact diverge, because each reads it as who it is.
 

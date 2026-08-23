@@ -26,21 +26,19 @@ The post-turn mind LLM is an **actor for one character** after a public beat: ho
 
 One native `LLMCallback` string per living on-stage NPC. Python `make_reflection_callback` splits on `<<<RHAPSODE_MONOLOGUE_USER>>>` into `role=system` + `role=user`. No per-character chat store, no tools, no replay of last JSON. Missing sentinel (old `_core.pyd`) keeps the old single user blob.
 
-Order is a prefix tree (stable head, volatile tail). Cloud APIs cache a **byte-identical leading prefix**, not a registered graph.
+The take stays on the **user** track (DeepSeek concatenates system-role messages at the front of the template). Order:
 
-1. **System** — craft + JSON schema. Identical for every character, every turn.
-2. **User head** — `You are {name}`, lived voice (`Character::build_prompt__dialogue_voice()`), CharacterCore as *who I am*.
-3. **User middle** — through-line roster (`focus [id]`), then last inner beats, then compact held truths.
-4. **User tail** — this take’s given circumstances, then raw perceptions (fact text first, `#id` at the end of the line).
+1. **System** — craft + JSON schema. Identical for every character, every turn. Ids under **On your mind** are the ones to cite; **What you've been thinking** is the private journal, oldest first.
+2. **User** — `You are {name}.` then **Who you are** (CharacterCore), **On your mind** (active `id: focus`, insertion order), **What you've been thinking** (every stored line from every stream, including closed, tagged `[{id}]`, global `seq` order, append-only), **What just happened** (this turn's capped `take`, then this turn's `seen`). The only replaced tail.
 
-`description` is bootstrap-only when core is empty; it is not duplicated as a “Seed description” field. Stream listing stays insertion order. Other interiors, omniscient graph, and `query_mind` of anyone else stay out of this prompt.
+Voice, compact beliefs, and last-N windows stay out of this prompt. `description` is bootstrap-only when core is empty. Other interiors, omniscient graph, and `query_mind` of anyone else stay out. Weave still uses a short `format_graph_seed`; monologue does not.
 
-`core_revision` forks the tree at “I am.” Cache hits are **not** guaranteed on the next take (DeepSeek common-prefix persistence often needs two forks of the same head). Expect cheaper input on `stage=monologue` (`prompt_cache_hit_tokens`), not skipped thinking time.
+A stream `focus` is a topic, worry, relationship, or want — not wants-only. Roster bytes change on fork/merge/conclude (intentional miss). The inner journal never drops or rewrites a line. Full public history stays off this prompt. `core_revision` rebuilds the bible head. Expect cheaper input on `stage=monologue` (`prompt_cache_hit_tokens`), not skipped thinking time.
 
 ## Belief graph writes (no reflect LLM)
 
 - Interpreted beliefs: only `knows[]` from the monologue call (C++ applies).
-- Narrow-routed perceptions: prompt stimulus; consumed after the call; **not** auto-promoted.
+- Objective journal: engine copies this turn's narrator + speech as `take`; a per-character observation call may append `seen` (`stage=observation`, flash, thinking on). Monologue tail is this turn's `take` (capped) plus `seen` (`stage=monologue`, pro, thinking on).
 - Seeds / intentions / decay: CPU only.
 
 ## Stream lifecycle
@@ -49,7 +47,7 @@ Fork / merge / conclude (min 1 active, max 5). Parent stays on fork. Pattern ins
 
 ## Narrator
 
-Beat narrator owns prose/`speech_turns`/`active_cast`. Graph owns world nodes. `query_mind` returns core + stream tails + compact beliefs. Narrator does not author streams.
+Beat narrator owns prose/`speech_turns`/`active_cast`. Graph owns world nodes and does not route them into minds. `query_mind` returns core + stream tails + compact beliefs. Narrator does not author streams.
 
 ## Stale docs
 

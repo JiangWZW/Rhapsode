@@ -67,9 +67,6 @@ void from_json(const nlohmann::json& j, Node& n) {
     // Migration: prefer valid_until, fall back to resolved_at from old saves
     n.valid_until    = json_number<int>(j, "valid_until",
                            json_number<int>(j, "resolved_at", -1));
-    // Perception routing (not persisted; only meaningful on freshly parsed
-    // narrator new_nodes).
-    n.audience       = j.value("audience", std::vector<std::string>{});
 }
 
 } // namespace rhapsode

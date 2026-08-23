@@ -123,12 +123,11 @@ for all keys and strings -- never smart/curly quotes:
 
 <<<RHAPSODE_JSON>>>
 {"transitions":[{"id":<node_id>,"state":"dormant|foreshadowed|active|resolved"}],
- "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[],"audience":[]}]}
+ "new_nodes":[{"fact":"<=15 words, atomic","type":"plot|scene|world|relationship","state":"dormant|foreshadowed|active|resolved","foreshadow_ctx":"...","active_ctx":"...","entities":[]}]}
 
 Each new_node is one atomic fact, <=15 words: a state change, revealed intention, threat, death, relationship shift, or thing learned -- not mood. Capture every real development (often 3-6). [] if nothing structural changed.
 Ground facts and transitions in the provided narration and speech. Do not invent events.
 entities: exact on-stage name for NPCs; always "Player" for the player.
-audience: omit/[] if public; name a narrow audience only for private knowledge.
 transitions: resolve or retarget nodes this take supersedes; [] if none.)RHAPSODE";
 }
 

@@ -96,7 +96,8 @@ TEST_CASE("CharacterMemory monologue update writes knows and stream lines",
           "[character_memory][characterization]") {
     CharacterMemory memory("Scout");
     memory.seed_belief("The gate is shut", {"Gate"}, 0);
-    memory.route_fact("The gate has opened", {"Gate"}, 1);
+    memory.seed_belief("The gate has opened", {"Gate"}, 1,
+                       CharacterMemory::kAuthoredSeedWeight, "perception");
 
     memory.update_monologues(1, "Careful", "The gate swings open.",
         [](const std::string&) {
@@ -121,89 +122,225 @@ TEST_CASE("CharacterMemory monologue update writes knows and stream lines",
         REQUIRE(node.type != "perception");
 }
 
-TEST_CASE("CharacterMemory monologue prompt puts identity before this take",
+TEST_CASE("CharacterMemory monologue prompt is bible, foci, journal, then take",
           "[character_memory][characterization]") {
     CharacterMemory memory("Scout");
     memory.ensure_bootstrap("I keep the watch.");
     memory.seed_belief("The gate is shut", {"Gate"}, 0);
-    memory.route_fact("The gate has opened", {"Gate"}, 1);
+    memory.seed_belief("The gate has opened", {"Gate"}, 1,
+                       CharacterMemory::kAuthoredSeedWeight, "perception");
 
     const char* kListen =
         R"({"appends":[],"ops":[],"knows":[],"core_revision":null})";
     const std::string voice = "  Voice: clipped and dry\n";
+    const std::string sentinel = "<<<RHAPSODE_MONOLOGUE_USER>>>";
+    const auto user_of = [&](const std::string& prompt) {
+        const auto split = prompt.find(sentinel);
+        REQUIRE(split != std::string::npos);
+        return prompt.substr(split + sentinel.size());
+    };
+
     std::string first;
     memory.update_monologues(
-        1, "Careful", "The gate swings open.",
+        1, "Careful", "Turn\nassistant: The gate swings open.",
         [&](const std::string& prompt) {
             first = prompt;
             return std::string{kListen};
         },
         voice);
 
-    const std::string sentinel = "<<<RHAPSODE_MONOLOGUE_USER>>>";
-    const auto split = first.find(sentinel);
-    REQUIRE(split != std::string::npos);
-    const std::string system = first.substr(0, split);
-    const std::string user = first.substr(split + sentinel.size());
+    const std::string system = first.substr(0, first.find(sentinel));
+    const std::string user = user_of(first);
 
     REQUIRE(system.find("\"appends\"") != std::string::npos);
+    REQUIRE(system.find("On your mind") != std::string::npos);
     REQUIRE(system.find("You are Scout") == std::string::npos);
     REQUIRE(system.find("The gate swings open") == std::string::npos);
 
     const auto name_at = user.find("You are Scout");
-    const auto bible_at = user.find("I keep the watch.");
-    const auto voice_at = user.find("clipped and dry");
-    const auto wants_at = user.find("Through-lines you are already carrying");
-    const auto beats_at = user.find("Recent inner beats");
-    const auto truths_at = user.find("What you already hold as true");
-    const auto take_at = user.find("What just happened");
-    const auto raw_at = user.find("What reached you this take");
+    const auto bible_at = user.find("Who you are:");
+    const auto mind_at = user.find("On your mind:");
+    const auto journal_at = user.find("What you've been thinking:");
+    const auto take_at = user.find("What just happened:");
     REQUIRE(name_at != std::string::npos);
     REQUIRE(bible_at != std::string::npos);
-    REQUIRE(voice_at != std::string::npos);
-    REQUIRE(wants_at != std::string::npos);
-    REQUIRE(beats_at != std::string::npos);
-    REQUIRE(truths_at != std::string::npos);
+    REQUIRE(mind_at != std::string::npos);
+    REQUIRE(journal_at != std::string::npos);
     REQUIRE(take_at != std::string::npos);
-    REQUIRE(raw_at != std::string::npos);
+    REQUIRE(user.find("I keep the watch.") != std::string::npos);
+    REQUIRE(user.find("- self: ambient self") != std::string::npos);
     REQUIRE(name_at < bible_at);
-    REQUIRE(voice_at < take_at);
-    REQUIRE(bible_at < wants_at);
-    REQUIRE(wants_at < beats_at);
-    REQUIRE(beats_at < truths_at);
-    REQUIRE(truths_at < take_at);
-    REQUIRE(take_at < raw_at);
+    REQUIRE(bible_at < mind_at);
+    REQUIRE(mind_at < journal_at);
+    REQUIRE(journal_at < take_at);
+
+    REQUIRE(user.find("clipped and dry") == std::string::npos);
+    REQUIRE(user.find("Through-lines you are already carrying") == std::string::npos);
+    REQUIRE(user.find("Recent inner beats") == std::string::npos);
+    REQUIRE(user.find("What you already hold as true") == std::string::npos);
+    REQUIRE(user.find("What reached you this take") == std::string::npos);
+    REQUIRE(user.find("The gate is shut") == std::string::npos);
+    REQUIRE(first.find("Seed description") == std::string::npos);
+    REQUIRE(user.find("JSON schema") == std::string::npos);
 
     const auto stim_at = user.find("The gate swings open");
     REQUIRE(stim_at != std::string::npos);
     REQUIRE(stim_at > take_at);
-
-    const auto fact_at = user.find("The gate has opened");
-    REQUIRE(fact_at != std::string::npos);
-    REQUIRE(fact_at > raw_at);
-    const auto hash_at = user.find('#', fact_at);
-    REQUIRE(hash_at != std::string::npos);
-    REQUIRE(fact_at < hash_at);
-
-    REQUIRE(first.find("Seed description") == std::string::npos);
-    REQUIRE(user.find("JSON schema") == std::string::npos);
+    REQUIRE(user.find("The gate has opened") == std::string::npos);
 
     std::string second;
     memory.update_monologues(
-        2, "Careful", "A bird lands on the wall.",
+        2, "Careful",
+        "Turn\nassistant: The gate swings open.\nuser: A bird lands on the wall.",
         [&](const std::string& prompt) {
             second = prompt;
             return std::string{kListen};
         },
         voice);
 
-    const auto split2 = second.find(sentinel);
-    REQUIRE(split2 != std::string::npos);
-    REQUIRE(second.substr(0, split2) == system);
-    const std::string user2 = second.substr(split2 + sentinel.size());
-    const auto take2 = user2.find("What just happened");
+    REQUIRE(second.substr(0, second.find(sentinel)) == system);
+    const std::string user2 = user_of(second);
+    const auto take2 = user2.find("What just happened:");
     REQUIRE(take2 != std::string::npos);
     REQUIRE(user.substr(0, take_at) == user2.substr(0, take2));
+    REQUIRE(user2.find("The gate swings open") != std::string::npos);
+    REQUIRE(user2.find("A bird lands on the wall") != std::string::npos);
+}
+
+TEST_CASE("CharacterMemory monologue journal appends stay a user-text prefix",
+          "[character_memory][characterization]") {
+    CharacterMemory memory("Scout");
+    memory.ensure_bootstrap("I keep the watch.");
+    const std::string sentinel = "<<<RHAPSODE_MONOLOGUE_USER>>>";
+    const auto through_journal = [&](const std::string& prompt) {
+        const auto split = prompt.find(sentinel);
+        REQUIRE(split != std::string::npos);
+        const std::string user = prompt.substr(split + sentinel.size());
+        const auto take_at = user.find("What just happened:");
+        REQUIRE(take_at != std::string::npos);
+        return user.substr(0, take_at);
+    };
+
+    std::string before_fork;
+    memory.update_monologues(
+        1, "Careful", "Take one.",
+        [&](const std::string& prompt) {
+            before_fork = prompt;
+            return std::string{
+                R"({"appends":[],"ops":[{"op":"fork","parent":"self","focus":"the open gate","opening":"If that latch gives, I run."}],"knows":[],"core_revision":null})"};
+        });
+
+    std::string after_fork;
+    std::string child_id;
+    for (const auto& stream : memory.streams()) {
+        if (stream.id != "self" && stream.status == "active")
+            child_id = stream.id;
+    }
+    REQUIRE_FALSE(child_id.empty());
+
+    memory.update_monologues(
+        2, "Careful", "Take two.",
+        [&](const std::string& prompt) {
+            after_fork = prompt;
+            return std::string{
+                "{\"appends\":[{\"stream_id\":\"self\",\"text\":\"Stay on the wall.\"}],"
+                "\"ops\":[],\"knows\":[],\"core_revision\":null}"};
+        });
+
+    const std::string head_before_fork = through_journal(before_fork);
+    const std::string head_after_fork = through_journal(after_fork);
+    REQUIRE(head_before_fork.find("On your mind:") != std::string::npos);
+    REQUIRE(head_after_fork.find(child_id) != std::string::npos);
+    REQUIRE(head_before_fork != head_after_fork);
+
+    std::string after_self_append;
+    memory.update_monologues(
+        3, "Careful", "Take three.",
+        [&](const std::string& prompt) {
+            after_self_append = prompt;
+            return std::string{R"({"appends":[],"ops":[],"knows":[],"core_revision":null})"};
+        });
+
+    const std::string head_after_self = through_journal(after_self_append);
+    REQUIRE(head_after_fork == head_after_self.substr(0, head_after_fork.size()));
+    REQUIRE(head_after_self.find("[self] Stay on the wall.") != std::string::npos);
+    const auto child_line = head_after_self.find("[" + child_id + "] If that latch gives");
+    const auto self_line = head_after_self.find("[self] Stay on the wall.");
+    REQUIRE(child_line != std::string::npos);
+    REQUIRE(self_line != std::string::npos);
+    REQUIRE(child_line < self_line);
+}
+
+TEST_CASE("CharacterMemory line seq persists and old saves backfill",
+          "[character_memory][characterization]") {
+    CharacterMemory memory("Scout");
+    memory.ensure_bootstrap("I keep the watch.");
+    memory.update_monologues(
+        1, "Careful", "Take.",
+        [](const std::string&) {
+            return std::string{
+                R"({"appends":[{"stream_id":"self","text":"Keep still."}],"ops":[],"knows":[],"core_revision":null})"};
+        });
+    const auto saved = memory.to_json();
+    REQUIRE(saved.contains("line_seq"));
+    REQUIRE(saved["line_seq"].get<int>() >= 1);
+    REQUIRE(saved["streams"][0]["lines"][0]["seq"].get<int>() == 1);
+
+    const CharacterMemory loaded = CharacterMemory::from_json(saved);
+    REQUIRE(loaded.streams().front().lines.front().seq == 1);
+    REQUIRE(loaded.to_json()["line_seq"].get<int>() == saved["line_seq"].get<int>());
+
+    json legacy = saved;
+    legacy.erase("line_seq");
+    for (auto& stream : legacy["streams"]) {
+        for (auto& line : stream["lines"])
+            line.erase("seq");
+    }
+    const CharacterMemory backfilled = CharacterMemory::from_json(legacy);
+    REQUIRE(backfilled.streams().front().lines.front().seq == 1);
+    REQUIRE(backfilled.to_json()["line_seq"].get<int>() >= 1);
+}
+
+TEST_CASE("Objective journal appends take then seen and persists",
+          "[character_memory][characterization]") {
+    CharacterMemory memory("Scout");
+    memory.ensure_bootstrap("I keep the watch.");
+    memory.append_objective(1, "take", "The gate swings open.");
+    memory.update_objective_journal(1, "I keep the watch.",
+        [](const std::string& prompt) {
+            REQUIRE(prompt.find("<<<RHAPSODE_OBSERVATION_USER>>>")
+                    != std::string::npos);
+            REQUIRE(prompt.find("[1 take]") != std::string::npos);
+            REQUIRE(prompt.find("The gate swings open.") != std::string::npos);
+            return std::string{
+                R"({"lines":["The latch gave."],"facts":[{"fact":"The gate is open","entities":["Gate"]}]})"};
+        });
+    REQUIRE(memory.objective_journal().size() == 2);
+    REQUIRE(memory.objective_journal()[1].kind == "seen");
+    REQUIRE(memory.objective_journal()[1].text == "The latch gave.");
+
+    const CharacterMemory loaded =
+        CharacterMemory::from_json(memory.to_json());
+    REQUIRE(loaded.objective_journal().size() == 2);
+    REQUIRE(loaded.objective_journal()[0].kind == "take");
+
+    memory.update_objective_journal(1, "I keep the watch.",
+        [](const std::string&) {
+            return std::string{R"({"lines":[],"facts":[]})"};
+        });
+    REQUIRE(memory.objective_journal().size() == 2);
+
+    std::string monologue;
+    memory.update_monologues(1, "Careful", "The latch gave.",
+        [&](const std::string& prompt) {
+            monologue = prompt;
+            return std::string{
+                R"({"appends":[],"ops":[],"knows":[],"core_revision":null})"};
+        });
+    const auto user = monologue.substr(
+        monologue.find("<<<RHAPSODE_MONOLOGUE_USER>>>"));
+    REQUIRE(user.find("The latch gave.") != std::string::npos);
+    REQUIRE(user.find("The gate swings open.") == std::string::npos);
 }
 
 TEST_CASE("MemorySystem preserves callback payloads and query results",

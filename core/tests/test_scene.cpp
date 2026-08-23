@@ -260,7 +260,7 @@ TEST_CASE("Graph narrator user is this take only",
                 graph_state = turn_state;
                 return std::string{
                     "<<<RHAPSODE_JSON>>>\n"
-                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"],"audience":[]}]})"};
+                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"]}]})"};
             }
             return response(
                 "Wind catches the gate.",
@@ -289,7 +289,7 @@ TEST_CASE("Turn pipeline merges graph observation ops into the turn plan",
                 REQUIRE(calls == 2);
                 return std::string{
                     "<<<RHAPSODE_JSON>>>\n"
-                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"],"audience":[]}]})"};
+                    R"({"transitions":[],"new_nodes":[{"fact":"A hinge loosens","type":"scene","state":"active","entities":["Gate"]}]})"};
             }
             REQUIRE(calls == 1);
             return response(
@@ -347,6 +347,65 @@ TEST_CASE("Scene history append, snapshot, truncate, and round-trip", "[history]
     REQUIRE(history.size() == 3);
     const json value = history;
     REQUIRE(history_from_json(value).size() == 3);
+}
+
+TEST_CASE("Monologue stimulus is an append-only public log",
+          "[history][characterization]") {
+    std::vector<SceneMessage> history;
+    auto add = [&](Role role, std::string content) {
+        SceneMessage message;
+        message.role = role;
+        message.content = std::move(content);
+        append_history_message(history, std::move(message));
+    };
+    add(Role::System, "fork from=root to=fork");
+    add(Role::User, "go");
+    add(Role::Assistant, std::string(500, 'a'));
+    const auto first = format_monologue_stimulus(history, 300);
+    REQUIRE(first.find("Turn\n") == 0);
+    REQUIRE(first.find("fork from") == std::string::npos);
+    REQUIRE(first.find("user: go") != std::string::npos);
+    REQUIRE(first.find(std::string(300, 'a')) != std::string::npos);
+    REQUIRE(first.find(std::string(301, 'a')) == std::string::npos);
+
+    add(Role::User, "again");
+    add(Role::Assistant, "beat two");
+    const auto second = format_monologue_stimulus(history, 300);
+    REQUIRE(second.substr(0, first.size()) == first);
+    REQUIRE(second.find("user: again") != std::string::npos);
+    REQUIRE(second.find("assistant: beat two") != std::string::npos);
+}
+
+TEST_CASE("Turn take is this turn's narrator and speech",
+          "[history][characterization]") {
+    SceneData scene = basic_scene();
+    SceneMessage player;
+    player.role = Role::User;
+    player.content = "go";
+    player.metadata = {{"scene_kind", "player"}, {"turn", 1}};
+    append_history_message(scene.history, std::move(player));
+    SceneMessage narrator;
+    narrator.role = Role::Assistant;
+    narrator.content = "The gate swings.";
+    narrator.metadata = {{"scene_kind", "narrator"}, {"turn", 1}};
+    append_history_message(scene.history, std::move(narrator));
+    SceneMessage speech;
+    speech.role = Role::Assistant;
+    speech.content = "Hold.";
+    speech.metadata = {
+        {"scene_kind", "character"}, {"speaker", "Scout"}, {"turn", 1}};
+    append_history_message(scene.dialogue, std::move(speech));
+    SceneMessage later;
+    later.role = Role::Assistant;
+    later.content = "Next take.";
+    later.metadata = {{"scene_kind", "narrator"}, {"turn", 2}};
+    append_history_message(scene.history, std::move(later));
+
+    const std::string take = format_turn_take(scene, 1);
+    REQUIRE(take.find("The gate swings.") != std::string::npos);
+    REQUIRE(take.find("Scout: Hold.") != std::string::npos);
+    REQUIRE(take.find("go") == std::string::npos);
+    REQUIRE(take.find("Next take.") == std::string::npos);
 }
 
 TEST_CASE("Scene history drops messages from a reverted turn", "[history]") {
@@ -468,11 +527,7 @@ TEST_CASE("New World memories accept call-scoped monologue configuration",
         return std::string{"not json"};
     };
     world.enter_character("root", Character{"Scout", "Careful", false});
-    Node perceived;
-    perceived.fact = "The ridge is empty";
-    perceived.entities = {"Ridge"};
-    world.route_perceptions("root", {perceived}, 1);
-    world.update_monologues("root", 2, "Turn", monologue);
+    world.update_monologues("root", 2, monologue);
     REQUIRE(calls == 1);
 }
 
@@ -486,11 +541,7 @@ TEST_CASE("Loaded World memories accept call-scoped monologue configuration",
         return std::string{"not json"};
     };
     world = World::from_json(world.to_json());
-    Node perceived;
-    perceived.fact = "The ridge is empty";
-    perceived.entities = {"Ridge"};
-    world.route_perceptions("root", {perceived}, 1);
-    world.update_monologues("root", 2, "Turn", monologue);
+    world.update_monologues("root", 2, monologue);
     REQUIRE(calls == 1);
 }
 
@@ -510,28 +561,52 @@ TEST_CASE("World state version defaults for old saves and round-trips",
     REQUIRE(restored_current.advance_state_version() == 3);
 }
 
-TEST_CASE("Perceptions respect private and public audiences", "[world][memory]") {
+TEST_CASE("On-stage minds share the take and keep their own seen lines",
+          "[world][memory]") {
     World world;
     world.enter_character("root", Character{"Alice", "A", false});
     world.enter_character("root", Character{"Bob", "B", false});
-    Node private_fact;
-    private_fact.fact = "Alice sees the key";
-    private_fact.audience = {"Alice"};
-    world.route_perceptions("root", {private_fact}, 1);
-    Node public_fact;
-    public_fact.fact = "The bell rings";
-    world.route_perceptions("root", {public_fact}, 1);
+    world.append_objective_takes("root", 1, "The bell rings.");
+    world.update_objective_journals("root", 1,
+        [](const std::string& prompt) {
+            if (prompt.find("Alice\n\n") != std::string::npos)
+                return std::string{R"({"lines":["Alice hears the bell."],"facts":[]})"};
+            return std::string{R"({"lines":[],"facts":[]})"};
+        });
 
-    auto count = [&](const std::string& name) {
-        int perceptions = 0;
-        world.character_memories().at(name).beliefs().for_each(
-            [&](const Node& node) {
-                if (node.type == "perception") ++perceptions;
-            }, false);
-        return perceptions;
-    };
-    REQUIRE(count("Alice") == 2);
-    REQUIRE(count("Bob") == 1);
+    const auto& alice = world.character_memories().at("Alice").objective_journal();
+    const auto& bob = world.character_memories().at("Bob").objective_journal();
+    REQUIRE(alice.size() == 2);
+    REQUIRE(alice[0].kind == "take");
+    REQUIRE(alice[0].text == "The bell rings.");
+    REQUIRE(alice[1].kind == "seen");
+    REQUIRE(alice[1].text == "Alice hears the bell.");
+    REQUIRE(bob.size() == 1);
+    REQUIRE(bob[0].kind == "take");
+    REQUIRE(bob[0].text == "The bell rings.");
+
+    std::string alice_prompt;
+    std::string bob_prompt;
+    world.update_monologues("root", 1,
+        [&](const std::string& prompt) {
+            if (prompt.find("You are Alice") != std::string::npos)
+                alice_prompt = prompt;
+            else
+                bob_prompt = prompt;
+            return std::string{
+                R"({"appends":[],"ops":[],"knows":[],"core_revision":null})"};
+        });
+    REQUIRE(alice_prompt.find("What just happened:") != std::string::npos);
+    REQUIRE(alice_prompt.find("The bell rings.") != std::string::npos);
+    REQUIRE(alice_prompt.find("Alice hears the bell.") != std::string::npos);
+    REQUIRE(bob_prompt.find("The bell rings.") != std::string::npos);
+    REQUIRE(bob_prompt.find("Alice hears the bell.") == std::string::npos);
+
+    World restored = World::from_json(world.to_json());
+    REQUIRE(restored.character_memories().at("Alice").objective_journal().size()
+            == 2);
+    REQUIRE(restored.character_memories().at("Bob").objective_journal().size()
+            == 1);
 }
 
 TEST_CASE("Turn services retain no graph identity",

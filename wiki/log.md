@@ -1,3 +1,35 @@
+## [2026-08-23] cleanup | Drop perception reroute
+
+- Removed `World::route_perceptions`, `CharacterMemory::route_fact`, and `Node.audience`. Old saves may still hold `type=perception` nodes; monologue expires the live ones. Graph extract stays plot-only.
+- Docs: [architecture/plot-graph.md](architecture/plot-graph.md), [architecture/subjective-character-minds.md](architecture/subjective-character-minds.md).
+
+## [2026-08-23] change | Monologue tail is this take plus seen
+
+- `World::update_monologues` builds `What just happened` from this turn's journal: capped `take`, then `seen`. Prefix (name / core / foci / stream journal) is unchanged. No routed perceptions, no full public log.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
+## [2026-08-23] change | Observation uses flash, thinking on
+
+- `make_observation_callback` is base/`RHAPSODE_MODEL` (flash) with thinking on. Monologue stays narrator/pro with thinking on.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
+## [2026-08-23] implementation | Per-character objective journal
+
+- World `GRAPH_UPDATE` no longer routes `new_nodes` into minds. Each on-stage NPC journal gets this turn's narrator + speech (`take`), then a no-tools observation call may append `seen`.
+- Monologue `What just happened` is this turn's `seen` lines only.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md), [architecture/plot-graph.md](architecture/plot-graph.md), [architecture/scene-loop.md](architecture/scene-loop.md).
+
+## [2026-08-23] fix | Monologue public log is append-only
+
+- `What just happened` is the full player/narrator history (oldest first, per-line cap), not last-4 `format_graph_seed` on a history window. Journal was already append-only; the take is too.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
+## [2026-08-22] implementation | Monologue prompt: core, foci, append-only journal
+
+- User sheet is name, Who you are, On your mind (`id: focus`), What you've been thinking (global `seq` log, including closed streams), What just happened (replaced take + perceptions).
+- Voice, compact beliefs, and last-3 inner beats are out of the monologue prompt. Craft treats a stream as a focus, not only a want.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
 ## [2026-08-22] implementation | execute_turn extract copies and speech helpers
 
 - Graph extract mutates working copies and assigns them only on success; dropped

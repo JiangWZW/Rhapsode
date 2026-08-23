@@ -4,6 +4,7 @@
 #include <cctype>
 #include <sstream>
 #include <unordered_set>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -120,13 +121,16 @@ std::string monologue_system_instructions() {
         "The public scene is already written. You do not speak. You do not narrate.\n"
         "You do not invent another person's private mind.\n\n"
         "Most takes you only listen. That is good acting.\n"
-        "When something lands, it is yours: a private beat of subtext, a shift in what\n"
-        "you want, or a fact you will still know tomorrow.\n\n"
+        "When something lands, it is yours: a private beat of subtext, a shift in a\n"
+        "focus, or a fact you will still know tomorrow.\n\n"
         "Live in first person. Do not describe the role from outside.\n"
         "Do not rewrite who you are unless the soul of the role actually changed.\n"
-        "Fork/merge/conclude only when a want itself splits, joins, or ends. "
-        "Never drop the last active through-line. Max "
-        << CharacterMemory::kMaxActiveStreams << " active.\n\n"
+        "Fork/merge/conclude only when a focus or through-line itself splits, joins,\n"
+        "or ends. Never drop the last active through-line. Max "
+        << CharacterMemory::kMaxActiveStreams << " active.\n"
+        "Ids under On your mind are the only ids to cite. What you've been thinking\n"
+        "is this mind's private journal, oldest first. What just happened is this\n"
+        "take and what you took in.\n\n"
         "Answer with ONLY the JSON sidecar (no prose wrapper). Empty appends and ops "
         "are a listening take.\n\n"
         "JSON:\n"
@@ -138,57 +142,45 @@ std::string build_monologue_user_payload(
     const std::string& name,
     const CharacterCore& core,
     const std::vector<MonologueStream>& streams,
-    const std::string& voice,
-    const std::string& turn_stimulus,
-    const std::vector<Perception>& perceptions,
-    const std::string& prior_beliefs) {
+    const std::string& turn_stimulus) {
     std::ostringstream os;
     os << "You are " << name << ".\n";
-    if (!voice.empty())
-        os << str::trim(voice) << "\n";
-    os << "\nWho you are (do not rewrite this unless the soul of the role actually changed):\n"
+    os << "\nWho you are:\n"
        << (core.text.empty()
                ? "(empty — you may set core_revision once if needed)"
                : core.text)
        << "\n";
 
-    os << "\nThrough-lines you are already carrying:\n";
+    os << "\nOn your mind:\n";
     bool any_stream = false;
     for (const auto& stream : streams) {
         if (stream.status != "active") continue;
         any_stream = true;
-        os << "- " << stream.focus << " [" << stream.id << "]\n";
+        os << "- " << stream.id << ": " << stream.focus << "\n";
     }
     if (!any_stream)
         os << "- (none)\n";
 
-    os << "\nRecent inner beats (yours, not the scene):\n";
-    bool any_beat = false;
+    os << "\nWhat you've been thinking:\n";
+    struct JournalLine {
+        int seq = 0;
+        std::string id;
+        std::string text;
+    };
+    std::vector<JournalLine> journal;
     for (const auto& stream : streams) {
-        if (stream.status != "active") continue;
-        const int start = stream.lines.size() > 3
-            ? static_cast<int>(stream.lines.size()) - 3 : 0;
-        for (int i = start; i < static_cast<int>(stream.lines.size()); ++i) {
-            any_beat = true;
-            os << "- [" << stream.id << "] " << stream.lines[i].text << "\n";
-        }
+        for (const auto& line : stream.lines)
+            journal.push_back({line.seq, stream.id, line.text});
     }
-    if (!any_beat)
-        os << "- (none yet)\n";
+    std::sort(journal.begin(), journal.end(),
+              [](const JournalLine& a, const JournalLine& b) {
+                  return a.seq < b.seq;
+              });
+    for (const auto& line : journal)
+        os << "[" << line.id << "] " << line.text << "\n";
 
-    os << "\nWhat you already hold as true:\n"
-       << (prior_beliefs.empty() ? "(nothing lasting yet)\n" : prior_beliefs + "\n");
-
-    os << "\nWhat just happened (given circumstances — the stage, not your cue to recap it):\n"
+    os << "What just happened:\n"
        << (turn_stimulus.empty() ? "(none)\n" : turn_stimulus + "\n");
-
-    os << "\nWhat reached you this take, still raw:\n";
-    if (perceptions.empty()) {
-        os << "(nothing extra)\n";
-    } else {
-        for (const auto& perception : perceptions)
-            os << "- " << perception.fact << " #" << perception.id << "\n";
-    }
     return os.str();
 }
 
@@ -196,15 +188,11 @@ std::string build_monologue_prompt(
     const std::string& name,
     const CharacterCore& core,
     const std::vector<MonologueStream>& streams,
-    const std::string& voice,
-    const std::string& turn_stimulus,
-    const std::vector<Perception>& perceptions,
-    const std::string& prior_beliefs) {
+    const std::string& turn_stimulus) {
     return monologue_system_instructions()
         + kMonologueUserSentinel + "\n"
         + build_monologue_user_payload(
-              name, core, streams, voice, turn_stimulus, perceptions,
-              prior_beliefs);
+              name, core, streams, turn_stimulus);
 }
 
 std::vector<std::uint64_t> apply_knows(
@@ -239,7 +227,110 @@ std::vector<std::uint64_t> apply_knows(
     return new_ids;
 }
 
+constexpr char kObservationUserSentinel[] = "<<<RHAPSODE_OBSERVATION_USER>>>";
+
+constexpr char kObservationJsonSchema[] =
+    "{\"lines\":[\"...\"],\"facts\":[{\"fact\":\"...\",\"entities\":[]}]}";
+
+std::string observation_system_instructions() {
+    return
+        "Record what this person could take in from the latest take.\n"
+        "You already have who they are and their journal. The latest take is "
+        "already on the journal.\n"
+        "Write only what they could take in. Skip the rest. Do not copy the "
+        "take. Empty lines is fine.\n"
+        "Do not invent another person's private mind. No inventory.\n\n"
+        "Answer with ONLY the JSON (no prose wrapper).\n\n"
+        "JSON:\n" + std::string(kObservationJsonSchema) + "\n";
+}
+
+std::string build_observation_user_payload(
+    const std::string& name,
+    const std::string& who,
+    const std::vector<ObjectiveLine>& journal) {
+    std::ostringstream os;
+    os << name << "\n\n";
+    os << (who.empty() ? "(unknown)" : who) << "\n";
+    for (const auto& line : journal) {
+        os << "\n[" << line.turn << " " << line.kind << "]\n"
+           << line.text << "\n";
+    }
+    return os.str();
+}
+
 }  // namespace
+
+void CharacterMemory::update_objective_journal(
+    int turn,
+    const std::string& who,
+    const LLMCallback& llm_callback) {
+    ensure_bootstrap(who);
+    if (!llm_callback) {
+        log() << "  [char_mem:" << character_name_
+              << "] observation skip: no LLM callback\n" << std::flush;
+        return;
+    }
+
+    const std::string who_text = !core_.text.empty() ? core_.text : who;
+    const std::string prompt =
+        observation_system_instructions()
+        + kObservationUserSentinel + "\n"
+        + build_observation_user_payload(
+              character_name_, who_text, objective_journal_);
+
+    std::string raw;
+    try {
+        raw = llm_callback(prompt);
+    } catch (const std::exception& ex) {
+        log() << "  [char_mem:" << character_name_
+              << "] update_objective_journal failed: " << ex.what() << "\n";
+        return;
+    }
+
+    nlohmann::json parsed = try_parse_json(raw);
+    if (parsed.is_null() || !parsed.is_object()) {
+        const auto sliced = extract_json_object(raw);
+        if (!sliced.empty()) parsed = try_parse_json(sliced);
+    }
+    if (!parsed.is_object()) {
+        log() << "  [char_mem:" << character_name_
+              << "] observation unparseable -- no-op apply\n";
+        return;
+    }
+
+    if (parsed.contains("lines") && parsed["lines"].is_array()) {
+        for (const auto& value : parsed["lines"]) {
+            if (value.is_string())
+                append_objective(turn, "seen", value.get<std::string>());
+        }
+    }
+
+    if (parsed.contains("facts") && parsed["facts"].is_array()) {
+        std::vector<KnowFact> knows;
+        for (const auto& value : parsed["facts"]) {
+            if (!value.is_object()) continue;
+            KnowFact item;
+            item.fact = str::trim(sanitize_utf8(value.value("fact", "")));
+            if (item.fact.empty()) continue;
+            if (value.contains("entities") && value["entities"].is_array()) {
+                for (const auto& entity : value["entities"])
+                    if (entity.is_string())
+                        item.entities.push_back(entity.get<std::string>());
+            }
+            knows.push_back(std::move(item));
+        }
+        apply_knows(beliefs_, turn, knows, {});
+    }
+
+    int seen_this_turn = 0;
+    for (const auto& line : objective_journal_)
+        if (line.turn == turn && line.kind == "seen") ++seen_this_turn;
+    log() << "  [journal:" << character_name_
+          << "] observation done t=" << turn
+          << " seen=" << seen_this_turn
+          << " journal=" << objective_journal_.size()
+          << "\n" << std::flush;
+}
 
 void CharacterMemory::ensure_bootstrap(const std::string& core_text_if_empty) {
     if (core_.text.empty() && !core_text_if_empty.empty())
@@ -308,6 +399,7 @@ void CharacterMemory::update_monologues(
     const std::string& turn_stimulus,
     const LLMCallback& llm_callback,
     const std::string& voice) {
+    (void)voice;
     ensure_bootstrap(description);
     if (!llm_callback) {
         log() << "  [char_mem:" << character_name_
@@ -316,10 +408,8 @@ void CharacterMemory::update_monologues(
     }
 
     auto perceptions = gather_active_perceptions(beliefs_);
-    const std::string prior = truncate_utf8(render_thoughts({}), 800);
     const std::string prompt = build_monologue_prompt(
-        character_name_, core_, streams_, voice, turn_stimulus,
-        perceptions, prior);
+        character_name_, core_, streams_, turn_stimulus);
 
     std::string raw;
     try {
@@ -369,7 +459,7 @@ void CharacterMemory::update_monologues(
                 const std::string synthesis =
                     str::trim(sanitize_utf8(op.value("synthesis", "")));
                 if (!synthesis.empty())
-                    into->lines.push_back({turn, synthesis});
+                    append_line(*into, turn, synthesis);
                 from->status = "closed";
                 from->closed_reason = str::trim(op.value("reason", "merged"));
                 from->closed_summary = synthesis.empty()
@@ -414,7 +504,7 @@ void CharacterMemory::update_monologues(
                 const std::string opening =
                     str::trim(sanitize_utf8(op.value("opening", "")));
                 if (!opening.empty())
-                    child.lines.push_back({turn, opening});
+                    append_line(child, turn, opening);
                 log() << "  [char_mem:" << character_name_
                       << "] stream fork " << parent_id << " -> " << child.id
                       << "\n";
@@ -431,7 +521,7 @@ void CharacterMemory::update_monologues(
                 if (text.empty()) continue;
                 auto* stream = find_stream(stream_id);
                 if (!stream || stream->status != "active") continue;
-                stream->lines.push_back({turn, text});
+                append_line(*stream, turn, text);
             }
         }
 
