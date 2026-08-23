@@ -1,3 +1,15 @@
+## [2026-08-23] implementation | Drain in-flight journals on socket close
+
+- `World::apply_ready_observations` / `apply_ready_monologues` harvest without dispatch. Poll calls them, then claims.
+- `Story.apply_ready_journals` then save. Session waits `PromptJobs` and shuts the pool without waiting again.
+- Docs: [architecture/python-server.md](architecture/python-server.md).
+
+## [2026-08-23] implementation | Observation/monologue poll from the play session
+
+- Story setters: `set_observation_ready_callback`, `set_observation_submit_callback`, `set_monologue_ready_callback`, `set_monologue_submit_callback`.
+- Session wires two `PromptJobs` on one `ThreadPoolExecutor`. Blocking observation/reflection callbacks stay unset so `process_post_turn` polls.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md), [architecture/monologue-streams.md](architecture/monologue-streams.md), [architecture/python-server.md](architecture/python-server.md).
+
 ## [2026-08-23] cleanup | Drop perception reroute
 
 - Removed `World::route_perceptions`, `CharacterMemory::route_fact`, and `Node.audience`. Old saves may still hold `type=perception` nodes; monologue expires the live ones. Graph extract stays plot-only.

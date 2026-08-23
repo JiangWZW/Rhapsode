@@ -4,6 +4,7 @@ the engine's call-scoped read function."""
 import json
 import logging
 import os
+from concurrent.futures import wait
 
 from rhapsode.llm import complete, complete_with_tools
 from rhapsode.llm_profile import infer_narrator_phase
@@ -125,6 +126,34 @@ def make_observation_callback():
         OBSERVATION_USER_SENTINEL, "observation",
         model=_base_model(), thinking=True,
     )
+
+
+class PromptJobs:
+    def __init__(self, call, pool):
+        self._call = call
+        self._pool = pool
+        self._futs = {}
+
+    def submit(self, jobs):
+        for job in jobs:
+            self._futs[(job.handle, job.staging_buf_id)] = self._pool.submit(
+                self._call, job.prompt)
+
+    def ready(self, handle, staging_buf_id):
+        fut = self._futs.get((handle, staging_buf_id))
+        if fut is None or not fut.done():
+            return None
+        self._futs.pop((handle, staging_buf_id))
+        try:
+            return fut.result(), False
+        except Exception:
+            log.exception(
+                "prompt job failed handle=%s slot=%s", handle, staging_buf_id)
+            return "", True
+
+    def wait(self, timeout=None):
+        if self._futs:
+            wait(self._futs.values(), timeout=timeout)
 
 
 NARRATOR_TOOLS = [

@@ -8,6 +8,7 @@
 #include "rhapsode/memory_system.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_message.h"
+#include "rhapsode/llm_callback.h"
 #include "rhapsode/story.h"
 #include "rhapsode/weaver.h"
 #include "rhapsode/world.h"
@@ -17,6 +18,11 @@ namespace py = pybind11;
 using namespace rhapsode;
 
 void bind_story(py::module_& m) {
+    py::class_<PromptJob>(m, "PromptJob")
+        .def_readonly("handle", &PromptJob::handle)
+        .def_readonly("prompt", &PromptJob::prompt)
+        .def_readonly("staging_buf_id", &PromptJob::staging_buf_id);
+
     py::enum_<Role>(m, "Role")
         .value("System", Role::System)
         .value("User", Role::User)
@@ -162,11 +168,61 @@ void bind_story(py::module_& m) {
              py::arg("cb"))
         .def("set_observation_llm_callback", &Story::set_observation_llm_callback,
              py::arg("cb"))
+        .def("set_observation_ready_callback",
+             [](Story& story, py::function fn) {
+                 story.set_observation_ready_callback(
+                     [fn](std::size_t handle, int staging_buf_id,
+                          std::string& raw, bool& failed) {
+                         py::gil_scoped_acquire gil;
+                         py::object result = fn(handle, staging_buf_id);
+                         if (result.is_none()) return false;
+                         const auto tuple = result.cast<py::tuple>();
+                         raw = tuple[0].cast<std::string>();
+                         failed = tuple[1].cast<bool>();
+                         return true;
+                     });
+             },
+             py::arg("cb"))
+        .def("set_observation_submit_callback",
+             [](Story& story, py::function fn) {
+                 story.set_observation_submit_callback(
+                     [fn](const std::vector<PromptJob>& jobs) {
+                         py::gil_scoped_acquire gil;
+                         fn(jobs);
+                     });
+             },
+             py::arg("cb"))
+        .def("set_monologue_ready_callback",
+             [](Story& story, py::function fn) {
+                 story.set_monologue_ready_callback(
+                     [fn](std::size_t handle, int staging_buf_id,
+                          std::string& raw, bool& failed) {
+                         py::gil_scoped_acquire gil;
+                         py::object result = fn(handle, staging_buf_id);
+                         if (result.is_none()) return false;
+                         const auto tuple = result.cast<py::tuple>();
+                         raw = tuple[0].cast<std::string>();
+                         failed = tuple[1].cast<bool>();
+                         return true;
+                     });
+             },
+             py::arg("cb"))
+        .def("set_monologue_submit_callback",
+             [](Story& story, py::function fn) {
+                 story.set_monologue_submit_callback(
+                     [fn](const std::vector<PromptJob>& jobs) {
+                         py::gil_scoped_acquire gil;
+                         fn(jobs);
+                     });
+             },
+             py::arg("cb"))
         .def("set_memory", &Story::set_memory, py::arg("memory"))
         .def("set_saves_dir", &Story::set_saves_dir, py::arg("dir"))
         .def("advance_player", &Story::advance_player, py::arg("player_input"),
              py::call_guard<py::gil_scoped_release>())
         .def("complete_turn", &Story::complete_turn,
+             py::call_guard<py::gil_scoped_release>())
+        .def("apply_ready_journals", &Story::apply_ready_journals,
              py::call_guard<py::gil_scoped_release>())
         .def("revert_active_turns", &Story::revert_active_turns, py::arg("count"))
         .def("has_save", &Story::has_save, py::arg("saves_dir"))

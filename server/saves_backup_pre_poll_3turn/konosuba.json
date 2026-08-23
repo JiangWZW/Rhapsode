@@ -1,0 +1,160 @@
+{
+  "charge": 0.0,
+  "dialogue": [
+    {
+      "content": "Kazumaaaa! This is YOUR fault! You dragged me to this world and now you're sending me to a zombie-infested graveyard all alone like some discount cleric! (jabs a finger at the player, voice cracking into a wail)",
+      "metadata": {
+        "message_ref": "konosuba:v1:character:2",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 0,
+        "turn_ordinal": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:34:12Z"
+    },
+    {
+      "content": "Aqua. You can purify undead by humming a hymn. My legs are still numb from this morning's Explosion, so of the people at this table, you are the only one suited for the cemetery. (raises one hand in mock decree, still slumped in her chair)",
+      "metadata": {
+        "message_ref": "konosuba:v1:character:3",
+        "scene_kind": "character",
+        "speaker": "Megumin",
+        "turn": 0,
+        "turn_ordinal": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:34:12Z"
+    },
+    {
+      "content": "Then I shall take the sewers! The Brutal Alligators lie in wait beneath the dark water, ready to seize a lone adventurer and drag her under... A Crusader must be the one to be dragged— I-I mean, to hold the line! (rises from her chair, eyes shining, breath coming faster)",
+      "metadata": {
+        "message_ref": "konosuba:v1:character:4",
+        "scene_kind": "character",
+        "speaker": "Darkness",
+        "turn": 0,
+        "turn_ordinal": 4
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:34:12Z"
+    },
+    {
+      "content": "If you are dividing the quest board among yourselves, I can begin the paperwork. Please note that the guild will deduct any collateral damage from your reward. I am sorry. That is not a joke. (taps her pen against the clipboard, smile fixed and tight)",
+      "metadata": {
+        "message_ref": "konosuba:v1:character:5",
+        "scene_kind": "character",
+        "speaker": "Luna",
+        "turn": 0,
+        "turn_ordinal": 5
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:34:12Z"
+    }
+  ],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": []
+      },
+      {
+        "max_snippets": 5,
+        "snippets": []
+      },
+      {
+        "max_snippets": 3,
+        "snippets": []
+      }
+    ],
+    "summarized_up_to": 0
+  },
+  "driving_intention": "",
+  "history": [
+    {
+      "content": "Another beautiful morning in Axel — which means another morning of being broke.\n\nYou sit at your usual table in the Adventurer's Guild hall, staring at the quest board across the room. The other adventurers give your table a wide berth. Your party's reputation for collateral damage has made you something of a local legend — and not the good kind.\n\nAqua is already three mugs into her morning ale, sobbing loudly enough to make nearby adventurers wince. \"Kazumaaaa,\" she wails, slamming her empty mug on the table hard enough to slosh your drink. \"We need money! I can't keep drinking this cheap swill! A goddess deserves at least mid-shelf!\"\n\n\"We're broke BECAUSE you keep drinking,\" you mutter, but she's already flagging down the waitress for another round on your tab.\n\nMegumin sits across from you, drawing explosion diagrams on a napkin with the intensity of a military strategist planning D-Day. She already went on her daily Explosion pilgrimage at dawn — you know because the distant boom rattled the mansion windows and woke you up. She's been unusable for combat since about 6 AM.\n\nDarkness is standing at the quest board, her face flushed an alarming shade of red. She's found something. Given her expression — somewhere between terror and excitement — it probably involves monsters with tentacles.\n\n\"K-Kazuma,\" she stammers, not turning around. \"There's a quest here for subjugating a nest of Brutal Alligators in the sewers. It says they... they grapple their prey and drag them underwater...\"\n\nShe's trembling. That's not fear.\n\nLuna, the guild receptionist, catches your eye from the front desk and waves you over with that specific smile — the polite, professional one that barely conceals the dread of having to deal with your party again.",
+      "metadata": {},
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:32:16Z"
+    },
+    {
+      "content": "I lean back in my chair, sizing up the scene. Aqua's bawling about booze money, Megumin's useless until tomorrow, and Darkness is practically drooling over sewer gators. Luna's got that look that means we're about to get banned again.\n\nI stand up, stretching. \"Alright, listen up. Aqua — you're going to the cemetery.\"\n\nHer sobbing stops mid-wail. \"Wha—? You're sending me to fight undead alone?!\"\n\n\"Not fight, purify. Your goddess aura's been drawing them in like flies to dung. Go clean up the mess before they start shambling into town and we get blamed for it. Megumin and Darkness stay with me.\"\n\nI turn to Luna, already walking toward the desk. \"And you — don't you dare put anything 'gigantic scorpion' related on our tab.\"",
+      "metadata": {
+        "message_ref": "konosuba:v1:player:0",
+        "scene_kind": "player",
+        "turn": 0,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T09:32:20Z"
+    },
+    {
+      "content": "The morning light through the guild's high windows catches the dust kicked up by Aqua's tantrum, turning it to drifting gold. Somewhere a mug is set down with exaggerated care.\n\nAqua rounds on you, tears already beading at the corners of her eyes. Megumin sighs the sigh of the only sane person in the room. Darkness's chair scrapes the floorboards as she straightens to her full, quivering height. And Luna simply waits, pen poised, as if she has filed this exact scene a hundred times before.",
+      "metadata": {
+        "message_ref": "konosuba:v1:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 0,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:34:12Z"
+    },
+    {
+      "content": "fork from=konosuba to=konosuba_f0_0 cast=[Aqua] intention=Aqua is sent alone to the cemetery to purify the undead before they shambled into town and get the guild blamed for it.",
+      "metadata": {
+        "scene_kind": "fork"
+      },
+      "role": "system",
+      "timestamp": "2026-08-23T09:42:41Z"
+    },
+    {
+      "content": "I push back from the table and head for the door, pausing just long enough to glance over my shoulder.\n\n\"Aqua — the cemetery. Actually go this time. And if a zombie bites you, try not to catch anything embarrassing.\"\n\nThe hinges rattle as I let the door swing shut behind me, boots crunching on the dirt road toward the town's edge.",
+      "metadata": {
+        "message_ref": "konosuba:v4:player:0",
+        "scene_kind": "player",
+        "turn": 1,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T09:46:11Z"
+    },
+    {
+      "content": "",
+      "metadata": {
+        "message_ref": "konosuba:v4:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 1,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:47:08Z"
+    },
+    {
+      "content": "I break into a jog, muttering under my breath as the guild hall shrinks behind me. \"Purify undead, she says. Easy job, she says. As if Aqua's idea of 'hymn' isn't just screaming the chorus of some tavern song at the top of her lungs.\" I pick up the pace toward the cemetery, Chunchunmaru bouncing against my hip.",
+      "metadata": {
+        "message_ref": "konosuba:v6:player:0",
+        "scene_kind": "player",
+        "turn": 2,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T09:52:30Z"
+    },
+    {
+      "content": "The guild hall drops away behind you until it is only a whitewashed block against the morning sky, its painted sign creaking on one chain. You hit the packed dirt of the main road at a jog. Chunchunmaru slaps your hip with every stride, and your muttering goes nowhere except into the dust your own boots kick up.\n\nAxel is awake around you: a fishmonger sluicing his stall, a baker's boy balancing a tray of rolls the color of sand, both of them stepping aside when they see you coming. The looks are the usual ones. You have learned to read them the way other adventurers read bounty posters.\n\nAt the well you break left, past the last thatched roofs, and the road softens into two wheel ruts still holding last night's rain. The air changes before you see the wall — cold, mineral, with a sweetness underneath it like lilies left too long in a shut room. Above the treeline the cemetery gate shows as a gray smear, and the birds that should be singing in the elms are not.",
+      "metadata": {
+        "message_ref": "konosuba:v6:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 2,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:54:00Z"
+    }
+  ],
+  "intention_node_id": 0,
+  "intention_owner": "",
+  "last_advanced": 5,
+  "scene_id": "konosuba",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": 3
+}

@@ -282,15 +282,18 @@ TEST_CASE("CharacterMemory line seq persists and old saves backfill",
                 R"({"appends":[{"stream_id":"self","text":"Keep still."}],"ops":[],"knows":[],"core_revision":null})"};
         });
     const auto saved = memory.to_json();
-    REQUIRE(saved.contains("line_seq"));
-    REQUIRE(saved["line_seq"].get<int>() >= 1);
+    REQUIRE(saved.contains("line_cnt"));
+    REQUIRE(saved["line_cnt"].get<int>() >= 1);
     REQUIRE(saved["streams"][0]["lines"][0]["seq"].get<int>() == 1);
 
     const CharacterMemory loaded = CharacterMemory::from_json(saved);
     REQUIRE(loaded.streams().front().lines.front().seq == 1);
-    REQUIRE(loaded.to_json()["line_seq"].get<int>() == saved["line_seq"].get<int>());
+    REQUIRE(loaded.to_json()["line_cnt"].get<int>()
+            == saved["line_cnt"].get<int>());
 
     json legacy = saved;
+    legacy.erase("line_cnt");
+    legacy.erase("next_line_id");
     legacy.erase("line_seq");
     for (auto& stream : legacy["streams"]) {
         for (auto& line : stream["lines"])
@@ -298,7 +301,7 @@ TEST_CASE("CharacterMemory line seq persists and old saves backfill",
     }
     const CharacterMemory backfilled = CharacterMemory::from_json(legacy);
     REQUIRE(backfilled.streams().front().lines.front().seq == 1);
-    REQUIRE(backfilled.to_json()["line_seq"].get<int>() >= 1);
+    REQUIRE(backfilled.to_json()["line_cnt"].get<int>() >= 1);
 }
 
 TEST_CASE("Objective journal appends take then seen and persists",
@@ -316,13 +319,13 @@ TEST_CASE("Objective journal appends take then seen and persists",
                 R"({"lines":["The latch gave."],"facts":[{"fact":"The gate is open","entities":["Gate"]}]})"};
         });
     REQUIRE(memory.objective_journal().size() == 2);
-    REQUIRE(memory.objective_journal()[1].kind == "seen");
+    REQUIRE(memory.objective_journal()[1].type == "seen");
     REQUIRE(memory.objective_journal()[1].text == "The latch gave.");
 
     const CharacterMemory loaded =
         CharacterMemory::from_json(memory.to_json());
     REQUIRE(loaded.objective_journal().size() == 2);
-    REQUIRE(loaded.objective_journal()[0].kind == "take");
+    REQUIRE(loaded.objective_journal()[0].type == "take");
 
     memory.update_objective_journal(1, "I keep the watch.",
         [](const std::string&) {

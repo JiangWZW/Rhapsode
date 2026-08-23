@@ -23,12 +23,6 @@ struct WeightTuning {
     int touch_hops = 3;
 };
 
-struct Perception {
-    std::uint64_t id = 0;
-    std::string fact;
-    std::vector<std::string> entities;
-};
-
 struct KnowFact {
     std::string fact;
     std::vector<std::string> entities;
@@ -138,7 +132,7 @@ std::string monologue_system_instructions() {
     return os.str();
 }
 
-std::string build_monologue_user_payload(
+std::string build_monologue_user_prompt(
     const std::string& name,
     const CharacterCore& core,
     const std::vector<MonologueStream>& streams,
@@ -182,17 +176,6 @@ std::string build_monologue_user_payload(
     os << "What just happened:\n"
        << (turn_stimulus.empty() ? "(none)\n" : turn_stimulus + "\n");
     return os.str();
-}
-
-std::string build_monologue_prompt(
-    const std::string& name,
-    const CharacterCore& core,
-    const std::vector<MonologueStream>& streams,
-    const std::string& turn_stimulus) {
-    return monologue_system_instructions()
-        + kMonologueUserSentinel + "\n"
-        + build_monologue_user_payload(
-              name, core, streams, turn_stimulus);
 }
 
 std::vector<std::uint64_t> apply_knows(
@@ -252,7 +235,7 @@ std::string build_observation_user_payload(
     os << name << "\n\n";
     os << (who.empty() ? "(unknown)" : who) << "\n";
     for (const auto& line : journal) {
-        os << "\n[" << line.turn << " " << line.kind << "]\n"
+        os << "\n[" << line.turn << " " << line.type << "]\n"
            << line.text << "\n";
     }
     return os.str();
@@ -260,60 +243,41 @@ std::string build_observation_user_payload(
 
 }  // namespace
 
-void CharacterMemory::update_objective_journal(
-    int turn,
-    const std::string& who,
-    const LLMCallback& llm_callback) {
-    ensure_bootstrap(who);
-    if (!llm_callback) {
-        log() << "  [char_mem:" << character_name_
-              << "] observation skip: no LLM callback\n" << std::flush;
-        return;
-    }
+std::string CharacterMemory::build_observation_prompt() const
+{
+    const std::string who_text = !core_.text.empty() ? core_.text : std::string{};
+    return observation_system_instructions() + kObservationUserSentinel + "\n" +
+           build_observation_user_payload(character_name_, who_text, objective_journal_);
+}
 
-    const std::string who_text = !core_.text.empty() ? core_.text : who;
-    const std::string prompt =
-        observation_system_instructions()
-        + kObservationUserSentinel + "\n"
-        + build_observation_user_payload(
-              character_name_, who_text, objective_journal_);
-
-    std::string raw;
-    try {
-        raw = llm_callback(prompt);
-    } catch (const std::exception& ex) {
-        log() << "  [char_mem:" << character_name_
-              << "] update_objective_journal failed: " << ex.what() << "\n";
-        return;
-    }
-
+void CharacterMemory::apply_observation_json(int turn, const std::string &raw) {
     nlohmann::json parsed = try_parse_json(raw);
     if (parsed.is_null() || !parsed.is_object()) {
         const auto sliced = extract_json_object(raw);
-        if (!sliced.empty()) parsed = try_parse_json(sliced);
+        if (!sliced.empty())
+            parsed = try_parse_json(sliced);
     }
     if (!parsed.is_object()) {
-        log() << "  [char_mem:" << character_name_
-              << "] observation unparseable -- no-op apply\n";
+        log() << "  [char_mem:" << character_name_ << "] observation unparseable -- no-op apply\n";
         return;
     }
-
     if (parsed.contains("lines") && parsed["lines"].is_array()) {
-        for (const auto& value : parsed["lines"]) {
+        for (const auto &value : parsed["lines"]) {
             if (value.is_string())
                 append_objective(turn, "seen", value.get<std::string>());
         }
     }
-
     if (parsed.contains("facts") && parsed["facts"].is_array()) {
         std::vector<KnowFact> knows;
-        for (const auto& value : parsed["facts"]) {
-            if (!value.is_object()) continue;
+        for (const auto &value : parsed["facts"]) {
+            if (!value.is_object())
+                continue;
             KnowFact item;
             item.fact = str::trim(sanitize_utf8(value.value("fact", "")));
-            if (item.fact.empty()) continue;
+            if (item.fact.empty())
+                continue;
             if (value.contains("entities") && value["entities"].is_array()) {
-                for (const auto& entity : value["entities"])
+                for (const auto &entity : value["entities"])
                     if (entity.is_string())
                         item.entities.push_back(entity.get<std::string>());
             }
@@ -321,15 +285,33 @@ void CharacterMemory::update_objective_journal(
         }
         apply_knows(beliefs_, turn, knows, {});
     }
-
     int seen_this_turn = 0;
-    for (const auto& line : objective_journal_)
-        if (line.turn == turn && line.kind == "seen") ++seen_this_turn;
-    log() << "  [journal:" << character_name_
-          << "] observation done t=" << turn
-          << " seen=" << seen_this_turn
-          << " journal=" << objective_journal_.size()
-          << "\n" << std::flush;
+    for (const auto &line : objective_journal_)
+        if (line.turn == turn && line.type == "seen")
+            ++seen_this_turn;
+    log() << "  [journal:" << character_name_ << "] observation done t=" << turn
+          << " seen=" << seen_this_turn << " journal=" << objective_journal_.size() << "\n"
+          << std::flush;
+}
+
+void CharacterMemory::update_objective_journal(int turn, const std::string &who,
+                                               const LLMCallback &llm_callback) {
+    ensure_bootstrap(who);
+    if (!llm_callback) {
+        log() << "  [char_mem:" << character_name_ << "] observation skip: no LLM callback\n"
+            << std::flush;
+        return;
+    }
+    const std::string prompt = build_observation_prompt();
+    std::string raw;
+    try {
+        raw = llm_callback(prompt);
+    } catch (const std::exception &ex) {
+        log() << "  [char_mem:" << character_name_
+            << "] update_objective_journal failed: " << ex.what() << "\n";
+        return;
+    }
+    apply_observation_json(turn, raw);
 }
 
 void CharacterMemory::ensure_bootstrap(const std::string& core_text_if_empty) {
@@ -358,9 +340,9 @@ MonologueStream* CharacterMemory::find_stream(const std::string& id) {
 
 std::string CharacterMemory::alloc_stream_id(const std::string& parent_id,
                                             int turn) {
-    ++stream_seq_;
+    ++monologue_stream_cnt_;
     return parent_id + "_f" + std::to_string(turn) + "_" +
-           std::to_string(stream_seq_);
+           std::to_string(monologue_stream_cnt_);
 }
 
 nlohmann::json CharacterMemory::render_mind_query(
@@ -393,42 +375,27 @@ nlohmann::json CharacterMemory::render_mind_query(
     return result;
 }
 
-void CharacterMemory::update_monologues(
-    int turn,
-    const std::string& description,
-    const std::string& turn_stimulus,
-    const LLMCallback& llm_callback,
-    const std::string& voice) {
-    (void)voice;
+CharacterMemory::MonologueBuildContext
+CharacterMemory::build_monologue_prompt(const std::string &description,
+                                                  const std::string &turn_stimulus) {
+    MonologueBuildContext ctx;
+    ctx.description = description;
     ensure_bootstrap(description);
-    if (!llm_callback) {
-        log() << "  [char_mem:" << character_name_
-              << "] monologue skip: no LLM callback\n" << std::flush;
-        return;
-    }
-
-    auto perceptions = gather_active_perceptions(beliefs_);
-    const std::string prompt = build_monologue_prompt(
-        character_name_, core_, streams_, turn_stimulus);
-
-    std::string raw;
-    try {
-        raw = llm_callback(prompt);
-    } catch (const std::exception& ex) {
-        log() << "  [char_mem:" << character_name_
-              << "] update_monologues failed: " << ex.what() << "\n";
-        consolidate_perceptions(beliefs_, perceptions, turn);
-        return;
-    }
-
+    ctx.perceptions = gather_active_perceptions(beliefs_);
+    ctx.prompt = monologue_system_instructions() + kMonologueUserSentinel + "\n"
+                + build_monologue_user_prompt(character_name_, core_, streams_, turn_stimulus);
+    return ctx;
+}
+void CharacterMemory::apply_monologue_json(int turn, const std::string &raw,
+                                           const MonologueBuildContext &ctx) {
+    auto perceptions = ctx.perceptions;
+    std::vector<std::uint64_t> new_belief_ids;
     nlohmann::json parsed = try_parse_json(raw);
     if (parsed.is_null() || !parsed.is_object()) {
         const auto sliced = extract_json_object(raw);
-        if (!sliced.empty()) parsed = try_parse_json(sliced);
+        if (!sliced.empty())
+            parsed = try_parse_json(sliced);
     }
-
-    std::vector<std::uint64_t> new_belief_ids;
-
     if (parsed.is_object()) {
         if (parsed.contains("core_revision") && parsed["core_revision"].is_string()) {
             const std::string revision =
@@ -438,124 +405,137 @@ void CharacterMemory::update_monologues(
                 core_.revised_at = turn;
             }
         }
-
-        // merges then concludes then forks
         if (parsed.contains("ops") && parsed["ops"].is_array()) {
             std::vector<nlohmann::json> merges, concludes, forks;
-            for (const auto& op : parsed["ops"]) {
-                if (!op.is_object()) continue;
+            for (const auto &op : parsed["ops"]) {
+                if (!op.is_object())
+                    continue;
                 const std::string kind = str::to_lower(op.value("op", ""));
-                if (kind == "merge") merges.push_back(op);
-                else if (kind == "conclude") concludes.push_back(op);
-                else if (kind == "fork") forks.push_back(op);
+                if (kind == "merge")
+                    merges.push_back(op);
+                else if (kind == "conclude")
+                    concludes.push_back(op);
+                else if (kind == "fork")
+                    forks.push_back(op);
             }
-            for (const auto& op : merges) {
+            for (const auto &op : merges) {
                 const std::string from_id = op.value("from", "");
                 const std::string into_id = op.value("into", "");
-                auto* from = find_stream(from_id);
-                auto* into = find_stream(into_id);
-                if (!from || !into || from == into) continue;
-                if (from->status != "active" || into->status != "active") continue;
-                const std::string synthesis =
-                    str::trim(sanitize_utf8(op.value("synthesis", "")));
+                auto *from = find_stream(from_id);
+                auto *into = find_stream(into_id);
+                if (!from || !into || from == into)
+                    continue;
+                if (from->status != "active" || into->status != "active")
+                    continue;
+                const std::string synthesis = str::trim(sanitize_utf8(op.value("synthesis", "")));
                 if (!synthesis.empty())
-                    append_line(*into, turn, synthesis);
+                    append_monologue_line(*into, turn, synthesis);
                 from->status = "closed";
                 from->closed_reason = str::trim(op.value("reason", "merged"));
-                from->closed_summary = synthesis.empty()
-                    ? from->closed_reason : synthesis;
-                log() << "  [char_mem:" << character_name_
-                      << "] stream merge " << from_id << " -> " << into_id << "\n";
+                from->closed_summary = synthesis.empty() ? from->closed_reason : synthesis;
+                log() << "  [char_mem:" << character_name_ << "] stream merge " << from_id << " -> "
+                      << into_id << "\n";
             }
-            for (const auto& op : concludes) {
+            for (const auto &op : concludes) {
                 const std::string stream_id = op.value("stream_id", "");
-                auto* stream = find_stream(stream_id);
-                if (!stream || stream->status != "active") continue;
+                auto *stream = find_stream(stream_id);
+                if (!stream || stream->status != "active")
+                    continue;
                 if (active_stream_count() <= 1) {
-                    log() << "  [char_mem:" << character_name_
-                          << "] skip conclude " << stream_id
+                    log() << "  [char_mem:" << character_name_ << "] skip conclude " << stream_id
                           << " (would empty streams)\n";
                     continue;
                 }
                 stream->status = "closed";
                 stream->closed_reason = str::trim(op.value("reason", "concluded"));
-                stream->closed_summary =
-                    str::trim(sanitize_utf8(op.value("closure", "")));
-                log() << "  [char_mem:" << character_name_
-                      << "] stream conclude " << stream_id << "\n";
+                stream->closed_summary = str::trim(sanitize_utf8(op.value("closure", "")));
+                log() << "  [char_mem:" << character_name_ << "] stream conclude " << stream_id
+                      << "\n";
             }
-            for (const auto& op : forks) {
+            for (const auto &op : forks) {
                 if (active_stream_count() >= kMaxActiveStreams) {
-                    log() << "  [char_mem:" << character_name_
-                          << "] skip fork (at cap)\n";
+                    log() << "  [char_mem:" << character_name_ << "] skip fork (at cap)\n";
                     continue;
                 }
                 const std::string parent_id = op.value("parent", "");
-                auto* parent = find_stream(parent_id);
-                if (!parent || parent->status != "active") continue;
-                const std::string focus =
-                    str::trim(sanitize_utf8(op.value("focus", "")));
-                if (focus.empty()) continue;
+                auto *parent = find_stream(parent_id);
+                if (!parent || parent->status != "active")
+                    continue;
+                const std::string focus = str::trim(sanitize_utf8(op.value("focus", "")));
+                if (focus.empty())
+                    continue;
                 MonologueStream child;
                 child.id = alloc_stream_id(parent_id, turn);
                 child.focus = focus;
                 child.parent_id = parent_id;
                 child.status = "active";
-                const std::string opening =
-                    str::trim(sanitize_utf8(op.value("opening", "")));
+                const std::string opening = str::trim(sanitize_utf8(op.value("opening", "")));
                 if (!opening.empty())
-                    append_line(child, turn, opening);
-                log() << "  [char_mem:" << character_name_
-                      << "] stream fork " << parent_id << " -> " << child.id
-                      << "\n";
+                    append_monologue_line(child, turn, opening);
+                log() << "  [char_mem:" << character_name_ << "] stream fork " << parent_id
+                      << " -> " << child.id << "\n";
                 streams_.push_back(std::move(child));
             }
         }
-
         if (parsed.contains("appends") && parsed["appends"].is_array()) {
-            for (const auto& append : parsed["appends"]) {
-                if (!append.is_object()) continue;
+            for (const auto &append : parsed["appends"]) {
+                if (!append.is_object())
+                    continue;
                 const std::string stream_id = append.value("stream_id", "");
-                const std::string text =
-                    str::trim(sanitize_utf8(append.value("text", "")));
-                if (text.empty()) continue;
-                auto* stream = find_stream(stream_id);
-                if (!stream || stream->status != "active") continue;
-                append_line(*stream, turn, text);
+                const std::string text = str::trim(sanitize_utf8(append.value("text", "")));
+                if (text.empty())
+                    continue;
+                auto *stream = find_stream(stream_id);
+                if (!stream || stream->status != "active")
+                    continue;
+                append_monologue_line(*stream, turn, text);
             }
         }
-
         if (parsed.contains("knows") && parsed["knows"].is_array()) {
             std::vector<KnowFact> knows;
-            for (const auto& value : parsed["knows"]) {
-                if (!value.is_object()) continue;
+            for (const auto &value : parsed["knows"]) {
+                if (!value.is_object())
+                    continue;
                 KnowFact item;
                 item.fact = str::trim(sanitize_utf8(value.value("fact", "")));
-                if (item.fact.empty()) continue;
+                if (item.fact.empty())
+                    continue;
                 if (value.contains("entities") && value["entities"].is_array()) {
-                    for (const auto& entity : value["entities"])
+                    for (const auto &entity : value["entities"])
                         if (entity.is_string())
                             item.entities.push_back(entity.get<std::string>());
                 }
-                item.weight = static_cast<float>(
-                    std::clamp(json_number<int>(value, "weight", 5), 1, 10));
+                item.weight =
+                    static_cast<float>(std::clamp(json_number<int>(value, "weight", 5), 1, 10));
                 knows.push_back(std::move(item));
             }
             new_belief_ids = apply_knows(beliefs_, turn, knows, perceptions);
         }
     } else {
-        log() << "  [char_mem:" << character_name_
-              << "] monologue unparseable -- no-op apply\n";
+        log() << "  [char_mem:" << character_name_ << "] monologue unparseable -- no-op apply\n";
     }
-
     consolidate_perceptions(beliefs_, perceptions, turn);
-    apply_reinforce_decay(
-        beliefs_, turn, new_belief_ids, WeightTuning{}, character_name_);
-    ensure_bootstrap(description);
-
-    log() << "  [char_mem:" << character_name_ << "] monologue done appends/ops "
-          << "knows=" << new_belief_ids.size()
-          << " streams_active=" << active_stream_count() << "\n" << std::flush;
+    apply_reinforce_decay(beliefs_, turn, new_belief_ids, WeightTuning{}, character_name_);
+    ensure_bootstrap(ctx.description);
+}
+void CharacterMemory::update_monologues(int turn, const std::string &description,
+                                        const std::string &turn_stimulus,
+                                        const LLMCallback &llm_callback, const std::string &voice) {
+    (void)voice;
+    auto ctx = build_monologue_prompt(description, turn_stimulus);
+    if (!llm_callback) {
+        log() << "  [char_mem:" << character_name_ << "] monologue skip: no LLM callback\n"
+              << std::flush;
+        return;
+    }
+    std::string raw;
+    try {
+        raw = llm_callback(ctx.prompt);
+    } catch (const std::exception &ex) {
+        log() << "  [char_mem:" << character_name_ << "] update_monologues failed: " << ex.what()
+              << "\n";
+    }
+    apply_monologue_json(turn, raw, ctx);
 }
 
 }  // namespace rhapsode

@@ -577,12 +577,12 @@ TEST_CASE("On-stage minds share the take and keep their own seen lines",
     const auto& alice = world.character_memories().at("Alice").objective_journal();
     const auto& bob = world.character_memories().at("Bob").objective_journal();
     REQUIRE(alice.size() == 2);
-    REQUIRE(alice[0].kind == "take");
+    REQUIRE(alice[0].type == "take");
     REQUIRE(alice[0].text == "The bell rings.");
-    REQUIRE(alice[1].kind == "seen");
+    REQUIRE(alice[1].type == "seen");
     REQUIRE(alice[1].text == "Alice hears the bell.");
     REQUIRE(bob.size() == 1);
-    REQUIRE(bob[0].kind == "take");
+    REQUIRE(bob[0].type == "take");
     REQUIRE(bob[0].text == "The bell rings.");
 
     std::string alice_prompt;

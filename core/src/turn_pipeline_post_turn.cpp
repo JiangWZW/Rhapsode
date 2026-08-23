@@ -71,10 +71,20 @@ std::vector<Node> process_post_turn(
 
         world.append_objective_takes(
             scene->scene_id, turn, format_turn_take(*scene, turn));
-        world.update_objective_journals(
-            scene->scene_id, turn, services.observation);
-        world.update_monologues(
-            scene->scene_id, turn, services.reflection);
+        if (services.observation_ready && services.observation_submit)
+            world.poll_observations(
+                scene->scene_id, turn,
+                services.observation_ready, services.observation_submit);
+        else
+            world.update_objective_journals(
+                scene->scene_id, turn, services.observation);
+        if (services.monologue_ready && services.monologue_submit)
+            world.poll_monologues(
+                scene->scene_id, turn,
+                services.monologue_ready, services.monologue_submit);
+        else
+            world.update_monologues(
+                scene->scene_id, turn, services.reflection);
 
         if (services.downsampler) {
             const int before = scene->downsampling.summarized_up_to;

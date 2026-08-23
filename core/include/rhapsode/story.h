@@ -93,6 +93,14 @@ public:
     void set_downsampler_callback(LLMCallback cb);
     void set_reflection_llm_callback(LLMCallback cb);
     void set_observation_llm_callback(LLMCallback cb);
+    void set_observation_ready_callback(
+        std::function<bool(std::size_t, int, std::string&, bool&)> cb);
+    void set_observation_submit_callback(
+        std::function<void(const std::vector<PromptJob>&)> cb);
+    void set_monologue_ready_callback(
+        std::function<bool(std::size_t, int, std::string&, bool&)> cb);
+    void set_monologue_submit_callback(
+        std::function<void(const std::vector<PromptJob>&)> cb);
     void set_memory(std::shared_ptr<MemorySystem> memory) {
         services_.memory = std::move(memory);
     }
@@ -100,6 +108,7 @@ public:
 
     std::vector<SceneMessage> advance_player(const std::string& player_input);
     std::vector<SceneMessage> complete_turn();
+    void apply_ready_journals();
     int revert_active_turns(int count);
 
     bool has_save(const std::string& saves_dir) const;

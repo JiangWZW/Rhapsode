@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -15,8 +16,8 @@ from rhapsode._core import (
 )
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import (
-    make_llm_callback, make_narrator_callback, make_observation_callback,
-    make_reflection_callback, make_weaver_callback,
+    PromptJobs, make_llm_callback, make_narrator_callback,
+    make_observation_callback, make_reflection_callback, make_weaver_callback,
 )
 from rhapsode.scheduler import make_scheduler_callback
 from rhapsode.lifecycle import make_lifecycle_callback
@@ -65,6 +66,9 @@ class WsSession:
     memory: MemorySystem
     annotator: Annotator
     is_resuming: bool
+    prompt_pool: ThreadPoolExecutor
+    observation_jobs: PromptJobs
+    monologue_jobs: PromptJobs
 
     @property
     def scene(self) -> SceneData:
@@ -93,8 +97,13 @@ def _setup_ws_session() -> WsSession:
         )
 
     _sync_graph_to_memory(story, memory)
-    story.set_reflection_llm_callback(make_reflection_callback())
-    story.set_observation_llm_callback(make_observation_callback())
+    prompt_pool = ThreadPoolExecutor(max_workers=8)
+    observation_jobs = PromptJobs(make_observation_callback(), prompt_pool)
+    monologue_jobs = PromptJobs(make_reflection_callback(), prompt_pool)
+    story.set_observation_ready_callback(observation_jobs.ready)
+    story.set_observation_submit_callback(observation_jobs.submit)
+    story.set_monologue_ready_callback(monologue_jobs.ready)
+    story.set_monologue_submit_callback(monologue_jobs.submit)
 
     annotator = Annotator(story.world())
     annotator.set_ner_callback(make_ner_callback())
@@ -102,7 +111,9 @@ def _setup_ws_session() -> WsSession:
     _configure_story(story)
 
     return WsSession(story=story, memory=memory, annotator=annotator,
-                     is_resuming=is_resuming)
+                     is_resuming=is_resuming, prompt_pool=prompt_pool,
+                     observation_jobs=observation_jobs,
+                     monologue_jobs=monologue_jobs)
 
 
 # -- Transport -----------------------------------------------------------------
@@ -159,6 +170,14 @@ async def _stream_outputs(ws: WebSocket, annotator: Annotator,
         await ws.send_json(payload)
 
 
+def _drain_session(session: WsSession) -> None:
+    session.observation_jobs.wait()
+    session.monologue_jobs.wait()
+    session.story.apply_ready_journals()
+    session.story.save(SAVES_DIR)
+    session.prompt_pool.shutdown(wait=False)
+
+
 async def _handle_undo(ws: WebSocket, session: WsSession, n: int) -> None:
     reverted = await asyncio.get_event_loop().run_in_executor(
         None, session.story.revert_active_turns, n)
@@ -175,6 +194,7 @@ async def run_session(ws: WebSocket) -> None:
     await ws.accept()
 
     loop = asyncio.get_event_loop()
+    session = None
     try:
         session = await loop.run_in_executor(None, _setup_ws_session)
     except Exception as exc:
@@ -227,3 +247,9 @@ async def run_session(ws: WebSocket) -> None:
 
     except WebSocketDisconnect:
         pass
+    finally:
+        if session is not None:
+            try:
+                await loop.run_in_executor(None, _drain_session, session)
+            except Exception:
+                log.exception("Session drain failed")

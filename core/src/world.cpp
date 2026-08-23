@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <functional>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -14,7 +15,7 @@ namespace rhapsode {
 
 namespace {
 
-constexpr std::size_t kMonologueTakeCap = 2000;
+constexpr std::size_t kMonologueTakeCap = 8000;
 
 void fill_missing_profile(Character& existing, Character& incoming) {
     if (existing.description.empty() && !incoming.description.empty())
@@ -164,6 +165,147 @@ void World::set_character_memory(CharacterMemory memory) {
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
+void World::apply_ready_observations(
+    int turn,
+    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready)
+{
+    for (const auto& character : characters_) {
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+
+        CharacterMemory& memory = it->second;
+        const std::size_t handle = std::hash<std::string>{}(character.name);
+
+        for (int i = 0; i < CharacterMemory::kStagingBuffers; ++i) {
+            if (!memory.observation_pending(i)) continue;
+
+            std::string raw;
+            bool failed = false;
+            if (!ready(handle, i, raw, failed))
+                continue;
+
+            const int num_lines = memory.observation_num_lines(i);
+            if (failed || character.dead) {
+                memory.release_observation(i);
+                continue;
+            }
+
+            memory.apply_observation_json(turn, raw);
+            memory.set_observation_consumed_lines(num_lines);
+            memory.release_observation(i);
+        }
+    }
+}
+
+void World::poll_observations(
+    const std::string& scene_id,
+    int turn,
+    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+    const std::function<void(const std::vector<PromptJob>&)>& submit)
+{
+    apply_ready_observations(turn, ready);
+
+    std::vector<PromptJob> jobs;
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        CharacterMemory& memory = it->second;
+        const int n = static_cast<int>(memory.objective_journal().size());
+        if (n <= memory.observation_consumed_lines()) continue;
+        const int i = memory.claim_observation(n);
+        if (i < 0) continue;
+        jobs.push_back(PromptJob{
+            std::hash<std::string>{}(character.name),
+            memory.build_observation_prompt(),
+            i});
+    }
+    submit(jobs);
+}
+
+void World::apply_ready_monologues(
+    int turn,
+    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready) {
+    for (const auto& character : characters_) {
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        CharacterMemory& memory = it->second;
+        const std::size_t handle = std::hash<std::string>{}(character.name);
+        for (int i = 0; i < CharacterMemory::kStagingBuffers; ++i) {
+            if (!memory.monologue_pending(i)) continue;
+            std::string raw;
+            bool failed = false;
+            if (!ready(handle, i, raw, failed)) continue;
+            const int num_lines = memory.monologue_num_lines(i);
+            const auto ctx = memory.monologue_context(i);
+            if (failed || character.dead) {
+                memory.release_monologue(i);
+                continue;
+            }
+            memory.apply_monologue_json(turn, raw, ctx);
+            memory.set_monologue_consumed_lines(num_lines);
+            memory.release_monologue(i);
+        }
+    }
+}
+
+void World::poll_monologues(
+    const std::string& scene_id,
+    int turn,
+    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+    const std::function<void(const std::vector<PromptJob>&)>& submit) {
+    apply_ready_monologues(turn, ready);
+
+    std::vector<PromptJob> jobs;
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        CharacterMemory& memory = it->second;
+        const auto& journal = memory.objective_journal();
+        const int n = static_cast<int>(journal.size());
+        if (n <= memory.monologue_consumed_lines()) continue;
+
+        std::string take;
+        std::string seen;
+        for (int i = memory.monologue_consumed_lines(); i < n; ++i) {
+            const auto& line = journal[i];
+            if (line.type == "take") {
+                if (!take.empty()) take += '\n';
+                take += line.text;
+            } else if (line.type == "seen") {
+                if (!seen.empty()) seen += '\n';
+                seen += line.text;
+            }
+        }
+        if (take.size() > kMonologueTakeCap)
+            take = truncate_utf8(take, kMonologueTakeCap);
+        std::string tail = take;
+        if (!seen.empty()) {
+            if (!tail.empty()) tail += '\n';
+            tail += seen;
+        }
+
+        const std::string who =
+            !str::trim(character.core).empty() ? character.core
+                                               : character.description;
+        auto ctx = memory.build_monologue_prompt(who, tail);
+        const int i = memory.claim_monologue(n, ctx);
+        if (i < 0) continue;
+        jobs.push_back(PromptJob{
+            std::hash<std::string>{}(character.name),
+            std::move(ctx.prompt),
+            i});
+    }
+    submit(jobs);
+}
+
 std::uint64_t World::seed_character_intention(
     const std::string& character,
     const std::string& intention,
@@ -252,10 +394,10 @@ void World::update_monologues(const std::string& scene_id,
         std::string seen;
         for (const auto& line : it->second.objective_journal()) {
             if (line.turn != turn) continue;
-            if (line.kind == "take") {
+            if (line.type == "take") {
                 if (!take.empty()) take += '\n';
                 take += line.text;
-            } else if (line.kind == "seen") {
+            } else if (line.type == "seen") {
                 if (!seen.empty()) seen += '\n';
                 seen += line.text;
             }

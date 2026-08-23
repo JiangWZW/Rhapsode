@@ -1,6 +1,6 @@
 ---
 title: Turn execution
-last_updated: 2026-08-22
+last_updated: 2026-08-23
 confidence: verified
 tier: semantic
 sources:
@@ -125,8 +125,11 @@ not part of an all-or-nothing save transaction.
 `Story::complete_turn` consumes `PendingTurn` and then performs:
 
 1. graph weaving and expiry;
-2. objective journals (`take` from this turn, then per-character `seen`);
-3. character monologue updates;
+2. objective journals: `take` is appended synchronously; `seen` is `poll_observations` when
+   ready+submit are set (`apply_ready_observations` then claim), otherwise blocking
+   `update_objective_journals`;
+3. character monologues: `poll_monologues` when ready+submit are set (`apply_ready_monologues`
+   then claim), otherwise blocking `update_monologues`;
 4. text downsampling;
 5. lifecycle decision request and deterministic application;
 6. turn-clock advancement;

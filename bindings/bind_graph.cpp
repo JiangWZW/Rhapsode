@@ -132,7 +132,7 @@ void bind_graph(py::module_& m) {
                  for (const auto& line : memory.objective_journal()) {
                      py::dict row;
                      row["turn"] = line.turn;
-                     row["kind"] = line.kind;
+                     row["kind"] = line.type;
                      row["text"] = line.text;
                      rows.append(row);
                  }

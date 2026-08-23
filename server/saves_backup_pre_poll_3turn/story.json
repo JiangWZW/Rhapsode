@@ -1,0 +1,10 @@
+{
+  "active_scene_id": "konosuba",
+  "beat_clock": 6,
+  "scene_closures": [],
+  "scene_ids": [
+    "konosuba",
+    "konosuba_f0_0"
+  ],
+  "turn_clock": 6
+}

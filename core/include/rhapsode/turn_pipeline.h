@@ -39,6 +39,10 @@ struct TurnServices {
     LLMCallback downsampler;
     LLMCallback reflection;
     LLMCallback observation;
+    std::function<bool(std::size_t, int, std::string&, bool&)> observation_ready;
+    std::function<void(const std::vector<PromptJob>&)> observation_submit;
+    std::function<bool(std::size_t, int, std::string&, bool&)> monologue_ready;
+    std::function<void(const std::vector<PromptJob>&)> monologue_submit;
     size_t history_window = 8;
     std::string storyline_board;
     Weaver weaver;

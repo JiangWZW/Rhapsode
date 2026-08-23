@@ -11,7 +11,7 @@ def test_public_binding_surface_matches_owned_runtime_design():
         "EdgeData", "EdgeInfo", "EndReason",
         "EntitySpan", "ExpiryOp", "GraphAnalysis", "MemorySystem",
         "NarrativeMetrics", "Node",
-        "NodeState", "ReliabilityMetrics", "Role", "SceneData",
+        "NodeState", "PromptJob", "ReliabilityMetrics", "Role", "SceneData",
         "SceneMessage", "SessionEvalConfig", "SessionEvalRunner", "SessionReport",
         "Story", "WeaveOp", "WeaveResult",
         "World", "WorldGraph", "analyze_graph",
@@ -27,7 +27,8 @@ def test_public_binding_surface_matches_owned_runtime_design():
 
 def test_story_is_the_production_composition_surface():
     expected = {
-        "active_scene", "active_scene_id", "advance_player", "beat_clock",
+        "active_scene", "active_scene_id", "advance_player",
+        "apply_ready_journals", "beat_clock",
         "turn_clock",
         "complete_turn",
         "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
@@ -37,7 +38,10 @@ def test_story_is_the_production_composition_surface():
         "scene_ids",
         "set_downsampler_callback", "set_history_window",
         "set_lifecycle_callback", "set_llm_callback",
-        "set_memory", "set_observation_llm_callback",
+        "set_memory", "set_monologue_ready_callback",
+        "set_monologue_submit_callback",
+        "set_observation_llm_callback", "set_observation_ready_callback",
+        "set_observation_submit_callback",
         "set_reflection_llm_callback",
         "set_narrator_llm_callback", "set_saves_dir",
         "set_scheduler_callback", "set_weaver_interval",

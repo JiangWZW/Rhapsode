@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -62,6 +63,22 @@ public:
     void update_monologues(const std::string& scene_id,
                            int turn,
                            const LLMCallback& llm_callback);
+    void apply_ready_observations(
+        int turn,
+        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
+    void apply_ready_monologues(
+        int turn,
+        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
+    void poll_observations(
+        const std::string& scene_id,
+        int turn,
+        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+        const std::function<void(const std::vector<PromptJob>&)>& submit);
+    void poll_monologues(
+        const std::string& scene_id,
+        int turn,
+        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+        const std::function<void(const std::vector<PromptJob>&)>& submit);
     bool mark_character_dead(const std::string& name);
 
     nlohmann::json to_json() const;

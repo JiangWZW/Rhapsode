@@ -206,6 +206,45 @@ void CharacterMemory::append_objective(int turn, std::string kind,
     objective_journal_.push_back({turn, std::move(kind), std::move(text)});
 }
 
+int CharacterMemory::claim_observation(int num_lines) {
+    if (observation_pending()) return -1;
+    const int i = observation_write_;
+    observation_num_lines_[i] = num_lines;
+    observation_pending_[i] = true;
+    observation_write_ = (observation_write_ + 1) % kStagingBuffers;
+    return i;
+}
+
+void CharacterMemory::release_observation(int i) {
+    observation_pending_[i] = false;
+}
+
+bool CharacterMemory::observation_pending() const {
+    for (int i = 0; i < kStagingBuffers; ++i)
+        if (observation_pending_[i]) return true;
+    return false;
+}
+
+int CharacterMemory::claim_monologue(int num_lines, MonologueBuildContext ctx) {
+    if (monologue_pending()) return -1;
+    const int i = monologue_write_;
+    monologue_num_lines_[i] = num_lines;
+    monologue_pending_[i] = true;
+    monologue_ctx_[i] = std::move(ctx);
+    monologue_write_ = (monologue_write_ + 1) % kStagingBuffers;
+    return i;
+}
+
+void CharacterMemory::release_monologue(int i) {
+    monologue_pending_[i] = false;
+}
+
+bool CharacterMemory::monologue_pending() const {
+    for (int i = 0; i < kStagingBuffers; ++i)
+        if (monologue_pending_[i]) return true;
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // Serialization
 // ---------------------------------------------------------------------------
@@ -243,13 +282,16 @@ nlohmann::json CharacterMemory::to_json() const {
     for (const auto& line : objective_journal_) {
         journal.push_back({
             {"turn", line.turn},
-            {"kind", line.kind},
+            {"kind", line.type},
             {"text", line.text},
         });
     }
+    j["monologue_consumed_lines"] = monologue_consumed_lines_;
+    j["stream_cnt"] = monologue_stream_cnt_;
+
     j["objective_journal"] = std::move(journal);
-    j["stream_seq"] = stream_seq_;
-    j["line_seq"] = line_seq_;
+    j["observation_consumed_lines"] = objective_journal_consumed_lines_;
+    j["line_cnt"] = objective_journal_line_cnt_;
     return j;
 }
 
@@ -295,31 +337,41 @@ CharacterMemory CharacterMemory::from_json(const nlohmann::json& j) {
             if (!line.is_object()) continue;
             ObjectiveLine row;
             row.turn = line.value("turn", 0);
-            row.kind = line.value("kind", "seen");
+            row.type = line.value("kind", "seen");
             row.text = line.value("text", "");
             if (!row.text.empty())
                 cm.objective_journal_.push_back(std::move(row));
         }
     }
 
-    cm.stream_seq_ = j.value("stream_seq", 0);
-    if (j.contains("line_seq")) {
-        cm.line_seq_ = j.value("line_seq", 0);
+    cm.monologue_consumed_lines_ = j.value(
+        "monologue_consumed_lines",
+        j.value("mono_consumed_lines", j.value("mono_consumed_upto", 0)));
+    cm.monologue_stream_cnt_ = j.value(
+        "stream_cnt", j.value("next_stream_id", j.value("stream_seq", 0)));
+
+    cm.objective_journal_consumed_lines_ = j.value(
+        "observation_consumed_lines",
+        j.value("obs_consumed_lines", j.value("obs_consumed_upto", 0)));
+    if (j.contains("line_cnt") || j.contains("next_line_id") ||
+        j.contains("line_seq")) {
+        cm.objective_journal_line_cnt_ = j.value(
+            "line_cnt", j.value("next_line_id", j.value("line_seq", 0)));
     } else {
         int seq = 0;
         for (auto& stream : cm.streams_) {
             for (auto& line : stream.lines)
                 line.seq = ++seq;
         }
-        cm.line_seq_ = seq;
+        cm.objective_journal_line_cnt_ = seq;
     }
     cm.ensure_bootstrap("");
     return cm;
 }
 
-void CharacterMemory::append_line(MonologueStream& stream, int turn,
+void CharacterMemory::append_monologue_line(MonologueStream& stream, int turn,
                                   std::string text) {
-    stream.lines.push_back({turn, std::move(text), ++line_seq_});
+    stream.lines.push_back({turn, std::move(text), ++objective_journal_line_cnt_});
 }
 
 }  // namespace rhapsode

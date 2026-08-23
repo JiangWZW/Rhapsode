@@ -280,4 +280,33 @@ void Story::set_observation_llm_callback(LLMCallback cb) {
     services_.observation = std::move(cb);
 }
 
+void Story::set_observation_ready_callback(
+    std::function<bool(std::size_t, int, std::string&, bool&)> cb) {
+    services_.observation_ready = std::move(cb);
+}
+
+void Story::set_observation_submit_callback(
+    std::function<void(const std::vector<PromptJob>&)> cb) {
+    services_.observation_submit = std::move(cb);
+}
+
+void Story::set_monologue_ready_callback(
+    std::function<bool(std::size_t, int, std::string&, bool&)> cb) {
+    services_.monologue_ready = std::move(cb);
+}
+
+void Story::set_monologue_submit_callback(
+    std::function<void(const std::vector<PromptJob>&)> cb) {
+    services_.monologue_submit = std::move(cb);
+}
+
+void Story::apply_ready_journals() {
+    if (services_.observation_ready)
+        data_.world.apply_ready_observations(
+            data_.turn_clock, services_.observation_ready);
+    if (services_.monologue_ready)
+        data_.world.apply_ready_monologues(
+            data_.turn_clock, services_.monologue_ready);
+}
+
 }  // namespace rhapsode

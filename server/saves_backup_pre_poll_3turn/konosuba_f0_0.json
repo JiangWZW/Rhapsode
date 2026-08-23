@@ -1,0 +1,168 @@
+{
+  "charge": 4.0,
+  "dialogue": [
+    {
+      "content": "Kazumaaaa! You sent a goddess to a graveyard all alone, like some discount cleric! When I get back, you are buying me the most expensive bottle in Axel! (She stamps her foot once and glares back toward town.)",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v3:character:2",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 0,
+        "turn_ordinal": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:43:56Z"
+    },
+    {
+      "content": "Hmph! I'll have you know a true goddess can purify every last one of you with a single hymn! Show some respect and stay down! (She plants her hands on her hips and begins to hum again, louder now.)",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v3:character:3",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 0,
+        "turn_ordinal": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:43:56Z"
+    },
+    {
+      "content": "Oh, now you listen! That's right! Get up so I can put you back down properly! (She stamps her foot and raises her voice over the splitting earth.)",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v5:character:2",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 1,
+        "turn_ordinal": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:50:31Z"
+    },
+    {
+      "content": "Ha! Did you see that? Of course you didn't, you all stayed in town like cowards while a goddess did your job for you! (She plants her fists on her hips and beams at the empty air.)",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v7:character:2",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 2,
+        "turn_ordinal": 2
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T10:01:54Z"
+    },
+    {
+      "content": "Wait, why are there MORE of them?! This is all Kazuma's fault! I will purify every last one, but he is buying me the most expensive bottle in Axel or I will never, ever forgive him! (Her voice cracks as she points at the heaving far fence line.)",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v7:character:3",
+        "scene_kind": "character",
+        "speaker": "Aqua",
+        "turn": 2,
+        "turn_ordinal": 3
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T10:01:54Z"
+    }
+  ],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": []
+      },
+      {
+        "max_snippets": 5,
+        "snippets": []
+      },
+      {
+        "max_snippets": 3,
+        "snippets": [
+          {
+            "merged_count": 1,
+            "promoted": true,
+            "source_mip": 1,
+            "text": "Aqua is in Axel's Adventurer's Guild hall on a broke morning with her party: Kazuma (Player), Megumin, Darkness, and guild receptionist Luna nearby. She has been drinking cheap morning ale on Kazuma's tab and is furious that nobody treats her as the goddess she is. Kazuma has just ordered her to go alone to the cemetery, saying her holy aura has been drawing undead and she needs to purify them before they shamble into town and the party gets blamed. Megumin, still numb from that morning's Explosion, backed the order by saying Aqua can purify undead by humming a hymn. Darkness chose to take the sewers instead, toward the Brutal Alligators. Luna warned that any collateral damage will be deducted from the reward. Aqua blames Kazuma for dragging her into this world and for sending her to a zombie-infested graveyard alone 'like some discount cleric.' The known stakes: the party is deeply in debt from Megumin's explosion damage and Aqua's failed exorcisms; Aqua's holy aura is attracting a growing horde of undead to Axel's cemetery at night; and the guild quest is to clear the zombie-infested graveyard before the undead reach town. Aqua's immediate task is to go to the cemetery and purify the undead alone, resentfully, before the guild blames the party.",
+            "timestamp": 1787478161.8465805,
+            "turn_end": 0,
+            "turn_start": 0
+          }
+        ]
+      }
+    ],
+    "summarized_up_to": 0
+  },
+  "driving_intention": "Aqua is sent alone to the cemetery to purify the undead before they shambled into town and get the guild blamed for it.",
+  "history": [
+    {
+      "content": "[Off-stage step: the player is elsewhere. Advance THIS storyline by one meaningful step toward its goal, and record what changes as facts.]\nDriving intention: Aqua is sent alone to the cemetery to purify the undead before they shambled into town and get the guild blamed for it.\nIf this storyline's cast has physically reached another storyline's location (co-presence, not mere pursuit), author that arrival in this step. Do not call tools to merge; the board lifecycle check decides afterward.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v3:director_cue:0",
+        "scene_kind": "director_cue",
+        "turn": 0,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T09:42:47Z"
+    },
+    {
+      "content": "The guild door swings shut behind Aqua and she waits just long enough for someone to call her back. No one does. The hinges rattle once, hard, and then the morning noise of the hall recedes into the ordinary clink of mugs and chairs, a room already forgetting her.\n\nOutside, Axel is bright and indifferent. The road to the cemetery is dry, and dust powders the hem of her skirt as she walks with her arms folded, complaining to the empty air in a voice that rises and cracks. A vendor glances up, sees her coming, and finds somewhere else to look. She gets louder.\n\nBy the time the iron gate of the cemetery appears, the sun has climbed higher, but the air past the fence sits wrong: still, sweet, faintly cold. The grass beyond is the color of old bone. Aqua stops at the threshold, lifts her chin, and begins to hum—thin and wavering at first—and the nearest mound answers with a soft, wet sigh. The earth over it splits in a long straight line.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v3:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 0,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:43:56Z"
+    },
+    {
+      "content": "[Off-stage step: the player is elsewhere. Advance THIS storyline by one meaningful step toward its goal, and record what changes as facts.]\nDriving intention: Aqua is sent alone to the cemetery to purify the undead before they shambled into town and get the guild blamed for it.\nLast we saw: The guild door swings shut behind Aqua and she waits just long enough for someone to call her back. No one does. The hinges rattle once, hard, and then the morning noise of the hall recedes into the ordinary clink of mugs and chairs, a r...\nIf this storyline's cast has physically reached another storyline's location (co-presence, not mere pursuit), author that arrival in this step. Do not call tools to merge; the board lifecycle check decides afterward.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v5:director_cue:0",
+        "scene_kind": "director_cue",
+        "turn": 1,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T09:50:03Z"
+    },
+    {
+      "content": "The first of them comes up wrong. A hand, earth-stained, claws at the lip of the split mound and hauls a torso into the morning. It wears a grave shroud the color of old bread, and its jaw works at a hymn it cannot follow.\n\nAqua's humming does not stop. The air around her tightens, heatless and bright, the way water goes clear just before it turns to steam. The thing shudders, then one arm flakes away in pale motes like ash off a candle. It sinks, and for a moment the cemetery is only wind.\n\nThen the grass elsewhere begins to ripple. Three more mounds. Then five. The sound is the same low crack, the earth opening in seams along the rows, as if the ground is breathing back at her.\n\nAqua stamps her foot and raises her voice over the splitting earth.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v5:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 1,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T09:50:31Z"
+    },
+    {
+      "content": "[Off-stage step: the player is elsewhere. Advance THIS storyline by one meaningful step toward its goal, and record what changes as facts.]\nDriving intention: Aqua is sent alone to the cemetery to purify the undead before they shambled into town and get the guild blamed for it.\nLast we saw: The first of them comes up wrong. A hand, earth-stained, claws at the lip of the split mound and hauls a torso into the morning. It wears a grave shroud the color of old bread, and its jaw works at a hymn it cannot follow.\n\nAqua's hummin...\nIf this storyline's cast has physically reached another storyline's location (co-presence, not mere pursuit), author that arrival in this step. Do not call tools to merge; the board lifecycle check decides afterward.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v7:director_cue:0",
+        "scene_kind": "director_cue",
+        "turn": 2,
+        "turn_ordinal": 0
+      },
+      "role": "user",
+      "timestamp": "2026-08-23T10:01:15Z"
+    },
+    {
+      "content": "The eight risen dead do not wait to be called. They climb from their split mounds all at once, grave shrouds dragging behind them like shed skin, and their hollow mouths open toward the sound of her. For one long moment the cemetery is only the smell of turned earth and the creak of old bone.\n\nThen Aqua's hymn climbs. The air goes tight and colorless around her, heatless and bright, the way water clears an instant before it turns to steam. The nearest corpse folds inward, its shroud settling over ash. The rest stagger once, twice, and come apart in a soft white cascade, as if the earth itself has decided to swallow them back down.\n\nFor a breath, the cemetery is still. Dust hangs in the light over the emptied graves. Then the far fence line shudders. It is not wind. Beyond the cypresses, a whole row of graves begins to heave, dozens deep, and the iron gate onto the town road stands open at their backs.",
+      "metadata": {
+        "message_ref": "konosuba_f0_0:v7:narrator:1",
+        "scene_kind": "narrator",
+        "turn": 2,
+        "turn_ordinal": 1
+      },
+      "role": "assistant",
+      "timestamp": "2026-08-23T10:01:54Z"
+    }
+  ],
+  "intention_node_id": 20,
+  "intention_owner": "Aqua",
+  "last_advanced": 6,
+  "scene_id": "konosuba_f0_0",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": 3
+}

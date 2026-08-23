@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <string>
 
@@ -15,5 +16,18 @@ using NarratorLLMCallback = std::function<std::string(
     const std::string& instructions,
     const std::string& turn_state,
     const ReadToolCallback& read_tool)>;
+
+
+// Async sessions
+struct PromptJob {
+    std::size_t handle;
+    std::string prompt;
+    int staging_buf_id;
+};
+
+
+
+
+
 
 }  // namespace rhapsode

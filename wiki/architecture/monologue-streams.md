@@ -24,7 +24,9 @@ The post-turn mind LLM is an **actor for one character** after a public beat: ho
 
 ## Prompt envelope (prefix cache)
 
-One native `LLMCallback` string per living on-stage NPC. Python `make_reflection_callback` splits on `<<<RHAPSODE_MONOLOGUE_USER>>>` into `role=system` + `role=user`. No per-character chat store, no tools, no replay of last JSON. Missing sentinel (old `_core.pyd`) keeps the old single user blob.
+Play session: `process_post_turn` polls `PromptJob`s (`ready` / `submit`) after takes. Observation first, then monologue, so a same-turn `seen` can enter that monologue prompt. HTTP runs off the turn thread; apply happens on the next poll. Eval and other runners that only set `LLMCallback` stay on the blocking `update_*` path.
+
+Python `make_reflection_callback` / `make_observation_callback` still split on `<<<RHAPSODE_MONOLOGUE_USER>>>` / `<<<RHAPSODE_OBSERVATION_USER>>>` into `role=system` + `role=user`. No per-character chat store, no tools, no replay of last JSON. Missing sentinel (old `_core.pyd`) keeps the old single user blob.
 
 The take stays on the **user** track (DeepSeek concatenates system-role messages at the front of the template). Order:
 
