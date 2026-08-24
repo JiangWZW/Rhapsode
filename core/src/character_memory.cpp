@@ -196,41 +196,30 @@ std::string CharacterMemory::render_thoughts(
     return sanitize_utf8(os.str());
 }
 
-void CharacterMemory::append_objective(int turn, std::string kind,
-                                       std::string text) {
-    text = str::trim(sanitize_utf8(std::move(text)));
-    if (text.empty()) return;
-    if (kind != "take" && kind != "seen") kind = "seen";
-    log() << "  [journal:" << character_name_ << "] " << kind
-          << " t=" << turn << " " << text << "\n" << std::flush;
-    objective_journal_.push_back({turn, std::move(kind), std::move(text)});
-}
-
-int CharacterMemory::claim_observation(int num_lines) {
-    if (observation_pending()) return -1;
-    const int i = observation_write_;
-    observation_num_lines_[i] = num_lines;
-    observation_pending_[i] = true;
-    observation_write_ = (observation_write_ + 1) % kStagingBuffers;
+int CharacterMemory::claim_perception(int turn) {
+    if (perception_pending()) return -1;
+    const int i = perception_write_;
+    perception_claim_turn_[i] = turn;
+    perception_pending_[i] = true;
+    perception_write_ = (perception_write_ + 1) % kStagingBuffers;
     return i;
 }
 
-void CharacterMemory::release_observation(int i) {
-    observation_pending_[i] = false;
+void CharacterMemory::release_perception(int i) {
+    perception_pending_[i] = false;
 }
 
-bool CharacterMemory::observation_pending() const {
+bool CharacterMemory::perception_pending() const {
     for (int i = 0; i < kStagingBuffers; ++i)
-        if (observation_pending_[i]) return true;
+        if (perception_pending_[i]) return true;
     return false;
 }
 
-int CharacterMemory::claim_monologue(int num_lines, MonologueBuildContext ctx) {
+int CharacterMemory::claim_monologue(int turn) {
     if (monologue_pending()) return -1;
     const int i = monologue_write_;
-    monologue_num_lines_[i] = num_lines;
+    monologue_claim_turn_[i] = turn;
     monologue_pending_[i] = true;
-    monologue_ctx_[i] = std::move(ctx);
     monologue_write_ = (monologue_write_ + 1) % kStagingBuffers;
     return i;
 }
@@ -257,41 +246,17 @@ nlohmann::json CharacterMemory::to_json() const {
         {"text", core_.text},
         {"revised_at", core_.revised_at},
     };
-    nlohmann::json streams = nlohmann::json::array();
-    for (const auto& stream : streams_) {
-        nlohmann::json row;
-        row["id"] = stream.id;
-        row["focus"] = stream.focus;
-        row["status"] = stream.status;
-        row["parent_id"] = stream.parent_id;
-        row["closed_reason"] = stream.closed_reason;
-        row["closed_summary"] = stream.closed_summary;
-        nlohmann::json lines = nlohmann::json::array();
-        for (const auto& line : stream.lines) {
-            lines.push_back({
-                {"turn", line.turn},
-                {"text", line.text},
-                {"seq", line.seq},
-            });
-        }
-        row["lines"] = std::move(lines);
-        streams.push_back(std::move(row));
-    }
-    j["streams"] = std::move(streams);
-    nlohmann::json journal = nlohmann::json::array();
-    for (const auto& line : objective_journal_) {
-        journal.push_back({
+    nlohmann::json monologue = nlohmann::json::array();
+    for (const auto& line : monologue_lines_) {
+        monologue.push_back({
             {"turn", line.turn},
-            {"kind", line.type},
             {"text", line.text},
         });
     }
-    j["monologue_consumed_lines"] = monologue_consumed_lines_;
-    j["stream_cnt"] = monologue_stream_cnt_;
-
-    j["objective_journal"] = std::move(journal);
-    j["observation_consumed_lines"] = objective_journal_consumed_lines_;
-    j["line_cnt"] = objective_journal_line_cnt_;
+    j["monologue"] = std::move(monologue);
+    j["perception"] = perception_;
+    j["perception_turn"] = perception_turn_;
+    j["monologue_turn"] = monologue_turn_;
     return j;
 }
 
@@ -306,72 +271,52 @@ CharacterMemory CharacterMemory::from_json(const nlohmann::json& j) {
         cm.core_.revised_at = j["core"].value("revised_at", -1);
     }
 
-    cm.streams_.clear();
-    if (j.contains("streams") && j["streams"].is_array()) {
-        for (const auto& row : j["streams"]) {
-            if (!row.is_object()) continue;
-            MonologueStream stream;
-            stream.id = row.value("id", "");
-            stream.focus = row.value("focus", "");
-            stream.status = row.value("status", "active");
-            stream.parent_id = row.value("parent_id", "");
-            stream.closed_reason = row.value("closed_reason", "");
-            stream.closed_summary = row.value("closed_summary", "");
-            if (row.contains("lines") && row["lines"].is_array()) {
-                for (const auto& line : row["lines"]) {
-                    if (!line.is_object()) continue;
-                    stream.lines.push_back({
-                        line.value("turn", 0),
-                        line.value("text", ""),
-                        line.value("seq", 0),
-                    });
-                }
-            }
-            if (!stream.id.empty())
-                cm.streams_.push_back(std::move(stream));
-        }
-    }
-    cm.objective_journal_.clear();
-    if (j.contains("objective_journal") && j["objective_journal"].is_array()) {
-        for (const auto& line : j["objective_journal"]) {
+    cm.monologue_lines_.clear();
+    if (j.contains("monologue") && j["monologue"].is_array()) {
+        for (const auto& line : j["monologue"]) {
             if (!line.is_object()) continue;
-            ObjectiveLine row;
-            row.turn = line.value("turn", 0);
-            row.type = line.value("kind", "seen");
-            row.text = line.value("text", "");
-            if (!row.text.empty())
-                cm.objective_journal_.push_back(std::move(row));
+            const std::string text = line.value("text", "");
+            if (text.empty()) continue;
+            cm.monologue_lines_.push_back({
+                line.value("turn", 0),
+                text,
+            });
         }
-    }
-
-    cm.monologue_consumed_lines_ = j.value(
-        "monologue_consumed_lines",
-        j.value("mono_consumed_lines", j.value("mono_consumed_upto", 0)));
-    cm.monologue_stream_cnt_ = j.value(
-        "stream_cnt", j.value("next_stream_id", j.value("stream_seq", 0)));
-
-    cm.objective_journal_consumed_lines_ = j.value(
-        "observation_consumed_lines",
-        j.value("obs_consumed_lines", j.value("obs_consumed_upto", 0)));
-    if (j.contains("line_cnt") || j.contains("next_line_id") ||
-        j.contains("line_seq")) {
-        cm.objective_journal_line_cnt_ = j.value(
-            "line_cnt", j.value("next_line_id", j.value("line_seq", 0)));
-    } else {
-        int seq = 0;
-        for (auto& stream : cm.streams_) {
-            for (auto& line : stream.lines)
-                line.seq = ++seq;
+    } else if (j.contains("streams") && j["streams"].is_array()) {
+        struct LegacyLine {
+            int seq = 0;
+            int turn = 0;
+            std::string text;
+        };
+        std::vector<LegacyLine> flat;
+        bool any_seq = false;
+        for (const auto& row : j["streams"]) {
+            if (!row.is_object() || !row.contains("lines") ||
+                !row["lines"].is_array())
+                continue;
+            for (const auto& line : row["lines"]) {
+                if (!line.is_object()) continue;
+                const std::string text = line.value("text", "");
+                if (text.empty()) continue;
+                const int seq = line.value("seq", 0);
+                if (seq != 0) any_seq = true;
+                flat.push_back({seq, line.value("turn", 0), text});
+            }
         }
-        cm.objective_journal_line_cnt_ = seq;
+        if (any_seq) {
+            std::stable_sort(flat.begin(), flat.end(),
+                             [](const LegacyLine& a, const LegacyLine& b) {
+                                 return a.seq < b.seq;
+                             });
+        }
+        for (auto& line : flat)
+            cm.monologue_lines_.push_back({line.turn, std::move(line.text)});
     }
+    cm.perception_ = j.value("perception", "");
+    cm.perception_turn_ = j.value("perception_turn", -1);
+    cm.monologue_turn_ = j.value("monologue_turn", -1);
     cm.ensure_bootstrap("");
     return cm;
-}
-
-void CharacterMemory::append_monologue_line(MonologueStream& stream, int turn,
-                                  std::string text) {
-    stream.lines.push_back({turn, std::move(text), ++objective_journal_line_cnt_});
 }
 
 }  // namespace rhapsode

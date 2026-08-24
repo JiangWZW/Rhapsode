@@ -1,5 +1,6 @@
 #include "rhapsode/turn_pipeline.h"
 
+#include "rhapsode/character_memory.h"
 #include "rhapsode/json_util.h"
 #include "rhapsode/log_util.h"
 #include "rhapsode/scene_history.h"
@@ -69,22 +70,28 @@ std::vector<Node> process_post_turn(
             }
         }
 
-        world.append_objective_takes(
-            scene->scene_id, turn, format_turn_take(*scene, turn));
-        if (services.observation_ready && services.observation_submit)
-            world.poll_observations(
-                scene->scene_id, turn,
-                services.observation_ready, services.observation_submit);
-        else
-            world.update_objective_journals(
-                scene->scene_id, turn, services.observation);
-        if (services.monologue_ready && services.monologue_submit)
-            world.poll_monologues(
-                scene->scene_id, turn,
-                services.monologue_ready, services.monologue_submit);
-        else
-            world.update_monologues(
-                scene->scene_id, turn, services.reflection);
+        const std::string window = format_narration_window(
+            *scene, turn, CharacterMemory::kPerceptionWindowTurns,
+            CharacterMemory::kPerceptionUserChars);
+        if (window.empty()) {
+            log_info("perception") << "t=" << turn << " empty -- skipped\n"
+                  << std::flush;
+        } else {
+            if (services.perception_ready && services.perception_submit)
+                world.poll_perceptions(
+                    scene->scene_id, turn, window,
+                    services.perception_ready, services.perception_submit);
+            else
+                world.update_perceptions(
+                    scene->scene_id, turn, window, services.perception);
+            if (services.monologue_ready && services.monologue_submit)
+                world.poll_monologues(
+                    scene->scene_id, turn,
+                    services.monologue_ready, services.monologue_submit);
+            else
+                world.update_monologues(
+                    scene->scene_id, turn, services.reflection);
+        }
 
         if (services.downsampler) {
             const int before = scene->downsampling.summarized_up_to;

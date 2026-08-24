@@ -1,55 +1,49 @@
 ---
-title: Monologue streams + character core
-date: 2026-08-02
+title: Monologue + character core
+date: 2026-08-24
 tags: [architecture, character, memory]
 ---
 
-# Monologue streams + character core
+# Monologue + character core
 
-Design of record for per-character minds after dropping forced perception→Thought reflection.
+Design of record for per-character minds.
 
 ## Layers
 
-| Layer | Role | LLM? |
-|-------|------|------|
-| **CharacterCore** | Deep continuity sheet / soul-level identity analysis. Authored in scenario `core` (Cast keeps short `description`). **Not** a thought stream. | Rare `core_revision` |
-| **Monologue streams** (1–5 active) | Rendered interiority / subtext / objectives | On-stage updater |
-| **Belief graph** (`beliefs_`) | Factual long-term subjective knowledge | Via optional `knows[]` on same call |
+- **Narration** — lives on the scene. `format_narration_window` slices the last three turns of narrator prose and speech. World does not store that string.
+- **Perception** — one overwritten first-person string per character. The Perception LLM reads the capped narration window and writes `{"perception":"..."}` plus optional `facts`. Null/empty leaves the previous text and still records the scene turn.
+- **Monologue lines** — private first-person lines. The Monologue LLM never reads narration. It reads Who you are, prior private lines, then a copy of `perception_`.
+- **Belief graph** — factual long-term knowledge. Perception may write `facts`. The monologue call does not.
 
-Bootstrap prefers scenario `core`, then falls back to `description`.
+Bootstrap fills empty core from scenario `core`, then `description`.
 
-## Writer agent (actor frame)
+## Writer (actor frame)
 
-The post-turn mind LLM is an **actor for one character** after a public beat: hold the bible, optionally write subtext, optionally commit facts to `knows[]`. Empty appends/`ops`/`knows` are success (listening take). Output is **JSON only** (`appends`, `ops`, `knows`, `core_revision`). There is no freeform acting preamble; inhabitation lives in the prompt and in `appends.text`.
+After a public beat, one actor per on-stage NPC. Hold the bible. Write one private line, or stay silent. Output is JSON only: `{"line":"..."}` or `{"line":null}`.
 
 ## Prompt envelope (prefix cache)
 
-Play session: `process_post_turn` polls `PromptJob`s (`ready` / `submit`) after takes. Observation first, then monologue, so a same-turn `seen` can enter that monologue prompt. HTTP runs off the turn thread; apply happens on the next poll. Eval and other runners that only set `LLMCallback` stay on the blocking `update_*` path.
+Play session: `process_post_turn` computes the narration window once. If it is empty, perception and monologue skip that scene this turn. Otherwise Perception first, then monologue. HTTP runs off the turn thread; apply happens on the next poll. Eval runners that only set `LLMCallback` stay on the blocking `update_*` path (`update_perceptions` then `update_monologues`).
 
-Python `make_reflection_callback` / `make_observation_callback` still split on `<<<RHAPSODE_MONOLOGUE_USER>>>` / `<<<RHAPSODE_OBSERVATION_USER>>>` into `role=system` + `role=user`. No per-character chat store, no tools, no replay of last JSON. Missing sentinel (old `_core.pyd`) keeps the old single user blob.
+Python splits on `<<<RHAPSODE_PERCEPTION_USER>>>` / `<<<RHAPSODE_MONOLOGUE_USER>>>` into `role=system` + `role=user`.
 
-The take stays on the **user** track (DeepSeek concatenates system-role messages at the front of the template). Order:
+Perception:
 
-1. **System** — craft + JSON schema. Identical for every character, every turn. Ids under **On your mind** are the ones to cite; **What you've been thinking** is the private journal, oldest first.
-2. **User** — `You are {name}.` then **Who you are** (CharacterCore), **On your mind** (active `id: focus`, insertion order), **What you've been thinking** (every stored line from every stream, including closed, tagged `[{id}]`, global `seq` order, append-only), **What just happened** (this turn's capped `take`, then this turn's `seen`). The only replaced tail.
+1. **System** — name, Who you are, first-person craft, `{"perception","facts"}`.
+2. **User** — only the capped narration window.
 
-Voice, compact beliefs, and last-N windows stay out of this prompt. `description` is bootstrap-only when core is empty. Other interiors, omniscient graph, and `query_mind` of anyone else stay out. Weave still uses a short `format_graph_seed`; monologue does not.
+Monologue:
 
-A stream `focus` is a topic, worry, relationship, or want — not wants-only. Roster bytes change on fork/merge/conclude (intentional miss). The inner journal never drops or rewrites a line. Full public history stays off this prompt. `core_revision` rebuilds the bible head. Expect cheaper input on `stage=monologue` (`prompt_cache_hit_tokens`), not skipped thinking time.
+1. **System** — craft + `{"line"}` schema. Identical for every character, every turn.
+2. **User** — `You are {name}.` then **Who you are** (core), then private lines oldest first, then the copied perception string if any. No narration window. No `[turn take]`.
 
-## Belief graph writes (no reflect LLM)
+`query_mind` returns core + truncated perception + last three monologue lines + compact beliefs. Narrator does not author private lines.
 
-- Interpreted beliefs: only `knows[]` from the monologue call (C++ applies).
-- Objective journal: engine copies this turn's narrator + speech as `take`; a per-character observation call may append `seen` (`stage=observation`, flash, thinking on). Monologue tail is this turn's `take` (capped) plus `seen` (`stage=monologue`, pro, thinking on).
-- Seeds / intentions / decay: CPU only.
-
-## Stream lifecycle
-
-Fork / merge / conclude (min 1 active, max 5). Parent stays on fork. Pattern inspired by storylines; **not** `SceneData`.
+Poll claims by scene turn. Perception dispatches when `perception_turn_ < turn`. Monologue dispatches when `perception_turn_ >= turn` and `monologue_turn_ < turn`. Same-poll harvests a prior in-flight perception before claiming monologue; this turn's new perception does not also claim monologue. HTTP failure releases the slot and does not advance the turn.
 
 ## Narrator
 
-Beat narrator owns prose/`speech_turns`/`active_cast`. Graph owns world nodes and does not route them into minds. `query_mind` returns core + stream tails + compact beliefs. Narrator does not author streams.
+Beat narrator owns prose/`speech_turns`/`active_cast`. Graph owns world nodes and does not route them into minds.
 
 ## Stale docs
 

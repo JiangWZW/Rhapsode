@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <vector>
@@ -33,10 +34,9 @@ std::vector<SceneMessage> snapshot_history(
     const std::vector<SceneMessage>& history,
     std::optional<std::size_t> count = std::nullopt);
 void truncate_history(std::vector<SceneMessage>& history, std::size_t new_size);
-std::string format_monologue_stimulus(
-    const std::vector<SceneMessage>& history,
-    std::size_t cap_per_message);
 std::string format_turn_take(const SceneData& scene, int turn);
+std::string format_narration_window(const SceneData& scene, int turn, int n_turns,
+                                    std::size_t max_chars);
 void drop_history_from_turn(std::vector<SceneMessage>& history, int min_turn);
 std::vector<SceneMessage> history_from_json(const nlohmann::json& value);
 std::string query_scene_history(const std::vector<SceneMessage>& history,

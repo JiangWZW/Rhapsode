@@ -70,51 +70,39 @@ def _safe_render_thoughts(mem) -> str:
 
 def _mind_snapshot(mem) -> dict:
     core = ""
-    streams: list = []
+    perception = ""
+    monologue: list = []
     try:
         raw = mem.render_mind_query()
         payload = json.loads(raw) if isinstance(raw, str) else {}
         core = str(payload.get("core") or "")
-        streams = payload.get("streams") or []
-        if not isinstance(streams, list):
-            streams = []
+        perception = str(payload.get("perception") or "")
+        monologue = payload.get("monologue") or []
+        if not isinstance(monologue, list):
+            monologue = []
     except Exception:
         pass
     return {
         "core": core,
-        "streams": streams,
+        "perception": perception,
+        "monologue": monologue,
         "beliefs": _safe_render_thoughts(mem),
-        "active_stream_count": getattr(mem, "active_stream_count", len(streams)),
     }
 
 
-def _format_streams_html(streams: list) -> str:
-    if not streams:
-        return "<p class='muted'>(no active monologue streams)</p>"
-    blocks = []
-    for stream in streams:
-        if not isinstance(stream, dict):
+def _format_monologue_html(lines: list) -> str:
+    if not lines:
+        return "<p class='muted'>(no monologue yet)</p>"
+    bits = []
+    for line in lines[-5:]:
+        if not isinstance(line, dict):
             continue
-        sid = html.escape(str(stream.get("id") or "?"))
-        focus = html.escape(str(stream.get("focus") or ""))
-        lines = stream.get("recent_lines") or stream.get("lines") or []
-        line_bits = []
-        if isinstance(lines, list):
-            for line in lines[-5:]:
-                if not isinstance(line, dict):
-                    continue
-                turn = line.get("turn", "?")
-                text = html.escape(str(line.get("text") or ""))
-                line_bits.append(f"<li><span class='turn'>t{turn}</span> {text}</li>")
-        body = (
-            f"<ul class='lines'>{''.join(line_bits)}</ul>"
-            if line_bits else "<p class='muted'>(empty — listening)</p>"
-        )
-        blocks.append(
-            f"<div class='stream'><div class='stream-head'>"
-            f"<strong>{sid}</strong> — {focus}</div>{body}</div>"
-        )
-    return "".join(blocks) or "<p class='muted'>(no active monologue streams)</p>"
+        turn = line.get("turn", "?")
+        text = html.escape(str(line.get("text") or ""))
+        bits.append(f"<li><span class='turn'>t{turn}</span> {text}</li>")
+    if not bits:
+        return "<p class='muted'>(no monologue yet)</p>"
+    return f"<ul class='lines'>{''.join(bits)}</ul>"
 
 
 def _find_character_memory(world, name: str):
@@ -146,7 +134,7 @@ def graph_svg():
 
 @router.get("/characters")
 def characters_endpoint():
-    """List characters with a mind: core, streams, and factual beliefs."""
+    """List characters with a mind: core, monologue, and factual beliefs."""
     story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
@@ -156,7 +144,7 @@ def characters_endpoint():
         characters.append({
             "name": name,
             "core": snap["core"],
-            "streams": snap["streams"],
+            "monologue": snap["monologue"],
             "beliefs": snap["beliefs"],
         })
     return {"characters": characters}
@@ -188,7 +176,7 @@ def character_graph_svg(name: str):
 
 @router.get("/character/{name}/mind")
 def character_mind_endpoint(name: str):
-    """JSON mind snapshot: core, active streams, compact beliefs."""
+    """JSON mind snapshot: core, recent monologue, compact beliefs."""
     story, scene = _load_saved_state()
     if scene is None:
         return {"error": "no active scene"}
@@ -202,7 +190,7 @@ def character_mind_endpoint(name: str):
 
 @router.get("/minds", response_class=Response)
 def minds_endpoint():
-    """Debug view: core, monologue streams, beliefs text, and belief graph SVG."""
+    """Debug view: core, monologue, beliefs text, and belief graph SVG."""
     story, scene = _load_saved_state()
     if scene is None:
         return Response("<h1>no active scene</h1>", media_type="text/html", status_code=404)
@@ -228,7 +216,8 @@ def minds_endpoint():
         ".legend{font-size:12px;color:#6c7086;margin-bottom:24px}",
         "</style></head><body><h1>Character minds</h1>",
         "<p class='legend'>Core = continuity sheet (not thoughts) &nbsp;|&nbsp; "
-        "Streams = rendered subtext &nbsp;|&nbsp; "
+        "Perception = last first-person take-in &nbsp;|&nbsp; "
+        "Monologue = private lines &nbsp;|&nbsp; "
         "Graph: green = live belief/perception &nbsp;|&nbsp; "
         "blue = superseded &nbsp;|&nbsp; yellow = foreshadowed</p>",
     ]
@@ -256,13 +245,17 @@ def minds_endpoint():
             html.escape(snap["core"])
             if snap["core"] else "(empty continuity sheet)"
         )
+        perception_html = (
+            html.escape(snap["perception"])
+            if snap["perception"] else "(no perception yet)"
+        )
         beliefs_html = html.escape(snap["beliefs"])
         parts.append(
             f"<div class='mind'><h2>{html.escape(name)}</h2>"
             f"<h3>Core</h3><div class='core'>{core_html}</div>"
-            f"<h3>Monologue streams "
-            f"({html.escape(str(snap.get('active_stream_count', 0)))} active)</h3>"
-            f"{_format_streams_html(snap['streams'])}"
+            f"<h3>Perception</h3><div class='core'>{perception_html}</div>"
+            f"<h3>Monologue</h3>"
+            f"{_format_monologue_html(snap['monologue'])}"
             f"<h3>Factual beliefs</h3><div class='beliefs'>{beliefs_html}</div>"
             f"<h3>Belief graph</h3>"
             f"<div class='graphwrap'>{svg}</div></div>"

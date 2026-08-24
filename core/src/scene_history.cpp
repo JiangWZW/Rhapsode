@@ -79,21 +79,6 @@ void truncate_history(std::vector<SceneMessage>& history, std::size_t new_size) 
     if (new_size < history.size()) history.resize(new_size);
 }
 
-std::string format_monologue_stimulus(
-    const std::vector<SceneMessage>& history,
-    std::size_t cap_per_message) {
-    std::string body;
-    for (const auto& message : history) {
-        if (message.role != Role::User && message.role != Role::Assistant)
-            continue;
-        body += '\n';
-        body += message.role == Role::User ? "user: " : "assistant: ";
-        body += truncate_utf8(message.content, cap_per_message);
-    }
-    if (body.empty()) return {};
-    return "Turn" + body;
-}
-
 void drop_history_from_turn(std::vector<SceneMessage>& history, int min_turn) {
     history.erase(
         std::remove_if(history.begin(), history.end(),
@@ -363,6 +348,20 @@ std::string format_turn_take(const SceneData& scene, int turn) {
     for (const auto& message : scene.history) emit(message);
     for (const auto& message : scene.dialogue) emit(message);
     return out.str();
+}
+
+std::string format_narration_window(const SceneData& scene, int turn, int n_turns,
+                                    std::size_t max_chars) {
+    if (n_turns < 1) n_turns = 1;
+    const int from = std::max(0, turn - n_turns + 1);
+    std::ostringstream out;
+    for (int t = from; t <= turn; ++t) {
+        const std::string piece = format_turn_take(scene, t);
+        if (piece.empty()) continue;
+        if (!out.str().empty()) out << "\n\n";
+        out << piece;
+    }
+    return truncate_utf8_suffix(out.str(), max_chars);
 }
 
 }  // namespace rhapsode

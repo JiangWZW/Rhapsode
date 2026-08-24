@@ -25,7 +25,7 @@ tags:
 
 # Subjective character minds
 
-**Stale on routing.** Narrator `audience` / `route_perceptions` / `route_fact` are gone. On-stage minds get an objective journal (`take` / `seen`), then monologue. Prefer [monologue-streams.md](monologue-streams.md).
+**Stale on routing.** Narrator `audience` / `route_perceptions` / `route_fact` are gone. On-stage minds get a perception string, then monologue. Prefer [monologue-streams.md](monologue-streams.md).
 
 This page was the design of record for re-founding character memory so that each character holds a private,
 subjective view of the world and of other characters. It is a planned refactor, delivered in slices;
@@ -71,11 +71,10 @@ a reference only to its own `beliefs_`, so reading the narrator's graph is impos
 ```
 
 1. **Truth** lives in the world graph: the omniscient ledger, holding everything including secrets.
-2. **Perception** is a per-character objective journal. The world graph no longer copies `new_nodes`
-   into minds. After the take commits, every living on-stage NPC gets that turn's narrator prose and
-   speech as a `take` line. A per-character LLM then writes `seen` lines: what this person could take
-   in, judged from who they are, their journal so far, and the latest take. No position tags. The
-   player does not get a journal (the screen is the player's memory).
+2. **Perception** is one overwritten first-person string per character, written from the last three
+   turns of scene narration. Prefer [monologue-streams.md](monologue-streams.md). The world graph no
+   longer copies `new_nodes` into minds. The player does not get a perception string (the screen is
+   the player's memory).
 3. **Interpretation** is reflection: routed perception becomes belief through persona and prior
    beliefs. Two minds handed the same fact diverge, because each reads it as who it is.
 

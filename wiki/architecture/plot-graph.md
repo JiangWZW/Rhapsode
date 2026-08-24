@@ -116,9 +116,9 @@ receives the observation graph explicitly; the service is not bound to one graph
 
 ## Character-memory interaction
 
-World extract does not copy `new_nodes` into character minds. After the take commits, each on-stage
-NPC gets that turn's narrator prose and speech on their objective journal (`take`), then a
-per-character LLM may append `seen` lines. Monologue reads this turn's capped `take` plus `seen`.
+World extract does not copy `new_nodes` into character minds. After the take commits, the pipeline
+slices last-three-turn narration from the scene and passes that string into Perception. Each on-stage
+NPC overwrites its own `perception_` string; monologue copies that string and never reads narration.
 See [[architecture/monologue-streams]].
 
 ## Authority rule
@@ -126,7 +126,7 @@ See [[architecture/monologue-streams]].
 The graph may:
 
 - supply fallible context to a model;
-- stay off character minds (journals are written separately);
+- stay off character minds (perception is written separately);
 - organize related observations;
 - influence semantic retrieval and scheduling context;
 - be rebuilt or reindexed.

@@ -166,11 +166,11 @@ void bind_story(py::module_& m) {
         .def("set_downsampler_callback", &Story::set_downsampler_callback, py::arg("cb"))
         .def("set_reflection_llm_callback", &Story::set_reflection_llm_callback,
              py::arg("cb"))
-        .def("set_observation_llm_callback", &Story::set_observation_llm_callback,
+        .def("set_perception_llm_callback", &Story::set_perception_llm_callback,
              py::arg("cb"))
-        .def("set_observation_ready_callback",
+        .def("set_perception_ready_callback",
              [](Story& story, py::function fn) {
-                 story.set_observation_ready_callback(
+                 story.set_perception_ready_callback(
                      [fn](std::size_t handle, int staging_buf_id,
                           std::string& raw, bool& failed) {
                          py::gil_scoped_acquire gil;
@@ -183,9 +183,9 @@ void bind_story(py::module_& m) {
                      });
              },
              py::arg("cb"))
-        .def("set_observation_submit_callback",
+        .def("set_perception_submit_callback",
              [](Story& story, py::function fn) {
-                 story.set_observation_submit_callback(
+                 story.set_perception_submit_callback(
                      [fn](const std::vector<PromptJob>& jobs) {
                          py::gil_scoped_acquire gil;
                          fn(jobs);
@@ -222,7 +222,9 @@ void bind_story(py::module_& m) {
              py::call_guard<py::gil_scoped_release>())
         .def("complete_turn", &Story::complete_turn,
              py::call_guard<py::gil_scoped_release>())
-        .def("apply_ready_journals", &Story::apply_ready_journals,
+        .def("apply_ready_minds", &Story::apply_ready_minds,
+             py::call_guard<py::gil_scoped_release>())
+        .def("poll_minds", &Story::poll_minds,
              py::call_guard<py::gil_scoped_release>())
         .def("revert_active_turns", &Story::revert_active_turns, py::arg("count"))
         .def("has_save", &Story::has_save, py::arg("saves_dir"))

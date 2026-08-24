@@ -276,18 +276,18 @@ void Story::set_reflection_llm_callback(LLMCallback cb) {
     services_.reflection = std::move(cb);
 }
 
-void Story::set_observation_llm_callback(LLMCallback cb) {
-    services_.observation = std::move(cb);
+void Story::set_perception_llm_callback(LLMCallback cb) {
+    services_.perception = std::move(cb);
 }
 
-void Story::set_observation_ready_callback(
+void Story::set_perception_ready_callback(
     std::function<bool(std::size_t, int, std::string&, bool&)> cb) {
-    services_.observation_ready = std::move(cb);
+    services_.perception_ready = std::move(cb);
 }
 
-void Story::set_observation_submit_callback(
+void Story::set_perception_submit_callback(
     std::function<void(const std::vector<PromptJob>&)> cb) {
-    services_.observation_submit = std::move(cb);
+    services_.perception_submit = std::move(cb);
 }
 
 void Story::set_monologue_ready_callback(
@@ -300,13 +300,27 @@ void Story::set_monologue_submit_callback(
     services_.monologue_submit = std::move(cb);
 }
 
-void Story::apply_ready_journals() {
-    if (services_.observation_ready)
-        data_.world.apply_ready_observations(
-            data_.turn_clock, services_.observation_ready);
+void Story::apply_ready_minds() {
+    if (services_.perception_ready)
+        data_.world.apply_ready_perceptions(
+            data_.turn_clock, services_.perception_ready);
     if (services_.monologue_ready)
         data_.world.apply_ready_monologues(
             data_.turn_clock, services_.monologue_ready);
+}
+
+void Story::poll_minds() {
+    if (pending_turn_) return;
+    if (!services_.perception_ready || !services_.perception_submit) return;
+    if (!services_.monologue_ready || !services_.monologue_submit) return;
+    data_.world.apply_ready_perceptions(
+        data_.turn_clock, services_.perception_ready);
+    for (const auto& scene : data_.scenes) {
+        if (!scene) continue;
+        data_.world.poll_monologues(
+            scene->scene_id, scene->turn_index,
+            services_.monologue_ready, services_.monologue_submit);
+    }
 }
 
 }  // namespace rhapsode

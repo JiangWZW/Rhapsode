@@ -1,3 +1,20 @@
+## [2026-08-24] implementation | Idle mind poll
+
+- Play session calls `Story.poll_minds` every 0.25s while idle: harvest finished perception, then claim monologue. Perception claim stays in `process_post_turn`.
+- Docs: [architecture/python-server.md](architecture/python-server.md).
+
+## [2026-08-24] change | Perception copy, then monologue
+
+- Deleted the objective journal. Narration stays on the scene; `format_narration_window` slices the last three turns and passes that string into Perception.
+- Each character stores one overwritten `perception_` string. Monologue copies it and never reads narration. Claim by scene turn.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md), [architecture/scene-loop.md](architecture/scene-loop.md), [decisions/2026-08-24-linear-monologue.md](decisions/2026-08-24-linear-monologue.md).
+
+## [2026-08-24] change | Linear untagged monologue
+
+- Cut stream roster, fork/merge/conclude ops, and the replaced tail. Private lines sit after name + Who you are as untagged prose interleaved with the objective journal.
+- Sidecar is `{"line":"..."}` or `{"line":null}`. Observation still writes `take`/`seen` and facts.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md), [decisions/2026-08-24-linear-monologue.md](decisions/2026-08-24-linear-monologue.md).
+
 ## [2026-08-23] implementation | Drain in-flight journals on socket close
 
 - `World::apply_ready_observations` / `apply_ready_monologues` harvest without dispatch. Poll calls them, then claims.

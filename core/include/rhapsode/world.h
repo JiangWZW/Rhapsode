@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -54,24 +55,23 @@ public:
                                     int valid_until);
     std::vector<std::uint64_t> revert_to_turn(int target_turn);
 
-    void append_objective_takes(const std::string& scene_id,
-                                int turn,
-                                const std::string& take_text);
-    void update_objective_journals(const std::string& scene_id,
-                                   int turn,
-                                   const LLMCallback& llm_callback);
+    void update_perceptions(const std::string& scene_id,
+                            int turn,
+                            const std::string& narration_window,
+                            const LLMCallback& llm_callback);
     void update_monologues(const std::string& scene_id,
                            int turn,
                            const LLMCallback& llm_callback);
-    void apply_ready_observations(
+    void apply_ready_perceptions(
         int turn,
         const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
     void apply_ready_monologues(
         int turn,
         const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
-    void poll_observations(
+    void poll_perceptions(
         const std::string& scene_id,
         int turn,
+        const std::string& narration_window,
         const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
         const std::function<void(const std::vector<PromptJob>&)>& submit);
     void poll_monologues(

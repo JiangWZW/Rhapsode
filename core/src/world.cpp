@@ -15,8 +15,6 @@ namespace rhapsode {
 
 namespace {
 
-constexpr std::size_t kMonologueTakeCap = 8000;
-
 void fill_missing_profile(Character& existing, Character& incoming) {
     if (existing.description.empty() && !incoming.description.empty())
         existing.description = std::move(incoming.description);
@@ -165,10 +163,11 @@ void World::set_character_memory(CharacterMemory memory) {
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
-void World::apply_ready_observations(
+void World::apply_ready_perceptions(
     int turn,
     const std::function<bool(std::size_t, int, std::string&, bool&)>& ready)
 {
+    (void)turn;
     for (const auto& character : characters_) {
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
@@ -177,33 +176,34 @@ void World::apply_ready_observations(
         const std::size_t handle = std::hash<std::string>{}(character.name);
 
         for (int i = 0; i < CharacterMemory::kStagingBuffers; ++i) {
-            if (!memory.observation_pending(i)) continue;
+            if (!memory.perception_pending(i)) continue;
 
             std::string raw;
             bool failed = false;
             if (!ready(handle, i, raw, failed))
                 continue;
 
-            const int num_lines = memory.observation_num_lines(i);
+            const int claimed = memory.perception_claim_turn(i);
             if (failed || character.dead) {
-                memory.release_observation(i);
+                memory.release_perception(i);
                 continue;
             }
 
-            memory.apply_observation_json(turn, raw);
-            memory.set_observation_consumed_lines(num_lines);
-            memory.release_observation(i);
+            memory.apply_perception_json(claimed, raw);
+            memory.release_perception(i);
         }
     }
 }
 
-void World::poll_observations(
+void World::poll_perceptions(
     const std::string& scene_id,
     int turn,
+    const std::string& narration_window,
     const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
     const std::function<void(const std::vector<PromptJob>&)>& submit)
 {
-    apply_ready_observations(turn, ready);
+    apply_ready_perceptions(turn, ready);
+    if (narration_window.empty()) return;
 
     std::vector<PromptJob> jobs;
     for (const auto& character : characters_) {
@@ -214,13 +214,15 @@ void World::poll_observations(
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
         CharacterMemory& memory = it->second;
-        const int n = static_cast<int>(memory.objective_journal().size());
-        if (n <= memory.observation_consumed_lines()) continue;
-        const int i = memory.claim_observation(n);
+        if (memory.perception_turn() >= turn) continue;
+        const std::string who =
+            !str::trim(character.core).empty() ? character.core
+                                               : character.description;
+        const int i = memory.claim_perception(turn);
         if (i < 0) continue;
         jobs.push_back(PromptJob{
             std::hash<std::string>{}(character.name),
-            memory.build_observation_prompt(),
+            memory.build_perception_prompt(narration_window, who),
             i});
     }
     submit(jobs);
@@ -229,6 +231,7 @@ void World::poll_observations(
 void World::apply_ready_monologues(
     int turn,
     const std::function<bool(std::size_t, int, std::string&, bool&)>& ready) {
+    (void)turn;
     for (const auto& character : characters_) {
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
@@ -239,14 +242,12 @@ void World::apply_ready_monologues(
             std::string raw;
             bool failed = false;
             if (!ready(handle, i, raw, failed)) continue;
-            const int num_lines = memory.monologue_num_lines(i);
-            const auto ctx = memory.monologue_context(i);
+            const int claimed = memory.monologue_claim_turn(i);
             if (failed || character.dead) {
                 memory.release_monologue(i);
                 continue;
             }
-            memory.apply_monologue_json(turn, raw, ctx);
-            memory.set_monologue_consumed_lines(num_lines);
+            memory.apply_monologue_json(claimed, raw);
             memory.release_monologue(i);
         }
     }
@@ -268,39 +269,18 @@ void World::poll_monologues(
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
         CharacterMemory& memory = it->second;
-        const auto& journal = memory.objective_journal();
-        const int n = static_cast<int>(journal.size());
-        if (n <= memory.monologue_consumed_lines()) continue;
-
-        std::string take;
-        std::string seen;
-        for (int i = memory.monologue_consumed_lines(); i < n; ++i) {
-            const auto& line = journal[i];
-            if (line.type == "take") {
-                if (!take.empty()) take += '\n';
-                take += line.text;
-            } else if (line.type == "seen") {
-                if (!seen.empty()) seen += '\n';
-                seen += line.text;
-            }
-        }
-        if (take.size() > kMonologueTakeCap)
-            take = truncate_utf8(take, kMonologueTakeCap);
-        std::string tail = take;
-        if (!seen.empty()) {
-            if (!tail.empty()) tail += '\n';
-            tail += seen;
-        }
+        if (memory.perception_turn() < turn) continue;
+        if (memory.monologue_turn() >= turn) continue;
 
         const std::string who =
             !str::trim(character.core).empty() ? character.core
                                                : character.description;
-        auto ctx = memory.build_monologue_prompt(who, tail);
-        const int i = memory.claim_monologue(n, ctx);
+        std::string prompt = memory.build_monologue_prompt(who);
+        const int i = memory.claim_monologue(turn);
         if (i < 0) continue;
         jobs.push_back(PromptJob{
             std::hash<std::string>{}(character.name),
-            std::move(ctx.prompt),
+            std::move(prompt),
             i});
     }
     submit(jobs);
@@ -341,31 +321,15 @@ std::vector<std::uint64_t> World::revert_to_turn(int target_turn) {
     return removed_ids;
 }
 
-void World::append_objective_takes(const std::string& scene_id,
-                                   int turn,
-                                   const std::string& take_text) {
-    const std::string take = str::trim(take_text);
-    if (take.empty()) {
-        log() << "  [journal] take t=" << turn << " empty -- skipped\n"
+void World::update_perceptions(const std::string& scene_id,
+                               int turn,
+                               const std::string& narration_window,
+                               const LLMCallback& llm_callback) {
+    if (narration_window.empty()) {
+        log_info("perception") << "t=" << turn << " empty -- skipped\n"
               << std::flush;
         return;
     }
-    log() << "  [journal] take t=" << turn << " chars=" << take.size()
-          << "\n" << std::flush;
-    for (const auto& character : characters_) {
-        if (character.is_player || character.dead ||
-            !character.in_scene(scene_id)) {
-            continue;
-        }
-        auto it = character_memories_.find(character.name);
-        if (it == character_memories_.end()) continue;
-        it->second.append_objective(turn, "take", take);
-    }
-}
-
-void World::update_objective_journals(const std::string& scene_id,
-                                      int turn,
-                                      const LLMCallback& llm_callback) {
     for (const auto& character : characters_) {
         if (character.is_player || character.dead ||
             !character.in_scene(scene_id)) {
@@ -376,7 +340,7 @@ void World::update_objective_journals(const std::string& scene_id,
         const std::string who =
             !str::trim(character.core).empty() ? character.core
                                                : character.description;
-        it->second.update_objective_journal(turn, who, llm_callback);
+        it->second.update_perception(turn, who, narration_window, llm_callback);
     }
 }
 
@@ -390,31 +354,11 @@ void World::update_monologues(const std::string& scene_id,
         }
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
-        std::string take;
-        std::string seen;
-        for (const auto& line : it->second.objective_journal()) {
-            if (line.turn != turn) continue;
-            if (line.type == "take") {
-                if (!take.empty()) take += '\n';
-                take += line.text;
-            } else if (line.type == "seen") {
-                if (!seen.empty()) seen += '\n';
-                seen += line.text;
-            }
-        }
-        if (take.size() > kMonologueTakeCap)
-            take = truncate_utf8(take, kMonologueTakeCap);
-        std::string tail = take;
-        if (!seen.empty()) {
-            if (!tail.empty()) tail += '\n';
-            tail += seen;
-        }
         it->second.update_monologues(
             turn,
             !str::trim(character.core).empty() ? character.core
                                                : character.description,
-            tail, llm_callback,
-            character.build_prompt__dialogue_voice());
+            llm_callback);
     }
 }
 

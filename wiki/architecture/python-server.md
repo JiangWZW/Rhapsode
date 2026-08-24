@@ -33,10 +33,10 @@ own turn sequencing or reconstruct native execution objects after errors.
 - MemorySystem, the Chroma/embedding adapter retained by Story through shared ownership;
 - Annotator, a roster-aware read service;
 - a resume flag;
-- a shared `ThreadPoolExecutor` for observation and monologue HTTP.
+- a shared `ThreadPoolExecutor` for perception and monologue HTTP.
 
 The session configures narrator, scheduler, lifecycle, Weaver, downsampling, memory, and
-`PromptJobs` ready/submit callbacks on Story. Blocking observation/reflection setters stay unset so
+`PromptJobs` ready/submit callbacks on Story. Blocking perception/reflection setters stay unset so
 `complete_turn` polls. C++ owns `StoryData`, `TurnServices`, World, SceneData, and the Weaver service.
 Turn execution and graph-plan application are free functions, not owned executor/director objects.
 
@@ -56,9 +56,10 @@ Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a f
    If `advance_player` succeeds, `complete_turn` must still run so a pending turn cannot leak.
    A player_message sent after `ready` stays in the WebSocket buffer until the loop receives
    again; C++ still rejects overlapping `advance_player` calls.
-9. On disconnect, wait in-flight observation/monologue HTTP, `apply_ready_journals` (harvest only,
+9. While `idle`, `Story.poll_minds` runs every 0.25s: harvest finished perception/monologue HTTP and claim monologue if that turn's perception is already applied. `process_post_turn` still owns perception claim.
+10. On disconnect, wait in-flight perception/monologue HTTP, `apply_ready_minds` (harvest only,
    no new dispatch), then save. Unfinished work is not saved; next load redispatches from
-   `consumed_lines`.
+   `perception_turn_` / `monologue_turn_`.
 
 ## LLM adapters
 

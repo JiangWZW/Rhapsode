@@ -67,7 +67,7 @@ def make_weaver_callback():
 
 
 MONOLOGUE_USER_SENTINEL = "<<<RHAPSODE_MONOLOGUE_USER>>>"
-OBSERVATION_USER_SENTINEL = "<<<RHAPSODE_OBSERVATION_USER>>>"
+PERCEPTION_USER_SENTINEL = "<<<RHAPSODE_PERCEPTION_USER>>>"
 
 
 def split_on_sentinel(prompt: str, sentinel: str) -> tuple[str | None, str]:
@@ -120,10 +120,10 @@ def make_reflection_callback():
     )
 
 
-def make_observation_callback():
-    """Per-character objective journal: base (flash) model, thinking on."""
+def make_perception_callback():
+    """Per-character perception: base (flash) model, thinking on."""
     return _system_user_callback(
-        OBSERVATION_USER_SENTINEL, "observation",
+        PERCEPTION_USER_SENTINEL, "perception",
         model=_base_model(), thinking=True,
     )
 
@@ -180,8 +180,8 @@ NARRATOR_TOOLS = [
     {
         "name": "query_mind",
         "description": (
-            "Inspect a character's mind: continuity core, active monologue "
-            "streams (subtext), compact factual beliefs, and dialogue voice."
+            "Inspect a character's mind: continuity core, recent monologue, "
+            "compact factual beliefs, and dialogue voice."
         ),
         "parameters": {
             "type": "object",

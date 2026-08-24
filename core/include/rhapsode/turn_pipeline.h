@@ -38,9 +38,9 @@ struct TurnServices {
     TurnCompleteCallback turn_complete;
     LLMCallback downsampler;
     LLMCallback reflection;
-    LLMCallback observation;
-    std::function<bool(std::size_t, int, std::string&, bool&)> observation_ready;
-    std::function<void(const std::vector<PromptJob>&)> observation_submit;
+    LLMCallback perception;
+    std::function<bool(std::size_t, int, std::string&, bool&)> perception_ready;
+    std::function<void(const std::vector<PromptJob>&)> perception_submit;
     std::function<bool(std::size_t, int, std::string&, bool&)> monologue_ready;
     std::function<void(const std::vector<PromptJob>&)> monologue_submit;
     size_t history_window = 8;

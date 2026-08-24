@@ -17,7 +17,7 @@ from rhapsode._core import (
 from rhapsode.config import SAVES_DIR, SCENARIO_PATH
 from rhapsode.llm_tools import (
     PromptJobs, make_llm_callback, make_narrator_callback,
-    make_observation_callback, make_reflection_callback, make_weaver_callback,
+    make_perception_callback, make_reflection_callback, make_weaver_callback,
 )
 from rhapsode.scheduler import make_scheduler_callback
 from rhapsode.lifecycle import make_lifecycle_callback
@@ -25,6 +25,8 @@ from rhapsode.memory import register_callbacks
 from rhapsode.fable import make_ner_callback
 
 log = logging.getLogger(__name__)
+
+MIND_POLL_S = 0.25
 
 
 # -- Construction --------------------------------------------------------------
@@ -67,7 +69,7 @@ class WsSession:
     annotator: Annotator
     is_resuming: bool
     prompt_pool: ThreadPoolExecutor
-    observation_jobs: PromptJobs
+    perception_jobs: PromptJobs
     monologue_jobs: PromptJobs
 
     @property
@@ -98,10 +100,10 @@ def _setup_ws_session() -> WsSession:
 
     _sync_graph_to_memory(story, memory)
     prompt_pool = ThreadPoolExecutor(max_workers=8)
-    observation_jobs = PromptJobs(make_observation_callback(), prompt_pool)
+    perception_jobs = PromptJobs(make_perception_callback(), prompt_pool)
     monologue_jobs = PromptJobs(make_reflection_callback(), prompt_pool)
-    story.set_observation_ready_callback(observation_jobs.ready)
-    story.set_observation_submit_callback(observation_jobs.submit)
+    story.set_perception_ready_callback(perception_jobs.ready)
+    story.set_perception_submit_callback(perception_jobs.submit)
     story.set_monologue_ready_callback(monologue_jobs.ready)
     story.set_monologue_submit_callback(monologue_jobs.submit)
 
@@ -112,7 +114,7 @@ def _setup_ws_session() -> WsSession:
 
     return WsSession(story=story, memory=memory, annotator=annotator,
                      is_resuming=is_resuming, prompt_pool=prompt_pool,
-                     observation_jobs=observation_jobs,
+                     perception_jobs=perception_jobs,
                      monologue_jobs=monologue_jobs)
 
 
@@ -171,9 +173,9 @@ async def _stream_outputs(ws: WebSocket, annotator: Annotator,
 
 
 def _drain_session(session: WsSession) -> None:
-    session.observation_jobs.wait()
+    session.perception_jobs.wait()
     session.monologue_jobs.wait()
-    session.story.apply_ready_journals()
+    session.story.apply_ready_minds()
     session.story.save(SAVES_DIR)
     session.prompt_pool.shutdown(wait=False)
 
@@ -206,9 +208,23 @@ async def run_session(ws: WebSocket) -> None:
     await _send_seed_messages(ws, session.story, session.scene, session.is_resuming)
     await ws.send_json({"type": "status", "state": "idle"})
 
+    recv = asyncio.create_task(ws.receive_json())
     try:
         while True:
-            data = await ws.receive_json()
+            timeout = asyncio.create_task(asyncio.sleep(MIND_POLL_S))
+            done, _ = await asyncio.wait(
+                {recv, timeout}, return_when=asyncio.FIRST_COMPLETED)
+            timeout.cancel()
+            if timeout not in done:
+                try:
+                    await timeout
+                except asyncio.CancelledError:
+                    pass
+            if recv not in done:
+                await loop.run_in_executor(None, session.story.poll_minds)
+                continue
+            data = recv.result()
+            recv = asyncio.create_task(ws.receive_json())
             text = _player_text(data)
             if not text:
                 continue
@@ -248,6 +264,8 @@ async def run_session(ws: WebSocket) -> None:
     except WebSocketDisconnect:
         pass
     finally:
+        if not recv.done():
+            recv.cancel()
         if session is not None:
             try:
                 await loop.run_in_executor(None, _drain_session, session)

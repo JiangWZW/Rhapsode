@@ -57,6 +57,14 @@ inline std::string truncate_utf8(const std::string& s, size_t max_len) {
     return s.substr(0, pos);
 }
 
+inline std::string truncate_utf8_suffix(const std::string& s, size_t max_len) {
+    if (s.size() <= max_len) return s;
+    size_t start = s.size() - max_len;
+    while (start < s.size() && (static_cast<unsigned char>(s[start]) & 0xC0) == 0x80)
+        ++start;
+    return s.substr(start);
+}
+
 inline std::string truncate_utf8_ellipsis(const std::string& s, size_t max_len) {
     if (s.size() <= max_len) return s;
     return truncate_utf8(s, max_len > 3 ? max_len - 3 : 0) + "...";
