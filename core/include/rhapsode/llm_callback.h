@@ -22,8 +22,13 @@ using NarratorLLMCallback = std::function<std::string(
 struct PromptJob {
     std::size_t handle;
     std::string prompt;
-    int staging_buf_id;
+    int staging_buf_id = 0;
+    int generation = 0;
 };
+
+using MindReadyFn = std::function<bool(
+    std::size_t handle, int staging_buf_id, int generation,
+    std::string& raw, bool& failed)>;
 
 
 

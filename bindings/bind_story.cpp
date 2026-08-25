@@ -21,7 +21,8 @@ void bind_story(py::module_& m) {
     py::class_<PromptJob>(m, "PromptJob")
         .def_readonly("handle", &PromptJob::handle)
         .def_readonly("prompt", &PromptJob::prompt)
-        .def_readonly("staging_buf_id", &PromptJob::staging_buf_id);
+        .def_readonly("staging_buf_id", &PromptJob::staging_buf_id)
+        .def_readonly("generation", &PromptJob::generation);
 
     py::enum_<Role>(m, "Role")
         .value("System", Role::System)
@@ -144,7 +145,6 @@ void bind_story(py::module_& m) {
              py::arg("from_id"), py::arg("into_id"))
         .def("note_advanced", &Story::note_advanced, py::arg("scene_id"))
         .def_property_readonly("turn_clock", &Story::turn_clock)
-        .def_property_readonly("beat_clock", &Story::beat_clock)
         .def("tool_list_scenes", &Story::tool_list_scenes)
         .def("dispatch_tool", &Story::dispatch_tool,
              py::arg("scene_id"), py::arg("name"), py::arg("args_json"))
@@ -171,10 +171,10 @@ void bind_story(py::module_& m) {
         .def("set_perception_ready_callback",
              [](Story& story, py::function fn) {
                  story.set_perception_ready_callback(
-                     [fn](std::size_t handle, int staging_buf_id,
+                     [fn](std::size_t handle, int staging_buf_id, int generation,
                           std::string& raw, bool& failed) {
                          py::gil_scoped_acquire gil;
-                         py::object result = fn(handle, staging_buf_id);
+                         py::object result = fn(handle, staging_buf_id, generation);
                          if (result.is_none()) return false;
                          const auto tuple = result.cast<py::tuple>();
                          raw = tuple[0].cast<std::string>();
@@ -195,10 +195,10 @@ void bind_story(py::module_& m) {
         .def("set_monologue_ready_callback",
              [](Story& story, py::function fn) {
                  story.set_monologue_ready_callback(
-                     [fn](std::size_t handle, int staging_buf_id,
+                     [fn](std::size_t handle, int staging_buf_id, int generation,
                           std::string& raw, bool& failed) {
                          py::gil_scoped_acquire gil;
-                         py::object result = fn(handle, staging_buf_id);
+                         py::object result = fn(handle, staging_buf_id, generation);
                          if (result.is_none()) return false;
                          const auto tuple = result.cast<py::tuple>();
                          raw = tuple[0].cast<std::string>();

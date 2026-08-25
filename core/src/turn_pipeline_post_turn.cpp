@@ -38,18 +38,28 @@ std::string format_graph_seed(const std::vector<SceneMessage>& history,
 }  // namespace
 
 std::vector<Node> process_post_turn(
-    StoryData& data, TurnServices& services, const std::string& scene_id,
-    int turn) noexcept {
+    StoryData& data, TurnServices& services, const std::string& scene_id) noexcept {
     std::vector<Node> expired_nodes;
     SceneData* scene = find_scene(data, scene_id);
     if (!scene) return expired_nodes;
+    const int turn = scene->turn_index;
     World& world = data.world;
     Weaver& weaver = services.weaver;
     const auto history = snapshot_history(
         scene->history, services.history_window);
     const std::string context =
         format_graph_seed(history, scene->title, kGraphSeedMaxMessageChars);
+    const bool async_minds =
+        services.perception_ready && services.perception_submit &&
+        services.monologue_ready && services.monologue_submit;
     try {
+        if (async_minds) {
+            world.apply_ready_perceptions(turn, services.perception_ready);
+            world.apply_ready_monologues(turn, services.monologue_ready);
+            world.submit_catchup_monologues(
+                scene->scene_id, services.monologue_submit);
+        }
+
         WeaveResult weave;
         if (weaver.active()) {
             if (weaver.should_weave(turn)) {
@@ -76,22 +86,16 @@ std::vector<Node> process_post_turn(
         if (window.empty()) {
             log_info("perception") << "t=" << turn << " empty -- skipped\n"
                   << std::flush;
+        } else if (async_minds) {
+            world.submit_perceptions(
+                scene->scene_id, turn, window, services.perception_submit);
         } else {
-            if (services.perception_ready && services.perception_submit)
-                world.poll_perceptions(
-                    scene->scene_id, turn, window,
-                    services.perception_ready, services.perception_submit);
-            else
-                world.update_perceptions(
-                    scene->scene_id, turn, window, services.perception);
-            if (services.monologue_ready && services.monologue_submit)
-                world.poll_monologues(
-                    scene->scene_id, turn,
-                    services.monologue_ready, services.monologue_submit);
-            else
-                world.update_monologues(
-                    scene->scene_id, turn, services.reflection);
+            world.update_perceptions(
+                scene->scene_id, turn, window, services.perception);
+            world.update_monologues(
+                scene->scene_id, turn, services.reflection);
         }
+        world.end_mind_turn(scene->scene_id, turn);
 
         if (services.downsampler) {
             const int before = scene->downsampling.summarized_up_to;

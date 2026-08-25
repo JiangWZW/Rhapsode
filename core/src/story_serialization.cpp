@@ -96,7 +96,7 @@ void load_scene_data(SceneData& scene, const std::string& saves_dir) {
     nlohmann::json value;
     input >> value;
 
-    scene.turn_index = value.value("turn_index", 0);
+    scene.turn_index = value.value("turn_index", -1);
     scene.driving_intention = value.value("driving_intention", std::string{});
     scene.charge = value.value("charge", 0.0f);
     scene.last_advanced = value.value("last_advanced", 0);
@@ -169,8 +169,7 @@ void Story::load_save(const std::string& saves_dir) {
     nlohmann::json manifest;
     input >> manifest;
     data_.active_scene_id = manifest.value("active_scene_id", data_.active_scene_id);
-    data_.turn_clock = manifest.value(
-        "turn_clock", manifest.value("beat_clock", 0));
+    data_.turn_clock = manifest.value("turn_clock", 0);
     data_.scene_closures.clear();
     for (const auto& value : manifest.value(
              "scene_closures", nlohmann::json::array())) {
@@ -210,7 +209,6 @@ void Story::save(const std::string& saves_dir) const {
 
     nlohmann::json manifest;
     manifest["active_scene_id"] = data_.active_scene_id;
-    manifest["beat_clock"] = data_.turn_clock;  // Legacy save compatibility.
     manifest["turn_clock"] = data_.turn_clock;
     manifest["scene_ids"] = scene_ids();
     manifest["scene_closures"] = nlohmann::json::array();

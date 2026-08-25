@@ -29,6 +29,7 @@ public:
     static constexpr float kAuthoredSeedWeight = 4.0f;
     static constexpr int kPerceptionWindowTurns = 3;
     static constexpr std::size_t kPerceptionUserChars = 1800;
+    static constexpr int kStagingBuffers = 4;
 
     explicit CharacterMemory(std::string name);
 
@@ -81,19 +82,31 @@ public:
     friend class World;
 
 private:
-    static constexpr int kStagingBuffers = 3;
+    int slot_for(int head, int beat) const;
+    int perception_slot_for(int beat) const {
+        return slot_for(perception_head_, beat);
+    }
+    int monologue_slot_for(int beat) const {
+        return slot_for(monologue_head_, beat);
+    }
 
-    int claim_perception(int turn);
+    void take_perception_slot(int slot, int turn);
+    void kill_perception_slot(int slot);
     void release_perception(int i);
-    bool perception_pending() const;
     bool perception_pending(int i) const { return perception_pending_[i]; }
     int perception_claim_turn(int i) const { return perception_claim_turn_[i]; }
+    int perception_generation(int i) const { return perception_gen_[i]; }
+    int perception_head() const { return perception_head_; }
 
-    int claim_monologue(int turn);
+    void take_monologue_slot(int slot, int turn);
+    void kill_monologue_slot(int slot);
     void release_monologue(int i);
-    bool monologue_pending() const;
     bool monologue_pending(int i) const { return monologue_pending_[i]; }
     int monologue_claim_turn(int i) const { return monologue_claim_turn_[i]; }
+    int monologue_generation(int i) const { return monologue_gen_[i]; }
+    int monologue_head() const { return monologue_head_; }
+
+    void end_mind_turn(int turn);
 
     std::string character_name_;
     WorldGraph beliefs_;
@@ -101,15 +114,18 @@ private:
     std::string perception_;
     int perception_turn_ = -1;
     int monologue_turn_ = -1;
+    int last_mind_turn_ = -1;
+    int perception_head_ = 0;
+    int monologue_head_ = 0;
 
     std::vector<MonologueLine> monologue_lines_;
-    int monologue_claim_turn_[kStagingBuffers] = {-1, -1, -1};
+    int monologue_claim_turn_[kStagingBuffers] = {-1, -1, -1, -1};
     bool monologue_pending_[kStagingBuffers] = {};
-    int monologue_write_ = 0;
+    int monologue_gen_[kStagingBuffers] = {};
 
-    int perception_claim_turn_[kStagingBuffers] = {-1, -1, -1};
+    int perception_claim_turn_[kStagingBuffers] = {-1, -1, -1, -1};
     bool perception_pending_[kStagingBuffers] = {};
-    int perception_write_ = 0;
+    int perception_gen_[kStagingBuffers] = {};
 };
 
 }  // namespace rhapsode

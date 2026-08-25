@@ -196,42 +196,55 @@ std::string CharacterMemory::render_thoughts(
     return sanitize_utf8(os.str());
 }
 
-int CharacterMemory::claim_perception(int turn) {
-    if (perception_pending()) return -1;
-    const int i = perception_write_;
-    perception_claim_turn_[i] = turn;
-    perception_pending_[i] = true;
-    perception_write_ = (perception_write_ + 1) % kStagingBuffers;
-    return i;
+int CharacterMemory::slot_for(int head, int beat) const {
+    int slot = head + (beat - (last_mind_turn_ + 1));
+    slot %= kStagingBuffers;
+    if (slot < 0) slot += kStagingBuffers;
+    return slot;
+}
+
+void CharacterMemory::take_perception_slot(int slot, int turn) {
+    perception_pending_[slot] = true;
+    perception_claim_turn_[slot] = turn;
+    ++perception_gen_[slot];
+}
+
+void CharacterMemory::kill_perception_slot(int slot) {
+    if (!perception_pending_[slot]) return;
+    perception_pending_[slot] = false;
+    ++perception_gen_[slot];
 }
 
 void CharacterMemory::release_perception(int i) {
     perception_pending_[i] = false;
 }
 
-bool CharacterMemory::perception_pending() const {
-    for (int i = 0; i < kStagingBuffers; ++i)
-        if (perception_pending_[i]) return true;
-    return false;
+void CharacterMemory::take_monologue_slot(int slot, int turn) {
+    monologue_pending_[slot] = true;
+    monologue_claim_turn_[slot] = turn;
+    ++monologue_gen_[slot];
 }
 
-int CharacterMemory::claim_monologue(int turn) {
-    if (monologue_pending()) return -1;
-    const int i = monologue_write_;
-    monologue_claim_turn_[i] = turn;
-    monologue_pending_[i] = true;
-    monologue_write_ = (monologue_write_ + 1) % kStagingBuffers;
-    return i;
+void CharacterMemory::kill_monologue_slot(int slot) {
+    if (!monologue_pending_[slot]) return;
+    monologue_pending_[slot] = false;
+    ++monologue_gen_[slot];
 }
 
 void CharacterMemory::release_monologue(int i) {
     monologue_pending_[i] = false;
 }
 
-bool CharacterMemory::monologue_pending() const {
-    for (int i = 0; i < kStagingBuffers; ++i)
-        if (monologue_pending_[i]) return true;
-    return false;
+void CharacterMemory::end_mind_turn(int turn) {
+    if (perception_pending_[perception_head_] &&
+        perception_claim_turn_[perception_head_] != turn)
+        kill_perception_slot(perception_head_);
+    if (monologue_pending_[monologue_head_] &&
+        monologue_claim_turn_[monologue_head_] != turn)
+        kill_monologue_slot(monologue_head_);
+    last_mind_turn_ = turn;
+    perception_head_ = (perception_head_ + 1) % kStagingBuffers;
+    monologue_head_ = (monologue_head_ + 1) % kStagingBuffers;
 }
 
 // ---------------------------------------------------------------------------

@@ -56,7 +56,7 @@ Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a f
    If `advance_player` succeeds, `complete_turn` must still run so a pending turn cannot leak.
    A player_message sent after `ready` stays in the WebSocket buffer until the loop receives
    again; C++ still rejects overlapping `advance_player` calls.
-9. While `idle`, `Story.poll_minds` runs every 0.25s: harvest finished perception/monologue HTTP and claim monologue if that turn's perception is already applied. `process_post_turn` still owns perception claim.
+9. While `idle`, `Story.poll_minds` runs every 0.25s: harvest newest ready perception/monologue, then catch-up-submit monologue if perception is ahead. It does not increment ring heads. `process_post_turn` harvests and catch-up-sends before weave, then submits this beat’s perception and increments heads.
 10. On disconnect, wait in-flight perception/monologue HTTP, `apply_ready_minds` (harvest only,
    no new dispatch), then save. Unfinished work is not saved; next load redispatches from
    `perception_turn_` / `monologue_turn_`.

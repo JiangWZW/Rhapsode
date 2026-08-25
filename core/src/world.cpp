@@ -163,46 +163,54 @@ void World::set_character_memory(CharacterMemory memory) {
     character_memories_.insert_or_assign(memory.name(), std::move(memory));
 }
 
-void World::apply_ready_perceptions(
-    int turn,
-    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready)
+void World::apply_ready_perceptions(int turn, const MindReadyFn& ready)
 {
     (void)turn;
     for (const auto& character : characters_) {
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
-
         CharacterMemory& memory = it->second;
         const std::size_t handle = std::hash<std::string>{}(character.name);
 
+        int applied_turn = -1;
+        int applied_slot = -1;
+        std::string raw;
+        bool failed = false;
+        bool got = false;
         for (int i = 0; i < CharacterMemory::kStagingBuffers; ++i) {
-            if (!memory.perception_pending(i)) continue;
-
-            std::string raw;
-            bool failed = false;
-            if (!ready(handle, i, raw, failed))
+            const int slot =
+                (memory.perception_head() - i + CharacterMemory::kStagingBuffers)
+                % CharacterMemory::kStagingBuffers;
+            if (!memory.perception_pending(slot)) continue;
+            if (!ready(handle, slot, memory.perception_generation(slot),
+                       raw, failed))
                 continue;
-
-            const int claimed = memory.perception_claim_turn(i);
-            if (failed || character.dead) {
-                memory.release_perception(i);
-                continue;
-            }
-
-            memory.apply_perception_json(claimed, raw);
-            memory.release_perception(i);
+            got = true;
+            applied_slot = slot;
+            applied_turn = memory.perception_claim_turn(slot);
+            break;
+        }
+        if (!got) continue;
+        if (failed || character.dead)
+            memory.release_perception(applied_slot);
+        else {
+            memory.apply_perception_json(applied_turn, raw);
+            memory.release_perception(applied_slot);
+        }
+        for (int slot = 0; slot < CharacterMemory::kStagingBuffers; ++slot) {
+            if (!memory.perception_pending(slot)) continue;
+            if (memory.perception_claim_turn(slot) < applied_turn)
+                memory.kill_perception_slot(slot);
         }
     }
 }
 
-void World::poll_perceptions(
+void World::submit_perceptions(
     const std::string& scene_id,
     int turn,
     const std::string& narration_window,
-    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
     const std::function<void(const std::vector<PromptJob>&)>& submit)
 {
-    apply_ready_perceptions(turn, ready);
     if (narration_window.empty()) return;
 
     std::vector<PromptJob> jobs;
@@ -215,51 +223,79 @@ void World::poll_perceptions(
         if (it == character_memories_.end()) continue;
         CharacterMemory& memory = it->second;
         if (memory.perception_turn() >= turn) continue;
+        const int slot = memory.perception_slot_for(turn);
+        if (memory.perception_pending(slot) &&
+            memory.perception_claim_turn(slot) == turn)
+            continue;
         const std::string who =
             !str::trim(character.core).empty() ? character.core
                                                : character.description;
-        const int i = memory.claim_perception(turn);
-        if (i < 0) continue;
+        memory.take_perception_slot(slot, turn);
         jobs.push_back(PromptJob{
             std::hash<std::string>{}(character.name),
             memory.build_perception_prompt(narration_window, who),
-            i});
+            slot,
+            memory.perception_generation(slot)});
     }
-    submit(jobs);
+    if (!jobs.empty()) submit(jobs);
 }
 
-void World::apply_ready_monologues(
+void World::poll_perceptions(
+    const std::string& scene_id,
     int turn,
-    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready) {
+    const std::string& narration_window,
+    const MindReadyFn& ready,
+    const std::function<void(const std::vector<PromptJob>&)>& submit)
+{
+    apply_ready_perceptions(turn, ready);
+    submit_perceptions(scene_id, turn, narration_window, submit);
+}
+
+void World::apply_ready_monologues(int turn, const MindReadyFn& ready) {
     (void)turn;
     for (const auto& character : characters_) {
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
         CharacterMemory& memory = it->second;
         const std::size_t handle = std::hash<std::string>{}(character.name);
+
+        int applied_turn = -1;
+        int applied_slot = -1;
+        std::string raw;
+        bool failed = false;
+        bool got = false;
         for (int i = 0; i < CharacterMemory::kStagingBuffers; ++i) {
-            if (!memory.monologue_pending(i)) continue;
-            std::string raw;
-            bool failed = false;
-            if (!ready(handle, i, raw, failed)) continue;
-            const int claimed = memory.monologue_claim_turn(i);
-            if (failed || character.dead) {
-                memory.release_monologue(i);
+            const int slot =
+                (memory.monologue_head() - i + CharacterMemory::kStagingBuffers)
+                % CharacterMemory::kStagingBuffers;
+            if (!memory.monologue_pending(slot)) continue;
+            if (!ready(handle, slot, memory.monologue_generation(slot),
+                       raw, failed))
                 continue;
-            }
-            memory.apply_monologue_json(claimed, raw);
-            memory.release_monologue(i);
+            got = true;
+            applied_slot = slot;
+            applied_turn = memory.monologue_claim_turn(slot);
+            break;
+        }
+        if (!got) continue;
+        if (failed || character.dead)
+            memory.release_monologue(applied_slot);
+        else {
+            memory.apply_monologue_json(applied_turn, raw);
+            memory.release_monologue(applied_slot);
+        }
+        for (int slot = 0; slot < CharacterMemory::kStagingBuffers; ++slot) {
+            if (!memory.monologue_pending(slot)) continue;
+            if (memory.monologue_claim_turn(slot) < applied_turn)
+                memory.kill_monologue_slot(slot);
         }
     }
 }
 
-void World::poll_monologues(
+void World::submit_catchup_monologues(
     const std::string& scene_id,
-    int turn,
-    const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
-    const std::function<void(const std::vector<PromptJob>&)>& submit) {
-    apply_ready_monologues(turn, ready);
-
+    const std::function<void(const std::vector<PromptJob>&)>& submit)
+{
     std::vector<PromptJob> jobs;
     for (const auto& character : characters_) {
         if (character.is_player || character.dead ||
@@ -269,21 +305,47 @@ void World::poll_monologues(
         auto it = character_memories_.find(character.name);
         if (it == character_memories_.end()) continue;
         CharacterMemory& memory = it->second;
-        if (memory.perception_turn() < turn) continue;
-        if (memory.monologue_turn() >= turn) continue;
+        const int beat = memory.perception_turn();
+        if (beat < 0) continue;
+        if (memory.monologue_turn() >= beat) continue;
+        const int slot = memory.monologue_slot_for(beat);
+        if (memory.monologue_pending(slot) &&
+            memory.monologue_claim_turn(slot) == beat)
+            continue;
 
         const std::string who =
             !str::trim(character.core).empty() ? character.core
                                                : character.description;
         std::string prompt = memory.build_monologue_prompt(who);
-        const int i = memory.claim_monologue(turn);
-        if (i < 0) continue;
+        memory.take_monologue_slot(slot, beat);
         jobs.push_back(PromptJob{
             std::hash<std::string>{}(character.name),
             std::move(prompt),
-            i});
+            slot,
+            memory.monologue_generation(slot)});
     }
-    submit(jobs);
+    if (!jobs.empty()) submit(jobs);
+}
+
+void World::poll_monologues(
+    const std::string& scene_id,
+    int turn,
+    const MindReadyFn& ready,
+    const std::function<void(const std::vector<PromptJob>&)>& submit) {
+    apply_ready_monologues(turn, ready);
+    submit_catchup_monologues(scene_id, submit);
+}
+
+void World::end_mind_turn(const std::string& scene_id, int turn) {
+    for (const auto& character : characters_) {
+        if (character.is_player || character.dead ||
+            !character.in_scene(scene_id)) {
+            continue;
+        }
+        auto it = character_memories_.find(character.name);
+        if (it == character_memories_.end()) continue;
+        it->second.end_mind_turn(turn);
+    }
 }
 
 std::uint64_t World::seed_character_intention(

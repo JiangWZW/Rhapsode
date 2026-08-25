@@ -27,9 +27,9 @@ void sync_memory(
 
 LifecycleApplyResult complete_scene_maintenance(
     StoryData& data, TurnServices& services, const std::string& scene_id,
-    const std::string& player_input, int post_turn_index) {
+    const std::string& player_input) {
     const std::vector<Node> expired = process_post_turn(
-        data, services, scene_id, post_turn_index);
+        data, services, scene_id);
     sync_memory(data, services, scene_id, {}, expired);
 
     LifecycleApplyResult applied;
@@ -72,7 +72,7 @@ std::vector<SceneMessage> Story::advance_player(
     sync_memory(data_, services_, result.scene_id,
                 result.effects.created_nodes, result.effects.expired_nodes);
     pending_turn_ = PendingTurn{
-        result.scene_id, player_input, result.post_turn_index};
+        result.scene_id, player_input};
     return std::move(result.outputs);
 }
 
@@ -84,8 +84,7 @@ std::vector<SceneMessage> Story::complete_turn() {
     pending_turn_.reset();
 
     complete_scene_maintenance(
-        data_, services_, pending.scene_id, pending.player_input,
-        pending.post_turn_index);
+        data_, services_, pending.scene_id, pending.player_input);
 
     std::vector<SceneMessage> outputs;
     const auto picks = select_off_stage_scenes(data_, services_.scheduler);
@@ -100,14 +99,16 @@ std::vector<SceneMessage> Story::complete_turn() {
                         off_stage.effects.created_nodes,
                         off_stage.effects.expired_nodes);
             const LifecycleApplyResult lifecycle = complete_scene_maintenance(
-                data_, services_, scene_id, {}, off_stage.post_turn_index);
+                data_, services_, scene_id, {});
             if (lifecycle.merged_into &&
                 *lifecycle.merged_into == data_.active_scene_id) {
                 outputs.insert(outputs.end(), off_stage.outputs.begin(),
                                off_stage.outputs.end());
             }
+            const SceneData* advanced = find_scene(data_, scene_id);
             log_info("scheduler") << "advanced scene=" << scene_id
-                                  << " turn=" << off_stage.post_turn_index
+                                  << " turn="
+                                  << (advanced ? advanced->turn_index : -1)
                                   << "\n";
         } catch (...) {
             log_error("turn") << "step failed scene=" << scene_id << "\n"

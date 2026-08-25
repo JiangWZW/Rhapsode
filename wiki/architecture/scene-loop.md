@@ -1,6 +1,6 @@
 ---
 title: Turn execution
-last_updated: 2026-08-23
+last_updated: 2026-08-25
 confidence: verified
 tier: semantic
 sources:
@@ -44,7 +44,7 @@ flowchart LR
 ```
 
 `advance_player` rejects a new input while a prior turn still awaits `complete_turn`. After a
-successful commit it stores only the scene ID, exact player input, and post-turn index in
+successful commit it stores only the scene ID and exact player input in
 `PendingTurn`.
 
 ## One `execute_turn` call
@@ -60,7 +60,9 @@ The implementation order in `core/src/turn_pipeline.cpp` is:
 5. Build narrator instructions (stage craft plus the speech/cast JSON schema) and turn state
    (who is on this stage with voice, who is not, other live threads, story so far, then the last
    attributed Player / Narrator / character spans from history **and** dialogue). Increment
-   `turn_index` and run the narrator retry path.
+   `turn_index` onto this beat (fresh scenes are `-1`, so the first beat is 0) and run the
+   narrator retry path. After commit, `turn_index` is that last committed beat, not the next
+   empty slot.
 6. Apply accepted cast additions to the candidate World.
 7. Stage narrator prose and formatted character messages in the candidate scene and `TurnResult`.
 8. Move the candidate World and scene into `StoryData`, advance the version once, and disarm rollback.
@@ -124,14 +126,17 @@ not part of an all-or-nothing save transaction.
 
 `Story::complete_turn` consumes `PendingTurn` and then performs:
 
-1. graph weaving and expiry;
-2. perceptions: `format_narration_window` (last 3 turns, 1800-char suffix) is computed once from the scene; empty window skips perception and monologue. Otherwise `poll_perceptions` when ready+submit are set (`apply_ready_perceptions` then claim if `perception_turn_ < turn`), otherwise blocking `update_perceptions`;
-3. character monologues: `poll_monologues` when ready+submit are set (`apply_ready_monologues` then claim if `perception_turn_ >= turn` and `monologue_turn_ < turn`), otherwise blocking `update_monologues`;
-4. text downsampling;
-5. lifecycle decision request and deterministic application;
-6. turn-clock advancement;
-7. selection and execution of up to two off-stage scene turns;
-8. saving when configured.
+1. harvest ready perception/monologue (newest slot first) and catch-up-submit monologue if `perception_turn_ > monologue_turn_`;
+2. graph weaving and expiry;
+3. perceptions: `format_narration_window` (last 3 turns, 1800-char suffix). Empty window skips the new perception send. Otherwise async `submit_perceptions` into `slot[head]` (kill occupant), or blocking `update_perceptions` then `update_monologues`;
+4. `end_mind_turn`: increment each on-stage character’s perception and monologue heads (`head = (head+1)%4`), even if that type skipped a send;
+5. text downsampling;
+6. lifecycle decision request and deterministic application;
+7. turn-clock advancement;
+8. selection and execution of up to two off-stage scene turns;
+9. saving when configured.
+
+Each mind type is a 4-slot ring per character. Poll walks from `head` backwards and applies only the newest ready result; older done or in-flight jobs for that type are dropped. A late monologue uses `slot_for(perception_turn_)`, not `scene.turn_index` as a slot index. `Story.poll_minds` harvests and catch-up-sends; it does not increment heads and does not submit new perception.
 
 Every selected off-stage scene calls the same `execute_turn` function with
 `TurnInput::Kind::Autonomous`, then receives its own maintenance pass. A failure in one off-stage turn

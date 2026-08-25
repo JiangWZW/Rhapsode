@@ -274,7 +274,7 @@ def scenes_endpoint():
         rows = []
     return {
         "active": story.active_scene_id,
-        "beat_clock": story.beat_clock,
+        "turn_clock": story.turn_clock,
         "scenes": rows,
     }
 

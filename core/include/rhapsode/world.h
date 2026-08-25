@@ -62,23 +62,28 @@ public:
     void update_monologues(const std::string& scene_id,
                            int turn,
                            const LLMCallback& llm_callback);
-    void apply_ready_perceptions(
+    void apply_ready_perceptions(int turn, const MindReadyFn& ready);
+    void apply_ready_monologues(int turn, const MindReadyFn& ready);
+    void submit_perceptions(
+        const std::string& scene_id,
         int turn,
-        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
-    void apply_ready_monologues(
-        int turn,
-        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready);
+        const std::string& narration_window,
+        const std::function<void(const std::vector<PromptJob>&)>& submit);
+    void submit_catchup_monologues(
+        const std::string& scene_id,
+        const std::function<void(const std::vector<PromptJob>&)>& submit);
     void poll_perceptions(
         const std::string& scene_id,
         int turn,
         const std::string& narration_window,
-        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+        const MindReadyFn& ready,
         const std::function<void(const std::vector<PromptJob>&)>& submit);
     void poll_monologues(
         const std::string& scene_id,
         int turn,
-        const std::function<bool(std::size_t, int, std::string&, bool&)>& ready,
+        const MindReadyFn& ready,
         const std::function<void(const std::vector<PromptJob>&)>& submit);
+    void end_mind_turn(const std::string& scene_id, int turn);
     bool mark_character_dead(const std::string& name);
 
     nlohmann::json to_json() const;

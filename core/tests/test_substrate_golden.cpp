@@ -181,7 +181,7 @@ TEST_CASE("story: fork shares World without coupling SceneData to it",
     REQUIRE(parent != nullptr);
     REQUIRE(child->history.size() == 0);
     REQUIRE(child->dialogue.size() == 0);
-    REQUIRE(child->turn_index == 0);
+    REQUIRE(child->turn_index == -1);
     REQUIRE(render_text_downsampling(child->downsampling) ==
             "Alice leaves the cold hall to guard the road while the barred gate remains unresolved.");
     REQUIRE(child->intention_owner == "Alice");

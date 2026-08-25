@@ -202,8 +202,8 @@ std::string Story::render_transcript() const {
 }
 
 int Story::revert_scene_turns(SceneData& scene, int count) {
-    if (count <= 0 || scene.turn_index <= 0) return 0;
-    const int target = std::max(0, scene.turn_index - count);
+    if (count <= 0 || scene.turn_index < 0) return 0;
+    const int target = std::max(-1, scene.turn_index - count);
     const int actual = scene.turn_index - target;
 
     const auto& messages = scene.history;
@@ -280,8 +280,7 @@ void Story::set_perception_llm_callback(LLMCallback cb) {
     services_.perception = std::move(cb);
 }
 
-void Story::set_perception_ready_callback(
-    std::function<bool(std::size_t, int, std::string&, bool&)> cb) {
+void Story::set_perception_ready_callback(MindReadyFn cb) {
     services_.perception_ready = std::move(cb);
 }
 
@@ -290,8 +289,7 @@ void Story::set_perception_submit_callback(
     services_.perception_submit = std::move(cb);
 }
 
-void Story::set_monologue_ready_callback(
-    std::function<bool(std::size_t, int, std::string&, bool&)> cb) {
+void Story::set_monologue_ready_callback(MindReadyFn cb) {
     services_.monologue_ready = std::move(cb);
 }
 
@@ -303,10 +301,10 @@ void Story::set_monologue_submit_callback(
 void Story::apply_ready_minds() {
     if (services_.perception_ready)
         data_.world.apply_ready_perceptions(
-            data_.turn_clock, services_.perception_ready);
+            0, services_.perception_ready);
     if (services_.monologue_ready)
         data_.world.apply_ready_monologues(
-            data_.turn_clock, services_.monologue_ready);
+            0, services_.monologue_ready);
 }
 
 void Story::poll_minds() {
@@ -314,12 +312,13 @@ void Story::poll_minds() {
     if (!services_.perception_ready || !services_.perception_submit) return;
     if (!services_.monologue_ready || !services_.monologue_submit) return;
     data_.world.apply_ready_perceptions(
-        data_.turn_clock, services_.perception_ready);
+        0, services_.perception_ready);
+    data_.world.apply_ready_monologues(
+        0, services_.monologue_ready);
     for (const auto& scene : data_.scenes) {
         if (!scene) continue;
-        data_.world.poll_monologues(
-            scene->scene_id, scene->turn_index,
-            services_.monologue_ready, services_.monologue_submit);
+        data_.world.submit_catchup_monologues(
+            scene->scene_id, services_.monologue_submit);
     }
 }
 

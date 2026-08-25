@@ -17,7 +17,7 @@ struct SceneData {
     std::vector<SceneMessage> history;
     std::vector<SceneMessage> dialogue;
     DownsamplingState downsampling;
-    int turn_index = 0;
+    int turn_index = -1;
 
     std::string driving_intention;
     float charge = 0.0f;

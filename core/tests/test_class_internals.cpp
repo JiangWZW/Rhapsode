@@ -331,10 +331,10 @@ TEST_CASE("Perception claims by scene turn; monologue waits for that apply",
     std::vector<PromptJob> perc_jobs;
     std::vector<PromptJob> mono_jobs;
     const auto none_ready =
-        [](std::size_t, int, std::string&, bool&) { return false; };
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
 
     world.poll_perceptions(
-        "root", 1, "The bell rings.", none_ready,
+        "root", 0, "The bell rings.", none_ready,
         [&](const std::vector<PromptJob>& jobs) {
             perc_jobs.insert(perc_jobs.end(), jobs.begin(), jobs.end());
         });
@@ -344,7 +344,7 @@ TEST_CASE("Perception claims by scene turn; monologue waits for that apply",
     REQUIRE(perc_jobs.front().prompt.find("The bell rings.") != std::string::npos);
 
     world.poll_monologues(
-        "root", 1, none_ready,
+        "root", 0, none_ready,
         [&](const std::vector<PromptJob>& jobs) {
             mono_jobs.insert(mono_jobs.end(), jobs.begin(), jobs.end());
         });
@@ -352,18 +352,18 @@ TEST_CASE("Perception claims by scene turn; monologue waits for that apply",
     REQUIRE(world.character_memories().at("Alice").perception_turn() == -1);
 
     world.apply_ready_perceptions(
-        1,
-        [](std::size_t, int, std::string& raw, bool& failed) {
+        0,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
             raw = R"({"perception":"Alice hears the bell."})";
             failed = false;
             return true;
         });
     REQUIRE(world.character_memories().at("Alice").perception()
             == "Alice hears the bell.");
-    REQUIRE(world.character_memories().at("Alice").perception_turn() == 1);
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == 0);
 
     world.poll_monologues(
-        "root", 1, none_ready,
+        "root", 0, none_ready,
         [&](const std::vector<PromptJob>& jobs) {
             mono_jobs.insert(mono_jobs.end(), jobs.begin(), jobs.end());
         });
@@ -374,11 +374,141 @@ TEST_CASE("Perception claims by scene turn; monologue waits for that apply",
 
     perc_jobs.clear();
     world.poll_perceptions(
-        "root", 1, "The bell rings.", none_ready,
+        "root", 0, "The bell rings.", none_ready,
         [&](const std::vector<PromptJob>& jobs) {
             perc_jobs.insert(perc_jobs.end(), jobs.begin(), jobs.end());
         });
     REQUIRE(perc_jobs.empty());
+}
+
+TEST_CASE("Mind ring catch-up submits monologue after increment without idle",
+          "[world][character_memory][mind-ring]") {
+    World world;
+    world.enter_character("root", Character{"Alice", "A", false});
+    const auto none_ready =
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
+    world.poll_perceptions(
+        "root", 0, "The bell rings.", none_ready,
+        [](const std::vector<PromptJob>&) {});
+    world.end_mind_turn("root", 0);
+    world.apply_ready_perceptions(
+        0,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
+            raw = R"({"perception":"Alice hears the bell."})";
+            failed = false;
+            return true;
+        });
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == 0);
+
+    std::vector<PromptJob> mono_jobs;
+    world.submit_catchup_monologues("root", [&](const std::vector<PromptJob>& jobs) {
+        mono_jobs.insert(mono_jobs.end(), jobs.begin(), jobs.end());
+    });
+    REQUIRE(mono_jobs.size() == 1);
+    REQUIRE(mono_jobs.front().prompt.find("Alice hears the bell.")
+            != std::string::npos);
+}
+
+TEST_CASE("Mind ring kill-on-reuse ignores stale generation",
+          "[world][character_memory][mind-ring]") {
+    World world;
+    world.enter_character("root", Character{"Alice", "A", false});
+    const auto none_ready =
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
+    world.poll_perceptions(
+        "root", 0, "old window", none_ready,
+        [](const std::vector<PromptJob>&) {});
+    const int stale_gen = 1;
+    for (int t = 0; t < 4; ++t)
+        world.end_mind_turn("root", t);
+    world.poll_perceptions(
+        "root", 4, "new window", none_ready,
+        [](const std::vector<PromptJob>&) {});
+
+    world.apply_ready_perceptions(
+        4,
+        [stale_gen](std::size_t, int, int gen, std::string& raw, bool& failed) {
+            if (gen == stale_gen) {
+                raw = R"({"perception":"stale"})";
+                failed = false;
+                return true;
+            }
+            return false;
+        });
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == -1);
+
+    world.apply_ready_perceptions(
+        4,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
+            raw = R"({"perception":"fresh"})";
+            failed = false;
+            return true;
+        });
+    REQUIRE(world.character_memories().at("Alice").perception() == "fresh");
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == 4);
+}
+
+TEST_CASE("Mind ring newest-only applies newer and drops older",
+          "[world][character_memory][mind-ring]") {
+    World world;
+    world.enter_character("root", Character{"Alice", "A", false});
+    const auto none_ready =
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
+    world.poll_perceptions(
+        "root", 0, "first", none_ready, [](const std::vector<PromptJob>&) {});
+    world.end_mind_turn("root", 0);
+    world.poll_perceptions(
+        "root", 1, "second", none_ready, [](const std::vector<PromptJob>&) {});
+
+    world.apply_ready_perceptions(
+        1,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
+            raw = R"({"perception":"newer"})";
+            failed = false;
+            return true;
+        });
+    REQUIRE(world.character_memories().at("Alice").perception() == "newer");
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == 1);
+}
+
+TEST_CASE("Mind ring skip-send still increments and clears leftover",
+          "[world][character_memory][mind-ring]") {
+    World world;
+    world.enter_character("root", Character{"Alice", "A", false});
+    const auto none_ready =
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
+    world.poll_perceptions(
+        "root", 0, "first", none_ready, [](const std::vector<PromptJob>&) {});
+    for (int t = 0; t < 5; ++t)
+        world.end_mind_turn("root", t);
+    world.apply_ready_perceptions(
+        4,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
+            raw = R"({"perception":"stale leftover"})";
+            failed = false;
+            return true;
+        });
+    REQUIRE(world.character_memories().at("Alice").perception_turn() == -1);
+}
+
+TEST_CASE("Loaded memory does not restore in-flight slots",
+          "[world][character_memory][mind-ring][persistence]") {
+    World world;
+    world.enter_character("root", Character{"Alice", "A", false});
+    const auto none_ready =
+        [](std::size_t, int, int, std::string&, bool&) { return false; };
+    world.poll_perceptions(
+        "root", 0, "The bell rings.", none_ready,
+        [](const std::vector<PromptJob>&) {});
+    World loaded = World::from_json(world.to_json());
+    loaded.apply_ready_perceptions(
+        0,
+        [](std::size_t, int, int, std::string& raw, bool& failed) {
+            raw = R"({"perception":"should not apply"})";
+            failed = false;
+            return true;
+        });
+    REQUIRE(loaded.character_memories().at("Alice").perception_turn() == -1);
 }
 
 TEST_CASE("MemorySystem preserves callback payloads and query results",

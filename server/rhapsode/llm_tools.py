@@ -136,24 +136,31 @@ class PromptJobs:
 
     def submit(self, jobs):
         for job in jobs:
-            self._futs[(job.handle, job.staging_buf_id)] = self._pool.submit(
-                self._call, job.prompt)
+            gen = getattr(job, "generation", 0)
+            self._futs[(job.handle, job.staging_buf_id)] = (
+                self._pool.submit(self._call, job.prompt), gen)
 
-    def ready(self, handle, staging_buf_id):
-        fut = self._futs.get((handle, staging_buf_id))
-        if fut is None or not fut.done():
+    def ready(self, handle, staging_buf_id, generation=0):
+        item = self._futs.get((handle, staging_buf_id))
+        if item is None:
+            return None
+        fut, gen = item
+        if gen != generation:
+            return None
+        if not fut.done():
             return None
         self._futs.pop((handle, staging_buf_id))
         try:
             return fut.result(), False
         except Exception:
             log.exception(
-                "prompt job failed handle=%s slot=%s", handle, staging_buf_id)
+                "prompt job failed handle=%s slot=%s gen=%s",
+                handle, staging_buf_id, generation)
             return "", True
 
     def wait(self, timeout=None):
         if self._futs:
-            wait(self._futs.values(), timeout=timeout)
+            wait([item[0] for item in self._futs.values()], timeout=timeout)
 
 
 NARRATOR_TOOLS = [

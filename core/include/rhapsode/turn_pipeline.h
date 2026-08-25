@@ -21,7 +21,6 @@ class MemorySystem;
 
 struct TurnResult {
     std::string scene_id;
-    int post_turn_index = -1;
     std::vector<SceneMessage> outputs;
     std::vector<std::string> delivery_failures;
     struct Effects {
@@ -39,9 +38,9 @@ struct TurnServices {
     LLMCallback downsampler;
     LLMCallback reflection;
     LLMCallback perception;
-    std::function<bool(std::size_t, int, std::string&, bool&)> perception_ready;
+    MindReadyFn perception_ready;
     std::function<void(const std::vector<PromptJob>&)> perception_submit;
-    std::function<bool(std::size_t, int, std::string&, bool&)> monologue_ready;
+    MindReadyFn monologue_ready;
     std::function<void(const std::vector<PromptJob>&)> monologue_submit;
     size_t history_window = 8;
     std::string storyline_board;
@@ -64,7 +63,6 @@ TurnResult execute_turn(
     StoryData& data, TurnServices& services, const TurnInput& input);
 
 std::vector<Node> process_post_turn(
-    StoryData& data, TurnServices& services, const std::string& scene_id,
-    int turn) noexcept;
+    StoryData& data, TurnServices& services, const std::string& scene_id) noexcept;
 
 }  // namespace rhapsode

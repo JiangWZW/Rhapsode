@@ -66,7 +66,6 @@ public:
 
     void note_advanced(const std::string& scene_id);
     int turn_clock() const { return data_.turn_clock; }
-    int beat_clock() const { return turn_clock(); }
     std::string tool_list_scenes() const;
     std::string dispatch_tool(const std::string& scene_id,
                               const std::string& name,
@@ -93,12 +92,10 @@ public:
     void set_downsampler_callback(LLMCallback cb);
     void set_reflection_llm_callback(LLMCallback cb);
     void set_perception_llm_callback(LLMCallback cb);
-    void set_perception_ready_callback(
-        std::function<bool(std::size_t, int, std::string&, bool&)> cb);
+    void set_perception_ready_callback(MindReadyFn cb);
     void set_perception_submit_callback(
         std::function<void(const std::vector<PromptJob>&)> cb);
-    void set_monologue_ready_callback(
-        std::function<bool(std::size_t, int, std::string&, bool&)> cb);
+    void set_monologue_ready_callback(MindReadyFn cb);
     void set_monologue_submit_callback(
         std::function<void(const std::vector<PromptJob>&)> cb);
     void set_memory(std::shared_ptr<MemorySystem> memory) {
@@ -121,7 +118,6 @@ private:
     struct PendingTurn {
         std::string scene_id;
         std::string player_input;
-        int post_turn_index = -1;
     };
 
     int revert_scene_turns(SceneData& scene, int count);

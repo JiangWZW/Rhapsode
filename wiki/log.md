@@ -1,3 +1,18 @@
+## [2026-08-26] change | Monologue prompt: continue the thought
+
+- Rewrote `monologue_system_instructions`: the line continues one developing train of thought ("what did this beat change for you"), 1-3 sentences, rough not quotable. Null is for redundancy ("would only restate previous lines"), replacing "most beats you only listen" which primed silence and starved the character's only durable subjective memory. Sources: Open Souls goal-directed `internalMonologue`, Stanford generative-agents reflection-over-reflection, Bicking's repetition/uplift notes.
+- Docs: [architecture/monologue-streams.md](architecture/monologue-streams.md).
+
+## [2026-08-25] change | 4-slot mind rings
+
+- Perception and monologue each have a 4-slot ring. `head` is this beat’s slot; `end_mind_turn` increments it even on skip-send and kills a leftover occupant. Harvest applies only the newest ready result. `process_post_turn` harvests and catch-up-sends monologue before weave; idle `poll_minds` harvests and catch-up-sends without incrementing. Prompt jobs carry a generation so a killed HTTP cannot apply onto the new claim.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md), [architecture/python-server.md](architecture/python-server.md).
+
+## [2026-08-25] change | Scene turn_index is last committed
+
+- `scene.turn_index` is the beat that just committed (`-1` if none). Deleted `post_turn_index` and `beat_clock`. Fresh/fork scenes start at `-1`; first beat is 0.
+- Docs: [architecture/scene-loop.md](architecture/scene-loop.md).
+
 ## [2026-08-24] implementation | Idle mind poll
 
 - Play session calls `Story.poll_minds` every 0.25s while idle: harvest finished perception, then claim monologue. Perception claim stays in `process_post_turn`.

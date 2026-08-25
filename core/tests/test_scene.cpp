@@ -81,12 +81,12 @@ TurnResult execute_test_turn(
 }
 
 std::vector<Node> process_test_post_turn(
-    World& world, TurnServices& services, SceneData& scene, int turn) {
+    World& world, TurnServices& services, SceneData& scene) {
     StoryData data;
     import_world(data, world);
     data.active_scene_id = scene.scene_id;
     adopt_scene(data, scene);
-    auto expired = process_post_turn(data, services, scene.scene_id, turn);
+    auto expired = process_post_turn(data, services, scene.scene_id);
     world = snapshot_world(data);
     scene = std::move(*data.scenes.front());
     return expired;
@@ -143,7 +143,7 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
     SceneData scene;
     scene.scene_id = "root";
     REQUIRE(scene.scene_id == "root");
-    REQUIRE(scene.turn_index == 0);
+    REQUIRE(scene.turn_index == -1);
 }
 
 TEST_CASE("Narrator instructions are stage craft with schema last",
@@ -665,12 +665,12 @@ TEST_CASE("Turn pipeline returns associated generic turn effects",
     const TurnResult result = execute_test_turn(
         world, runtime, scene, "Look.");
     REQUIRE(result.scene_id == "root");
-    REQUIRE(result.post_turn_index >= 0);
+    REQUIRE(scene.turn_index == 0);
     REQUIRE(result.effects.created_nodes.size() == 1);
     REQUIRE(result.effects.expired_nodes.empty());
 
     const auto expired = process_test_post_turn(
-        world, runtime, scene, result.post_turn_index);
+        world, runtime, scene);
     REQUIRE(expired.size() == 1);
     REQUIRE(expired.front().id == old_id);
     const auto edges = world.graph().all_edges();
@@ -746,7 +746,7 @@ TEST_CASE("Turn pipeline retries invalid Player speech without leaking state",
         world, runtime, scene, "Act.");
     REQUIRE(calls == 3);  // turn failure + turn retry + graph
     REQUIRE(result.outputs.front().content == "Corrected.");
-    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.turn_index == 0);
 }
 
 TEST_CASE("Turn pipeline rolls back failed turns and can be reused",
@@ -761,7 +761,7 @@ TEST_CASE("Turn pipeline rolls back failed turns and can be reused",
     REQUIRE_THROWS_AS(
         execute_test_turn(world, runtime, scene, "Act."),
         std::runtime_error);
-    REQUIRE(scene.turn_index == 0);
+    REQUIRE(scene.turn_index == -1);
     REQUIRE(scene.history.size() == 0);
     REQUIRE(world.graph().size() == 0);
 
@@ -831,7 +831,7 @@ TEST_CASE("Graph observation failure cannot roll back a committed turn",
     REQUIRE(result.outputs.front().content == "The gate opens.");
     REQUIRE(result.effects.created_nodes.empty());
     REQUIRE(world.state_version() == 1);
-    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.turn_index == 0);
     REQUIRE(scene.history.size() == 2);
 }
 
@@ -888,7 +888,7 @@ TEST_CASE("Output callback failure is a post-commit delivery failure",
             std::vector<std::string>{"socket unavailable", "socket unavailable"});
     REQUIRE(attempts == 2);
     REQUIRE(world.state_version() == 1);
-    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.turn_index == 0);
     REQUIRE(scene.history.size() == 2);
     REQUIRE(scene.dialogue.size() == 1);
 }
@@ -936,11 +936,11 @@ TEST_CASE("Turn pipeline blocks until post-turn processing finishes",
 
     const TurnResult turn = execute_test_turn(
         world, runtime, scene, "Wait.");
-    REQUIRE(turn.post_turn_index >= 0);
+    REQUIRE(scene.turn_index == 0);
 
     auto running = std::async(std::launch::async, [&] {
         return process_test_post_turn(
-            world, runtime, scene, turn.post_turn_index);
+            world, runtime, scene);
     });
     started.get_future().wait();
     REQUIRE(running.wait_for(20ms) == std::future_status::timeout);
@@ -993,7 +993,7 @@ TEST_CASE("Turn pipeline preserves post-turn callback order",
     const TurnResult turn = execute_test_turn(
         world, runtime, scene, "Look.");
     REQUIRE(events == std::vector<std::string>{"narrator", "narrator"});
-    process_test_post_turn(world, runtime, scene, turn.post_turn_index);
+    process_test_post_turn(world, runtime, scene);
     REQUIRE(events == std::vector<std::string>{
         "narrator", "narrator", "weave", "expiry", "reflection", "downsample"});
 }
@@ -1019,9 +1019,9 @@ TEST_CASE("Turn pipeline post-turn failures remain non-fatal",
     const TurnResult result = execute_test_turn(
         world, runtime, scene, "Wait.");
     REQUIRE(result.outputs.front().content == "Time passes.");
-    REQUIRE(scene.turn_index == 1);
+    REQUIRE(scene.turn_index == 0);
     REQUIRE_NOTHROW(process_test_post_turn(
-        world, runtime, scene, result.post_turn_index));
+        world, runtime, scene));
 }
 
 TEST_CASE("Story delivers player outputs before weave runs",
@@ -1382,11 +1382,14 @@ TEST_CASE("Scheduler advances a starved off-stage scene within the cap",
 
     for (int i = 0; i < 3; ++i)
         play_turn(story, "Idle.");
-    REQUIRE(story.active_scene()->turn_index == 3);
+    REQUIRE(story.active_scene()->turn_index == 2);
+    auto off_beats = [](const SceneData* scene) {
+        return scene && scene->turn_index >= 0 ? scene->turn_index + 1 : 0;
+    };
     const int off =
-        (story.get_scene("a") ? story.get_scene("a")->turn_index : 0) +
-        (story.get_scene("b") ? story.get_scene("b")->turn_index : 0) +
-        (story.get_scene("c") ? story.get_scene("c")->turn_index : 0);
+        off_beats(story.get_scene("a")) +
+        off_beats(story.get_scene("b")) +
+        off_beats(story.get_scene("c"));
     REQUIRE(off >= 2);
     REQUIRE(off <= 4);  // cap 2 per player turn across 2 starved turns max here
 }
@@ -1403,11 +1406,11 @@ TEST_CASE("Story undo preserves the owned runtime", "[story][undo]") {
         return response("Moment advances.");
     });
     play_turn(story, "Forward.");
-    REQUIRE(story.active_scene()->turn_index == 1);
-    REQUIRE(story.revert_active_turns(1) == 1);
     REQUIRE(story.active_scene()->turn_index == 0);
+    REQUIRE(story.revert_active_turns(1) == 1);
+    REQUIRE(story.active_scene()->turn_index == -1);
     play_turn(story, "Again.");
-    REQUIRE(story.active_scene()->turn_index == 1);
+    REQUIRE(story.active_scene()->turn_index == 0);
 }
 
 TEST_CASE("Story load reuses its configured runtime", "[story][persistence]") {
@@ -1419,9 +1422,9 @@ TEST_CASE("Story load reuses its configured runtime", "[story][persistence]") {
     story.save(directory.string());
     play_turn(story, "First.");
     story.load_save(directory.string());
-    REQUIRE(story.active_scene()->turn_index == 0);
+    REQUIRE(story.active_scene()->turn_index == -1);
     play_turn(story, "Second.");
-    REQUIRE(story.active_scene()->turn_index == 1);
+    REQUIRE(story.active_scene()->turn_index == 0);
     std::filesystem::remove_all(directory);
 }
 
@@ -1455,7 +1458,7 @@ TEST_CASE("Story move assignment preserves its configured runtime",
     REQUIRE(outputs.size() == 1);
     REQUIRE(outputs.front().content == "Moved runtime.");
     REQUIRE(destination.active_scene_id() == "root");
-    REQUIRE(destination.active_scene()->turn_index == 1);
+    REQUIRE(destination.active_scene()->turn_index == 0);
 }
 
 TEST_CASE("Story owns explicit graph weaving", "[story][weaver][ownership]") {

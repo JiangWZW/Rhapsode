@@ -126,8 +126,6 @@ biased by an incorrect observation.
 - Python scene and World access returns detached values; it cannot mutate the live `StoryData`.
 - Old saves still store graph and version fields inside `world.json` and load through the compatibility
   conversion.
-- `beat_clock` and a few persisted or diagnostic “beat” names remain compatibility aliases. New core
-  execution code uses “turn.”
 - Eval `story.txt` is `Story::render_transcript()`: live Main/Off-stage scenes, `[Fork]`/`[Merge]`
   notes on the parent timeline, archived `## Fork — id (merged into …)` closures, and `## Concluded`
   closures.

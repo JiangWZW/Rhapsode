@@ -144,6 +144,7 @@ TurnResult execute_turn(
 
     TurnResult result;
     NarratorTurnResult narrator;
+    ++candidate_scene.turn_index;
     const int turn = candidate_scene.turn_index;
     const auto started_at = std::chrono::steady_clock::now();
 
@@ -154,7 +155,6 @@ TurnResult execute_turn(
     const std::string turn_state = build_narrator_turn_state(
         candidate_scene, candidate_world, services.storyline_board);
     services.storyline_board.clear();
-    ++candidate_scene.turn_index;
     log_debug("narrator") << "prompt instructions=" << instructions.size()
                           << " turn_state=" << turn_state.size()
                           << " chars\n" << std::flush;
@@ -177,7 +177,6 @@ TurnResult execute_turn(
     data.transaction_version = commit_version;
     rollback.disarm();
     result.scene_id = input.scene_id;
-    result.post_turn_index = turn;
 
     const double elapsed_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - started_at).count();

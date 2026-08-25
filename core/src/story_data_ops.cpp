@@ -235,7 +235,7 @@ TurnSummary summarize_completed_turn(
             break;
         }
     }
-    const int completed_turn = scene.turn_index - 1;
+    const int completed_turn = scene.turn_index;
     for (const auto& message : scene.dialogue) {
         if (message.metadata.value("turn", -1) == completed_turn)
             summary.dialogue.push_back(message);
