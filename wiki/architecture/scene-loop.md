@@ -1,6 +1,6 @@
 ---
 title: Turn execution
-last_updated: 2026-08-25
+last_updated: 2026-08-27
 confidence: verified
 tier: semantic
 sources:
@@ -38,13 +38,15 @@ flowchart LR
     Execute -.-> Data["StoryData&"]
     Execute -.-> Services["TurnServices&"]
     Execute --> Narrator["narrator callback"]
-    Execute --> GraphPlan["apply_graph_plan"]
+    Execute --> Settlement["GraphSettlement"]
+    Complete --> Settlement
+    Settlement --> GraphPlan["apply_graph_plan"]
     Complete --> Post["process_post_turn"]
     Complete --> Lifecycle["apply_lifecycle_decision"]
 ```
 
 `advance_player` rejects a new input while a prior turn still awaits `complete_turn`. After a
-successful commit it stores only the scene ID and exact player input in
+successful commit it stores the scene ID, exact player input, and deferred graph settlement in
 `PendingTurn`.
 
 ## One `execute_turn` call
@@ -67,9 +69,8 @@ The implementation order in `core/src/turn_pipeline.cpp` is:
 7. Stage narrator prose and formatted character messages in the candidate scene and `TurnResult`.
 8. Move the candidate World and scene into `StoryData`, advance the version once, and disarm rollback.
 9. Notify the output callback. Notification failures are recorded; the committed turn is not replayed.
-10. Extract and apply non-authoritative graph observations on working copies.
-    The graph call (`GRAPH_UPDATE`) sees only this take's prose and speech. Live World and
-    observations are replaced only if that call succeeds.
+10. Return a `GraphSettlement` containing the scene/turn/version identity, this take's prose and
+    plan, and the frozen read-tool lease. No graph model call runs in `execute_turn`.
 
 An exception before step 8 restores World, observations, scene, version, and storyline board. This is
 an in-process turn transaction, not crash-safe persistence.
@@ -110,14 +111,16 @@ References are deterministic within a committed turn and need no mutable global 
 
 ## Observation step
 
-Graph extraction runs after transcript and coded-state commit. It copies World and observations,
-asks the narrator callback for `transitions` and `new_nodes`, then calls the stateless
-`apply_graph_plan` function on those copies. Nodes stay on the world ledger. Scene is not copied;
-extract reads the committed scene.
+Graph extraction is the first step of `complete_turn`, after the server has delivered output and sent
+`status: ready`. The settlement validates its scene, turn, and transaction version before calling the
+model. It then copies World and observations, asks the narrator callback for `transitions` and
+`new_nodes`, and calls the stateless `apply_graph_plan` function on those copies. Nodes stay on the
+world ledger. Scene is not copied; extraction reads the committed scene and the deferred callback
+retains the turn's frozen read snapshot.
 
-On success, those copies replace the live World and observations. On failure they are discarded;
-the committed turn survives. The graph-application function cannot access Story, SceneData, or
-mechanical World methods.
+On success, and only if the transaction version is still current, those copies replace the live
+World and observations. Stale or failed work is discarded; the committed turn survives. The
+graph-application function cannot access Story, SceneData, or mechanical World methods.
 
 The observation step is derived semantic work. It does not increment the transaction version and is
 not part of an all-or-nothing save transaction.
@@ -126,15 +129,21 @@ not part of an all-or-nothing save transaction.
 
 `Story::complete_turn` consumes `PendingTurn` and then performs:
 
-1. harvest ready perception/monologue (newest slot first) and catch-up-submit monologue if `perception_turn_ > monologue_turn_`;
-2. graph weaving and expiry;
-3. perceptions: `format_narration_window` (last 3 turns, 1800-char suffix). Empty window skips the new perception send. Otherwise async `submit_perceptions` into `slot[head]` (kill occupant), or blocking `update_perceptions` then `update_monologues`;
-4. `end_mind_turn`: increment each on-stage character’s perception and monologue heads (`head = (head+1)%4`), even if that type skipped a send;
-5. text downsampling;
-6. lifecycle decision request and deterministic application;
-7. turn-clock advancement;
-8. selection and execution of up to two off-stage scene turns;
-9. saving when configured.
+1. settle graph observations and synchronize their memory effects;
+2. harvest ready perception/monologue (newest slot first) and catch-up-submit monologue if `perception_turn_ > monologue_turn_`;
+3. graph weaving and expiry;
+4. perceptions: `format_narration_window` (last 3 turns, 1800-char suffix). Empty window skips the new perception send. Otherwise async `submit_perceptions` into `slot[head]` (kill occupant), or blocking `update_perceptions` then `update_monologues`;
+5. `end_mind_turn`: increment each on-stage character’s perception and monologue heads (`head = (head+1)%4`), even if that type skipped a send;
+6. text downsampling;
+7. lifecycle decision request and deterministic application;
+8. turn-clock advancement;
+9. selection and execution of up to two off-stage scene turns;
+10. saving when configured.
+
+Expiry drains batch up to eight disjoint entity groups and 80 live nodes per model call, under a
+conservative prompt-size budget. Priority groups remain first. Overlapping groups are split across
+calls to preserve serial semantics, and responses can expire only an older active node through a
+newer node from the same group.
 
 Each mind type is a 4-slot ring per character. Poll walks from `head` backwards and applies only the newest ready result; older done or in-flight jobs for that type are dropped. A late monologue uses `slot_for(perception_turn_)`, not `scene.turn_index` as a slot index. `Story.poll_minds` harvests and catch-up-sends; it does not increment heads and does not submit new perception.
 
@@ -168,10 +177,10 @@ reliability.
 
 | File | Role |
 |---|---|
-| `core/src/turn_pipeline.cpp` | `execute_turn`: copy, prompt, commit, deliver, observe |
+| `core/src/turn_pipeline.cpp` | `execute_turn`: copy, prompt, commit, deliver, defer observation |
 | `core/src/turn_pipeline_narrator.cpp` | Narrator retry, cast apply, graph extraction |
 | `core/src/turn_pipeline_post_turn.cpp` | Weaver, monologues, downsampling after commit |
-| `core/src/story_advance.cpp` | `advance_player` / `complete_turn` spine |
+| `core/src/story_advance.cpp` | `advance_player` / graph settlement / `complete_turn` spine |
 | `core/src/story_lifecycle.cpp` | Fork, merge, conclude, and synthesize story-so-far |
 
 ## See also

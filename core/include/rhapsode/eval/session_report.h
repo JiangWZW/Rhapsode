@@ -21,6 +21,9 @@ EndReason end_reason_from_name(const std::string& name);
 struct ReliabilityMetrics {
     int turns_completed = 0;
     int turns_requested = 0;
+    std::vector<double> ready_ms;
+    std::vector<double> idle_ms;
+    /// Legacy alias for idle_ms in newly generated runs.
     std::vector<double> turn_ms;
     int timeouts = 0;
     int errors = 0;

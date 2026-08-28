@@ -186,29 +186,57 @@ TurnResult execute_turn(
 
     publish_outputs(services, result);
 
+    result.graph_settlement.emplace(GraphSettlement{
+        input.scene_id, turn, commit_version,
+        std::move(narrator.prose), std::move(narrator.plan),
+        std::move(read_tools)});
+
+    return result;
+}
+
+TurnResult::Effects settle_graph_observations(
+    StoryData& data, TurnServices& services,
+    GraphSettlement settlement) noexcept {
+    TurnResult::Effects effects;
+    SceneData* scene = find_scene(data, settlement.scene_id);
+    if (!scene || scene->turn_index != settlement.turn ||
+        data.transaction_version != settlement.commit_version) {
+        log_warn("turn") << "discarding stale graph settlement scene="
+                         << settlement.scene_id << " turn=" << settlement.turn
+                         << "\n" << std::flush;
+        return effects;
+    }
+
     try {
         World observation_world = data.world;
         WorldGraph next_observations = data.observations;
+        NarratorTurnResult narrator{
+            std::move(settlement.prose), std::move(settlement.plan)};
         GraphPlanResult output = extract_graph_observations(
-            observation_world, next_observations, services, *live_scene,
-            turn, narrator, read_tools.callback());
+            observation_world, next_observations, services, *scene,
+            settlement.turn, narrator, settlement.read_tools.callback());
+        if (data.transaction_version != settlement.commit_version) {
+            log_warn("turn") << "discarding stale graph result scene="
+                             << settlement.scene_id << " turn="
+                             << settlement.turn << "\n" << std::flush;
+            return effects;
+        }
         data.world = std::move(observation_world);
         data.observations = std::move(next_observations);
-        result.effects.created_nodes = std::move(output.new_nodes);
-        result.effects.expired_nodes = std::move(output.newly_expired);
+        effects.created_nodes = std::move(output.new_nodes);
+        effects.expired_nodes = std::move(output.newly_expired);
         if (services.weaver.active()) {
             std::vector<std::string> priority;
-            for (const auto& node : result.effects.created_nodes) {
+            for (const auto& node : effects.created_nodes) {
                 priority.insert(
                     priority.end(), node.entities.begin(), node.entities.end());
             }
             services.weaver.rebuild_expiry_queue(data.observations, priority);
         }
     } catch (...) {
-        result.effects = {};
         log_warn("turn") << "graph observation extraction failed\n" << std::flush;
     }
-    return result;
+    return effects;
 }
 
 }  // namespace rhapsode

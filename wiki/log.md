@@ -1,3 +1,47 @@
+## [2026-08-28] research | Clean 20-turn Ashenmoor narrative analysis
+
+- Cleared all saves and Chroma state with `reset.bat`, verified both stores empty, and ran a guide-free 20-turn siege autoplay.
+- The run completed 20/20 with zero errors or timeouts; mean ready/idle latency was 62.83/171.86 s.
+- Produced a complete reading edition with 36 retained perceptions and 34 monologues, plus an evidence-based analysis of narrative stasis, private-intention loops, graph growth, tool-loop failures, and evaluator blind spots.
+- Story: [research/ashenmoor-clean-20turn-story-with-minds.md](research/ashenmoor-clean-20turn-story-with-minds.md).
+- Analysis: [research/ashenmoor-clean-20turn-narrative-analysis-2026-08-28.md](research/ashenmoor-clean-20turn-narrative-analysis-2026-08-28.md).
+
+## [2026-08-28] story | Complete Ashenmoor story with minds
+
+- Arranged the complete scene through turn 26 as a five-chapter novel-format reading edition.
+- Interleaved all 32 retained perceptions and all 30 retained monologues at their originating turns, and restored the merged Maren fork as an in-sequence interlude.
+- Documented archival gaps explicitly; no missing private prose was reconstructed.
+- Story: [research/ashenmoor-complete-story-with-minds.md](research/ashenmoor-complete-story-with-minds.md).
+
+## [2026-08-27] change | Deferred graph settlement and batched expiry
+
+- Moved graph extraction out of `execute_turn` into a version-checked settlement consumed by
+  `Story::complete_turn`, after player output delivery and the server's `status: ready` boundary.
+- Preserved the turn's frozen read-tool snapshot across that boundary; stale or failed settlements
+  cannot overwrite current state.
+- Batched up to eight disjoint expiry groups and 80 live nodes per Weaver call under a prompt-size
+  budget. Priority order, overlap ordering, stop behavior, and group-local validation are preserved.
+- Verification: clean native rebuild and all 95 C++ tests; rebuilt Python extension and all 50
+  server tests pass.
+
+## [2026-08-27] change | Separate ready and idle evaluator latency
+
+- Session eval records the first `status: ready` as `ready_ms` and terminal `status: idle` as
+  `idle_ms`; legacy `t_ms` remains an exact alias for `idle_ms`.
+- A fresh four-turn autoplay completed 4/4 with zero errors or timeouts and server exit code 0.
+  Mean ready/idle latency was 81.49/165.44 s; post-ready work averaged 83.95 s and represented
+  50.7% of total measured turn time.
+- The runner's relative profile path initially split five player records from 75 server records;
+  both files parsed cleanly and were retained together in the run artifacts.
+
+## [2026-08-26] research | Interactive latency re-audit after mind-ring update
+
+- Re-audited the foreground response path and new four-slot perception/monologue scheduler at `029edba`.
+- Combined the current 3-turn fresh and 4-turn continuation profiles: beat 47.8 s, graph 55.7 s, total 103.6 s, so moving graph after response delivery models a 53.8% reduction.
+- Background reasoning share fell from 74.4% to 57.6%, but provider admission remains unprioritized and superseded ring futures are not cancelled.
+- Verification: current source builds; four Python `PromptJobs` tests pass; a rebuilt C++ suite has 39/91 access-violation or heap-corruption failures requiring separate diagnosis.
+- Docs: [research/rhapsode-interactive-latency-reassessment-2026-08-26.md](research/rhapsode-interactive-latency-reassessment-2026-08-26.md).
+
 ## [2026-08-26] change | Monologue prompt: continue the thought
 
 - Rewrote `monologue_system_instructions`: the line continues one developing train of thought ("what did this beat change for you"), 1-3 sentences, rough not quotable. Null is for redundancy ("would only restate previous lines"), replacing "most beats you only listen" which primed silence and starved the character's only durable subjective memory. Sources: Open Souls goal-directed `internalMonologue`, Stanford generative-agents reflection-over-reflection, Bicking's repetition/uplift notes.

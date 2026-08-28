@@ -68,7 +68,20 @@ ReadToolLease::ReadToolLease(ReadToolContext context,
 
 ReadToolLease::~ReadToolLease() { close(); }
 
-void ReadToolLease::close() noexcept { state_->active.store(false); }
+ReadToolLease::ReadToolLease(ReadToolLease&& other) noexcept
+    : state_(std::move(other.state_)), callback_(std::move(other.callback_)) {}
+
+ReadToolLease& ReadToolLease::operator=(ReadToolLease&& other) noexcept {
+    if (this == &other) return *this;
+    close();
+    state_ = std::move(other.state_);
+    callback_ = std::move(other.callback_);
+    return *this;
+}
+
+void ReadToolLease::close() noexcept {
+    if (state_) state_->active.store(false);
+}
 
 std::string dispatch_read_tool(const ReadToolContext& context,
                                const std::string& name,

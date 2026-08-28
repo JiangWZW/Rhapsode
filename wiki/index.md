@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-08-25
+last_updated: 2026-08-28
 ---
 
 # Rhapsode wiki — index
@@ -48,6 +48,10 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Research
 
+- [Ashenmoor clean 20-turn narrative analysis — 2026-08-28](research/ashenmoor-clean-20turn-narrative-analysis-2026-08-28.md) - deep analysis of narration, player agency, perception, monologue, graph growth, evaluator validity, and latency after a full reset
+- [The Siege of Ashenmoor - clean 20-turn story with minds](research/ashenmoor-clean-20turn-story-with-minds.md) - readable edition of the fresh public story with all 36 retained perceptions and all 34 retained monologues
+- [The Siege of Ashenmoor - complete story with minds](research/ashenmoor-complete-story-with-minds.md) - novel-format edition of the full public story, merged Maren fork, and every retained perception and monologue stream
+- [Rhapsode interactive latency reassessment — 2026-08-26](research/rhapsode-interactive-latency-reassessment-2026-08-26.md) — code- and trace-verified update: graph extraction still gates delivery (53.8% modeled opportunity), tool rounds persist, streaming is absent, and mind-ring scheduling improves freshness without reserving provider capacity
 - [Frontier LLM orchestration over 300 interactive turns](research/frontier-llm-long-horizon-orchestration.md) - audited player-turn evidence, architecture falsifiers, and a powered 20/100/300-turn reliability program
 - [Literature review](research/literature-review.md) — 8 papers from awesome-llm-story-generation, adopted ideas, confirmed gaps
 - [Memory systems survey](research/memory-systems-survey.md) — MemGPT, Graphiti, AriGraph, A-Mem, Mem0 v3

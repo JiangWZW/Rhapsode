@@ -69,10 +69,11 @@ std::vector<SceneMessage> Story::advance_player(
     TurnResult result = execute_turn(
         data_, services_,
         {TurnInput::Kind::Player, active->scene_id, player_input});
-    sync_memory(data_, services_, result.scene_id,
-                result.effects.created_nodes, result.effects.expired_nodes);
+    if (!result.graph_settlement)
+        throw std::logic_error("execute_turn returned no graph settlement");
     pending_turn_ = PendingTurn{
-        result.scene_id, player_input};
+        result.scene_id, player_input,
+        std::move(*result.graph_settlement)};
     return std::move(result.outputs);
 }
 
@@ -82,6 +83,11 @@ std::vector<SceneMessage> Story::complete_turn() {
             "Story::complete_turn: no pending advance_player");
     PendingTurn pending = std::move(*pending_turn_);
     pending_turn_.reset();
+
+    const TurnResult::Effects effects = settle_graph_observations(
+        data_, services_, std::move(pending.graph_settlement));
+    sync_memory(data_, services_, pending.scene_id,
+                effects.created_nodes, effects.expired_nodes);
 
     complete_scene_maintenance(
         data_, services_, pending.scene_id, pending.player_input);
@@ -95,6 +101,10 @@ std::vector<SceneMessage> Story::complete_turn() {
                 data_, services_,
                 {TurnInput::Kind::Autonomous, scene_id,
                  make_autonomous_turn_cue(data_, scene_id)});
+            if (!off_stage.graph_settlement)
+                throw std::logic_error("execute_turn returned no graph settlement");
+            off_stage.effects = settle_graph_observations(
+                data_, services_, std::move(*off_stage.graph_settlement));
             sync_memory(data_, services_, scene_id,
                         off_stage.effects.created_nodes,
                         off_stage.effects.expired_nodes);

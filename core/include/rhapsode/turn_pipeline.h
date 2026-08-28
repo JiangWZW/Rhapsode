@@ -4,11 +4,15 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "rhapsode/llm_callback.h"
 #include "rhapsode/node.h"
+#include "rhapsode/read_tools.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_message.h"
 #include "rhapsode/story_data.h"
@@ -19,6 +23,15 @@ namespace rhapsode {
 
 class MemorySystem;
 
+struct GraphSettlement {
+    std::string scene_id;
+    int turn = -1;
+    std::uint64_t commit_version = 0;
+    std::string prose;
+    nlohmann::json plan;
+    ReadToolLease read_tools;
+};
+
 struct TurnResult {
     std::string scene_id;
     std::vector<SceneMessage> outputs;
@@ -27,6 +40,7 @@ struct TurnResult {
         std::vector<Node> created_nodes;
         std::vector<Node> expired_nodes;
     } effects;
+    std::optional<GraphSettlement> graph_settlement;
 };
 
 using TurnCompleteCallback = std::function<void(const SceneMessage& assistant_msg)>;
@@ -61,6 +75,10 @@ struct TurnInput {
 
 TurnResult execute_turn(
     StoryData& data, TurnServices& services, const TurnInput& input);
+
+TurnResult::Effects settle_graph_observations(
+    StoryData& data, TurnServices& services,
+    GraphSettlement settlement) noexcept;
 
 std::vector<Node> process_post_turn(
     StoryData& data, TurnServices& services, const std::string& scene_id) noexcept;

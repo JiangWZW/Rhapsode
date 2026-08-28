@@ -42,8 +42,8 @@ TEST_CASE("SessionReport reliability parses turns and log markers",
     }
     {
         std::ofstream turns(dir / "turns.jsonl");
-        turns << R"({"turn":1,"input":"look","t_ms":1200.0,"status":"ok"})" << "\n";
-        turns << R"({"turn":2,"input":"talk","t_ms":5000.0,"status":"timeout"})" << "\n";
+        turns << R"({"turn":1,"input":"look","ready_ms":700.0,"idle_ms":1200.0,"t_ms":1200.0,"status":"ok"})" << "\n";
+        turns << R"({"turn":2,"input":"talk","ready_ms":3500.0,"idle_ms":5000.0,"t_ms":5000.0,"status":"timeout"})" << "\n";
     }
     {
         std::ofstream log(dir / "console.log");
@@ -55,12 +55,21 @@ TEST_CASE("SessionReport reliability parses turns and log markers",
     REQUIRE(report.reliability.turns_completed == 2);
     REQUIRE(report.reliability.turns_requested == 3);
     REQUIRE(report.reliability.timeouts >= 1);
+    REQUIRE(report.reliability.ready_ms == std::vector<double>{700.0, 3500.0});
+    REQUIRE(report.reliability.idle_ms == std::vector<double>{1200.0, 5000.0});
     REQUIRE(report.reliability.turn_ms.size() == 2);
     REQUIRE_FALSE(report.reliability.log_markers.empty());
 
     report.write(dir.string());
     REQUIRE(fs::exists(dir / "report.md"));
     REQUIRE(fs::exists(dir / "report.json"));
+    {
+        std::ifstream in(dir / "report.md");
+        const std::string body((std::istreambuf_iterator<char>(in)),
+                               std::istreambuf_iterator<char>());
+        REQUIRE(body.find("Ready latency ms") != std::string::npos);
+        REQUIRE(body.find("Idle latency ms") != std::string::npos);
+    }
     fs::remove_all(dir);
 }
 
@@ -109,6 +118,8 @@ TEST_CASE("SessionReport narrative detects empty beats and cast gaps",
     std::ofstream(dir / "console.log") << "ok\n";
 
     const SessionReport report = SessionReport::from_run_dir(dir.string());
+    REQUIRE(report.reliability.ready_ms.empty());
+    REQUIRE(report.reliability.idle_ms == std::vector<double>{100.0, 110.0});
     REQUIRE(report.narrative.empty_beats >= 1);
     REQUIRE(report.narrative.cast_gaps >= 1);
     REQUIRE(report.narrative.repetition_score > 0.0);

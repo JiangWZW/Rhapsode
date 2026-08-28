@@ -70,6 +70,10 @@ TurnResult execute_test_turn(
     try {
         TurnResult result = execute_turn(
             data, services, {kind, scene.scene_id, text});
+        REQUIRE(result.graph_settlement.has_value());
+        result.effects = settle_graph_observations(
+            data, services, std::move(*result.graph_settlement));
+        result.graph_settlement.reset();
         world = snapshot_world(data);
         scene = std::move(*data.scenes.front());
         return result;
@@ -653,9 +657,10 @@ TEST_CASE("Turn pipeline returns associated generic turn effects",
     weaver.set_interval(1);
     weaver.set_llm_callback([&](const std::string& prompt) {
         if (prompt.find("NO LONGER TRUE") != std::string::npos) {
-            return std::string{"{\"superseded\":[{\"id\":"} +
+            return std::string{"{\"results\":[{\"group_id\":\"g0\","
+                "\"superseded\":[{\"id\":"} +
                 std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
-                R"(}],"reason":"newer state"})";
+                R"(}],"reason":"newer state"}]})";
         }
         return std::string{"{\"connect\":[{\"from\":"} +
             std::to_string(old_id) + ",\"to\":" + std::to_string(new_id) +
@@ -976,7 +981,8 @@ TEST_CASE("Turn pipeline preserves post-turn callback order",
     weaver.set_llm_callback([&](const std::string& prompt) {
         if (prompt.find("NO LONGER TRUE") != std::string::npos) {
             events.push_back("expiry");
-            return std::string{R"({"superseded":[],"reason":"current"})"};
+            return std::string{
+                R"({"results":[{"group_id":"g0","superseded":[],"reason":"current"}]})"};
         }
         events.push_back("weave");
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
@@ -1024,30 +1030,72 @@ TEST_CASE("Turn pipeline post-turn failures remain non-fatal",
         world, runtime, scene));
 }
 
-TEST_CASE("Story delivers player outputs before weave runs",
-          "[story][advance_player][post_turn]") {
+TEST_CASE("Story delivers player outputs before graph settlement and weave",
+           "[story][advance_player][post_turn]") {
     World world;
     world.enter_character("root", Character{"Player", "The player", true});
     add_fact(world.graph(), "Gate shut", "Gate", 1);
     add_fact(world.graph(), "Torch lit", "Torch", 1);
     Story story = Story::from_data(basic_scene(), std::move(world));
-    configure_story(story, [](const std::string&, const std::string&,
-                              const std::string&) {
+    bool graph_ran = false;
+    configure_story(story, [&](const std::string&, const std::string& instructions,
+                               const std::string&) {
+        if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+            graph_ran = true;
+            return response("",
+                R"({"transitions":[],"new_nodes":[{"fact":"A bell rings","entities":["Bell"]}]})");
+        }
         return response("Time passes.");
     });
     story.set_weaver_interval(1);
     bool weave_ran = false;
     story.set_weaver_llm_callback([&](const std::string&) {
+        REQUIRE(graph_ran);
         weave_ran = true;
         return std::string{R"({"connect":[],"disconnect":[],"reweight":[]})"};
     });
 
+    const auto graph_size = story.observations().size();
     const auto outputs = story.advance_player("Wait.");
     REQUIRE(outputs.front().content == "Time passes.");
+    REQUIRE_FALSE(graph_ran);
     REQUIRE_FALSE(weave_ran);
+    REQUIRE(story.observations().size() == graph_size);
     const auto more = story.complete_turn();
+    REQUIRE(graph_ran);
     REQUIRE(weave_ran);
+    REQUIRE(story.observations().size() == graph_size + 1);
     REQUIRE(more.empty());
+}
+
+TEST_CASE("Stale graph settlement is discarded before its callback",
+          "[turn_pipeline][observation][version]") {
+    StoryData data;
+    data.active_scene_id = "root";
+    adopt_scene(data, basic_scene());
+    TurnServices services;
+    int graph_calls = 0;
+    services.llm = [](const std::string&) { return std::string{"fallback"}; };
+    services.narrator =
+        [&](const std::string&, const std::string& instructions,
+            const std::string&, const ReadToolCallback&) {
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                ++graph_calls;
+                return response("", R"({"transitions":[],"new_nodes":[]})");
+            }
+            return response("The room remains still.");
+        };
+
+    TurnResult result = execute_turn(
+        data, services, {TurnInput::Kind::Player, "root", "Wait."});
+    REQUIRE(result.graph_settlement.has_value());
+    ++data.transaction_version;
+
+    const auto effects = settle_graph_observations(
+        data, services, std::move(*result.graph_settlement));
+    REQUIRE(graph_calls == 0);
+    REQUIRE(effects.created_nodes.empty());
+    REQUIRE(effects.expired_nodes.empty());
 }
 
 TEST_CASE("Turn execution reads one frozen transaction version",
@@ -1063,13 +1111,19 @@ TEST_CASE("Turn execution reads one frozen transaction version",
         [](const std::string&) { return std::string{"fallback"}; };
 
     bool checked_snapshot = false;
+    bool checked_graph_snapshot = false;
     int turn_calls = 0;
     REQUIRE(data.transaction_version == 0);
     services.narrator =
         [&](const std::string&, const std::string& instructions,
             const std::string&, const ReadToolCallback& read_tool) {
-            if (instructions.find("GRAPH_UPDATE") != std::string::npos)
+            if (instructions.find("GRAPH_UPDATE") != std::string::npos) {
+                const std::string graph_read =
+                    read_tool("query_graph", R"({"query":"LateArrival"})");
+                REQUIRE(graph_read.find("LateArrival") == std::string::npos);
+                checked_graph_snapshot = true;
                 return response("", R"({"transitions":[],"new_nodes":[]})");
+            }
 
             ++turn_calls;
             REQUIRE(data.transaction_version == 0);
@@ -1087,9 +1141,13 @@ TEST_CASE("Turn execution reads one frozen transaction version",
             return response("The room remains still.");
         };
 
-    execute_turn(
+    TurnResult result = execute_turn(
         data, services, {TurnInput::Kind::Player, "root", "Wait."});
+    REQUIRE(result.graph_settlement.has_value());
+    result.effects = settle_graph_observations(
+        data, services, std::move(*result.graph_settlement));
     REQUIRE(checked_snapshot);
+    REQUIRE(checked_graph_snapshot);
     REQUIRE(turn_calls == 1);
     REQUIRE(data.transaction_version == 1);
     REQUIRE_FALSE(find_scene(data, "root")->history.empty());
@@ -1571,7 +1629,7 @@ TEST_CASE("Attributed transcript orders a turn and returns exact speaker evidenc
     REQUIRE(result["spans"][0]["retrieval_reason"] == "lexical");
 }
 
-TEST_CASE("Weaver queue prioritizes groups and applies supersession",
+TEST_CASE("Weaver batches independent groups in priority order",
           "[weaver][work_queue]") {
     WorldGraph graph;
     add_fact(graph, "A old", "A", 1);
@@ -1582,27 +1640,99 @@ TEST_CASE("Weaver queue prioritizes groups and applies supersession",
     std::vector<std::string> prompts;
     weaver.set_llm_callback([&](const std::string& prompt) {
         prompts.push_back(prompt);
-        if (prompt.find("Gate closed") != std::string::npos)
-            return std::string{"{\"superseded\":[{\"id\":"} +
-                std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
-                R"(}],"reason":"newer state"})";
-        return std::string{R"({"superseded":[],"reason":"current"})"};
+        return std::string{
+            R"({"results":[{"group_id":"g0","superseded":[{"id":)"} +
+            std::to_string(old_id) + ",\"by\":" + std::to_string(new_id) +
+            R"(}],"reason":"newer state"},{"group_id":"g1","superseded":[],"reason":"current"}]})";
     });
     weaver.rebuild_expiry_queue(graph, {"Gate"});
     const auto expired = weaver.drain_expiry_queue(graph, 9);
-    REQUIRE(prompts.size() == 2);
-    REQUIRE(prompts.front().find("Gate closed") != std::string::npos);
+    REQUIRE(prompts.size() == 1);
+    const auto gate = prompts.front().find("Gate closed");
+    REQUIRE(prompts.front().find("Group g0") < gate);
+    REQUIRE(gate < prompts.front().find("Group g1"));
     REQUIRE(expired.size() == 1);
     REQUIRE(graph.get_node(old_id)->valid_until == 5);
+}
+
+TEST_CASE("Weaver separates overlapping expiry groups",
+          "[weaver][work_queue]") {
+    WorldGraph graph;
+    add_fact(graph, "A old", "A", 1);
+    add_fact(graph, "B old", "B", 1);
+    Node shared;
+    shared.fact = "Shared current";
+    shared.entities = {"A", "B"};
+    shared.state = NodeState::Active;
+    shared.created_at = 2;
+    graph.add_node(std::move(shared));
+
+    Weaver weaver;
+    std::vector<std::string> prompts;
+    weaver.set_llm_callback([&](const std::string& prompt) {
+        prompts.push_back(prompt);
+        return std::string{R"({"results":[]})"};
+    });
+    weaver.rebuild_expiry_queue(graph);
+    REQUIRE(weaver.drain_expiry_queue(graph, 9).empty());
+    REQUIRE(prompts.size() == 2);
+    REQUIRE(prompts[0].find("Group g1") == std::string::npos);
+    REQUIRE(prompts[1].find("Group g1") == std::string::npos);
+}
+
+TEST_CASE("Weaver rejects invalid cross-group supersession",
+          "[weaver][work_queue]") {
+    WorldGraph graph;
+    const auto a_old = add_fact(graph, "A old", "A", 1);
+    const auto a_new = add_fact(graph, "A new", "A", 4);
+    const auto b_old = add_fact(graph, "B old", "B", 2);
+    add_fact(graph, "B new", "B", 5);
+
+    Weaver weaver;
+    weaver.set_llm_callback([&](const std::string&) {
+        return std::string{
+            R"({"results":[{"group_id":"g0","superseded":[{"id":)"} +
+            std::to_string(b_old) + ",\"by\":" + std::to_string(a_new) +
+            R"(}],"reason":"cross-group"},{"group_id":"g1","superseded":[{"id":)" +
+            std::to_string(a_new) + ",\"by\":" + std::to_string(a_old) +
+            R"(}],"reason":"not newer"}]})";
+    });
+    weaver.rebuild_expiry_queue(graph, {"B"});
+    REQUIRE(weaver.drain_expiry_queue(graph, 9).empty());
+    REQUIRE(graph.get_node(a_new)->valid_until == -1);
+    REQUIRE(graph.get_node(b_old)->valid_until == -1);
+}
+
+TEST_CASE("Weaver ignores malformed expiry batch results",
+          "[weaver][work_queue]") {
+    WorldGraph graph;
+    add_fact(graph, "A old", "A", 1);
+    add_fact(graph, "A new", "A", 2);
+    const std::vector<std::string> responses = {
+        "not JSON",
+        R"({"results":{}})",
+        R"({"results":[{"group_id":7,"superseded":[]}]})",
+        R"({"results":[{"group_id":"g0","superseded":"invalid"}]})"};
+    std::size_t response_index = 0;
+
+    Weaver weaver;
+    weaver.set_llm_callback([&](const std::string&) {
+        return responses.at(response_index++);
+    });
+    for (std::size_t i = 0; i < responses.size(); ++i) {
+        weaver.rebuild_expiry_queue(graph);
+        REQUIRE(weaver.drain_expiry_queue(graph, 9).empty());
+    }
 }
 
 TEST_CASE("Weaver stop leaves undrained groups queued", "[weaver][work_queue]") {
     using namespace std::chrono_literals;
     WorldGraph graph;
-    add_fact(graph, "A old", "A", 1);
-    add_fact(graph, "A new", "A", 2);
-    add_fact(graph, "B old", "B", 1);
-    add_fact(graph, "B new", "B", 2);
+    for (int i = 0; i < 9; ++i) {
+        const auto entity = "E" + std::to_string(i);
+        add_fact(graph, entity + " old", entity, 1);
+        add_fact(graph, entity + " new", entity, 2);
+    }
     Weaver weaver;
     std::promise<void> started;
     std::promise<void> release;
@@ -1610,7 +1740,7 @@ TEST_CASE("Weaver stop leaves undrained groups queued", "[weaver][work_queue]") 
     weaver.set_llm_callback([&](const std::string&) {
         started.set_value();
         release_future.wait();
-        return std::string{R"({"superseded":[],"reason":"current"})"};
+        return std::string{R"({"results":[]})"};
     });
     weaver.rebuild_expiry_queue(graph);
     auto draining = std::async(std::launch::async, [&] {

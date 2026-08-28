@@ -1,6 +1,6 @@
 ---
 title: Python server
-last_updated: 2026-08-23
+last_updated: 2026-08-27
 confidence: verified
 tier: semantic
 sources:
@@ -37,7 +37,9 @@ own turn sequencing or reconstruct native execution objects after errors.
 
 The session configures narrator, scheduler, lifecycle, Weaver, downsampling, memory, and
 `PromptJobs` ready/submit callbacks on Story. Blocking perception/reflection setters stay unset so
-`complete_turn` polls. C++ owns `StoryData`, `TurnServices`, World, SceneData, and the Weaver service.
+`complete_turn` polls.
+
+C++ owns `StoryData`, `TurnServices`, World, SceneData, and the Weaver service.
 Turn execution and graph-plan application are free functions, not owned executor/director objects.
 
 Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a full session
@@ -50,7 +52,8 @@ Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a f
 3. Receive player text; set status `processing`.
 4. Run `Story.advance_player()` on a worker thread; stream those SceneMessages.
 5. Set status `ready` so the UI can accept the next action while post-turn work runs.
-6. In `finally`, run `Story.complete_turn()` on a worker (post-turn, lifecycle, off-stage, save).
+6. In `finally`, run `Story.complete_turn()` on a worker (deferred graph extraction, post-turn,
+   lifecycle, off-stage, save).
 7. Stream any merge/off-stage extras; then set status `idle` (eval waits on this).
 8. Report exceptions without rebuilding the native runtime; candidate-turn rollback keeps it usable.
    If `advance_player` succeeds, `complete_turn` must still run so a pending turn cannot leak.
@@ -83,6 +86,19 @@ alter the running story.
 Only explicit Story commands mutate native state. The manual `/weave` diagnostic, for example,
 configures the Story-owned Weaver and calls
 `Story.weave_scene()` rather than constructing a Python Weaver over a live graph reference.
+
+## Limitations
+
+- `status: ready` means the response is delivered and graph extraction has moved off the response
+  path. Another socket message can be buffered, but the session does not start that next turn until
+  the synchronous `complete_turn()` call returns.
+- `PromptJobs` generations prevent an obsolete ring result from applying to a reused slot, but
+  replacing a `(handle, slot)` entry does not cancel the older `Future`. Superseded HTTP work may
+  continue consuming the shared eight-worker pool and provider capacity.
+- Provider calls have no foreground/background admission controller. The narrator bypasses the mind
+  thread pool but can still contend with it for shared provider quotas and queues.
+- `_stream_outputs()` sends complete messages after `advance_player()` returns; provider-token
+  streaming is not implemented.
 
 ## Persistence
 

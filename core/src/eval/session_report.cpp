@@ -83,8 +83,19 @@ ReliabilityMetrics compute_reliability(const fs::path& dir) {
             json row = json::parse(line, nullptr, false);
             if (!row.is_object()) continue;
             ++m.turns_completed;
-            if (row.contains("t_ms") && row["t_ms"].is_number())
-                m.turn_ms.push_back(row["t_ms"].get<double>());
+            const auto ready = row.find("ready_ms");
+            if (ready != row.end() && ready->is_number())
+                m.ready_ms.push_back(ready->get<double>());
+            const auto idle = row.find("idle_ms");
+            const auto legacy = row.find("t_ms");
+            if (idle != row.end() && idle->is_number())
+                m.idle_ms.push_back(idle->get<double>());
+            else if (legacy != row.end() && legacy->is_number())
+                m.idle_ms.push_back(legacy->get<double>());
+            if (legacy != row.end() && legacy->is_number())
+                m.turn_ms.push_back(legacy->get<double>());
+            else if (idle != row.end() && idle->is_number())
+                m.turn_ms.push_back(idle->get<double>());
             const std::string status = row.value("status", "");
             if (status == "timeout") ++m.timeouts;
             if (status == "error") ++m.errors;
@@ -100,6 +111,20 @@ ReliabilityMetrics compute_reliability(const fs::path& dir) {
             m.log_markers.emplace_back(marker);
     }
     return m;
+}
+
+void write_latency_summary(std::ostringstream& out, const char* label,
+                           const std::vector<double>& values) {
+    if (values.empty()) return;
+    std::vector<double> sorted = values;
+    std::sort(sorted.begin(), sorted.end());
+    double sum = 0.0;
+    for (const double value : sorted) sum += value;
+    const double avg = sum / static_cast<double>(sorted.size());
+    const double p50 = sorted[sorted.size() / 2];
+    const double p95 = sorted[static_cast<std::size_t>(sorted.size() * 0.95)];
+    out << "- **" << label << " ms:** avg=" << avg
+        << " p50=" << p50 << " p95=" << p95 << "\n";
 }
 
 NarrativeMetrics compute_narrative(const fs::path& saves_dir) {
@@ -262,6 +287,8 @@ void SessionReport::write(const std::string& dir) const {
     j["reliability"] = {
         {"turns_completed", reliability.turns_completed},
         {"turns_requested", reliability.turns_requested},
+        {"ready_ms", reliability.ready_ms},
+        {"idle_ms", reliability.idle_ms},
         {"turn_ms", reliability.turn_ms},
         {"timeouts", reliability.timeouts},
         {"errors", reliability.errors},
@@ -290,17 +317,12 @@ void SessionReport::write(const std::string& dir) const {
     md << "- **Timeouts:** " << reliability.timeouts
        << "  **Errors:** " << reliability.errors << "\n";
     md << "- **Server exit code:** " << reliability.server_exit_code << "\n";
-    if (!reliability.turn_ms.empty()) {
-        std::vector<double> sorted = reliability.turn_ms;
-        std::sort(sorted.begin(), sorted.end());
-        double sum = 0.0;
-        for (double v : sorted) sum += v;
-        const double avg = sum / static_cast<double>(sorted.size());
-        const double p50 = sorted[sorted.size() / 2];
-        const double p95 = sorted[static_cast<size_t>(sorted.size() * 0.95)];
-        md << "- **Turn latency ms:** avg=" << avg
-           << " p50=" << p50 << " p95=" << p95 << "\n";
-    }
+    if (!reliability.ready_ms.empty())
+        write_latency_summary(md, "Ready latency", reliability.ready_ms);
+    if (!reliability.idle_ms.empty())
+        write_latency_summary(md, "Idle latency", reliability.idle_ms);
+    else
+        write_latency_summary(md, "Turn latency", reliability.turn_ms);
     if (!reliability.log_markers.empty()) {
         md << "- **Log markers:** ";
         for (size_t i = 0; i < reliability.log_markers.size(); ++i) {

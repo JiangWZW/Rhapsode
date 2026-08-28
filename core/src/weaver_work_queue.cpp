@@ -11,6 +11,16 @@
 
 namespace rhapsode {
 
+namespace {
+
+constexpr std::size_t kMaxExpiryBatchGroups = 8;
+constexpr std::size_t kMaxExpiryBatchNodes = 80;
+constexpr std::size_t kMaxExpiryBatchPromptChars = 16000;
+constexpr std::size_t kExpiryPromptOverhead = 1024;
+constexpr std::size_t kExpiryPromptCharsPerNode = 64;
+
+}  // namespace
+
 // ---------------------------------------------------------------------------
 // Entity-group expiry detector
 // ---------------------------------------------------------------------------
@@ -54,24 +64,53 @@ void Weaver::rebuild_expiry_queue(
 }
 
 std::vector<ExpiryOp> Weaver::drain_expiry_queue(
-    WorldGraph& graph, int turn_index) {
+    WorldGraph& graph, int /*turn_index*/) {
     expiry_stop_.store(false, std::memory_order_relaxed);
     std::vector<ExpiryOp> all;
 
     while (!expiry_queue_.empty()
            && !expiry_stop_.load(std::memory_order_relaxed)) {
-        auto node_ids = std::move(expiry_queue_.back());
-        expiry_queue_.pop_back();
+        std::vector<std::vector<std::uint64_t>> batch;
+        std::unordered_set<std::uint64_t> batch_ids;
+        std::size_t node_count = 0;
+        std::size_t prompt_chars = kExpiryPromptOverhead;
 
-        std::vector<const Node*> live_nodes;
-        for (const auto node_id : node_ids) {
-            const Node* node = graph.get_node(node_id);
-            if (node && node->valid_until == -1)
-                live_nodes.push_back(node);
+        while (!expiry_queue_.empty()) {
+            std::vector<std::uint64_t> live_ids;
+            std::size_t group_chars = 0;
+            for (const auto node_id : expiry_queue_.back()) {
+                const Node* node = graph.get_node(node_id);
+                if (!node || node->state != NodeState::Active ||
+                    node->valid_until != -1) {
+                    continue;
+                }
+                live_ids.push_back(node_id);
+                group_chars += node->fact.size() + kExpiryPromptCharsPerNode;
+            }
+
+            if (live_ids.size() < 2) {
+                expiry_queue_.pop_back();
+                continue;
+            }
+
+            const bool overlaps = std::any_of(
+                live_ids.begin(), live_ids.end(),
+                [&](const auto id) { return batch_ids.count(id) != 0; });
+            const bool exceeds_limit =
+                batch.size() >= kMaxExpiryBatchGroups ||
+                node_count + live_ids.size() > kMaxExpiryBatchNodes ||
+                prompt_chars + group_chars > kMaxExpiryBatchPromptChars;
+            if (!batch.empty() && (overlaps || exceeds_limit)) break;
+
+            expiry_queue_.pop_back();
+            node_count += live_ids.size();
+            prompt_chars += group_chars;
+            batch_ids.insert(live_ids.begin(), live_ids.end());
+            batch.push_back(std::move(live_ids));
         }
-        if (live_nodes.size() < 2) continue;
 
-        auto expired = check_group(graph, std::move(live_nodes), turn_index);
+        if (batch.empty()) continue;
+        auto expired = check_batch(graph, batch);
         all.insert(all.end(),
                    std::make_move_iterator(expired.begin()),
                    std::make_move_iterator(expired.end()));
@@ -87,30 +126,44 @@ bool Weaver::expiry_queue_empty() const {
     return expiry_queue_.empty();
 }
 
-std::vector<ExpiryOp> Weaver::check_group(
-    WorldGraph& graph, std::vector<const Node*> live_nodes, int turn_index) {
-    std::sort(live_nodes.begin(), live_nodes.end(),
-              [](const Node* a, const Node* b) {
-                  return a->created_at > b->created_at;
-              });
-
+std::vector<ExpiryOp> Weaver::check_batch(
+    WorldGraph& graph,
+    const std::vector<std::vector<std::uint64_t>>& groups) {
     std::ostringstream os;
-    os << "Active facts (newest first):\n";
-    for (const auto* node : live_nodes)
-        os << "- [" << node->id << "] (turn " << node->created_at
-           << ") \"" << node->fact << "\"\n";
+    os << "Expiry check for active fact groups.\n";
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        std::vector<const Node*> live_nodes;
+        for (const auto id : groups[i]) {
+            const Node* node = graph.get_node(id);
+            if (node && node->state == NodeState::Active &&
+                node->valid_until == -1) {
+                live_nodes.push_back(node);
+            }
+        }
+        std::sort(live_nodes.begin(), live_nodes.end(),
+                  [](const Node* a, const Node* b) {
+                      return a->created_at > b->created_at;
+                  });
 
-    os << "\nWhich of these facts are NO LONGER TRUE given the full set?\n"
+        os << "\nGroup g" << i << " (newest first):\n";
+        for (const auto* node : live_nodes)
+            os << "- [" << node->id << "] (turn " << node->created_at
+               << ") \"" << node->fact << "\"\n";
+    }
+
+    os << "\nWhich facts are NO LONGER TRUE within their group?\n"
           "A fact is superseded only if a newer fact makes it factually false.\n"
           "Story progression (A happened, then B happened) where both remain "
           "true is NOT supersession.\n"
           "For each superseded fact, state which newer fact supersedes it.\n"
           "Output ONLY a JSON object:\n"
-          "{\"superseded\": [{\"id\": <old>, \"by\": <newer>}], \"reason\": \"...\"}\n"
-          "If all are still true: {\"superseded\": [], \"reason\": \"all current\"}\n";
+          "{\"results\":[{\"group_id\":\"g0\",\"superseded\":"
+          "[{\"id\":<old>,\"by\":<newer>}],\"reason\":\"...\"}]}\n"
+          "Include one result per group; use an empty superseded array when all "
+          "facts in a group remain current.\n";
 
     if (!llm_cb_) {
-        log() << "  [expiry] no LLM callback -- skipping group\n";
+        log() << "  [expiry] no LLM callback -- skipping batch\n";
         return {};
     }
 
@@ -122,42 +175,71 @@ std::vector<ExpiryOp> Weaver::check_group(
         return {};
     }
 
-    std::unordered_set<std::uint64_t> valid_ids;
-    for (const auto* node : live_nodes)
-        valid_ids.insert(node->id);
-
-    const auto parsed = try_parse_json(response);
-    const auto reason = parsed.value("reason", std::string{});
-
     std::vector<ExpiryOp> expired;
-    const auto superseded =
-        parsed.value("superseded", nlohmann::json::array());
-    if (!superseded.is_array()) return expired;
+    const auto parsed = try_parse_json(response);
+    if (!parsed.is_object()) return expired;
+    const auto results_it = parsed.find("results");
+    if (results_it == parsed.end() || !results_it->is_array()) {
+        return expired;
+    }
 
-    for (const auto& element : superseded) {
-        std::uint64_t old_id = 0;
-        int valid_until = turn_index;
-
-        if (element.is_object()) {
-            old_id = json_number<std::uint64_t>(element, "id", 0);
-            const auto by_id =
-                json_number<std::uint64_t>(element, "by", 0);
-            if (by_id != 0) {
-                const Node* by_node = graph.get_node(by_id);
-                if (by_node) valid_until = by_node->created_at;
+    std::vector<const nlohmann::json*> group_results(groups.size(), nullptr);
+    for (const auto& result : *results_it) {
+        if (!result.is_object()) continue;
+        const auto group_id_it = result.find("group_id");
+        if (group_id_it == result.end() || !group_id_it->is_string()) continue;
+        const auto& group_id = group_id_it->get_ref<const std::string&>();
+        for (std::size_t i = 0; i < groups.size(); ++i) {
+            if (!group_results[i] && group_id == "g" + std::to_string(i)) {
+                group_results[i] = &result;
+                break;
             }
-        } else if (element.is_number_integer()) {
-            old_id = element.get<std::uint64_t>();
+        }
+    }
+
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        if (!group_results[i]) continue;
+        const auto superseded_it = group_results[i]->find("superseded");
+        if (superseded_it == group_results[i]->end() ||
+            !superseded_it->is_array()) {
+            continue;
         }
 
-        if (old_id == 0 || !valid_ids.count(old_id)) continue;
-        if (graph.set_valid_until(old_id, valid_until))
-            expired.push_back({old_id, reason});
+        const std::unordered_set<std::uint64_t> valid_ids(
+            groups[i].begin(), groups[i].end());
+        const auto reason_it = group_results[i]->find("reason");
+        const std::string reason =
+            reason_it != group_results[i]->end() && reason_it->is_string()
+                ? reason_it->get<std::string>()
+                : std::string{};
+        for (const auto& element : *superseded_it) {
+            if (!element.is_object()) continue;
+            std::uint64_t old_id = 0;
+            std::uint64_t by_id = 0;
+            try {
+                old_id = json_number<std::uint64_t>(element, "id", 0);
+                by_id = json_number<std::uint64_t>(element, "by", 0);
+            } catch (...) {
+                continue;
+            }
+            if (!valid_ids.count(old_id) || !valid_ids.count(by_id)) continue;
+
+            const Node* old_node = graph.get_node(old_id);
+            const Node* by_node = graph.get_node(by_id);
+            if (!old_node || !by_node ||
+                old_node->state != NodeState::Active ||
+                old_node->valid_until != -1 ||
+                by_node->created_at <= old_node->created_at) {
+                continue;
+            }
+            if (graph.set_valid_until(old_id, by_node->created_at))
+                expired.push_back({old_id, reason});
+        }
     }
 
     if (!expired.empty())
         log() << "  [expiry] " << expired.size()
-              << " fact(s) superseded: " << reason << "\n";
+              << " fact(s) superseded\n";
 
     return expired;
 }

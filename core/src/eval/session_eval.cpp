@@ -3,6 +3,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -51,6 +52,7 @@ struct WsMessage {
 
 struct TurnExchange {
     std::vector<WsMessage> messages;
+    std::optional<std::chrono::steady_clock::time_point> ready_at;
     bool timed_out = false;
     bool ws_failed = false;
     bool turn_error = false;
@@ -235,6 +237,10 @@ public:
                 ex.turn_error = true;
                 ex.error_detail = data.value("detail", "");
             }
+            if (msg.type == "status" && data.value("state", "") == "ready" &&
+                !ex.ready_at) {
+                ex.ready_at = std::chrono::steady_clock::now();
+            }
             if (msg.type == "status" && data.value("state", "") == "idle")
                 return ex;
         }
@@ -402,8 +408,13 @@ EndReason SessionEvalRunner::run() {
                 ws.send_player(action);
                 TurnExchange ex = ws.wait_idle(config_.turn_timeout_s);
                 const auto t1 = std::chrono::steady_clock::now();
-                const double t_ms =
+                const double idle_ms =
                     std::chrono::duration<double, std::milli>(t1 - t0).count();
+                json ready_ms = nullptr;
+                if (ex.ready_at) {
+                    ready_ms = std::chrono::duration<double, std::milli>(
+                        *ex.ready_at - t0).count();
+                }
 
                 recent.insert(recent.end(), ex.messages.begin(), ex.messages.end());
                 json messages = json::array();
@@ -426,7 +437,9 @@ EndReason SessionEvalRunner::run() {
                 append_turn_jsonl(turns_path, json{
                     {"turn", turn},
                     {"input", action},
-                    {"t_ms", t_ms},
+                    {"ready_ms", ready_ms},
+                    {"idle_ms", idle_ms},
+                    {"t_ms", idle_ms},
                     {"status", status},
                     {"error_detail", ex.error_detail},
                     {"messages", messages},

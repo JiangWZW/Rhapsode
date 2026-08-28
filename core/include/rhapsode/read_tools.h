@@ -29,7 +29,7 @@ ReadToolContext make_read_tool_context(
     std::string scene_summaries_json,
     std::unordered_map<std::string, const SceneData*> scenes_by_id);
 
-/// Produces a call-scoped callback over a ReadToolContext. Callback copies fail
+/// Produces a scope-bound callback over a ReadToolContext. Callback copies fail
 /// after the lease closes; keep_alive optionally owns snapshot backing storage.
 class ReadToolLease {
 public:
@@ -40,6 +40,8 @@ public:
 
     ReadToolLease(const ReadToolLease&) = delete;
     ReadToolLease& operator=(const ReadToolLease&) = delete;
+    ReadToolLease(ReadToolLease&& other) noexcept;
+    ReadToolLease& operator=(ReadToolLease&& other) noexcept;
 
     const ReadToolCallback& callback() const { return callback_; }
     void close() noexcept;

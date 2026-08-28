@@ -82,9 +82,9 @@ private:
     // Expiry state
     std::atomic<bool> expiry_stop_{false};
     std::vector<std::vector<std::uint64_t>> expiry_queue_;
-    std::vector<ExpiryOp> check_group(WorldGraph& graph,
-                                      std::vector<const Node*> live_nodes,
-                                      int turn_index);
+    std::vector<ExpiryOp> check_batch(
+        WorldGraph& graph,
+        const std::vector<std::vector<std::uint64_t>>& groups);
 };
 
 }  // namespace rhapsode

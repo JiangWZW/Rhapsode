@@ -118,6 +118,7 @@ private:
     struct PendingTurn {
         std::string scene_id;
         std::string player_input;
+        GraphSettlement graph_settlement;
     };
 
     int revert_scene_turns(SceneData& scene, int count);

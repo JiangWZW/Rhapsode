@@ -32,6 +32,8 @@ void bind_eval(py::module_& m) {
     py::class_<ReliabilityMetrics>(m, "ReliabilityMetrics")
         .def_readonly("turns_completed", &ReliabilityMetrics::turns_completed)
         .def_readonly("turns_requested", &ReliabilityMetrics::turns_requested)
+        .def_readonly("ready_ms", &ReliabilityMetrics::ready_ms)
+        .def_readonly("idle_ms", &ReliabilityMetrics::idle_ms)
         .def_readonly("turn_ms", &ReliabilityMetrics::turn_ms)
         .def_readonly("timeouts", &ReliabilityMetrics::timeouts)
         .def_readonly("errors", &ReliabilityMetrics::errors)
