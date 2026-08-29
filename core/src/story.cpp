@@ -90,6 +90,49 @@ std::string Story::tool_list_scenes() const {
     return serialize_scene_summaries(summarize_story_scenes(data_));
 }
 
+std::string Story::player_situation() const {
+    const SceneData* scene = active_scene();
+    if (!scene) return {};
+
+    std::vector<std::string> on_stage;
+    std::vector<std::string> off_stage;
+    for (const auto& character : data_.world.characters()) {
+        if (character.is_player || character.dead) continue;
+        if (character.in_scene(scene->scene_id))
+            on_stage.push_back(character.name);
+        else
+            off_stage.push_back(character.name);
+    }
+    std::sort(off_stage.begin(), off_stage.end());
+
+    std::ostringstream os;
+    os << "### Situation\n";
+    os << "Active scene: " << scene->scene_id << "\n";
+    os << "On this stage: ";
+    if (on_stage.empty()) {
+        os << "(you are alone)\n";
+    } else {
+        for (size_t i = 0; i < on_stage.size(); ++i) {
+            if (i) os << ", ";
+            os << on_stage[i];
+        }
+        os << "\n";
+    }
+    if (!off_stage.empty()) {
+        os << "Not on this stage: ";
+        for (size_t i = 0; i < off_stage.size(); ++i) {
+            if (i) os << ", ";
+            os << off_stage[i];
+        }
+        os << "\n";
+    }
+    const std::string board = format_live_storylines_board(
+        summarize_story_scenes(data_));
+    if (!board.empty())
+        os << "\n" << board;
+    return os.str();
+}
+
 std::string Story::dispatch_tool(const std::string& scene_id,
                                  const std::string& name,
                                  const std::string& args_json) {

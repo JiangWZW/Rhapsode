@@ -45,6 +45,10 @@ Poll claims by scene turn. Perception dispatches when `perception_turn_ < turn`.
 
 Beat narrator owns prose/`speech_turns`/`active_cast`. Graph owns world nodes and does not route them into minds.
 
+As of 2026-08-29 the beat turn state also includes each on-stage NPC's latest
+monologue line as `On their mind` (omitted when empty). That string is private
+context for what the character does; it is not spoken.
+
 ## Stale docs
 
 Prefer this page over countdown-reflection / `self_state_` claims in [character-system.md](character-system.md) and [memory-system.md](memory-system.md). See also [subjective-character-minds.md](subjective-character-minds.md) (partially superseded).

@@ -49,7 +49,8 @@ Critical structural facts:
   `scene.dialogue` buffer (`emit_dialogue`), which is **never** fed back into the prompt and **never**
   downsampled. Spoken motifs survive only if the narrator's own prose re-mentions them.
 - **The scenario's `system_prompt` is loaded and saved but never injected** into the narrator call
-  (`build_narrator_instructions()` is fixed boilerplate).
+  (`build_narrator_instructions()` is fixed boilerplate). **Superseded 2026-08-29:** the beat
+  prompt now prepends a subordinated `Scene style` block from `scene.system_prompt`.
 - Chroma (`server/chroma/`) is **write-only** in the live loop: graph facts are embedded and stored
   (`MemorySystem::store_node`), but `search_nodes` has no production caller. There is **no vector
   retrieval into any prompt** — the self-RAG hypothesis is false for this codebase.

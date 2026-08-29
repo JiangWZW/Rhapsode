@@ -153,7 +153,7 @@ TEST_CASE("SceneData is a World-free aggregate", "[scene_data][ownership]") {
 TEST_CASE("Narrator instructions are stage craft with schema last",
           "[narrator_prompt][characterization]") {
     const std::string turn = build_narrator_instructions();
-    const auto craft = turn.find("You narrate a live scene");
+    const auto craft = turn.find("You are the author of a live scene");
     const auto sentinel = turn.find("<<<RHAPSODE_JSON>>>");
     const auto schema = turn.find("\"speech_turns\"");
     REQUIRE(craft != std::string::npos);
@@ -162,8 +162,18 @@ TEST_CASE("Narrator instructions are stage craft with schema last",
     REQUIRE(craft < sentinel);
     REQUIRE(sentinel < schema);
     REQUIRE(turn.find("### Remember") == std::string::npos);
+    REQUIRE(turn.find("What is not established is a claim") != std::string::npos);
+    REQUIRE(turn.find("Silence is a take") != std::string::npos);
+    REQUIRE(turn.find("On their mind") != std::string::npos);
     REQUIRE(turn.find("new_characters") != std::string::npos);
     REQUIRE(turn.find("active_cast") != std::string::npos);
+
+    REQUIRE(turn.find("Scene style") == std::string::npos);
+    const std::string styled = build_narrator_instructions("Comic tone.");
+    const auto style_at = styled.find("Scene style");
+    REQUIRE(style_at != std::string::npos);
+    REQUIRE(styled.find("Comic tone.") != std::string::npos);
+    REQUIRE(style_at < styled.find("<<<RHAPSODE_JSON>>>"));
 
     const std::string graph = build_narrator_graph_instructions();
     REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
@@ -183,6 +193,11 @@ TEST_CASE("Narrator turn state puts attributed speech last",
     aqua.dialogue_instructions = "Loud, indignant";
     world.enter_character("root", std::move(aqua));
     world.enter_character("guild", Character{"Kazuma", "The guy", false});
+
+    CharacterMemory aqua_mind("Aqua");
+    aqua_mind.apply_monologue_json(
+        1, R"({"line":"I want those coins for myself."})");
+    world.set_character_memory(std::move(aqua_mind));
 
     SceneData scene = basic_scene();
     scene.downsampling = text_downsampling_from_summary(
@@ -223,6 +238,8 @@ TEST_CASE("Narrator turn state puts attributed speech last",
 
     const auto on_at = state.find("On this stage");
     const auto voice_at = state.find("Loud, indignant");
+    const auto mind_at =
+        state.find("On their mind: \"I want those coins for myself.\"");
     const auto off_at = state.find("Not on this stage");
     const auto threads_at = state.find("Other live threads");
     const auto happened_at = state.find("What has already happened");
@@ -237,8 +254,10 @@ TEST_CASE("Narrator turn state puts attributed speech last",
     REQUIRE(beat_at != std::string::npos);
     REQUIRE(line_at != std::string::npos);
     REQUIRE(player_at != std::string::npos);
+    REQUIRE(mind_at != std::string::npos);
     REQUIRE(on_at < voice_at);
-    REQUIRE(voice_at < off_at);
+    REQUIRE(voice_at < mind_at);
+    REQUIRE(mind_at < off_at);
     REQUIRE(off_at < threads_at);
     REQUIRE(threads_at < happened_at);
     REQUIRE(happened_at < beat_at);
@@ -754,6 +773,44 @@ TEST_CASE("Turn pipeline retries invalid Player speech without leaking state",
     REQUIRE(scene.turn_index == 0);
 }
 
+TEST_CASE("Turn pipeline demands an answer when the player names a present NPC",
+          "[turn_pipeline][narrator]") {
+    World world;
+    SceneData scene = basic_scene();
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    TurnServices runtime;
+    int calls = 0;
+    configure_runtime(runtime, [&](const std::string&, const std::string&, const std::string&) {
+        ++calls;
+        if (calls == 1)
+            return response("The guard stares.",
+                R"({"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Guard"]})");
+        return response("The guard answers.",
+            R"({"transitions":[],"new_nodes":[],"speech_turns":[{"character":"Guard","line":"State your business."}],"new_characters":[],"active_cast":["Guard"]})");
+    });
+    const auto result = execute_test_turn(
+        world, runtime, scene, "Guard, open the gate.");
+    REQUIRE(calls == 3);  // mute rejection + turn retry + graph
+    REQUIRE(result.outputs.front().content == "The guard answers.");
+}
+
+TEST_CASE("Turn pipeline accepts a silent take when nobody is addressed",
+          "[turn_pipeline][narrator]") {
+    World world;
+    SceneData scene = basic_scene();
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    TurnServices runtime;
+    int calls = 0;
+    configure_runtime(runtime, [&](const std::string&, const std::string&, const std::string&) {
+        ++calls;
+        return response("The wind holds its breath.",
+            R"({"transitions":[],"new_nodes":[],"speech_turns":[],"new_characters":[],"active_cast":["Guard"]})");
+    });
+    const auto result = execute_test_turn(world, runtime, scene, "I check the sky.");
+    REQUIRE(calls == 2);  // turn + graph, no retry
+    REQUIRE(result.outputs.front().content == "The wind holds its breath.");
+}
+
 TEST_CASE("Turn pipeline rolls back failed turns and can be reused",
           "[turn_pipeline][transaction]") {
     World world;
@@ -1151,6 +1208,24 @@ TEST_CASE("Turn execution reads one frozen transaction version",
     REQUIRE(turn_calls == 1);
     REQUIRE(data.transaction_version == 1);
     REQUIRE_FALSE(find_scene(data, "root")->history.empty());
+}
+
+TEST_CASE("Story player_situation lists stage and board",
+          "[story][player]") {
+    World world;
+    world.enter_character("root", Character{"Player", "The player", true});
+    world.enter_character("root", Character{"Guard", "Alert", false});
+    Character scout{"Scout", "Away", false};
+    world.enter_character("camp", std::move(scout));
+    SceneData root = basic_scene("root");
+    Story story = Story::from_data(std::move(root), std::move(world));
+    const std::string text = story.player_situation();
+    REQUIRE(text.find("### Situation") != std::string::npos);
+    REQUIRE(text.find("Active scene: root") != std::string::npos);
+    REQUIRE(text.find("On this stage: Guard") != std::string::npos);
+    REQUIRE(text.find("Not on this stage: Scout") != std::string::npos);
+    REQUIRE(text.find("Other live threads:") != std::string::npos);
+    REQUIRE(text.find("This scene (root): you are here") != std::string::npos);
 }
 
 TEST_CASE("Story pending-turn guards reject unsafe calls",

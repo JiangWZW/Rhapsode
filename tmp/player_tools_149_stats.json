@@ -1,0 +1,771 @@
+{
+  "n_turns": 149,
+  "manifest": {
+    "end_reason": "TurnError",
+    "errors": 1,
+    "max_turns": 300,
+    "saves_dir": "D:\\cursor-workspace\\Rhapsode\\server\\saves",
+    "server_exit_code": 0,
+    "timeouts": 0,
+    "turns_completed": 149,
+    "ws_host": "127.0.0.1",
+    "ws_path": "/ws",
+    "ws_port": "8080"
+  },
+  "narrative": {
+    "cast_gaps": 0,
+    "empty_beats": 10,
+    "findings": [
+      "Empty/near-empty assistant turns: 10",
+      "Narration length collapse: 0.585947"
+    ],
+    "length_collapse": 0.5859470055427876,
+    "repetition_score": 0.15822083207380877
+  },
+  "player_clusters": 150,
+  "player_turns_with_tools": 88,
+  "player_tool_rate": 0.587,
+  "player_tool_counts": {
+    "list_scenes": 89,
+    "query_graph": 75,
+    "query_mind": 13,
+    "query_history": 6
+  },
+  "player_rounds_mean": 1.73,
+  "player_rounds_max": 4,
+  "action_mean_chars": 623,
+  "action_median_chars": 349,
+  "action_mean_lines": 3.15,
+  "action_one_line": 28,
+  "action_meta": 43,
+  "action_planning": 37,
+  "action_first_person": 149,
+  "empty_narrator_turns": [
+    11,
+    17,
+    43,
+    50,
+    67,
+    88,
+    94,
+    107,
+    125,
+    141
+  ],
+  "ready_mean_s": 79.6,
+  "ready_p50_s": 71.3,
+  "ready_p95_s": 140.7,
+  "idle_mean_s": 255.3,
+  "idle_p50_s": 220.1,
+  "idle_p95_s": 517.9,
+  "elapsed_h": 10.72,
+  "forks_parsed": [
+    [
+      "konosuba",
+      "konosuba_f4_0",
+      "Aqua",
+      "Sulk-drunk but on a divine mission, trudge to the cemetery and purify the undead the Player blamed her for attracting."
+    ],
+    [
+      "konosuba",
+      "konosuba_f12_0",
+      "Megumin, Darkness, Luna",
+      "Hold the marsh net in the guild and await the Player's return before noon, then march on the marsh."
+    ],
+    [
+      "konosuba",
+      "konosuba_f69_0",
+      "Aqua",
+      "Trudge alone to Axel's cemetery and purify every ghoul, wraith, and the headless thing under the yew until the ground is quiet — then claim the expensive bottle."
+    ],
+    [
+      "konosuba",
+      "konosuba_f71_0",
+      "Megumin, Darkness",
+      "Go to Axel's cemetery and help purify every ghoul, wraith, and the unholy thing under the yew until the ground is quiet, then return to the guild counter for the gold-necked bottle."
+    ],
+    [
+      "konosuba",
+      "konosuba_f87_0",
+      "Megumin, Darkness",
+      "Hold the line against the shade under the yew while Aqua and the Player go to purify the undead at the far gate."
+    ],
+    [
+      "konosuba",
+      "konosuba_f118_0",
+      "Aqua, Darkness",
+      "Trudge back through the frost to the cemetery, purify the undead the Player blamed Aqua for attracting, then return to the guild for the gold-necked bottle."
+    ],
+    [
+      "konosuba",
+      "konosuba_f138_0",
+      "Aqua",
+      "Fulfill the Player's order: purify every plot and row of the cemetery and root out any undead still rising, then report back."
+    ],
+    [
+      "konosuba",
+      "konosuba_f157_0",
+      "Aqua",
+      "Trudge deeper into the cemetery as Kazuma ordered and purify every undead grave, sweeping the whole yard clean of frost and bringing her glow to every row."
+    ],
+    [
+      "konosuba",
+      "konosuba_f180_0",
+      "Aqua",
+      "Trudge to Axel's cemetery and purify the undead her Holy Aura has been drawing in."
+    ]
+  ],
+  "fork_n": 9,
+  "merge_n": 7,
+  "conclude_n": 1,
+  "fork_lines": [
+    "00:17:14 INFO  story: fork from=konosuba to=konosuba_f4_0 cast=[Aqua] intention=Sulk-drunk but on a divine mission, trudge to the cemetery and purify the undead the Player blamed her for attracting.",
+    "00:37:27 INFO  story: fork from=konosuba to=konosuba_f12_0 cast=[Megumin, Darkness, Luna] intention=Hold the marsh net in the guild and await the Player's return before noon, then march on the marsh.",
+    "03:45:36 INFO  story: fork from=konosuba to=konosuba_f69_0 cast=[Aqua] intention=Trudge alone to Axel's cemetery and purify every ghoul, wraith, and the headless thing under the yew until the ground is quiet — then claim the expensive bottle.",
+    "03:54:48 INFO  story: fork from=konosuba to=konosuba_f71_0 cast=[Megumin, Darkness] intention=Go to Axel's cemetery and help purify every ghoul, wraith, and the unholy thing under the yew until the ground is quiet, then return to the guild counter for the gold-necked bottle.",
+    "05:00:00 INFO  story: fork from=konosuba to=konosuba_f87_0 cast=[Megumin, Darkness] intention=Hold the line against the shade under the yew while Aqua and the Player go to purify the undead at the far gate.",
+    "06:52:43 INFO  story: fork from=konosuba to=konosuba_f118_0 cast=[Aqua, Darkness] intention=Trudge back through the frost to the cemetery, purify the undead the Player blamed Aqua for attracting, then return to the guild for the gold-necked bottle.",
+    "08:10:54 INFO  story: fork from=konosuba to=konosuba_f138_0 cast=[Aqua] intention=Fulfill the Player's order: purify every plot and row of the cemetery and root out any undead still rising, then report back.",
+    "09:23:29 INFO  story: fork from=konosuba to=konosuba_f157_0 cast=[Aqua] intention=Trudge deeper into the cemetery as Kazuma ordered and purify every undead grave, sweeping the whole yard clean of frost and bringing her glow to every row.",
+    "10:54:03 INFO  story: fork from=konosuba to=konosuba_f180_0 cast=[Aqua] intention=Trudge to Axel's cemetery and purify the undead her Holy Aura has been drawing in."
+  ],
+  "merge_lines": [
+    "00:46:40 INFO  story: merge from=konosuba_f4_0 into=konosuba",
+    "04:06:47 INFO  story: merge from=konosuba_f71_0 into=konosuba",
+    "04:15:31 INFO  story: merge from=konosuba_f69_0 into=konosuba",
+    "05:04:04 INFO  story: merge from=konosuba_f87_0 into=konosuba",
+    "07:16:25 INFO  story: merge from=konosuba_f118_0 into=konosuba",
+    "08:55:45 INFO  story: merge from=konosuba_f138_0 into=konosuba",
+    "09:54:25 INFO  story: merge from=konosuba_f157_0 into=konosuba"
+  ],
+  "conclude_lines": [
+    "01:26:37 INFO  story: conclude scene=konosuba_f12_0: The guild's noon deadline has come and gone without the Player's return; the party has abandoned the wait and begun moving with the marsh net, fulfilling/voiding the 'await the Player before noon' intention. The storyline is already flagged inactive."
+  ],
+  "warn_sample": [
+    "00:22:47 WARNING llm: DeepSeek [perception] empty content: finish_reason=stop reasoning_len=2492 max_tokens=65536 usage=CompletionUsage(completion_tokens=605, prompt_tokens=804, total_tokens=1409, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=605, rejected_prediction_tokens=None), prompt_tokens_details=PromptTokensDetails(audio_tokens=None, cached_tokens=384), prompt_cache_hit_tokens=384, prompt_cache_miss_tokens=420)",
+    "00:22:47 WARNING llm: LLM returned empty (attempt 1/3) -- retrying in 1s",
+    "01:09:16 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "01:26:09 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "01:44:07 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "02:05:58 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "02:14:06 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "02:23:42 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "02:33:05 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:06:21 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:11:13 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:17:39 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:24:09 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:26:46 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "03:36:17 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "04:05:20 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "04:14:13 ERROR turn: post-turn failed",
+    "04:49:47 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "06:31:15 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:10:58 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:40:09 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:43:16 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:47:04 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:50:10 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "07:56:54 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "08:02:55 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "09:05:25 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "09:08:36 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "09:12:17 WARNING llm: DeepSeek [narrator:konosuba] tool-use loop exceeded 10 rounds",
+    "09:40:37 WARNING llm: DeepSeek [narrator:konosuba_f157_0] tool-use loop exceeded 10 rounds"
+  ],
+  "turn_end_last": [
+    [
+      "konosuba",
+      "147"
+    ],
+    [
+      "konosuba",
+      "148"
+    ],
+    [
+      "konosuba",
+      "149"
+    ],
+    [
+      "konosuba",
+      "150"
+    ],
+    [
+      "konosuba",
+      "151"
+    ]
+  ],
+  "scene_headers": [
+    "## Main — konosuba (Axel Town — The Adventurer's Guild)",
+    "## Off-stage — konosuba_f180_0 (Axel Town — The Adventurer's Guild)",
+    "## Fork — konosuba_f4_0 (merged into konosuba)",
+    "## Fork — konosuba_f71_0 (merged into konosuba)",
+    "## Fork — konosuba_f69_0 (merged into konosuba)",
+    "## Fork — konosuba_f87_0 (merged into konosuba)",
+    "## Fork — konosuba_f118_0 (merged into konosuba)",
+    "## Fork — konosuba_f138_0 (merged into konosuba)",
+    "## Fork — konosuba_f157_0 (merged into konosuba)",
+    "## Concluded — konosuba_f12_0 (turn 27)"
+  ],
+  "live_line": [
+    "2",
+    "1",
+    "7"
+  ],
+  "story_save_keys": [
+    "active_scene_id",
+    "scene_closures",
+    "scene_ids",
+    "turn_clock"
+  ],
+  "scene_ids": [
+    "konosuba",
+    "konosuba_f180_0"
+  ],
+  "n_chars": 6,
+  "n_nodes": 974,
+  "stage_counts": {
+    "player": 259,
+    "narrator:konosuba": 1345,
+    "monologue": 445,
+    "weave": 63,
+    "expiry": 921,
+    "downsample": 129,
+    "lifecycle": 303,
+    "scheduler": 474,
+    "perception": 441,
+    "narrator:konosuba_f4_0": 30,
+    "narrator:konosuba_f12_0": 50,
+    "narrator:konosuba_f69_0": 24,
+    "narrator:konosuba_f71_0": 8,
+    "narrator:konosuba_f87_0": 7,
+    "narrator:konosuba_f118_0": 33,
+    "narrator:konosuba_f138_0": 37,
+    "narrator:konosuba_f157_0": 43
+  },
+  "stage_ms": {
+    "player": 515138,
+    "narrator:konosuba": 29072878,
+    "monologue": 19093220,
+    "weave": 352057,
+    "expiry": 1555312,
+    "downsample": 180855,
+    "lifecycle": 633980,
+    "scheduler": 607315,
+    "perception": 4833600,
+    "narrator:konosuba_f4_0": 625238,
+    "narrator:konosuba_f12_0": 1475682,
+    "narrator:konosuba_f69_0": 511221,
+    "narrator:konosuba_f71_0": 185605,
+    "narrator:konosuba_f87_0": 162607,
+    "narrator:konosuba_f118_0": 796320,
+    "narrator:konosuba_f138_0": 969688,
+    "narrator:konosuba_f157_0": 793943
+  },
+  "buckets": [
+    {
+      "range": "1-10",
+      "n": 10,
+      "tool_turns": 9,
+      "mean_chars": 444,
+      "meta": 7,
+      "planning": 6,
+      "mean_ready_s": 43.1,
+      "mean_idle_s": 335.8
+    },
+    {
+      "range": "11-20",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 1393,
+      "meta": 5,
+      "planning": 5,
+      "mean_ready_s": 71.9,
+      "mean_idle_s": 237.7
+    },
+    {
+      "range": "21-30",
+      "n": 10,
+      "tool_turns": 5,
+      "mean_chars": 478,
+      "meta": 3,
+      "planning": 2,
+      "mean_ready_s": 70.0,
+      "mean_idle_s": 210.8
+    },
+    {
+      "range": "31-40",
+      "n": 10,
+      "tool_turns": 3,
+      "mean_chars": 363,
+      "meta": 2,
+      "planning": 0,
+      "mean_ready_s": 84.0,
+      "mean_idle_s": 210.3
+    },
+    {
+      "range": "41-50",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 621,
+      "meta": 2,
+      "planning": 2,
+      "mean_ready_s": 80.3,
+      "mean_idle_s": 162.6
+    },
+    {
+      "range": "51-60",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 598,
+      "meta": 3,
+      "planning": 4,
+      "mean_ready_s": 88.8,
+      "mean_idle_s": 334.6
+    },
+    {
+      "range": "61-70",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 735,
+      "meta": 2,
+      "planning": 2,
+      "mean_ready_s": 111.0,
+      "mean_idle_s": 260.6
+    },
+    {
+      "range": "71-80",
+      "n": 10,
+      "tool_turns": 4,
+      "mean_chars": 303,
+      "meta": 0,
+      "planning": 0,
+      "mean_ready_s": 83.3,
+      "mean_idle_s": 210.5
+    },
+    {
+      "range": "81-90",
+      "n": 10,
+      "tool_turns": 5,
+      "mean_chars": 707,
+      "meta": 3,
+      "planning": 3,
+      "mean_ready_s": 58.1,
+      "mean_idle_s": 190.8
+    },
+    {
+      "range": "91-100",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 608,
+      "meta": 3,
+      "planning": 3,
+      "mean_ready_s": 73.9,
+      "mean_idle_s": 309.1
+    },
+    {
+      "range": "101-110",
+      "n": 10,
+      "tool_turns": 5,
+      "mean_chars": 616,
+      "meta": 2,
+      "planning": 2,
+      "mean_ready_s": 87.7,
+      "mean_idle_s": 252.7
+    },
+    {
+      "range": "111-120",
+      "n": 10,
+      "tool_turns": 5,
+      "mean_chars": 463,
+      "meta": 3,
+      "planning": 3,
+      "mean_ready_s": 66.1,
+      "mean_idle_s": 282.3
+    },
+    {
+      "range": "121-130",
+      "n": 10,
+      "tool_turns": 6,
+      "mean_chars": 491,
+      "meta": 3,
+      "planning": 1,
+      "mean_ready_s": 103.9,
+      "mean_idle_s": 296.5
+    },
+    {
+      "range": "131-140",
+      "n": 10,
+      "tool_turns": 7,
+      "mean_chars": 458,
+      "meta": 2,
+      "planning": 1,
+      "mean_ready_s": 88.6,
+      "mean_idle_s": 283.5
+    },
+    {
+      "range": "141-149",
+      "n": 9,
+      "tool_turns": 4,
+      "mean_chars": 1124,
+      "meta": 3,
+      "planning": 3,
+      "mean_ready_s": 84.2,
+      "mean_idle_s": 251.3
+    }
+  ],
+  "meta_turns": [
+    2,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    12,
+    13,
+    17,
+    19,
+    20,
+    21,
+    22,
+    28,
+    33,
+    38,
+    41,
+    44,
+    53,
+    55,
+    57,
+    63,
+    64,
+    87,
+    88,
+    89,
+    92,
+    96,
+    99,
+    102,
+    110,
+    113,
+    116,
+    118,
+    122,
+    125,
+    130,
+    132,
+    133,
+    143,
+    145,
+    149
+  ],
+  "planning_turns": [
+    2,
+    4,
+    6,
+    7,
+    9,
+    10,
+    12,
+    13,
+    17,
+    19,
+    20,
+    21,
+    28,
+    41,
+    44,
+    52,
+    53,
+    55,
+    57,
+    63,
+    64,
+    87,
+    88,
+    89,
+    92,
+    96,
+    99,
+    102,
+    110,
+    113,
+    116,
+    118,
+    125,
+    132,
+    143,
+    145,
+    149
+  ],
+  "longest_actions": [
+    {
+      "turn": 17,
+      "chars": 5051,
+      "words": 923,
+      "lines": 27,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The stone head cracks against the root and the shadow under the yew is just shadow now. The last undead is gone — ash, dust, dandruff on the dirt. Aqua did it. "
+    },
+    {
+      "turn": 110,
+      "chars": 3115,
+      "words": 547,
+      "lines": 13,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The cemetery work is already done — the graph shows the holy light sank into the frozen earth, the ground is blessed, and Aqua just proved nothing rose to strik"
+    },
+    {
+      "turn": 143,
+      "chars": 3102,
+      "words": 562,
+      "lines": 12,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I'm in the middle of an emergency. The gate is drinking Aqua's holy light, her right wrist is still buried, and the shade-turned-black-hem is closing in behind "
+    },
+    {
+      "turn": 63,
+      "chars": 3030,
+      "words": 537,
+      "lines": 13,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The situation is clear. We're in the cemetery, the two shrouded shapes are gone, and the thing under the yew is still there. The fork is already in motion — Aqu"
+    },
+    {
+      "turn": 12,
+      "chars": 2988,
+      "words": 532,
+      "lines": 12,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The fork scene is inactive but Aqua is with me here. Megumin, Darkness, and Luna are off-scene. Per my brief: everyone who matters isn't here — wait, Aqua IS he"
+    },
+    {
+      "turn": 149,
+      "chars": 2631,
+      "words": 454,
+      "lines": 13,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The plot chain shows Aqua's cemetery storyline is live — the undead are still piling up at night, and Aqua's Holy Aura is drawing them in. The brief says if the"
+    },
+    {
+      "turn": 145,
+      "chars": 2450,
+      "words": 428,
+      "lines": 10,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The scene is all on-stage — Aqua, Megumin, Darkness, all here with me. But this isn't the cemetery purification mission anymore. We're in a different moment ent"
+    },
+    {
+      "turn": 87,
+      "chars": 2410,
+      "words": 410,
+      "lines": 8,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "Everyone's on-stage with me here. No off-stage storyline. Per my brief, I should split once — send Aqua only to the cemetery to purify the undead. But wait — we"
+    }
+  ],
+  "first_8": [
+    {
+      "turn": 1,
+      "chars": 373,
+      "words": 65,
+      "lines": 2,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I hold my ground, fist still bunched in her sleeve. \"Both of you stay put.\" I cut a look at Darkness and Megumin. \"Alligator quest's still on the board. I'm not"
+    },
+    {
+      "turn": 2,
+      "chars": 641,
+      "words": 122,
+      "lines": 3,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "Aqua is right there at the door, and I've given the order. Now I hold it — that's the send-off moment. The fork is live: she leaves for the cemetery, I stay wit"
+    },
+    {
+      "turn": 3,
+      "chars": 557,
+      "words": 102,
+      "lines": 3,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The shove does the trick. I feel her fingers slip off the frame, the weight of her sleeve going slack — and then she's out there, blue robe catching the light, "
+    },
+    {
+      "turn": 4,
+      "chars": 243,
+      "words": 42,
+      "lines": 2,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "Aqua's scene is no longer active — she's already gone to the cemetery. Everyone who matters to the fork is on-stage with me now. Good. I'll take the alligator q"
+    },
+    {
+      "turn": 5,
+      "chars": 278,
+      "words": 51,
+      "lines": 2,
+      "meta": true,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I read the notice while Megumin and Darkness loom over both shoulders.  \"So — take the eastern gate, follow the causeway north past the reed-fields, and it fork"
+    },
+    {
+      "turn": 6,
+      "chars": 423,
+      "words": 77,
+      "lines": 4,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "Aqua is off-stage at the cemetery, mid-purge. That's my fork target. Change of plans — the marsh can wait a beat.  \"Luna, hold the marsh notice. Something came "
+    },
+    {
+      "turn": 7,
+      "chars": 472,
+      "words": 83,
+      "lines": 2,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The cemetery fork (konosuba_f4_0) is the one I need to merge into. I know the way — past the fountain, out the eastern gate, through the oak grove. Aqua's out t"
+    },
+    {
+      "turn": 8,
+      "chars": 221,
+      "words": 41,
+      "lines": 1,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I push through the oak grove and onto the cemetery path, boots scuffing the gravel, and call out before the first row of headstones. \"Aqua! You better not have "
+    }
+  ],
+  "last_8": [
+    {
+      "turn": 142,
+      "chars": 357,
+      "words": 72,
+      "lines": 3,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I keep my hand on the hilt, frost crackling under my boots, and glance back once at the slow black line coming up the path.  \"Answer me while you pour, and I'll"
+    },
+    {
+      "turn": 143,
+      "chars": 3102,
+      "words": 562,
+      "lines": 12,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I'm in the middle of an emergency. The gate is drinking Aqua's holy light, her right wrist is still buried, and the shade-turned-black-hem is closing in behind "
+    },
+    {
+      "turn": 144,
+      "chars": 352,
+      "words": 62,
+      "lines": 2,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I keep my palm flat against the warm bar, fingers spread over the scrollwork, tracking the pale veins up to the knot in the crown. The heat is climbing my wrist"
+    },
+    {
+      "turn": 145,
+      "chars": 2450,
+      "words": 428,
+      "lines": 10,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The scene is all on-stage — Aqua, Megumin, Darkness, all here with me. But this isn't the cemetery purification mission anymore. We're in a different moment ent"
+    },
+    {
+      "turn": 146,
+      "chars": 415,
+      "words": 77,
+      "lines": 2,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": true,
+      "preview": "\"Hold her steady—you two, Darkness on that shield edge, keep the black from reaching the footing! I've got her wrist, I'm collapsing the tooth from inside.\"  I "
+    },
+    {
+      "turn": 147,
+      "chars": 308,
+      "words": 58,
+      "lines": 1,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I finish what I started — I clamp the bar hard and drive the tide into the crack I already opened, splitting the pip clean instead of letting it swell, snapping"
+    },
+    {
+      "turn": 148,
+      "chars": 289,
+      "words": 57,
+      "lines": 2,
+      "meta": false,
+      "planning": false,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "I climb to my feet, Chunchunmaru still sheathed, and plant a boot on the lowest bar. The gate's still — no pulse left under my palm. I jerk my chin at the smoki"
+    },
+    {
+      "turn": 149,
+      "chars": 2631,
+      "words": 454,
+      "lines": 13,
+      "meta": true,
+      "planning": true,
+      "first_person": true,
+      "starts_quote": false,
+      "preview": "The plot chain shows Aqua's cemetery storyline is live — the undead are still piling up at night, and Aqua's Holy Aura is drawing them in. The brief says if the"
+    }
+  ]
+}

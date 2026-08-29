@@ -1,6 +1,6 @@
 ---
 title: Turn execution
-last_updated: 2026-08-27
+last_updated: 2026-08-29
 confidence: verified
 tier: semantic
 sources:
@@ -8,11 +8,13 @@ sources:
   - core/include/rhapsode/story_data.h
   - core/include/rhapsode/story_data_ops.h
   - core/include/rhapsode/turn_pipeline.h
+  - core/include/rhapsode/narrator_prompt.h
   - core/src/story_advance.cpp
   - core/src/story_lifecycle.cpp
   - core/src/turn_pipeline.cpp
   - core/src/turn_pipeline_narrator.cpp
   - core/src/turn_pipeline_post_turn.cpp
+  - core/src/narrator_prompt.cpp
 related:
   - "[[architecture/system-overview]]"
   - "[[architecture/pragmatic-turn-transaction-refactor]]"
@@ -59,12 +61,17 @@ The implementation order in `core/src/turn_pipeline.cpp` is:
 3. Build a `ReadToolLease` from a copy of World, observations, every live scene, and scene summaries.
 4. Append the exact input to the candidate scene. Autonomous input is labeled `director_cue`; player
    input is labeled `player`.
-5. Build narrator instructions (stage craft plus the speech/cast JSON schema) and turn state
-   (who is on this stage with voice, who is not, other live threads, story so far, then the last
-   attributed Player / Narrator / character spans from history **and** dialogue). Increment
-   `turn_index` onto this beat (fresh scenes are `-1`, so the first beat is 0) and run the
-   narrator retry path. After commit, `turn_index` is that last committed beat, not the next
-   empty slot.
+5. Build narrator instructions and turn state, then run the narrator retry path.
+   Instructions: author contract (player input is declaration, not outcome; the world
+   stays in motion; baseline-first character play; silence is a legal take), then optional
+   `Scene style` from `scene.system_prompt`, then format/schema. Turn state: on-stage
+   roster with voice, latest monologue line as `On their mind` when present, off-stage
+   names, other live threads, story so far, then the last attributed Player / Narrator /
+   character spans from history **and** dialogue. Increment `turn_index` onto this beat
+   (fresh scenes are `-1`, so the first beat is 0). After commit, `turn_index` is that
+   last committed beat, not the next empty slot.
+   Speech validation rejects Player cues and a mute cast only when the player input
+   names a present NPC. An empty `speech_turns` list is otherwise legal.
 6. Apply accepted cast additions to the candidate World.
 7. Stage narrator prose and formatted character messages in the candidate scene and `TurnResult`.
 8. Move the candidate World and scene into `StoryData`, advance the version once, and disarm rollback.
@@ -157,6 +164,8 @@ The live path remains narrator-authored:
 
 - the narrator produces prose and `speech_turns`;
 - character lines are not separate actor calls;
+- latest monologue lines enter the beat as private context (`On their mind`); they are not
+  spoken and do not run a second actor call;
 - cast operations are validated operations, not a general consequence declaration;
 - graph nodes remain observations rather than mechanical facts.
 
@@ -168,8 +177,8 @@ reliability.
 - Output delivery occurs after commit and before graph extraction; clients must treat delivery errors
   as retryable notification failures, not failed turns.
 - Maintenance and saving occur after the turn transaction and can fail independently.
-- Narrator retry validation checks the existing enumerated plan shape, not semantic truth or character
-  quality.
+- Narrator retry validation checks plan shape and the addressed-NPC speech rule, not semantic truth
+  or character quality. The mind feed is one-turn lagged and empty on a fresh scene.
 - No sequential evaluation shows that the current path preserves voice or causality for 100 or 300
   player turns.
 
@@ -178,6 +187,7 @@ reliability.
 | File | Role |
 |---|---|
 | `core/src/turn_pipeline.cpp` | `execute_turn`: copy, prompt, commit, deliver, defer observation |
+| `core/src/narrator_prompt.cpp` | Beat instructions, scene-style injection, turn-state mind feed |
 | `core/src/turn_pipeline_narrator.cpp` | Narrator retry, cast apply, graph extraction |
 | `core/src/turn_pipeline_post_turn.cpp` | Weaver, monologues, downsampling after commit |
 | `core/src/story_advance.cpp` | `advance_player` / graph settlement / `complete_turn` spine |

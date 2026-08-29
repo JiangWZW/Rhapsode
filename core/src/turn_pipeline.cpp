@@ -151,7 +151,8 @@ TurnResult execute_turn(
     append_input_message(
         candidate_scene, input.text, autonomous, commit_version);
 
-    const std::string instructions = build_narrator_instructions();
+    const std::string instructions =
+        build_narrator_instructions(candidate_scene.system_prompt);
     const std::string turn_state = build_narrator_turn_state(
         candidate_scene, candidate_world, services.storyline_board);
     services.storyline_board.clear();

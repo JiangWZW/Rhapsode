@@ -34,6 +34,7 @@ def test_story_is_the_production_composition_surface():
         "conclude_scene", "delete_save", "dispatch_tool", "display_timeline",
         "fork_scene", "from_scenario_json_str", "get_scene", "has_save",
         "load_save", "load_scenario", "merge_scene", "note_advanced",
+        "player_situation",
         "poll_minds",
         "render_transcript", "revert_active_turns", "save", "scene_count",
         "scene_ids",

@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-08-28
+last_updated: 2026-08-29
 ---
 
 # Rhapsode wiki — index
@@ -48,6 +48,8 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Research
 
+- [Player-tools 149 — cemetery loop and board-reading](research/player-tools-149-narrative-analysis-2026-08-29.md) — 149-turn fork_merge autoplay with the new player tool loop: tools work, cemetery send-off is reissued six times, player writes the board into the action
+- [The cemetery, again — 149-turn reading edition with minds](research/player-tools-149-story-with-minds.md) — novel-format public story plus 438 logged perceptions and 383 retained monologue lines; merged forks as interludes
 - [Ashenmoor clean 20-turn narrative analysis — 2026-08-28](research/ashenmoor-clean-20turn-narrative-analysis-2026-08-28.md) - deep analysis of narration, player agency, perception, monologue, graph growth, evaluator validity, and latency after a full reset
 - [The Siege of Ashenmoor - clean 20-turn story with minds](research/ashenmoor-clean-20turn-story-with-minds.md) - readable edition of the fresh public story with all 36 retained perceptions and all 34 retained monologues
 - [The Siege of Ashenmoor - complete story with minds](research/ashenmoor-complete-story-with-minds.md) - novel-format edition of the full public story, merged Maren fork, and every retained perception and monologue stream

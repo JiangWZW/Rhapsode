@@ -7,7 +7,7 @@ namespace rhapsode {
 struct SceneData;
 class World;
 
-std::string build_narrator_instructions();
+std::string build_narrator_instructions(const std::string& scene_style = {});
 
 std::string build_narrator_graph_instructions();  // contains "GRAPH_UPDATE"
 

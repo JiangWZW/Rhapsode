@@ -1,8 +1,8 @@
-"""Tool-using player LLM for the session eval pipeline.
+"""Player LLM for the session eval pipeline.
 
-Loads the on-disk save, runs the same read tools as the narrator
-(query_graph / query_mind / query_history / list_scenes), then returns
-one short player action line.
+Loads the on-disk save. C++ supplies situation (cast + board). The same
+narrator read tools (query_graph / query_mind / query_history / list_scenes)
+run through Story.dispatch_tool. Returns one short player action line.
 """
 from __future__ import annotations
 
@@ -14,7 +14,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from rhapsode._core import Story
-from rhapsode.llm import complete
+from rhapsode.llm import complete_with_tools
+from rhapsode.llm_tools import NARRATOR_TOOLS
 
 log = logging.getLogger("rhapsode.player")
 
@@ -41,75 +42,8 @@ def _player_description(story: Story) -> str:
     return ""
 
 
-def _situation_block(story: Story, scene_id: str) -> str:
-    """Force-feed live cast + storylines so the model cannot invent presence."""
-    lines: list[str] = ["### Situation (authoritative — obey this)"]
-    lines.append(f"Active scene: {scene_id or '(none)'}")
-
-    on_stage: list[str] = []
-    off_stage: list[str] = []
-    for ch in story.world().characters:
-        if ch.is_player or ch.dead:
-            continue
-        if scene_id and ch.in_scene(scene_id):
-            on_stage.append(ch.name)
-        else:
-            off_stage.append(ch.name)
-    lines.append(
-        "On-stage with you now (only these NPCs can be addressed): "
-        + (", ".join(on_stage) if on_stage else "(none — you are alone)")
-    )
-    if off_stage:
-        lines.append("Elsewhere (NOT here): " + ", ".join(off_stage))
-
-    try:
-        raw = story.dispatch_tool(scene_id, "list_scenes", "{}")
-        payload = json.loads(raw) if raw else []
-        if isinstance(payload, list):
-            scenes = payload
-        elif isinstance(payload, dict):
-            scenes = payload.get("scenes") or payload.get("storylines") or payload
-        else:
-            scenes = payload
-        if not isinstance(scenes, list):
-            scenes = []
-        lines.append("list_scenes → " + json.dumps(scenes, ensure_ascii=False)[:1200])
-
-        off_scenes = [
-            row
-            for row in scenes
-            if isinstance(row, dict)
-            and row.get("scene_id")
-            and row.get("scene_id") != scene_id
-            and not row.get("player_present")
-        ]
-        if off_scenes:
-            lines.append("### PRIORITY THIS TURN (hard rule)")
-            lines.append(
-                "An off-stage storyline is live. Leave your current conversation "
-                "and travel to that cast THIS turn. Arrive and greet them by name "
-                "when you share their place. Do NOT continue desk/debt/quest chat, "
-                "shopping, or new side plots until you stand with them."
-            )
-            for row in off_scenes:
-                cast = row.get("cast") or []
-                cast_s = ", ".join(cast) if isinstance(cast, list) else str(cast)
-                intent = str(row.get("driving_intention") or "").strip()
-                last = str(row.get("last_narration") or "").strip().replace("\n", " ")
-                if len(last) > 180:
-                    last = last[:177] + "..."
-                lines.append(
-                    f"- target scene_id={row.get('scene_id')} cast=[{cast_s}] "
-                    f"intention={intent or '(none)'} last={last or '(none)'}"
-                )
-    except Exception as exc:  # noqa: BLE001 — best-effort grounding
-        log.warning("[player] list_scenes failed: %s", exc)
-
-    return "\n".join(lines)
-
-
-def _build_system(protocol: str, story: Story, guide_text: str, situation: str) -> str:
-    parts = [protocol.strip(), situation]
+def _build_system(protocol: str, story: Story, guide_text: str) -> str:
+    parts = [protocol.strip(), story.player_situation()]
     persona = _player_description(story)
     if persona:
         parts.append("### You\n" + persona)
@@ -165,7 +99,6 @@ def make_player_llm(
         if story.has_save(saves_dir):
             story.load_save(saves_dir)
         scene_id = story.active_scene_id or ""
-        situation = _situation_block(story, scene_id)
 
         user_prompt = prompt
         if last_action["text"]:
@@ -185,19 +118,22 @@ def make_player_llm(
 
         model = _player_model()
 
+        def dispatch(name: str, args: dict) -> str:
+            return story.dispatch_tool(
+                scene_id, name, json.dumps(args or {}))
+
         def once(extra: str = "") -> str:
-            system = _build_system(protocol, story, guide_text, situation)
+            system = _build_system(protocol, story, guide_text)
             if extra:
                 system += "\n\n" + extra
             messages = [
                 {"role": "system", "parts": [{"text": system}]},
                 {"role": "user", "parts": [{"text": user_prompt}]},
             ]
-            # One-shot flash, thinking OFF. Situation already embeds list_scenes /
-            # on-stage cast — no tool loop (that was burning minutes on pro).
-            log.info("[player] decide model=%s thinking=False", model)
-            return complete(
-                messages, model=model, thinking=False, stage="player",
+            log.info("[player] decide model=%s thinking=False tools=read", model)
+            return complete_with_tools(
+                messages, NARRATOR_TOOLS, dispatch,
+                model=model, thinking=False, stage="player",
                 phase="decide",
             ).strip()
 

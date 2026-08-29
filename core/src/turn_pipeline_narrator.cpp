@@ -107,11 +107,24 @@ std::vector<Rejection> validate_active_cast(const nlohmann::json& plan,
     return rejections;
 }
 
+// True when the input text mentions the character by full name or any name
+// token of three or more characters, on word boundaries.
+bool name_mentioned(const std::string& input_lower, const std::string& name) {
+    const std::string name_lower = str::to_lower(name);
+    if (str::has_word_match(input_lower, name_lower)) return true;
+    std::istringstream tokens(name_lower);
+    std::string token;
+    while (tokens >> token) {
+        if (token.size() >= 3 && str::has_word_match(input_lower, token))
+            return true;
+    }
+    return false;
+}
+
 std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
-                                             const std::vector<Character>& characters) {
+                                             const std::vector<Character>& characters,
+                                             const SceneData& scene) {
     std::vector<Rejection> rejections;
-    if (!plan.contains("speech_turns") || !plan["speech_turns"].is_array())
-        return rejections;
 
     auto names_player = [&](const std::string& name) {
         if (str::to_lower(name) == "player") return true;
@@ -122,41 +135,48 @@ std::vector<Rejection> validate_speech_turns(const nlohmann::json& plan,
         return false;
     };
 
-    const auto& turns = plan["speech_turns"];
     int npc_cues = 0;
-    for (const auto& el : turns) {
-        if (!el.is_object()) continue;
-        const auto name = el.value("character", "");
-        if (name.empty()) continue;
-        if (names_player(name)) {
-            rejections.push_back({
-                "speech_turns includes \"" + name + "\"",
-                "Player must not appear in speech_turns; the user message is the "
-                "player's speech -- give responding NPCs their own speech_turn entries"
-            });
-            continue;
-        }
-        const Character* ch = resolve_cast_name(name, characters);
-        if (ch && !ch->dead) ++npc_cues;
-    }
-
-    if (turns.empty()) return rejections;
-
-    int speakable = 0;
-    if (plan.contains("active_cast") && plan["active_cast"].is_array()) {
-        for (const auto& elem : plan["active_cast"]) {
-            if (!elem.is_string()) continue;
-            const Character* ch =
-                resolve_cast_name(elem.get<std::string>(), characters);
-            if (ch && !ch->dead) ++speakable;
+    const auto turns = plan.find("speech_turns");
+    if (turns != plan.end() && turns->is_array()) {
+        for (const auto& el : *turns) {
+            if (!el.is_object()) continue;
+            const auto name = el.value("character", "");
+            if (name.empty()) continue;
+            if (names_player(name)) {
+                rejections.push_back({
+                    "speech_turns includes \"" + name + "\"",
+                    "Player must not appear in speech_turns; the user message is the "
+                    "player's speech -- give responding NPCs their own speech_turn entries"
+                });
+                continue;
+            }
+            const Character* ch = resolve_cast_name(name, characters);
+            if (ch && !ch->dead) ++npc_cues;
         }
     }
-    if (speakable > 0 && npc_cues == 0) {
-        rejections.push_back({
-            "speech_turns",
-            "NPCs are present in active_cast but no NPC speech_turns were authored "
-            "(speech_turns must contain each speaking NPC's line, not the Player's)"
-        });
+
+    // Silence is a legal take -- except when the player addresses a present
+    // NPC by name and nobody at all answers.
+    if (npc_cues == 0 && !scene.history.empty()) {
+        const auto& input = scene.history.back();
+        const auto kind = input.metadata.find("scene_kind");
+        const bool player_input = kind != input.metadata.end() &&
+            kind->is_string() && kind->get<std::string>() == "player";
+        if (player_input) {
+            const std::string input_lower = str::to_lower(input.content);
+            for (const auto& ch : characters) {
+                if (ch.is_player || ch.dead || !ch.in_scene(scene.scene_id))
+                    continue;
+                if (!name_mentioned(input_lower, ch.name)) continue;
+                rejections.push_back({
+                    "speech_turns",
+                    "the player addresses " + ch.name + " directly, but no NPC "
+                    "speech was authored -- give " + ch.name + " (or another "
+                    "present NPC with a reason) a speech_turn"
+                });
+                break;
+            }
+        }
     }
     return rejections;
 }
@@ -296,7 +316,7 @@ NarratorTurnResult run_narrator_with_retry(
             split_merged_response(std::move(raw));
 
         rejections = validate_active_cast(result.plan, world.characters());
-        auto speech = validate_speech_turns(result.plan, world.characters());
+        auto speech = validate_speech_turns(result.plan, world.characters(), scene);
         rejections.insert(rejections.end(), speech.begin(), speech.end());
         if (rejections.empty()) break;
         log_info("narrator") << "retry turn attempt " << attempt + 1 << "/"

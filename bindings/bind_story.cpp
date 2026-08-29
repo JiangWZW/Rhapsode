@@ -146,6 +146,7 @@ void bind_story(py::module_& m) {
         .def("note_advanced", &Story::note_advanced, py::arg("scene_id"))
         .def_property_readonly("turn_clock", &Story::turn_clock)
         .def("tool_list_scenes", &Story::tool_list_scenes)
+        .def("player_situation", &Story::player_situation)
         .def("dispatch_tool", &Story::dispatch_tool,
              py::arg("scene_id"), py::arg("name"), py::arg("args_json"))
         .def("display_timeline", &Story::display_timeline,

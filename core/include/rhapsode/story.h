@@ -67,6 +67,7 @@ public:
     void note_advanced(const std::string& scene_id);
     int turn_clock() const { return data_.turn_clock; }
     std::string tool_list_scenes() const;
+    std::string player_situation() const;
     std::string dispatch_tool(const std::string& scene_id,
                               const std::string& name,
                               const std::string& args_json);

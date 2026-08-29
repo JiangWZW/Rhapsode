@@ -1,3 +1,32 @@
+## [2026-08-29] change | Narrator author contract
+
+- Replaced the beat narrator instructions: player input is declaration, not outcome; the
+  world stays in motion; characters play baseline first; private monologue lines steer
+  behavior and are never narrated; silence is a legal take.
+- Injects `scene.system_prompt` as a subordinated `Scene style` block. Turn state appends
+  each on-stage NPC's latest monologue line as `On their mind` when one exists.
+- Speech validation no longer requires a cue whenever cast is present. It still rejects
+  Player cues, and a mute cast only when the player names a present NPC.
+- Replay script: `server/replay_gold_fishing.py`. Transcript:
+  `server/logs/replay_transcript_20260829.txt`. Docs:
+  [architecture/scene-loop](architecture/scene-loop.md).
+- Replay judgment vs the gold-and-fishing baseline: gold is acted on (Aqua
+  hoards, Megumin takes the contract); night return is occupied (Megumin
+  awake, Aqua drunk behind a barricade); turn 4 re-walks a homecoming that
+  turn 3 already completed; Darkness still fires the kink voice on the
+  rationing beat. Player speech leaked as a `Kazuma` cue on turn 0.
+
+## [2026-08-29] research | Player-tools 149-turn autoplay
+
+- Continuation 300-turn run stopped at 149/300 on DeepSeek 402. Tools used on 58.7% of player decides; 9 forks / 7 merges / 1 conclude.
+- Collapse mode vs `default-guide-300`: cemetery send-off recycled six times; player leaks board/guide into the action (43/149). Marsh quest concluded off-stage. Player is 0.8% of API wall.
+- Analysis: [research/player-tools-149-narrative-analysis-2026-08-29.md](research/player-tools-149-narrative-analysis-2026-08-29.md).
+- Reading edition: [research/player-tools-149-story-with-minds.md](research/player-tools-149-story-with-minds.md).
+
+## [2026-08-28] change | Auto-player uses narrator read tools
+
+- `Story.player_situation()` is C++ cast + storyline board. Eval player calls `complete_with_tools` with `NARRATOR_TOOLS` via `dispatch_tool` (flash, thinking off). Deleted the Python situation/list_scenes builder.
+
 ## [2026-08-28] research | Clean 20-turn Ashenmoor narrative analysis
 
 - Cleared all saves and Chroma state with `reset.bat`, verified both stores empty, and ran a guide-free 20-turn siege autoplay.

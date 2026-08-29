@@ -1,0 +1,40 @@
+{
+  "charge": 4.0,
+  "dialogue": [],
+  "downsampler": {
+    "levels": [
+      {
+        "max_snippets": 10,
+        "snippets": []
+      },
+      {
+        "max_snippets": 5,
+        "snippets": []
+      },
+      {
+        "max_snippets": 3,
+        "snippets": [
+          {
+            "merged_count": 1,
+            "promoted": true,
+            "source_mip": 1,
+            "text": "Aqua is a goddess of the Axis Order, currently sulk-drunk, underappreciated, and working alone in Axel's cemetery with a task she was shamed into doing. After the yew-shade work and the sealing of the trench, Kazuma refused to accept that the cemetery was dead, blamed Aqua's holy aura for drawing undead, and ordered her back alone to purify every plot and row, pressing the gold-necked bottle into her numb hands. Stung into proving herself, Aqua tucked the stone angel's head under her arm and marched into the frozen rows vowing to make every inch glow. She has finished the second row, and the third row smolders blue behind her as a clean corridor of steam; she reached the fourth row, older than the others, its headstones sunk to their shoulders, and her light shattered frost along the buried names. She carries the stone angel's head warm against her side and the bottle tapping her thigh, and she boasts to the head that three whole rows are done without help and that Kazuma had better pour her something more expensive than breakfast. The shadow under the black yew has not moved; it stays pooled at the edge of her glow like a debt waiting for her to stop. A shrouded shade broke from a split plot, and Kazuma shoved Aqua toward the far gate to go on alone while he, Megumin, and Darkness stayed to hold the shade; the shade has been following Aqua's glow rather than her footprints and has poured over Megumin's staff and Darkness's shield. Aqua reached the far gate, and her wrists sank into the gate seam; the iron drank her light up the scrollwork until Kazuma caught up, grabbed her shoulder, and forced one wrist free. That freed wrist now streams blue nimbus and smokes as she cradles it, the seam below it gapes, and the gate remains unsealed while the black hem lies slack along the crack. Megumin and Darkness are behind her holding the line, and Kazuma is at the gate. The whole yard is still not swept clean of frost, and the undead her holy aura has been drawing in are not yet purified. Her immediate reason for continuing is Kazuma's order and her wounded divine pride: she means to finish every row alone and make him admit she needs no escort.",
+            "timestamp": 1787972043.0333796,
+            "turn_end": 0,
+            "turn_start": 0
+          }
+        ]
+      }
+    ],
+    "summarized_up_to": 0
+  },
+  "driving_intention": "Trudge to Axel's cemetery and purify the undead her Holy Aura has been drawing in.",
+  "history": [],
+  "intention_node_id": 616,
+  "intention_owner": "Aqua",
+  "last_advanced": 180,
+  "scene_id": "konosuba_f180_0",
+  "system_prompt": "You narrate a Konosuba-style comedy RPG in second-person present tense. The setting is the beginner town of Axel, Kingdom of Belzerg. The player is Kazuma Satou, a sarcastic reincarnated NEET adventurer. Narrate in light-novel style with witty deadpan monologue, exaggerated slapstick, and dramatic irony. Never offer numbered choices.",
+  "title": "Axel Town — The Adventurer's Guild",
+  "turn_index": -1
+}

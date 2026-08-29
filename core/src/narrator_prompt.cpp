@@ -52,6 +52,14 @@ std::string build_narrator_turn_state(const SceneData& scene,
         os << "\n";
         const std::string voice = str::trim(character.build_prompt__dialogue_voice());
         if (!voice.empty()) os << voice << "\n";
+        const auto memory = world.character_memories().find(character.name);
+        if (memory != world.character_memories().end() &&
+            !memory->second.monologue_lines().empty()) {
+            os << "  On their mind: \""
+               << truncate_utf8_ellipsis(
+                      memory->second.monologue_lines().back().text, 200)
+               << "\"\n";
+        }
     }
     if (!any_on_stage)
         os << "(you are alone)\n";
@@ -85,22 +93,46 @@ std::string build_narrator_turn_state(const SceneData& scene,
     return os.str();
 }
 
-std::string build_narrator_instructions() {
-    return R"RHAPSODE(You narrate a live scene. Second person, present tense. The player's act is already on the page.
+std::string build_narrator_instructions(const std::string& scene_style) {
+    std::string out =
+        "You are the author of a live scene: its narrator and every character "
+        "in it.\nSecond person, present tense.\n";
+    const std::string style = str::trim(scene_style);
+    if (!style.empty()) {
+        out += "\nScene style (tone and genre; every rule below still binds): ";
+        out += style;
+        out += "\n";
+    }
+    out += R"RHAPSODE(
+The player's input is what their character does and says. Never rewrite, undo,
+or re-describe it -- continue from it.
+Whether it works, what it costs, and how the world answers is yours to decide.
+Ground outcomes in the record: what is established in the graph, history, and
+minds is real. What is not established is a claim -- the world may confirm it,
+price it, or expose it.
 
-Prose is the stage: bodies, weather, what can be seen. It is not dialogue.
-No quotation marks, no *asterisks*, and no spoken words in the paragraphs.
+The world is always in motion. People act on what they want, on stage and off.
+When time passes, the story returns to what changed, never to stillness.
+Every take must change something; if the input is redundant, the world moves anyway.
+
+Characters are people, not gimmicks. Play each one's baseline; their signature
+traits fire only when this scene triggers them.
+"On their mind" lines are private. Let them steer what a character does.
+Private thought is never narrated -- the stage shows behavior only -- and no
+character hears another's unspoken thought.
+Not everyone reacts to every beat: someone addressed directly answers; the rest
+speak only with a reason. Silence is a take.
+
+Prose is the stage: bodies, weather, what can be seen. No quotation marks,
+no *asterisks*, no spoken words in the paragraphs.
 When someone speaks, their exact words go in speech_turns.line, in that person's voice.
-Empty speech_turns is a silent take.
-
-Do not invent a private mind. query_mind, query_graph, and query_history when you lack a fact.
-Do not guess continuity. A node with valid_until=-1 is still true; valid_until=N was true until turn N.
-
 Presence is hard: speech_turns and active_cast are on-stage living NPCs only.
 If the player calls someone who is not here, the stage shows their absence.
 Other live threads are board context -- do not move their cast onto this stage.
-Never narrate unperformed Player actions. You may foreshadow options.
-Do not author transitions or new_nodes; a follow-up pass handles the world graph.
+Never narrate unperformed Player actions. You may foreshadow.
+Do not author transitions or new_nodes; a follow-up pass owns the world graph.
+query_mind, query_graph, and query_history when you lack a fact. Do not guess
+continuity: valid_until=-1 is still true; valid_until=N was true until turn N.
 
 After any tool use, begin with a few short paragraphs of prose. No preamble.
 Then the sentinel and JSON. Use ONLY straight ASCII double quotes (") for all keys
@@ -111,6 +143,7 @@ and strings -- never smart/curly quotes, or the JSON will not parse.
  "new_characters":[{"name":"...","description":"2 sentences","dialogue_instructions":"1 sentence"}],
  "active_cast":["present NPC names"]}
 new_characters is first-time speakers only ([] if none). active_cast is who is on-screen this turn ([] if the player is alone).)RHAPSODE";
+    return out;
 }
 
 std::string build_narrator_graph_instructions() {
