@@ -23,6 +23,8 @@ wiki/
     scene-loop.md
     cpp-data-model.md
     python-server.md
+    session-eval.md
+    character-study.md
     vue-frontend.md
     plot-graph.md
     memory-system.md

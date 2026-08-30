@@ -25,6 +25,8 @@ Master catalog of wiki pages. Update when adding or removing pages.
 - [Plot graph](architecture/plot-graph.md) — Node/WorldGraph with typed edges (implemented), trigger predicates (planned), F-T-P triples
 - [Memory system](architecture/memory-system.md) — hybrid retrieval, quality pipeline, C++/Python callback split
 - [Python server](architecture/python-server.md) — FastAPI, WebSocket protocol, Gemini client, memory callbacks
+- [Session eval (autoplay)](architecture/session-eval.md) — spawn isolation, port lock, how to dispatch parallel runs
+- [Offline character study](architecture/character-study.md) — novel walk under `offline/character_study/`; not the turn loop
 - [Vue frontend](architecture/vue-frontend.md) — component tree, WebSocket store, styling
 - [MVP v0](architecture/mvp-v0.md) — original criteria, what was built beyond MVP, deviations from plan
 - [Companion system](architecture/companion-system.md) — protagonist companion design: L3 (LoRA identity) + L2 (observe-reflect-plan memory), implementation order, unknowns

@@ -109,6 +109,9 @@ Rhapsode/
 │       ├── lemmatization.py   # spaCy BM25 lemmatization
 │       └── spacy_models.py    # Lazy spaCy model loading
 │
+├── offline/                   # Offline tools (not the game runtime)
+│   └── character_study/       # Novel walk → living study; own venv; not session eval
+│
 ├── frontend/                  # Vue 3 SPA
 │   ├── package.json
 │   ├── vite.config.ts

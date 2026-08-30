@@ -1,0 +1,31 @@
+character: Darkness
+book: KonoSuba
+
+paths:
+  novel: D:/cursor-workspace/Konosuba/konosuba-data/konosuba.txt
+  volumes: books/konosuba/volumes.json
+  briefs: books/konosuba/briefs
+  sections: sections/darkness.jsonl
+  study: study/darkness.md
+  checkpoints: checkpoints/darkness
+
+extract:
+  names:
+    - Darkness
+    - Lalatina
+    - Dustiness
+  window: 80
+
+critic:
+  model: deepseek-v4-pro
+  thinking: true
+  max_tokens: 65536
+  api_key_env: DEEPSEEK_API_KEY
+  max_turns: 64
+  read_lines_cap: 80
+
+refine:
+  model: deepseek-v4-pro
+  thinking: true
+  max_turns: 24
+  max_tokens: 65536

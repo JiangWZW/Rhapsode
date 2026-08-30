@@ -46,3 +46,9 @@ When dropping a new reference into `raw/`:
 ## Relationship to code
 
 - Code lives under `core/` (C++), `bindings/` (pybind11), `server/` (FastAPI), `frontend/` (Vue 3). This wiki documents **intent and design**; implementation status should be noted on relevant pages.
+
+## Session eval (autoplay)
+
+Spawned autoplay is one uvicorn + one `/ws` per `run.py`. Parallel runs need a **unique `--out-dir` each**; leave `--port 8080` (lock + skip, not a static map). Do not `--attach` a second eval. Dispatch: [wiki/architecture/session-eval.md](wiki/architecture/session-eval.md).
+
+Character study is `offline/character_study/`, not the turn loop. Do not import it from the server or session eval.

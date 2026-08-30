@@ -37,5 +37,12 @@ wiki/.obsidian/
 # Session / autoplay eval artifacts (local only)
 experiments/session_pipeline/runs/
 
+# Offline character study: local corpus and generated walks (keep study/)
+offline/character_study/books/
+offline/character_study/sections/
+offline/character_study/checkpoints/
+offline/character_study/.venv/
+offline/character_study/.env
+
 # Local paper PDF archive (large; keep on disk, not in git)
 raw/papers/

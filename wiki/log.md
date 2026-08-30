@@ -1,3 +1,21 @@
+## [2026-08-30] plan | Offline character study in Rhapsode
+
+- Moved the Konosuba extract → critic → cite → refine stack into
+  `offline/character_study/`. Segregated from the turn loop and session eval.
+- Tracked: `study/`. Not tracked: `books/`, novel text, `sections/`, `checkpoints/`.
+- Docs: [architecture/character-study](architecture/character-study.md).
+
+## [2026-08-29] change | Autoplay process isolation
+
+- Spawned eval no longer uses `server/saves` + `server/chroma` + a killed port 8080.
+  Each `run.py` spawn gets `<out_dir>/live/{saves,chroma}`, the next free port if
+  the preferred one is busy, and aborts if its own uvicorn never becomes healthy.
+- Server honors `RHAPSODE_SAVES_DIR` / `RHAPSODE_CHROMA_DIR`. `autoplay.bat` no
+  longer kills the listener on the chosen port.
+- Port claim is a process-held lock (`runs/.port-locks/`), not a listen-check:
+  uvicorn binds only after embedding warmup. Dispatch:
+  [architecture/session-eval](architecture/session-eval.md).
+
 ## [2026-08-29] change | Narrator author contract
 
 - Replaced the beat narrator instructions: player input is declaration, not outcome; the
