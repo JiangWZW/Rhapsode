@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 
 import chromadb
@@ -41,18 +42,19 @@ def warmup_model() -> None:
         _shared_model = _load_embedding_model()
 
 
-def warmup_chroma(chroma_path: str = "./chroma") -> None:
+def warmup_chroma(chroma_path: str = "") -> None:
     _get_client(chroma_path)
 
 
-def _get_client(chroma_path: str = "./chroma") -> chromadb.ClientAPI:
+def _get_client(chroma_path: str = "") -> chromadb.ClientAPI:
     global _shared_client
     if _shared_client is not None:
         return _shared_client
     with _client_lock:
         if _shared_client is None:
-            log.info("Opening Chroma persistent client at %s ...", chroma_path)
-            _shared_client = chromadb.PersistentClient(path=chroma_path)
+            path = chroma_path or (os.environ.get("RHAPSODE_CHROMA_DIR") or "").strip() or "./chroma"
+            log.info("Opening Chroma persistent client at %s ...", path)
+            _shared_client = chromadb.PersistentClient(path=path)
             log.info("Chroma ready.")
         return _shared_client
 
@@ -112,7 +114,7 @@ def _make_chroma_callbacks(client: chromadb.ClientAPI):
     return store, query, update_meta, delete
 
 
-def register_callbacks(memory_system, scene_id: str, chroma_path: str = "./chroma"):
+def register_callbacks(memory_system, scene_id: str, chroma_path: str = ""):
     """Register all Python callbacks on a C++ MemorySystem instance."""
     embed = _make_embed()
     client = _get_client(chroma_path)

@@ -343,6 +343,7 @@ class _DeepSeekProvider:
             content = choice.message.content or ""
             finish = getattr(choice, "finish_reason", None)
             usage = getattr(response, "usage", None)
+            reasoning = getattr(choice.message, "reasoning_content", None)
             log.info(
                 "DeepSeek %scall done phase=%s finish=%s elapsed_ms=%d "
                 "content_len=%d reasoning_tokens=%s",
@@ -359,9 +360,10 @@ class _DeepSeekProvider:
                 finish=finish,
                 content_len=len(content),
                 usage=usage,
+                reasoning=reasoning,
             )
             if not content:
-                reasoning = getattr(choice.message, "reasoning_content", "") or ""
+                reasoning = reasoning or ""
                 log.warning(
                     "DeepSeek %sempty content: finish_reason=%s reasoning_len=%d "
                     "max_tokens=%d usage=%s",
@@ -454,6 +456,7 @@ class _DeepSeekProvider:
                     tool_calls=n_tools,
                     tools=tool_names,
                     usage=usage,
+                    reasoning=getattr(msg, "reasoning_content", None),
                 )
 
                 if msg.tool_calls:

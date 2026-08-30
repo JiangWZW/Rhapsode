@@ -94,6 +94,7 @@ class ApiHop:
     reasoning_tokens: int | None = None
     prompt_cache_hit_tokens: int | None = None
     prompt_cache_miss_tokens: int | None = None
+    reasoning: str | None = None
 
 
 def record_api_hop(
@@ -110,6 +111,7 @@ def record_api_hop(
     tool_calls: int = 0,
     tools: str = "",
     usage: Any = None,
+    reasoning: str | None = None,
 ) -> ApiHop | None:
     """Append one hop to the JSONL file when profiling is enabled."""
     if not profiling_enabled():
@@ -141,6 +143,7 @@ def record_api_hop(
         reasoning_tokens=fields.get("reasoning_tokens"),
         prompt_cache_hit_tokens=fields.get("prompt_cache_hit_tokens"),
         prompt_cache_miss_tokens=fields.get("prompt_cache_miss_tokens"),
+        reasoning=reasoning or None,
     )
 
     path = profile_path()

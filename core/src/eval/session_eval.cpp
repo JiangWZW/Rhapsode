@@ -339,14 +339,24 @@ EndReason SessionEvalRunner::run() {
             throw std::runtime_error("Failed to spawn server: " + config_.server_cmd);
         // Wait for HTTP /health. Do not open /ws: that starts a full session
         // (Story + Chroma) which the real connection then races.
+        bool healthy = false;
         for (int i = 0; i < 100; ++i) {
             if (!server.alive()) break;
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             try {
-                if (http_health_ok(config_.ws_host, config_.ws_port)) break;
+                if (http_health_ok(config_.ws_host, config_.ws_port)) {
+                    healthy = true;
+                    break;
+                }
             } catch (...) {
                 // keep waiting
             }
+        }
+        if (!server.alive() || !healthy) {
+            throw std::runtime_error(
+                "Spawned server did not become healthy on "
+                + config_.ws_host + ":" + config_.ws_port
+                + " (refusing to attach to another listener)");
         }
     } else {
         std::ofstream(log_path, std::ios::trunc)

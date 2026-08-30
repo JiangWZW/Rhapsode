@@ -265,7 +265,7 @@ The memory system is designed to work at multiple quality levels:
 | Setting | Default | Source |
 |---------|---------|--------|
 | Embedding model | BAAI/bge-base-en-v1.5 | `memory.py:EMBEDDING_MODEL` |
-| Chroma path | `./chroma` | `register_callbacks()` parameter |
+| Chroma path | `./chroma` | `RHAPSODE_CHROMA_DIR`, else `register_callbacks()` / `./chroma` |
 | Local LLM URL | `http://127.0.0.1:8012` | `validator.py:LLAMA_URL` (env: `RHAPSODE_LOCAL_LLM_URL`) |
 | Local LLM timeout | 120 seconds | `validator.py:LLAMA_TIMEOUT` (env: `RHAPSODE_LOCAL_LLM_TIMEOUT`) |
 | MemorySystem search top_k | 10 | `search_nodes()` default parameter |

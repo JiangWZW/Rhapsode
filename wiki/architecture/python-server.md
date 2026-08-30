@@ -1,6 +1,6 @@
 ---
 title: Python server
-last_updated: 2026-08-27
+last_updated: 2026-08-29
 confidence: verified
 tier: semantic
 sources:
@@ -44,6 +44,8 @@ Turn execution and graph-plan application are free functions, not owned executor
 
 Eval spawn-wait uses HTTP `GET /health`, not `/ws`. Opening `/ws` constructs a full session
 (Story + Chroma); a throwaway probe would race the real connection on the Chroma client.
+If the spawned process dies or `/health` never answers, eval aborts instead of opening `/ws`
+on whatever else is listening.
 
 ## WebSocket flow
 
@@ -104,3 +106,9 @@ configures the Story-owned Weaver and calls
 
 Story writes `world.json`, one `<scene_id>.json` per live SceneData, and `story.json` for aggregate
 identity/scheduling. Python supplies the saves directory but does not serialize native fields.
+
+`RHAPSODE_SAVES_DIR` and `RHAPSODE_CHROMA_DIR` override `server/saves` and `./chroma`. Spawned
+session eval sets both to `<out_dir>/live/` so two autoplay processes do not share a backend
+directory. Interactive play and `reset.bat` still use the server defaults.
+
+Dispatch and parallel rules: [session-eval](session-eval.md).

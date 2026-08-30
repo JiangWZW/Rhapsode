@@ -10,7 +10,8 @@ load_dotenv()
 
 SERVER_DIR = pathlib.Path(__file__).resolve().parent.parent
 SCENARIO_PATH = SERVER_DIR / os.environ.get("RHAPSODE_SCENARIO", "scenarios/tavern.json")
-SAVES_DIR = str(SERVER_DIR / "saves")
+_saves_override = (os.environ.get("RHAPSODE_SAVES_DIR") or "").strip()
+SAVES_DIR = _saves_override if _saves_override else str(SERVER_DIR / "saves")
 
 
 class _ComponentFilter(logging.Filter):

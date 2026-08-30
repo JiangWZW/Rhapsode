@@ -5,7 +5,9 @@ title Rhapsode Auto-play
 rem =============================================================================
 rem  Interactive auto-play. Press Enter to keep each default.
 rem  Starts the backend if needed, then runs the eval pipeline.
+rem  Parallel: another window is fine — use a different output folder name.
 rem  Deeper player defaults: experiments\session_pipeline\config.toml
+rem  Dispatch: wiki/architecture/session-eval.md
 rem =============================================================================
 
 set "DEF_TURNS=3"
@@ -95,12 +97,6 @@ if /i "%GO%"=="n" (
     echo Cancelled.
     goto :end_fail
 )
-
-rem Pipeline owns the server (spawn → console.log). Free the port if a stale
-rem uvicorn is still listening so we do not silently attach without logs.
-powershell -NoProfile -Command ^
-  "Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-timeout /t 1 /nobreak >nul
 
 set "GUIDE_ARGS="
 if not "%GUIDE%"=="" set "GUIDE_ARGS=--guide %GUIDE%"

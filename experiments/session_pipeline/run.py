@@ -9,10 +9,15 @@ capture). LLM hop timings also go to ``<out_dir>/llm_profile.jsonl``.
 
   .venv\\Scripts\\python.exe run.py --turns 2
   .venv\\Scripts\\python.exe run.py --config config.toml --guide guides/default.md
+
+Parallel: unique --out-dir per process, leave --port 8080 (claimed via
+runs/.port-locks/). Do not --attach a second eval. See
+wiki/architecture/session-eval.md.
 """
 from __future__ import annotations
 
 import argparse
+import msvcrt
 import os
 import socket
 import sys
@@ -73,6 +78,37 @@ def _port_open(host: str, port: str | int) -> bool:
         return False
 
 
+# Held until this process exits so a sibling run.py cannot pick the same port
+# during uvicorn startup (listen happens after embedding warmup).
+_PORT_LOCKS: list = []
+
+
+def _claim_port(host: str, port: int) -> bool:
+    if _port_open(host, port):
+        return False
+    lock_dir = HERE / "runs" / ".port-locks"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    fh = open(lock_dir / f"{port}.lock", "a+b")
+    try:
+        if fh.seek(0, 2) == 0:
+            fh.write(b"x")
+            fh.flush()
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        fh.close()
+        return False
+    _PORT_LOCKS.append(fh)
+    return True
+
+
+def _pick_free_port(host: str, preferred: int, span: int = 20) -> int:
+    for port in range(preferred, preferred + span):
+        if _claim_port(host, port):
+            return port
+    raise RuntimeError(f"no free port in {preferred}-{preferred + span - 1} on {host}")
+
+
 def _default_spawn_cmd(host: str, port: str) -> str:
     """Spawn venv uvicorn under server/. Prefer repo venv, not whatever launched run.py."""
     venv_py = SERVER / ".venv" / "Scripts" / "python.exe"
@@ -129,7 +165,12 @@ def main() -> int:
         default=os.environ.get("RHAPSODE_PORT", str(run_cfg.get("port", "8080"))),
     )
     parser.add_argument("--ws-path", default=str(run_cfg.get("ws_path", "/ws")))
-    parser.add_argument("--saves-dir", default=str(default_saves))
+    parser.add_argument(
+        "--saves-dir",
+        default="",
+        help="Live save directory (default: <out_dir>/live/saves when spawning, "
+             f"{default_saves} when attaching)",
+    )
     parser.add_argument(
         "--out-dir",
         default="",
@@ -201,35 +242,49 @@ def main() -> int:
     )
 
     spawn_cmd = (args.spawn_cmd or "").strip()
+    saves_override = (
+        (args.saves_dir or "").strip()
+        or str(run_cfg.get("saves_dir") or "").strip()
+    )
+    port = str(args.port)
+
     if args.attach:
         if spawn_cmd:
             print("error: --attach and --spawn-cmd are mutually exclusive",
                   file=sys.stderr)
             return 2
         spawn_cmd = ""
+        saves_dir = saves_override or default_saves
         print(
             "warning: --attach mode; console.log will not contain server LLM "
             f"logs. Prefer default spawn. profile still at {profile_path} "
             "only if the existing server was started with RHAPSODE_LLM_PROFILE.",
             file=sys.stderr,
         )
-    elif not spawn_cmd:
-        spawn_cmd = _default_spawn_cmd(args.host, str(args.port))
-        if _port_open(args.host, args.port):
-            print(
-                f"error: {args.host}:{args.port} is already listening.\n"
-                "  Free the port (stop the old uvicorn), or pass --attach to "
-                "reuse it without capturing console.log.",
-                file=sys.stderr,
-            )
-            return 2
+    else:
+        if not spawn_cmd:
+            try:
+                picked = _pick_free_port(args.host, int(args.port))
+            except RuntimeError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+            if picked != int(args.port):
+                print(f"port {args.port} busy; using {picked}")
+            port = str(picked)
+            spawn_cmd = _default_spawn_cmd(args.host, port)
+        saves_dir = saves_override or str((out_path / "live" / "saves").resolve())
+        chroma_dir = (out_path / "live" / "chroma").resolve()
+        Path(saves_dir).mkdir(parents=True, exist_ok=True)
+        chroma_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["RHAPSODE_SAVES_DIR"] = str(Path(saves_dir).resolve())
+        os.environ["RHAPSODE_CHROMA_DIR"] = str(chroma_dir)
 
     cfg = SessionEvalConfig()
     cfg.ws_host = args.host
-    cfg.ws_port = str(args.port)
+    cfg.ws_port = port
     cfg.ws_path = args.ws_path
     cfg.server_cmd = spawn_cmd
-    cfg.saves_dir = args.saves_dir
+    cfg.saves_dir = saves_dir
     cfg.out_dir = out_dir
     cfg.max_turns = args.turns
     cfg.turn_timeout_s = args.turn_timeout
@@ -239,11 +294,11 @@ def main() -> int:
         seed_src = Path(args.seed_saves)
         if not seed_src.is_dir():
             seed_src = config_dir / seed_src
-        seed_saves(seed_src, Path(args.saves_dir),
+        seed_saves(seed_src, Path(saves_dir),
                    log_path=out_path / "injections.log")
 
     player = make_player_llm(
-        args.saves_dir,
+        saves_dir,
         SCENARIO_PATH,
         protocol=protocol,
         guide_text=guide_text,
@@ -262,6 +317,8 @@ def main() -> int:
         runner.set_critique_llm(_critique_llm)
 
     print(f"out_dir={out_path}")
+    print(f"port={args.host}:{port}")
+    print(f"saves_dir={saves_dir}")
     print(f"spawn={'attach' if not spawn_cmd else 'uvicorn→console.log'}")
     print(f"llm_profile={profile_path}")
 

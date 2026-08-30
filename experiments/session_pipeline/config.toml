@@ -16,4 +16,4 @@ port = "8080"
 ws_path = "/ws"
 turn_timeout_s = 1800
 open_timeout_s = 120
-saves_dir = ""   # empty = <repo>/server/saves
+saves_dir = ""   # empty = <out_dir>/live/saves when spawning
