@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.deepseek import DeepSeekProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import UsageLimits
 
@@ -51,10 +52,14 @@ def make_agent(cfg: dict, *, vol_beg: int, vol_end: int) -> Agent[Nav, str]:
         raise SystemExit(f"missing env {llm['api_key_env']}")
     name = str(cfg.get("character") or "Darkness")
     book = str(cfg.get("book") or "KonoSuba")
-    model = OpenAIChatModel(
-        llm["model"],
-        provider=DeepSeekProvider(api_key=key),
+    base_name = str(llm.get("api_base_env") or "").strip()
+    base_url = os.environ.get(base_name, "").strip() if base_name else ""
+    provider = (
+        OpenAIProvider(base_url=base_url, api_key=key)
+        if base_url
+        else DeepSeekProvider(api_key=key)
     )
+    model = OpenAIChatModel(llm["model"], provider=provider)
     settings: dict = {"temperature": 0.9}
     if llm.get("max_tokens"):
         settings["max_tokens"] = int(llm["max_tokens"])
@@ -111,13 +116,15 @@ def load_sections(path) -> list[dict]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Critic pass over Darkness sections")
+    parser = argparse.ArgumentParser(description="Critic pass over character sections")
+    parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--max-sections", type=int, default=0, help="0 = all")
     parser.add_argument("--from-id", type=int, default=1)
+    parser.add_argument("--until-volume", type=int, default=0, help="0 = no volume cap")
     args = parser.parse_args()
 
     load_local_env()
-    cfg = load_config()
+    cfg = load_config(args.config)
     lines = load_lines(cfg)
     sec_path = ROOT / cfg["paths"]["sections"]
     if not sec_path.is_file():
@@ -139,6 +146,8 @@ def main() -> int:
     limits = UsageLimits(request_limit=int(cfg["critic"]["max_turns"]))
 
     todo = [s for s in sections if s["id"] >= args.from_id]
+    if args.until_volume:
+        todo = [s for s in todo if s["volume"] <= args.until_volume]
     if args.max_sections:
         todo = todo[: args.max_sections]
     vols = [s["volume"] for s in todo]

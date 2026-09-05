@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from cite import cite_text, find_line
 from critic import SYSTEM, _study_body
 from extract import build_sections, volume_bounds, window_spans
 from nav import clip_range, format_brief, format_lines, format_sources
+from reader_experiment import SYSTEM as READER_SYSTEM, build_prompt
+from study_experiment import FINAL_TEMPLATE, build_study_prompt
 
 VOL = [{"id": 1, "title": "T", "start": 1, "end": 200}]
 
@@ -85,14 +86,24 @@ def test_no_register_in_critic_prompt():
     assert "register" not in SYSTEM.lower()
 
 
-def test_cite_unique_quote():
-    lines = ["aaa", "She said hello there world today.", "bbb"]
-    vols = [{"id": 1, "start": 1, "end": 10}]
-    assert find_line("hello there world today", lines) == 2
-    out = cite_text('He said "hello there world today" and left.', lines, vols)
-    assert "(v1 L2)" in out
-    again = cite_text(out, lines, vols)
-    assert again.count("(v1 L2)") == 1
+def test_blind_reader_prompt_is_repeatable_and_non_adversarial():
+    study = "# Darkness\n\nA first-pass reading.\n"
+    assert build_prompt(study) == build_prompt(study)
+    assert build_prompt(study).endswith(study)
+    lowered = (READER_SYSTEM + build_prompt(study)).lower()
+    for adversarial in ("counter-reader", "find flaws", "disagree", "falsify", "attack"):
+        assert adversarial not in lowered
+
+
+def test_study_prompt_injects_name_without_hardcoded_identity():
+    assert "{character_name}" in FINAL_TEMPLATE
+    lowered_template = FINAL_TEMPLATE.lower()
+    assert "darkness" not in lowered_template
+    for gendered in (" she ", " her ", " hers ", " he ", " him ", " his "):
+        assert gendered not in f" {lowered_template} "
+    prompt = build_study_prompt("Aster")
+    assert prompt.count("Aster") == 2
+    assert prompt.rstrip().endswith("# Aster")
 
 
 if __name__ == "__main__":
@@ -104,5 +115,6 @@ if __name__ == "__main__":
     test_real_extract_count()
     test_study_body()
     test_no_register_in_critic_prompt()
-    test_cite_unique_quote()
+    test_blind_reader_prompt_is_repeatable_and_non_adversarial()
+    test_study_prompt_injects_name_without_hardcoded_identity()
     print("ok")

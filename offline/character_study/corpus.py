@@ -30,8 +30,15 @@ def load_local_env() -> None:
             os.environ[key] = val.strip()
 
 
-def load_config() -> dict[str, Any]:
-    with (ROOT / "config.yaml").open(encoding="utf-8") as f:
+def resolve_config_path(path: str | Path | None = None) -> Path:
+    raw = Path(path) if path else Path("config.yaml")
+    if raw.is_absolute():
+        return raw
+    return ROOT / raw
+
+
+def load_config(path: str | Path | None = None) -> dict[str, Any]:
+    with resolve_config_path(path).open(encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -56,14 +63,6 @@ def load_volumes(cfg: dict | None = None) -> list[dict]:
     with path.open(encoding="utf-8") as f:
         data = json.load(f)
     return data["volumes"]
-
-
-def volume_for_line(line_1based: int, volumes: list[dict] | None = None) -> int:
-    volumes = volumes or load_volumes()
-    for vol in volumes:
-        if vol["start"] <= line_1based <= vol["end"]:
-            return int(vol["id"])
-    return volumes[-1]["id"]
 
 
 def brief_path(volume: int, cfg: dict | None = None) -> Path:

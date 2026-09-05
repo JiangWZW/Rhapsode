@@ -1,19 +1,17 @@
-character: Darkness
+character: Megumin
 book: KonoSuba
 
 paths:
   novel: D:/cursor-workspace/Konosuba/konosuba-data/konosuba.txt
   volumes: books/konosuba/volumes.json
   briefs: books/konosuba/briefs
-  sections: sections/darkness.jsonl
-  study: study/darkness.md
-  checkpoints: checkpoints/darkness
+  sections: sections/megumin.jsonl
+  study: study/megumin.md
+  checkpoints: checkpoints/megumin
 
 extract:
   names:
-    - Darkness
-    - Lalatina
-    - Dustiness
+    - Megumin
   window: 80
 
 critic:
@@ -21,6 +19,7 @@ critic:
   thinking: true
   max_tokens: 65536
   api_key_env: DEEPSEEK_API_KEY
+  api_base_env: DEEPSEEK_API_BASE
   max_turns: 64
   read_lines_cap: 80
 

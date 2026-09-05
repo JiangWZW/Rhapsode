@@ -1,3 +1,15 @@
+## [2026-09-01] experiment | Identical-input blind readers
+
+- Added an offline baseline that sends the same first-pass Darkness study and neutral prompt to two
+  fresh DeepSeek sessions at temperature 0.9; explicit per-session seeds prevent exact-request replay.
+- Repaired OpenAI-compatible gateway support after the public DeepSeek endpoint rejected the
+  workspace credential.
+- The initial unseeded requests returned byte-identical 918-word letters, consistent with cached or
+  deterministic request handling. The seeded run produced distinct 974- and 1,149-word letters.
+- Despite different wording and secondary emphases, both seeded readers selected the same central
+  scenes and interpretation. Sampling added local nuance but did not create independent readings.
+- Local artifacts: `offline/character_study/checkpoints/darkness/reader-baseline-20260901-195321/`.
+
 ## [2026-08-30] plan | Offline character study in Rhapsode
 
 - Moved the Konosuba extract → critic → cite → refine stack into
@@ -1010,3 +1022,10 @@ Append-only timeline of wiki and project evolution. Newest entries at the **top*
 - Created `AGENTS.md`, `raw/sources.md`, `wiki/index.md`, starter pages.
 - Adopted Karpathy LLM Wiki pattern.
 
+## [2026-09-03] experiment | Reader-authored character studies
+
+- Added an isolated experiment that continues each successful blind reader into a separate candidate study. The character name is injected from configuration, no gender is supplied, and the two studies are never synthesized.
+- Candidate 1 produced 3,595 words and pursued the reader's interests in bodily visibility, nobility, sacrifice, and absence. It is vivid but sometimes promotes interpretation into a total causal account.
+- Candidate 2 produced 2,189 words and stayed more tightly centered on the character, especially agency, exposure, usefulness, and belonging. It is more controlled but still risks making one distinction explain too much.
+- Neither candidate used volume chronology, case headings, citations, or a merged consensus. Both remain experimental checkpoint artifacts; Pass 1 and the reader letters are unchanged.
+- Selected Candidate 1 for a narrow manual revision. Added Candidate 2's observations about the party as a place to be a comrade and Kazuma understanding what the character hates better than what the character wants; softened causal and totalizing claims without restructuring the study. Preserved both originals.

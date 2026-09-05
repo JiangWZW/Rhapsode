@@ -69,10 +69,11 @@ def build_sections(lines: list[str], cfg: dict) -> list[dict]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Extract Darkness sections from konosuba.txt")
+    parser = argparse.ArgumentParser(description="Extract name-hit sections from the novel")
+    parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--out", default="", help="jsonl path (default: config)")
     args = parser.parse_args()
-    cfg = load_config()
+    cfg = load_config(args.config)
     lines = load_lines(cfg)
     sections = build_sections(lines, cfg)
     out = ROOT / (args.out or cfg["paths"]["sections"])
