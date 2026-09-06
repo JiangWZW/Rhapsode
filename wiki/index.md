@@ -50,6 +50,7 @@ Master catalog of wiki pages. Update when adding or removing pages.
 
 ## Research
 
+- [Plan — offload mind calls to a trained model](research/mind-model-offload-plan.md) — gated stages: Flash-off baseline, HER-RM judge, LoRA on HER-32B with own mind logs + CoSER data, RL only on failure, serving cost decision
 - [Player-tools 149 — cemetery loop and board-reading](research/player-tools-149-narrative-analysis-2026-08-29.md) — 149-turn fork_merge autoplay with the new player tool loop: tools work, cemetery send-off is reissued six times, player writes the board into the action
 - [The cemetery, again — 149-turn reading edition with minds](research/player-tools-149-story-with-minds.md) — novel-format public story plus 438 logged perceptions and 383 retained monologue lines; merged forks as interludes
 - [Ashenmoor clean 20-turn narrative analysis — 2026-08-28](research/ashenmoor-clean-20turn-narrative-analysis-2026-08-28.md) - deep analysis of narration, player agency, perception, monologue, graph growth, evaluator validity, and latency after a full reset

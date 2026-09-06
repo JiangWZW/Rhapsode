@@ -11,5 +11,7 @@ std::string query_world_graph(
     const WorldGraph& graph, const std::string& query);
 std::string query_character_mind(const World& world,
                                  const std::string& character);
+std::string query_character_core(const World& world,
+                                 const std::string& character);
 
 }  // namespace rhapsode

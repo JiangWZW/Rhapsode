@@ -53,6 +53,126 @@ def _resolve_thinking_body(
     return body, on
 
 
+def _is_kimi_model(model: str | None) -> bool:
+    return bool(model) and str(model).strip().lower().startswith("kimi-")
+
+
+def _narrator_api_base() -> str:
+    return (os.environ.get("RHAPSODE_NARRATOR_API_BASE") or "").strip()
+
+
+def _narrator_api_key() -> str:
+    return (
+        (os.environ.get("RHAPSODE_NARRATOR_API_KEY") or "").strip()
+        or (os.environ.get("MOONSHOT_API_KEY") or "").strip()
+    )
+
+
+def _kimi_reasoning_effort() -> str:
+    raw = (os.environ.get("RHAPSODE_NARRATOR_REASONING_EFFORT") or "max").strip().lower()
+    if raw not in ("low", "high", "max"):
+        raise ValueError(
+            f"RHAPSODE_NARRATOR_REASONING_EFFORT={raw!r} is not low, high, or max."
+        )
+    return raw
+
+
+def _require_kimi_config(model: str) -> None:
+    """Refuse to start a Kimi call without a Moonshot host and key."""
+    if not _is_kimi_model(model):
+        return
+    missing: list[str] = []
+    if not _narrator_api_base():
+        missing.append("RHAPSODE_NARRATOR_API_BASE")
+    if not _narrator_api_key():
+        missing.append("RHAPSODE_NARRATOR_API_KEY or MOONSHOT_API_KEY")
+    if missing:
+        raise ValueError(
+            f"RHAPSODE_NARRATOR_MODEL={model!r} needs a Moonshot host and key "
+            f"(missing {', '.join(missing)}). "
+            "China keys use https://api.moonshot.cn/v1; "
+            "international keys use https://api.moonshot.ai/v1."
+        )
+
+
+def _openai_completion_kwargs(
+    *,
+    model: str,
+    messages: list,
+    thinking: bool | None,
+    default_extra_body: dict,
+    max_tokens: int,
+    tools: list | None = None,
+) -> dict:
+    """Chat Completions kwargs for the model on this call.
+
+    Kimi K3: official shape only — reasoning_effort, max_completion_tokens,
+    no thinking body, no temperature. DeepSeek keeps today's thinking body.
+    """
+    if _is_kimi_model(model):
+        kwargs: dict = {
+            "model": model,
+            "messages": messages,
+            "max_completion_tokens": max_tokens,
+            "reasoning_effort": _kimi_reasoning_effort(),
+        }
+        if tools is not None:
+            kwargs["tools"] = tools
+        return kwargs
+    extra_body, thinking_on = _resolve_thinking_body(default_extra_body, thinking)
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "extra_body": extra_body,
+    }
+    if tools is not None:
+        kwargs["tools"] = tools
+    if thinking_on:
+        kwargs["reasoning_effort"] = "high"
+    else:
+        kwargs["temperature"] = 1.0
+    return kwargs
+
+
+def _set_output_budget(kwargs: dict, max_tokens: int) -> None:
+    if "max_completion_tokens" in kwargs:
+        kwargs["max_completion_tokens"] = max_tokens
+    else:
+        kwargs["max_tokens"] = max_tokens
+
+
+def _assistant_history_entry(msg, *, kimi: bool) -> dict:
+    """Replay an assistant turn into the next request's messages.
+
+    Kimi K3 requires the complete assistant message (including
+    reasoning_content). DeepSeek keeps the existing rebuilt dict.
+    """
+    if kimi and hasattr(msg, "model_dump"):
+        dumped = msg.model_dump(exclude_none=True)
+        dumped.setdefault("role", "assistant")
+        return dumped
+    assistant_msg = {
+        "role": "assistant",
+        "content": msg.content or "",
+        "tool_calls": [
+            {
+                "id": tc.id,
+                "type": "function",
+                "function": {
+                    "name": tc.function.name,
+                    "arguments": tc.function.arguments or "{}",
+                },
+            }
+            for tc in (msg.tool_calls or [])
+        ],
+    }
+    reasoning = getattr(msg, "reasoning_content", None)
+    if reasoning:
+        assistant_msg["reasoning_content"] = reasoning
+    return assistant_msg
+
+
 def _retry_complete(fn):
     """Retry an LLM call with exponential backoff.
 
@@ -154,10 +274,8 @@ def _stage_tag(stage: str) -> str:
 
 
 def _gemini_tool_use_loop(client, model, contents, config, tool_dispatcher,
-                          *, stage: str = "") -> str:
+                          *, stage: str = "", max_rounds: int = 10) -> str:
     import json as json_module
-
-    max_rounds = 10
     tag = _stage_tag(stage)
     for round_i in range(max_rounds):
         log.info("Gemini %stools round=%d/%d model=%s (waiting on API…)",
@@ -270,7 +388,8 @@ class _GeminiProvider:
     def complete_with_tools(self, messages: list[dict], tools: list[dict],
                             tool_dispatcher, *, model: str | None = None,
                             thinking: bool | None = None,
-                            stage: str = "", phase: str = "") -> str:
+                            stage: str = "", phase: str = "",
+                            max_rounds: int | None = None) -> str:
         from google.genai.types import GenerateContentConfig, Tool
 
         del thinking  # Gemini path has no DeepSeek thinking toggle.
@@ -287,7 +406,8 @@ class _GeminiProvider:
 
         return _gemini_tool_use_loop(
             self.client, model or self.tool_model, contents, config,
-            tool_dispatcher, stage=stage)
+            tool_dispatcher, stage=stage,
+            max_rounds=10 if max_rounds is None else max_rounds)
 
 
 class _DeepSeekProvider:
@@ -298,15 +418,37 @@ class _DeepSeekProvider:
             base_url=os.environ.get("DEEPSEEK_API_BASE", "https://api.deepseek.com"),
         )
         self.model = os.environ.get("RHAPSODE_MODEL", "deepseek-chat")
-        # The tool-use callers (narrator + scheduler) drive all lifecycle
-        # decisions, so they run on the stronger reasoning model when configured;
-        # plain completions stay on the base model.
+        # Narrator + inner thoughts use this id when callers omit model=.
+        # Scheduler / lifecycle pass RHAPSODE_MODEL (Flash) explicitly.
         self.tool_model = os.environ.get("RHAPSODE_NARRATOR_MODEL") or self.model
         self._extra_body = _deepseek_extra_body()
+        self.kimi_client = None
+        if _is_kimi_model(self.tool_model):
+            _require_kimi_config(self.tool_model)
+            self.kimi_client = OpenAI(
+                api_key=_narrator_api_key(),
+                base_url=_narrator_api_base(),
+            )
+            log.info(
+                "Narrator client host=%s model=%s effort=%s",
+                _narrator_api_base(), self.tool_model, _kimi_reasoning_effort(),
+            )
         log.info(
             "DeepSeek thinking=%s",
             self._extra_body.get("thinking", {}).get("type", "?"),
         )
+
+    def _client_for(self, model: str):
+        if not _is_kimi_model(model):
+            return self.client
+        _require_kimi_config(model)
+        if self.kimi_client is None:
+            from openai import OpenAI
+            self.kimi_client = OpenAI(
+                api_key=_narrator_api_key(),
+                base_url=_narrator_api_base(),
+            )
+        return self.kimi_client
 
     def complete(self, messages: list[dict], model: str | None = None,
                  *, thinking: bool | None = None, stage: str = "",
@@ -317,27 +459,28 @@ class _DeepSeekProvider:
         max_tokens = _MAX_OUTPUT_TOKENS
         use_model = model or self.model
         tag = _stage_tag(stage)
-        extra_body, thinking_on = _resolve_thinking_body(self._extra_body, thinking)
+        kimi = _is_kimi_model(use_model)
+        vendor = "Kimi" if kimi else "DeepSeek"
+        thinking_on = True if kimi else _resolve_thinking_body(
+            self._extra_body, thinking)[1]
+        client = self._client_for(use_model)
 
         def _call():
             nonlocal max_tokens
             log.info(
-                "DeepSeek %scall start model=%s thinking=%s max_tokens=%d "
+                "%s %scall start model=%s thinking=%s max_tokens=%d "
                 "(waiting on API…)",
-                tag, use_model, thinking_on, max_tokens,
+                vendor, tag, use_model, thinking_on, max_tokens,
             )
             t0 = time.monotonic()
-            kwargs = {
-                "model": use_model,
-                "messages": converted,
-                "max_tokens": max_tokens,
-                "extra_body": extra_body,
-            }
-            if thinking_on:
-                kwargs["reasoning_effort"] = "high"
-            else:
-                kwargs["temperature"] = 1.0
-            response = self.client.chat.completions.create(**kwargs)
+            kwargs = _openai_completion_kwargs(
+                model=use_model,
+                messages=converted,
+                thinking=thinking,
+                default_extra_body=self._extra_body,
+                max_tokens=max_tokens,
+            )
+            response = client.chat.completions.create(**kwargs)
             elapsed_ms = int((time.monotonic() - t0) * 1000)
             choice = response.choices[0]
             content = choice.message.content or ""
@@ -345,9 +488,9 @@ class _DeepSeekProvider:
             usage = getattr(response, "usage", None)
             reasoning = getattr(choice.message, "reasoning_content", None)
             log.info(
-                "DeepSeek %scall done phase=%s finish=%s elapsed_ms=%d "
+                "%s %scall done phase=%s finish=%s elapsed_ms=%d "
                 "content_len=%d reasoning_tokens=%s",
-                tag, phase or "-", finish, elapsed_ms, len(content),
+                vendor, tag, phase or "-", finish, elapsed_ms, len(content),
                 reasoning_tokens(usage),
             )
             record_api_hop(
@@ -365,8 +508,9 @@ class _DeepSeekProvider:
             if not content:
                 reasoning = reasoning or ""
                 log.warning(
-                    "DeepSeek %sempty content: finish_reason=%s reasoning_len=%d "
+                    "%s %sempty content: finish_reason=%s reasoning_len=%d "
                     "max_tokens=%d usage=%s",
+                    vendor,
                     tag,
                     finish,
                     len(reasoning),
@@ -377,9 +521,9 @@ class _DeepSeekProvider:
                     nxt = _bump_max_tokens(max_tokens)
                     if nxt is not None:
                         log.warning(
-                            "DeepSeek %slength budget exhausted at max_tokens=%d; "
+                            "%s %slength budget exhausted at max_tokens=%d; "
                             "bumping to %d for retry",
-                            tag, max_tokens, nxt,
+                            vendor, tag, max_tokens, nxt,
                         )
                         max_tokens = nxt
             return content
@@ -389,7 +533,8 @@ class _DeepSeekProvider:
     def complete_with_tools(self, messages: list[dict], tools: list[dict],
                             tool_dispatcher, *, model: str | None = None,
                             thinking: bool | None = None,
-                            stage: str = "", phase: str = "") -> str:
+                            stage: str = "", phase: str = "",
+                            max_rounds: int | None = None) -> str:
         import json as json_module
 
         from rhapsode.llm_profile import reasoning_tokens, record_api_hop
@@ -398,34 +543,36 @@ class _DeepSeekProvider:
         openai_tools = [{"type": "function", "function": t} for t in tools]
         use_model = model or self.tool_model
         tag = _stage_tag(stage)
-        extra_body, thinking_on = _resolve_thinking_body(self._extra_body, thinking)
+        kimi = _is_kimi_model(use_model)
+        vendor = "Kimi" if kimi else "DeepSeek"
+        thinking_on = True if kimi else _resolve_thinking_body(
+            self._extra_body, thinking)[1]
+        client = self._client_for(use_model)
 
         max_tokens = _MAX_OUTPUT_TOKENS
-        max_rounds = 10
-        create_kwargs: dict = {
-            "model": use_model,
-            "messages": openai_messages,
-            "tools": openai_tools,
-            "max_tokens": max_tokens,
-            "extra_body": extra_body,
-        }
-        if thinking_on:
-            create_kwargs["reasoning_effort"] = "high"
-        else:
-            create_kwargs["temperature"] = 1.0
+        if max_rounds is None:
+            max_rounds = 10
+        create_kwargs = _openai_completion_kwargs(
+            model=use_model,
+            messages=openai_messages,
+            thinking=thinking,
+            default_extra_body=self._extra_body,
+            max_tokens=max_tokens,
+            tools=openai_tools,
+        )
 
         for round_i in range(max_rounds):
             while True:
                 create_kwargs["messages"] = openai_messages
-                create_kwargs["max_tokens"] = max_tokens
+                _set_output_budget(create_kwargs, max_tokens)
                 log.info(
-                    "DeepSeek %stools round=%d/%d phase=%s model=%s thinking=%s "
+                    "%s %stools round=%d/%d phase=%s model=%s thinking=%s "
                     "max_tokens=%d (waiting on API…)",
-                    tag, round_i + 1, max_rounds, phase or "-", use_model,
-                    thinking_on, max_tokens,
+                    vendor, tag, round_i + 1, max_rounds, phase or "-",
+                    use_model, thinking_on, max_tokens,
                 )
                 t0 = time.monotonic()
-                response = self.client.chat.completions.create(**create_kwargs)
+                response = client.chat.completions.create(**create_kwargs)
                 elapsed_ms = int((time.monotonic() - t0) * 1000)
                 choice = response.choices[0]
                 msg = choice.message
@@ -436,10 +583,11 @@ class _DeepSeekProvider:
                     tc.function.name for tc in (msg.tool_calls or [])
                 )
                 log.info(
-                    "DeepSeek %stools round=%d done phase=%s finish=%s "
+                    "%s %stools round=%d done phase=%s finish=%s "
                     "elapsed_ms=%d tool_calls=%d%s content_len=%d "
                     "reasoning_tokens=%s",
-                    tag, round_i + 1, phase or "-", finish, elapsed_ms, n_tools,
+                    vendor, tag, round_i + 1, phase or "-", finish, elapsed_ms,
+                    n_tools,
                     f" tools={tool_names}" if tool_names else "",
                     len(msg.content or ""), reasoning_tokens(usage),
                 )
@@ -468,8 +616,9 @@ class _DeepSeekProvider:
 
                 reasoning = getattr(msg, "reasoning_content", "") or ""
                 log.warning(
-                    "DeepSeek %sempty content: finish_reason=%s reasoning_len=%d "
+                    "%s %sempty content: finish_reason=%s reasoning_len=%d "
                     "max_tokens=%d usage=%s",
+                    vendor,
                     tag,
                     finish,
                     len(reasoning),
@@ -480,39 +629,19 @@ class _DeepSeekProvider:
                     nxt = _bump_max_tokens(max_tokens)
                     if nxt is not None:
                         log.warning(
-                            "DeepSeek %slength budget exhausted at max_tokens=%d; "
+                            "%s %slength budget exhausted at max_tokens=%d; "
                             "bumping to %d for retry",
-                            tag, max_tokens, nxt,
+                            vendor, tag, max_tokens, nxt,
                         )
                         max_tokens = nxt
                         continue
                 return ""
 
-            # DeepSeek thinking + tools: replay the FULL assistant message
-            # (content + reasoning_content + tool_calls). reasoning_content is
-            # API-only history so the next round can continue the CoT — it must
-            # NEVER be returned as narrator prose (callers only get `content`
-            # from the final non-tool response below).
-            # See: https://api-docs.deepseek.com/guides/thinking_mode
-            assistant_msg = {
-                "role": "assistant",
-                "content": msg.content or "",
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments or "{}",
-                        },
-                    }
-                    for tc in msg.tool_calls
-                ],
-            }
-            reasoning = getattr(msg, "reasoning_content", None)
-            if reasoning:
-                assistant_msg["reasoning_content"] = reasoning
-            openai_messages.append(assistant_msg)
+            # Replay the assistant turn so the next round can continue.
+            # Kimi K3: whole message as-is (Preserved Thinking).
+            # DeepSeek: rebuilt dict with reasoning_content.
+            # reasoning_content is API-only history — never returned as prose.
+            openai_messages.append(_assistant_history_entry(msg, kimi=kimi))
 
             for tc in msg.tool_calls:
                 args = (
@@ -529,7 +658,7 @@ class _DeepSeekProvider:
                     "content": result,
                 })
 
-        log.warning("DeepSeek %stool-use loop exceeded %d rounds", tag, max_rounds)
+        log.warning("%s %stool-use loop exceeded %d rounds", vendor, tag, max_rounds)
         return ""
 
 
@@ -555,13 +684,15 @@ def complete(messages: list[dict], model: str | None = None,
 def complete_with_tools(messages: list[dict], tools: list[dict],
                         tool_dispatcher, *, model: str | None = None,
                         thinking: bool | None = None,
-                        stage: str = "", phase: str = "") -> str:
+                        stage: str = "", phase: str = "",
+                        max_rounds: int | None = None) -> str:
     """Run a tool-use conversation loop. Returns the final text response.
 
     When model is omitted, providers use their tool/narrator model (pro).
     thinking=None keeps RHAPSODE_DEEPSEEK_THINKING; True/False overrides per call.
     stage/phase label logs and optional RHAPSODE_LLM_PROFILE JSONL hops.
+    max_rounds=None keeps the default 10-round loop.
     """
     return _get_provider().complete_with_tools(
         messages, tools, tool_dispatcher, model=model, thinking=thinking,
-        stage=stage, phase=phase)
+        stage=stage, phase=phase, max_rounds=max_rounds)

@@ -16,11 +16,10 @@ const std::string kSchedulerInstructions =
     "You are the scene scheduler for a parallel-storyline engine. The player's "
     "scene has just advanced. Up to TWO OFF-STAGE storylines may advance this "
     "turn while the others rest.\n"
-    "Call list_scenes to see every live storyline. Weigh each off-stage row by "
+    "Use tools when needed. Weigh each off-stage row by "
     "its charge (how urgent its driving intention is), staleness (how many turns "
     "since it last advanced -- higher means overdue), and whether it is "
-    "converging on the player. Drill in with query_graph or query_mind if a row "
-    "is ambiguous.\n"
+    "converging on the player.\n"
     "Then call advance_scene once per storyline you want advanced this turn "
     "(at most 2). Never pick the scene where player_present is true. Prefer the "
     "most overdue / highest-charge scenes. If nothing off-stage deserves a turn, "
@@ -52,7 +51,7 @@ const std::string kLifecycleInstructions =
     "{\"op\":\"exit\",\"scene_id\":\"...\",\"names\":[names]}.\n"
     "Most steps change NOTHING. Return {\"ops\":[]} unless there is concrete "
     "evidence in this step's narration or the board rows.\n"
-    "Use query_history, query_graph, query_mind, or list_scenes when needed.\n"
+    "Use tools when needed.\n"
     "Reply with ONLY JSON:\n"
     "{\"ops\":[ ... ]}";
 

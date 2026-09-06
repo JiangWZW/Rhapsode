@@ -116,8 +116,7 @@ std::string synthesize_merge_context(
         "causality, character state, unresolved goals, and the immediate "
         "situation. Incorporate source details only when they remain relevant "
         "after convergence. Do not advance time, invent events, write dialogue, "
-        "or narrate a new turn. You may use query_history(scene_id, query), "
-        "query_graph(query), and query_mind(character) to resolve ambiguity. "
+        "or narrate a new turn. Use tools to resolve ambiguity. "
         "Return only JSON: {\"merged_story_so_far\":\"...\"}.";
 
     nlohmann::json payload;
@@ -143,9 +142,8 @@ std::string synthesize_fork_context(
         "has just split from its parent scene. Isolate the departing cast's "
         "relevant established situation, relationships, unresolved facts, and "
         "the immediate reason for their stated intention. Do not advance time, "
-        "invent events, write dialogue, or narrate a new turn. You may use "
-        "query_history(scene_id, query), query_graph(query), and "
-        "query_mind(character) to resolve ambiguity. Return only JSON: "
+        "invent events, write dialogue, or narrate a new turn. Use tools to "
+        "resolve ambiguity. Return only JSON: "
         "{\"fork_story_so_far\":\"...\"}.";
 
     nlohmann::json payload;

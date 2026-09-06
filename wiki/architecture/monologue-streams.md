@@ -37,7 +37,7 @@ Monologue:
 1. **System** — craft + `{"line"}` schema. Identical for every character, every turn.
 2. **User** — `You are {name}.` then **Who you are** (core), then private lines oldest first, then the copied perception string if any. No narration window. No `[turn take]`.
 
-`query_mind` returns core + truncated perception + last three monologue lines + compact beliefs. Narrator does not author private lines.
+`query_mind` returns this beat's interior only: perception and the last three monologue lines, untruncated. The durable Who you are page is `query_character_core`. Narrator does not author private lines.
 
 Poll claims by scene turn. Perception dispatches when `perception_turn_ < turn`. Monologue dispatches when `perception_turn_ >= turn` and `monologue_turn_ < turn`. Same-poll harvests a prior in-flight perception before claiming monologue; this turn's new perception does not also claim monologue. HTTP failure releases the slot and does not advance the turn.
 

@@ -7,6 +7,16 @@ from extract import build_sections, volume_bounds, window_spans
 from nav import clip_range, format_brief, format_lines, format_sources
 from reader_experiment import SYSTEM as READER_SYSTEM, build_prompt
 from study_experiment import FINAL_TEMPLATE, build_study_prompt
+from test_narrator_experiment import (
+    test_build_scenarios_full_pastes_pages,
+    test_build_scenarios_none_leaves_narrator_alone,
+    test_build_scenarios_short_is_same_on_both_sides,
+    test_identical_wrappers,
+    test_injections_five_labeled_turns,
+    test_perception_parse,
+    test_select_two_injects_renumbers,
+    test_study_prose_drops_title,
+)
 
 VOL = [{"id": 1, "title": "T", "start": 1, "end": 200}]
 
@@ -117,4 +127,12 @@ if __name__ == "__main__":
     test_no_register_in_critic_prompt()
     test_blind_reader_prompt_is_repeatable_and_non_adversarial()
     test_study_prompt_injects_name_without_hardcoded_identity()
+    test_study_prose_drops_title()
+    test_build_scenarios_none_leaves_narrator_alone()
+    test_build_scenarios_short_is_same_on_both_sides()
+    test_build_scenarios_full_pastes_pages()
+    test_identical_wrappers()
+    test_injections_five_labeled_turns()
+    test_select_two_injects_renumbers()
+    test_perception_parse()
     print("ok")

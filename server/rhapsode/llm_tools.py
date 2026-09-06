@@ -187,8 +187,10 @@ NARRATOR_TOOLS = [
     {
         "name": "query_mind",
         "description": (
-            "Inspect a character's mind: continuity core, recent monologue, "
-            "compact factual beliefs, and dialogue voice."
+            "This turn's interior for one character: what they just took in "
+            "(perception) and their last private lines (monologue). This is "
+            "not who they durably are. It does not return the Who you are "
+            "page."
         ),
         "parameters": {
             "type": "object",
@@ -233,8 +235,49 @@ NARRATOR_TOOLS = [
         "parameters": {"type": "object", "properties": {}},
     },
 ]
+
+QUERY_CHARACTER_CORE_TOOL = {
+    "name": "query_character_core",
+    "description": (
+        "The Who you are page for one character. Call this before you write "
+        "what they do or say. This is not this turn's thought; that is "
+        "query_mind. Do not paste the page into prose or into speech_turns.line."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "character": {
+                "type": "string",
+                "description": "Character name",
+            },
+        },
+        "required": ["character"],
+    },
+}
+
 # Lifecycle (fork/conclude/merge/exit) is not a narrator tool. A separate
 # post-turn callback proposes operations, and Story applies their coded checks.
+
+
+def _env_flag_on(name: str, default: bool = True) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or not str(raw).strip():
+        return default
+    return str(raw).strip().lower() not in ("0", "false", "off", "no")
+
+
+def beat_narrator_tools() -> list[dict]:
+    tools = list(NARRATOR_TOOLS)
+    if _env_flag_on("RHAPSODE_QUERY_CHARACTER_CORE", True):
+        tools.append(QUERY_CHARACTER_CORE_TOOL)
+    return tools
+
+
+def narrator_max_rounds() -> int:
+    raw = os.environ.get("RHAPSODE_NARRATOR_MAX_ROUNDS", "").strip()
+    if raw.isdigit() and int(raw) > 0:
+        return int(raw)
+    return 24
 
 
 def make_narrator_callback():
@@ -255,8 +298,10 @@ def make_narrator_callback():
             {"role": "user", "parts": [{"text": turn_state}]},
         ]
         return complete_with_tools(
-            messages, NARRATOR_TOOLS, dispatch,
+            messages, beat_narrator_tools(), dispatch,
+            model=_pro_model(),
             stage=f"narrator:{scene_id}",
             phase=infer_narrator_phase(instructions),
+            max_rounds=narrator_max_rounds(),
         )
     return narrator

@@ -12,7 +12,9 @@
 #include "rhapsode/llm_callback.h"
 #include "rhapsode/memory_system.h"
 #include "rhapsode/node.h"
+#include "rhapsode/read_tools.h"
 #include "rhapsode/world.h"
+#include "rhapsode/world_analysis.h"
 #include "rhapsode/world_graph.h"
 
 using namespace rhapsode;
@@ -562,4 +564,60 @@ TEST_CASE("Annotator keeps roster spans over overlapping NER spans",
     REQUIRE(spans[0].category == "character");
     REQUIRE(spans[1].text == "waits");
     REQUIRE(spans[1].category == "event");
+}
+
+TEST_CASE("query_mind is interior; query_character_core is the full page",
+          "[world_analysis][read_tools]") {
+    World world;
+    Character alice{"Alice", "A", false};
+    const std::string core(20000, 'X');
+    alice.core = core;
+    alice.dialogue_instructions = "Quiet.";
+    world.enter_character("root", std::move(alice));
+
+    CharacterMemory memory("Alice");
+    memory.ensure_bootstrap(core);
+    const std::string perception(800, 'P');
+    memory.apply_perception_json(1, json{{"perception", perception}}.dump());
+    memory.apply_monologue_json(1, R"({"line":"first"})");
+    memory.apply_monologue_json(2, R"({"line":"second"})");
+    const std::string long_line(500, 'M');
+    memory.apply_monologue_json(3, json{{"line", long_line}}.dump());
+    memory.apply_monologue_json(4, R"({"line":"fourth"})");
+    world.set_character_memory(std::move(memory));
+
+    const json mind = json::parse(query_character_mind(world, "Alice"));
+    REQUIRE(mind["character"] == "Alice");
+    REQUIRE(mind["perception"] == perception);
+    REQUIRE(mind["monologue"].size() == 3);
+    REQUIRE(mind["monologue"][0]["text"] == "second");
+    REQUIRE(mind["monologue"][1]["text"] == long_line);
+    REQUIRE(mind["monologue"][2]["text"] == "fourth");
+    REQUIRE_FALSE(mind.contains("core"));
+    REQUIRE_FALSE(mind.contains("beliefs"));
+    REQUIRE_FALSE(mind.contains("thoughts"));
+    REQUIRE_FALSE(mind.contains("voice"));
+
+    const json page = json::parse(query_character_core(world, "Alice"));
+    REQUIRE(page["character"] == "Alice");
+    REQUIRE(page["core"] == core);
+    REQUIRE(page["core"].get<std::string>().size() == 20000);
+    REQUIRE_FALSE(page.contains("perception"));
+    REQUIRE_FALSE(page.contains("monologue"));
+
+    REQUIRE(json::parse(query_character_mind(world, "Nobody"))["error"]
+            == "character not found");
+    REQUIRE(json::parse(query_character_core(world, "Nobody"))["error"]
+            == "character not found");
+
+    WorldGraph observations;
+    const auto context = make_read_tool_context(
+        world, observations, "root", "{}", {});
+    REQUIRE(json::parse(dispatch_read_tool(
+        context, "query_character_core",
+        R"({"character":"Alice"})"))["core"] == core);
+    const json dispatched_mind = json::parse(dispatch_read_tool(
+        context, "query_mind", R"({"character":"Alice"})"));
+    REQUIRE_FALSE(dispatched_mind.contains("core"));
+    REQUIRE(dispatched_mind["perception"] == perception);
 }

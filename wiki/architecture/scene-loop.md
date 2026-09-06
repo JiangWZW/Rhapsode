@@ -89,7 +89,8 @@ an in-process turn transaction, not crash-safe persistence.
 | Tool | Source |
 |---|---|
 | `query_graph` | Frozen `StoryData::observations` |
-| `query_mind` | Frozen `StoryData::world` |
+| `query_mind` | Frozen `StoryData::world` (this beat's perception and last three monologue lines) |
+| `query_character_core` | Frozen `StoryData::world` (full Who you are page). Beat narrator schema only |
 | `query_history` | Frozen narrator/history buffer |
 | `query_transcript` | Frozen merged history and attributed-dialogue buffers |
 | `list_scenes` | Frozen scene summaries |

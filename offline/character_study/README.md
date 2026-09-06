@@ -29,7 +29,7 @@ Copy `volumes.json` and `briefs/` into `books/konosuba/` from `D:/cursor-workspa
 .venv\Scripts\python critic.py --max-sections 1
 ```
 
-`extract.py` opens 80 lines on each side of every configured name hit (clipped to the volume). Overlapping windows merge into one section. `critic.py` writes the Pass 1 study one section at a time. Pass 2 is `reader_experiment.py`. Pass 3 is `study_experiment.py`.
+`extract.py` opens 80 lines on each side of every configured name hit (clipped to the volume). Overlapping windows merge into one section. `critic.py` writes the Pass 1 study one section at a time. Pass 2 is `reader_experiment.py`. Pass 3 is `study_experiment.py`. The narrator A/B is `narrator_experiment.py`: it does not import the server or session eval; it builds temp Konosuba copies and subprocess-launches `run.py`.
 
 ### Blind-reader baseline
 
@@ -52,6 +52,17 @@ Outputs and a manifest containing the input and prompt hashes go under the ignor
 ```
 
 The script validates the first-pass hash and defaults to the latest complete two-reader checkpoint. Outputs go into a new ignored `checkpoints/darkness/study-candidates-*` folder. It does not overwrite Pass 1 or the letters.
+
+### Narrator A/B (session eval)
+
+`narrator_experiment.py` tests the tracked studies in `study/` against the game's current Darkness and Megumin text. It writes two temp `konosuba.json` copies. Default `--mode none` leaves the narrator prompt alone. `--mode short` adds the same two tiny scene notes on both sides. `--mode full` is the first pair (whole pages pasted onto the narrator). Default is five turns. Kazuma is played by the player model; no scripted Kazuma sentences. The narrator tool-round cap is 24. The old-character-text run forbids `query_character_core`; the studies run enables it. It uses `server/.venv` and `server/.env`, not this package's venv. It does not write into `server/scenarios/` or change runtime prompts.
+
+```
+..\..\server\.venv\Scripts\python.exe narrator_experiment.py --dry-run
+..\..\server\.venv\Scripts\python.exe narrator_experiment.py --mode none
+```
+
+Fixtures and `plain.md` go under ignored `checkpoints/narrator-ab-*`. Eval output is `experiments/session_pipeline/runs/study-ab-{old,new}-<mode>-<stamp>/`. One pair at a time.
 
 Unit tests always run. The real-extract count skips if the novel or `books/konosuba` is missing.
 

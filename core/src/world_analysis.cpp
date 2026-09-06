@@ -74,6 +74,24 @@ std::vector<const Node*> find_fact_substring_matches(
     return matches;
 }
 
+const CharacterMemory* find_character_memory(
+    const World& world, const std::string& character) {
+    const Character* found_character = world.find_character(character);
+    const auto& memories = world.character_memories();
+    auto memory = memories.end();
+    if (found_character) memory = memories.find(found_character->name);
+    if (memory == memories.end()) {
+        for (auto it = memories.begin(); it != memories.end(); ++it) {
+            if (str::iequals(it->first, character)) {
+                memory = it;
+                break;
+            }
+        }
+    }
+    if (memory == memories.end()) return nullptr;
+    return &memory->second;
+}
+
 }  // namespace
 
 std::string query_world_graph(
@@ -124,36 +142,44 @@ std::string query_world_graph(
 
 std::string query_character_mind(const World& world,
                                  const std::string& character) {
-    const Character* found_character = world.find_character(character);
-    const auto& memories = world.character_memories();
-
-    auto memory = memories.end();
-    if (found_character) memory = memories.find(found_character->name);
-    if (memory == memories.end()) {
-        for (auto it = memories.begin(); it != memories.end(); ++it) {
-            if (str::iequals(it->first, character)) {
-                memory = it;
-                break;
-            }
-        }
+    const CharacterMemory* memory = find_character_memory(world, character);
+    if (!memory) {
+        return nlohmann::json{{"error", "character not found"}}.dump();
     }
 
-    if (memory == memories.end()) {
-        nlohmann::json error;
-        error["error"] = "character not found";
-        return error.dump();
+    nlohmann::json recent = nlohmann::json::array();
+    const auto& lines = memory->monologue_lines();
+    const int n = static_cast<int>(lines.size());
+    const int start = n > 3 ? n - 3 : 0;
+    for (int i = start; i < n; ++i) {
+        nlohmann::json line;
+        line["turn"] = lines[static_cast<std::size_t>(i)].turn;
+        line["text"] = lines[static_cast<std::size_t>(i)].text;
+        recent.push_back(std::move(line));
     }
 
     nlohmann::json result;
-    result["character"] = memory->first;
-    if (found_character)
-        result["voice"] = found_character->build_prompt__dialogue_voice();
-    const auto mind = memory->second.render_mind_query();
-    result["core"] = mind.value("core", "");
-        result["monologue"] = mind.value("monologue", nlohmann::json::array());
-    result["beliefs"] = mind.value("beliefs", "");
-    // Backward-compatible alias for older tooling.
-    result["thoughts"] = result["beliefs"];
+    result["character"] = memory->name();
+    result["perception"] = memory->perception();
+    result["monologue"] = std::move(recent);
+    return result.dump();
+}
+
+std::string query_character_core(const World& world,
+                                 const std::string& character) {
+    const Character* found_character = world.find_character(character);
+    const CharacterMemory* memory = find_character_memory(world, character);
+    if (!memory && !found_character) {
+        return nlohmann::json{{"error", "character not found"}}.dump();
+    }
+
+    std::string core;
+    if (memory) core = memory->core().text;
+    if (core.empty() && found_character) core = found_character->core;
+
+    nlohmann::json result;
+    result["character"] = memory ? memory->name() : found_character->name;
+    result["core"] = core;
     return result.dump();
 }
 

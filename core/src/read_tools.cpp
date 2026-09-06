@@ -105,6 +105,12 @@ std::string dispatch_read_tool(const ReadToolContext& context,
         return query_character_mind(
             *context.world, string_arg("character"));
     }
+    if (name == "query_character_core") {
+        if (!context.world)
+            return nlohmann::json{{"error", "world unavailable"}}.dump();
+        return query_character_core(
+            *context.world, string_arg("character"));
+    }
     if (name == "query_history") {
         const std::string requested_scene = string_arg("scene_id");
         const SceneData* scene = resolve_scene(context, requested_scene);

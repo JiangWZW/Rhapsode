@@ -126,7 +126,7 @@ std::string query_scene_history(const std::vector<SceneMessage>& history,
     for (const auto* message : matches) {
         snippets.push_back({
             {"role", role_name(message->role)},
-            {"text", truncate_utf8(message->content, 400)}});
+            {"text", message->content}});
     }
     return nlohmann::json{{"snippets", std::move(snippets)}}.dump();
 }

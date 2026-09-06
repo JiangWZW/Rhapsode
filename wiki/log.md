@@ -1,3 +1,70 @@
+## [2026-09-06] plan | Configurable Kimi narrator
+
+- Narrator scene-writing and inner thoughts can use `kimi-k3` via env (`RHAPSODE_NARRATOR_MODEL`, `RHAPSODE_NARRATOR_API_BASE`, `MOONSHOT_API_KEY`). Default remains DeepSeek. Official K3 request shape: `reasoning_effort` (default `max`), no `thinking` body, no `temperature`. China host `https://api.moonshot.cn/v1` for platform.kimi.com keys.
+
+## [2026-09-06] experiment | Live five-turn player pair 20260906-play
+
+- `narrator_experiment.py --mode none --stamp 20260906-play`. Prompt 48/48. Player played; no scripted Kazuma (`injects=[]`, no `injections.log`). Both MaxTurns 5/5, errors 0, timeouts 0.
+- `empty_beats` old=0 new=1. Studies (new) called `query_character_core` 11 times across 6 beat rounds; old 0.
+- Fixture: `offline/character_study/checkpoints/narrator-ab-20260906-play/` (`reading.md`, `plain.md`, `manifest.json`). Runs: `experiments/session_pipeline/runs/study-ab-{old,new}-none-20260906-play/`.
+
+## [2026-09-06] experiment | Two-turn pair after how-to no longer names tools
+
+- `narrator_experiment.py --mode none --injects board,vote --stamp 20260906-core2`. Prompt 48/48. Both MaxTurns, two injects, no player LLM. `_core.pyd` rebuilt first (how-to says “Use tools…”, does not name tools).
+- Old and new `empty_beats=0`. Studies-side profile still never called `query_character_core` (graph/mind only on the beat). Fixture: `offline/character_study/checkpoints/narrator-ab-20260906-core2/`.
+
+## [2026-09-06] plan | Offload mind calls to a trained model
+
+- Staged plan with gates: Flash-off baseline → HER-RM judge → LoRA on HER-32B with own mind logs + CoSER inner-thought data → RL only if SFT fails → serving cost decision → optional drift detector. Frontier control in every A/B; narrator untouched. Page: [research/mind-model-offload-plan.md](research/mind-model-offload-plan.md).
+
+## [2026-09-06] experiment | Two-turn core-tool A/B
+
+- `narrator_experiment.py --mode none --injects board,vote --stamp 20260906-core`. Prompt 48/48. Both MaxTurns, two injects, no player LLM. `_core.pyd` rebuilt first.
+- Old `empty_beats=0`. New turn 1 had speech and no narrator prose (`empty_beats=1`). New-side profile never called `query_character_core` (graph/mind/history only). Fixture: `offline/character_study/checkpoints/narrator-ab-20260906-core/`.
+
+## [2026-09-06] runtime | Narrator query_character_core
+
+- Beat narrator can pull the full Who you are page via `query_character_core`. `query_mind` is perception plus the last three monologue lines. Old A/B arm omits the new tool; new arm enables it. Narrator tool loop default 24.
+
+## [2026-09-06] experiment | Second fair five-turn A/B
+
+- `narrator_experiment.py --mode none --injects all --stamp 20260906-ab2`. Narrator prompt 48/48 words. Both arms MaxTurns, five injects, no player LLM. No tool-loop / 0-char.
+- Both sides spoke on all five turns. New-side turns 1 and 4 had speech with no narrator prose (`empty_beats=2` in the new-side report).
+- Fixture: `offline/character_study/checkpoints/narrator-ab-20260906-ab2/`.
+
+## [2026-09-06] experiment | Fair five-turn A/B
+
+- `narrator_experiment.py --mode none --injects all --stamp 20260906-ab`. Narrator prompt 48/48 words. Both arms MaxTurns, five injects, no player LLM.
+- Old side spoke on all five turns. New side empty on turn 4 (`Are you coming with us?`) — narrator tool loop, 0 chars.
+- Fixture: `offline/character_study/checkpoints/narrator-ab-20260906-ab/`.
+
+## [2026-09-06] experiment | Short narrator A/B retries
+
+- `narrator_experiment.py` now defaults to `--mode none` (do not paste studies onto the narrator) and two injects (`board,vote`).
+- Try 1 (clean, board+vote): both sides spoke; vote was not empty.
+- Try 2 (full paste, board+vote): ~6k-word new-side dump emptied the vote (tool loop, 0 chars). ~500-word old-side paste still spoke.
+- Try 3 (clean, board+pocket): both sides answered the pocket. First-night empty pocket was the dump, not the pages in private text.
+- Notes: `offline/character_study/checkpoints/short-tries.md`.
+
+## [2026-09-05] experiment | Study A/B in session eval
+
+- Offline `narrator_experiment.py` built temp Konosuba copies from `study/darkness.md` and `study/megumin.md`, then launched both `run.py` arms in parallel (8080/8081).
+- Pair `checkpoints/narrator-ab-20260905-235107/`: both `MaxTurns`, five injects, no player LLM. Reading pack + `judgment.md` in that folder.
+- Treatment minds added civic weight (Darkness) and clause/formation ownership (Megumin) beyond the compact gags. No novel-history dump. Treatment Darkness t=3 perception lost first person. Vote was empty on both arms; pocket was empty on treatment only.
+
+## [2026-09-05] revise | Megumin Candidate 2, C1 relationships grown in
+
+- Left Candidate 2 standing. Grew Kazuma, Wiz-as-person, Darkness (including Vanir), and Aqua’s denied divinity into C2’s voice.
+- Did not rewrite C2 sentences, resolve Yunyun, or overwrite Pass 1 / the two originals.
+- File: `offline/character_study/checkpoints/megumin/study-candidates-20260905-224326/candidate-2-revised.md`.
+
+## [2026-09-05] run | Megumin vols 1–4 three-pass
+
+- Megumin used the same three-pass path as Darkness, isolated via `config-megumin.yaml`.
+- Pass 1: critic `--until-volume 4` → `offline/character_study/study/megumin.md` (sections 1–11).
+- Pass 2: `checkpoints/megumin/reader-baseline-20260905-222637/`.
+- Pass 3: `checkpoints/megumin/study-candidates-20260905-224326/` (two unmerged candidates). Darkness study unchanged.
+
 ## [2026-09-01] experiment | Identical-input blind readers
 
 - Added an offline baseline that sends the same first-pass Darkness study and neutral prompt to two

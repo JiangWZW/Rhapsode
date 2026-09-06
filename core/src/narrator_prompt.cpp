@@ -1,6 +1,5 @@
 #include "rhapsode/narrator_prompt.h"
 
-#include "rhapsode/json_util.h"
 #include "rhapsode/scene_data.h"
 #include "rhapsode/scene_history.h"
 #include "rhapsode/str_util.h"
@@ -15,8 +14,6 @@ namespace rhapsode {
 namespace {
 
 constexpr size_t kVerbatimSpans = 16;
-constexpr size_t kMaxMessageChars = 400;
-constexpr size_t kMaxStoryChars = 1500;
 
 std::string join_sorted(std::vector<std::string> names) {
     std::sort(names.begin(), names.end());
@@ -56,8 +53,7 @@ std::string build_narrator_turn_state(const SceneData& scene,
         if (memory != world.character_memories().end() &&
             !memory->second.monologue_lines().empty()) {
             os << "  On their mind: \""
-               << truncate_utf8_ellipsis(
-                      memory->second.monologue_lines().back().text, 200)
+               << memory->second.monologue_lines().back().text
                << "\"\n";
         }
     }
@@ -75,7 +71,7 @@ std::string build_narrator_turn_state(const SceneData& scene,
         render_text_downsampling(scene.downsampling);
     if (!story_so_far.empty()) {
         os << "\nWhat has already happened:\n"
-           << truncate_utf8(story_so_far, kMaxStoryChars) << "\n";
+           << story_so_far << "\n";
     }
 
     os << "\nWhat was just said and done:\n";
@@ -87,7 +83,7 @@ std::string build_narrator_turn_state(const SceneData& scene,
             const std::string speaker = span.speaker.empty()
                 ? "Narrator" : span.speaker;
             os << speaker << ": "
-               << truncate_utf8(span.exact_content, kMaxMessageChars) << "\n";
+               << span.exact_content << "\n";
         }
     }
     return os.str();
@@ -131,7 +127,7 @@ If the player calls someone who is not here, the stage shows their absence.
 Other live threads are board context -- do not move their cast onto this stage.
 Never narrate unperformed Player actions. You may foreshadow.
 Do not author transitions or new_nodes; a follow-up pass owns the world graph.
-query_mind, query_graph, and query_history when you lack a fact. Do not guess
+Use tools when you need a fact that is not already in this prompt. Do not guess
 continuity: valid_until=-1 is still true; valid_until=N was true until turn N.
 
 After any tool use, begin with a few short paragraphs of prose. No preamble.
@@ -149,7 +145,7 @@ new_characters is first-time speakers only ([] if none). active_cast is who is o
 std::string build_narrator_graph_instructions() {
     return R"RHAPSODE(GRAPH_UPDATE: record what this take changed in the world graph. Do not rewrite prose or dialogue.
 
-You may query_graph to resolve existing node ids before transitioning them.
+Use tools if you need existing node ids before transitioning them.
 
 Output only the sentinel, then JSON. Use ONLY straight ASCII double quotes (")
 for all keys and strings -- never smart/curly quotes:

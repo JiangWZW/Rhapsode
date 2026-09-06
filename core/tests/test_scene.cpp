@@ -165,6 +165,12 @@ TEST_CASE("Narrator instructions are stage craft with schema last",
     REQUIRE(turn.find("What is not established is a claim") != std::string::npos);
     REQUIRE(turn.find("Silence is a take") != std::string::npos);
     REQUIRE(turn.find("On their mind") != std::string::npos);
+    REQUIRE(turn.find("Use tools") != std::string::npos);
+    REQUIRE(turn.find("query_mind") == std::string::npos);
+    REQUIRE(turn.find("query_graph") == std::string::npos);
+    REQUIRE(turn.find("query_history") == std::string::npos);
+    REQUIRE(turn.find("query_character_core") == std::string::npos);
+    REQUIRE(turn.find("list_scenes") == std::string::npos);
     REQUIRE(turn.find("new_characters") != std::string::npos);
     REQUIRE(turn.find("active_cast") != std::string::npos);
 
@@ -177,6 +183,8 @@ TEST_CASE("Narrator instructions are stage craft with schema last",
 
     const std::string graph = build_narrator_graph_instructions();
     REQUIRE(graph.find("GRAPH_UPDATE") != std::string::npos);
+    REQUIRE(graph.find("Use tools") != std::string::npos);
+    REQUIRE(graph.find("query_graph") == std::string::npos);
     const auto mark = graph.find("GRAPH_UPDATE");
     const auto graph_sentinel = graph.find("<<<RHAPSODE_JSON>>>");
     const auto graph_schema = graph.find("\"new_nodes\"");
